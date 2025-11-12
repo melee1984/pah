@@ -1,0 +1,56 @@
+.btn-pahatud {
+    color: #fff;
+    background-color: #b31206 !important;
+    border-color: #ffffff;
+    box-shadow: none;
+}
+.btn-pahatud:hover {
+    color: #e8e8e8 !important;
+}
+.card-pahatud:not(.card-outline)>.card-header {
+    background-color: #b31206 !important;
+    color: #FFF;
+}
+
+.login-logo a {
+	color: #FFF;
+}
+.login-logo a b{
+	color: #f93c00;
+}
+
+.login-page, .register-page {
+	background: #ff594d;
+}
+
+.login-box, .register-box {
+    width: 430px !important;
+}
+
+.login-logo, .register-logo {
+    font-size: 2.1rem;
+    font-weight: 300;
+    margin-bottom: .9rem;
+    text-align: center;
+    width: 426px;
+}
+
+.login-logo, .register-logo {
+    font-size: 2.1rem;
+    font-weight: 300;
+    margin-bottom: .9rem;
+    text-align: center;
+    width: 426px;
+}
+
+.layout-navbar-fixed .wrapper .sidebar-light-danger .brand-link:not([class*=navbar]) {
+    text-align: center;
+    font-size: 15px;
+    font-weight: bolder;
+    color: #000;;
+}
+
+.custom-control-input:checked~.custom-control-label::before {
+    border-color: #520600 !important;
+    background-color: #8a0900 !important;
+}

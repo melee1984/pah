@@ -1,0 +1,6 @@
+ERROR MESSAGE DISPLAY 
+
+toastr.success
+toastr.info
+toastr.error
+toastr.warning
