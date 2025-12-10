@@ -41,6 +41,7 @@
         <register-form></register-form>
         <login-form></login-form>
         <summary-basket-mobile></summary-basket-mobile>
+        <user-current-location></user-current-location>
     </div>
     @include('includes.footer')
     <!-- scrollToTop start here -->

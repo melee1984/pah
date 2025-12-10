@@ -49,7 +49,6 @@
 </template>
 
 <script>
-
 export default {
   data() {
     return {
@@ -94,10 +93,10 @@ export default {
     };
   },
   created() {
+    
     if (!localStorage.center) {
       this.getCurrentLocation();
     }
-
     if (localStorage.center) {
       this.coordinates = JSON.parse(localStorage.center);
     }
@@ -110,11 +109,13 @@ export default {
     if (localStorage.notes) {
       this.fields.notes = localStorage.notes;
     }
-
     Event.$on("PinMapUserLocation", () => {
       const modalElement = document.getElementById("pinLocation");
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
+
+      this.initMap();
+
     });
 
     Event.$on("CheckUserLocation", () => {
@@ -239,69 +240,76 @@ export default {
     //   }
     //   this.setPin();
     // },
+    // this should only run once but when click the map should load without issue//
 
     async initMapWithRetry(retries = 3, delay = 2000) {
-      const attempt = async (remaining) => {
-        try {
-          await this.initMap();
-          console.log("Map loaded successfully");
-        } catch (err) {
-          console.error("initMap failed:", err);
-          if (remaining === 0) return;
-          console.warn("Retrying map initialization…");
-          setTimeout(() => attempt(remaining - 1), delay);
-        }
-      };
-      attempt(retries);
+      if (!this.latitude || !this.longitude) {
+        const attempt = async (remaining) => {
+          try {
+            await this.initMap();
+            console.log("Map loaded successfully");
+          } catch (err) {
+            console.error("initMap failed:", err);
+            if (remaining === 0) return;
+            console.warn("Retrying map initialization…");
+            setTimeout(() => attempt(remaining - 1), delay);
+          }
+        };
+        attempt(retries);
+      }
+      else {
+        console.log("Map center exists, initializing map without retries");
+      }
+     
     },
+
     async initMap() {
-    const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
-      google.maps.importLibrary("maps"),
-      google.maps.importLibrary("marker"),
-    ]);
+      const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+        google.maps.importLibrary("maps"),
+        google.maps.importLibrary("marker"),
+      ]);
 
-    const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
+      const { PlaceAutocompleteElement } = await google.maps.importLibrary("places");
 
-    const mapEl = document.getElementById("myMapDisplayUserLocation");
-    const map = mapEl.innerMap;
-    this.mapInstance = map;
-    map.setOptions({ mapTypeControl: false });
+      const mapEl = document.getElementById("myMapDisplayUserLocation");
+      const map = mapEl.innerMap;
+      this.mapInstance = map;
+      map.setOptions({ mapTypeControl: false });
 
-    // Initialize geocoder
-    this.geocoder = new google.maps.Geocoder();
+      // Initialize geocoder
+      this.geocoder = new google.maps.Geocoder();
 
-    // Try getting user location initially
-    this.setCurrentLocation();
+      // Try getting user location initially
+      this.setCurrentLocation();
 
-    // Initialize PlaceAutocompleteElement
-    const input = document.getElementById("searchBoxFilter");
-    this.autocompleteElement = new PlaceAutocompleteElement({
-      inputElement: input,
-      fields: ["geometry", "name", "formatted_address"],
-    });
+      // Initialize PlaceAutocompleteElement
+      const input = document.getElementById("searchBoxFilter");
+      this.autocompleteElement = new PlaceAutocompleteElement({
+        inputElement: input,
+        fields: ["geometry", "name", "formatted_address"],
+      });
 
-    // Listen for place selection
-    this.autocompleteElement.addEventListener("place_changed", () => {
-      const place = this.autocompleteElement.getPlace();
-      if (!place.geometry) return;
+      // Listen for place selection
+      this.autocompleteElement.addEventListener("place_changed", () => {
+        const place = this.autocompleteElement.getPlace();
+        if (!place.geometry) return;
 
-      const lat = place.geometry.location.lat();
-      const lng = place.geometry.location.lng();
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
 
-      map.setCenter({ lat, lng });
-      map.setZoom(17);
+        map.setCenter({ lat, lng });
+        map.setZoom(17);
 
-      if (this.marker) this.marker.position = { lat, lng };
-      else this.createMarker(lat, lng);
+        if (this.marker) this.marker.position = { lat, lng };
+        else this.createMarker(lat, lng);
 
-      this.latitude = lat;
-      this.longitude = lng;
+        this.latitude = lat;
+        this.longitude = lng;
 
-      // Update database
-      this.updateUserCartLocation();
-    });
-  },
-
+        // Update database
+        this.updateUserCartLocation();
+      });
+    },
 
     createMarker(lat, lng) {
       const { AdvancedMarkerElement } = google.maps.marker;
@@ -333,7 +341,7 @@ export default {
     async setCurrentLocation() {
       try {
         const pos = await this.getUserLocationWithRetry(3, 2000);
-        
+
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
@@ -366,6 +374,9 @@ export default {
         localStorage.setItem("center", JSON.stringify({ lat, lng }));
 
         this.updateUserCartLocation();
+
+        Event.$emit('updateLocationAddress');
+
       } catch (err) {
         console.error("Reverse geocode failed after retries:", err);
         this.address = "Unable to fetch address";
@@ -389,9 +400,7 @@ export default {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
       }
-
     },
-
     // 1️⃣ Retry getting geolocation
     getUserLocationWithRetry(retries = 3, delay = 2000) {
       return new Promise((resolve, reject) => {

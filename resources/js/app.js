@@ -126,6 +126,7 @@ Vue.config.ignoredElements = [
   'gmp-zoomchange',
   'gmp-internal-pinchange',
 ];
+
 Vue.use(VueSimpleAlert);
 window.vm = new Vue({
      el: '#app',

@@ -21,6 +21,7 @@
         @include('includes.nav')
         @yield('content')
         <register-form></register-form>
+        <user-current-location></user-current-location>
     </div>
 
     @include('includes.footer')
