@@ -153,7 +153,8 @@
         },
         methods: {
           IAgreeTerms: function() {
-            $('#modalGeneral').modal();
+            var myModal = new bootstrap.Modal(document.getElementById('modalGeneral'));
+            myModal.show();
           },
           submitRecord: function() {
 

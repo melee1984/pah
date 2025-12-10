@@ -24,6 +24,7 @@ use App\Model\DeliveryDistance;
 use App\SmsNotification;
 use App\PushNotification;
 use App\Events\SendPushNotificationEvent;
+use Exception;
 
 class CartController extends Controller
 {
@@ -37,10 +38,9 @@ class CartController extends Controller
 
         $cart = Cart::whereSessionId($session_id)->first();
 
-        $cart->partnerlocation;
-
         if ($cart) {
 
+            $cart->partnerlocation;
             $product_items = $cart->cartItemList();    
 
             // Just to clear delivery fee 
@@ -148,7 +148,7 @@ class CartController extends Controller
         $item = Products::find($request->input('item_id'));
 
         if ($item) {
-            $cart = Cart::whereSessionId(Session::getID())->first();
+            $cart = Cart::whereSessionId(Session::getId())->first();
             try {
                 if ($cart != null) {
                     if ((!$cart->user_long) && (!$cart->user_lat)) {

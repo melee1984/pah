@@ -38,8 +38,8 @@
                   </tr>
                   <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
                     <td width="15%">
-                        {{ order.submitted_date }}<br>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
+                        {{ order.submitted_date }}<br> xxxx
+                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>xxx Order # {{ order.cart.order_no }}  </strong></a>
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
@@ -98,7 +98,7 @@
                                     <!-- Start .row -->
                                     <div class="col-lg-6">
                                         <!-- col-lg-6 start here -->
-                                        <div class="invoice-logo" v-if="selectedOrder.partner.img">
+                                        <div class="invoice-logo" v-if="selectedOrder?.partner?.img">
                                           <img width="100" :src="'/uploads/user/'+selectedOrder.partner.id+'/'+selectedOrder.partner.img" alt="Invoice logo">
                                         </div>
                                     </div>
@@ -107,12 +107,12 @@
                                         <!-- col-lg-6 start here -->
                                         <div class="invoice-from">
                                             <ul class="list-unstyled text-right">
-                                                <li>{{ selectedOrder.partner.restaurant_name }}</li>
-                                                <li v-if="selectedOrder.cart.partner_location_address_id">
-                                                  {{ selectedOrder.cart.partnerlocation.address_1 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.address_2 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.mobile }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.telephone }} <br>
+                                                <li>{{ selectedOrder?.partner?.restaurant_name }}</li>
+                                                <li v-if="selectedOrder?.cart?.partner_location_address_id">
+                                                  {{ selectedOrder?.cart?.partnerlocation?.address_1 }} <br>
+                                                  {{ selectedOrder?.cart?.partnerlocation?.address_2 }} <br>
+                                                  {{ selectedOrder?.cart?.partnerlocation?.mobile }} <br>
+                                                  {{ selectedOrder?.cart?.partnerlocation?.telephone }} <br>
                                                 </li>
                                             </ul>
                                         </div>
@@ -123,12 +123,12 @@
                                         <div class="invoice-details mt25">
                                             <div class="well">
                                                 <ul class="list-unstyled mb0">
-                                                    <li><strong>Order #</strong> #{{ selectedOrder.cart.order_no }}</li>
-                                                    <li><strong>Processed at:</strong>{{ selectedOrder.cart.processed_at }}</li>
+                                                    <li><strong>Order #</strong> #{{ selectedOrder?.cart?.order_no }}</li>
+                                                    <li><strong>Processed at:</strong>{{ selectedOrder?.cart?.processed_at }}</li>
 
-                                                    <li><strong>Date/Time:</strong> {{ selectedOrder.cart.delivery_date }} @ {{ selectedOrder.cart.delivery_time }}</li>
+                                                    <li><strong>Date/Time:</strong> {{ selectedOrder?.cart?.delivery_date }} @ {{ selectedOrder?.cart?.delivery_time }}</li>
                                                     <li><strong>Status:</strong> 
-                                                        <span class="label label-danger">{{ selectedOrder.status.title }}</span>
+                                                        <span class="label label-danger">{{ selectedOrder?.status?.title }}</span>
                                                     </li>
                                                 </ul>
                                             </div>
@@ -136,9 +136,9 @@
                                         <div class="invoice-to mt25">
                                             <ul class="list-unstyled">
                                                  <li><strong>Invoiced To</strong></li>
-                                                <li>Fullname: {{ selectedOrder.cart.fullname }}</li>
-                                                <li>Address: {{ selectedOrder.cart.address.address_1 }}</li>
-                                                <li>Mobile: {{ selectedOrder.cart.mobile }}</li>
+                                                <li>Fullname: {{ selectedOrder?.cart?.fullname }}</li>
+                                                <li>Address: {{ selectedOrder?.cart?.address.address_1 }}</li>
+                                                <li>Mobile: {{ selectedOrder?.cart?.mobile }}</li>
                                             </ul>
                                         </div>
                                         <div class="invoice-items">
@@ -152,7 +152,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr v-for="item in selectedOrder.cart.details">
+                                                        <tr v-for="item in selectedOrder?.cart?.details">
                                                             <td>
                                                               {{ item.item.title }}
                                                               <br>
@@ -173,19 +173,19 @@
                                                     <tfoot>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Sub Total:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.sub_total }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.sub_total }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Delivery Fee:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.delivery_fee }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.delivery_fee }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Discount:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.discount }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.discount }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Total:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.total }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.total }} PHP</th>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
@@ -297,8 +297,8 @@
               this.selectedOrder = order;
               $('#orderDetails').modal('toggle');
           }
-          
         }
+
     }
 
 </script>

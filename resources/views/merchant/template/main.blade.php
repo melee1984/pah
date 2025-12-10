@@ -119,7 +119,8 @@
 <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 <!-- <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
  -->
-<script src="{{ asset('js/merchant.js') }}" defer></script>
+
+@vite('resources/js/merchant.js')
 
 <script type="text/javascript">
  

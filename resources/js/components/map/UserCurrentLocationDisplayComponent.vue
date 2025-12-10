@@ -13,36 +13,28 @@
       },
       created() {
       	Event.$on('updateLocationAddress', () => {
-
-          if (localStorage.address) {
-            this.delivery_address = localStorage.address;
-          }
-
           if (localStorage.address) {
             this.delivery_address = localStorage.address;
           }
           else if (localStorage.center) {
               this.delivery_address = "Pinned location";
           }
-          
         });
       },
       mounted() {
-
         if (localStorage.address) {
           this.delivery_address = localStorage.address;
         }
         else if (localStorage.center) {
             this.delivery_address = "Pinned location";
         }
- 
       },
       computed: {
       	
       },
       methods: {
        	userLocation: function() {
-       		Event.$emit('PinMapUserLocation');
+       		  Event.$emit('PinMapUserLocation');
        	}
       }
 

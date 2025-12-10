@@ -17,15 +17,12 @@
 		<meta property="og:description" content="{{ $partner->description }}" />
 	@else 
 		<meta property="og:description" content="Send Flower to your love one Online via Pahatud Deliver www.pahatud.com. Thanks!!! " />
-
 		<meta property="og:image:type" content="image/jpeg" />
 		<meta property="og:image:width" content="500" />
 		<meta property="og:image:height" content="500" />
 		<meta property="og:image:alt" content="{{ $partner->restaurant_name }} Order Online from Pahatud Delivery" />
 		<meta property="og:title" content="{{ $partner->restaurant_name }} Order Online from Pahatud Delivery" />
 		<meta property="og:url" content="{{ route('flowerstore.view', $partner ) }}" />
-
-
 		<meta property="og:type" content="website" />
 		<meta property="og:image" content="{{ asset('uploads/user/'.$partner->id.'/'.$partner->img) }}" />
 		<meta property="og:image:secure_url" content="{{ asset('uploads/user/'.$partner->id.'/'.$partner->img) }}" />

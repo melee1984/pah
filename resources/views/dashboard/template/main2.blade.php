@@ -122,8 +122,9 @@
 <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 <!-- <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
  -->
- <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
-<script src="{{ asset('js/dashboard.js') }}" defer></script>
+<script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
+
+@vite('resources/js/dashboard.js')
 
 <script type="text/javascript">
  

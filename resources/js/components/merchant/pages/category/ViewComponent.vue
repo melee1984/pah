@@ -39,7 +39,7 @@
                     </div>
                   </td>
 		              <td width="25%">{{ category.name }}</td>
-		              <td width="50%" align="right">
+		              <td width="50%">
 		              	<div class="custom-control custom-switch">
 		                <input type="checkbox" class="custom-control-input" :id="'is_active'+category.id" v-model="category.active" v-on:click="updateStatus(category.id, category.active)">
 		                <label class="custom-control-label" :for="'is_active'+category.id"></label>
@@ -204,7 +204,7 @@
           },
           fetchData: function(page = 1) {
               var self = this;
-              axios.get('/api/merchant/category/list?page='+page).then(function (response) {
+              axios.get('/api/merchant/category/list?page='+page+'&api_token='+api_token).then(function (response) {
                   self.categories = response.data.categories;
                   self.Temp = self.categories.data;
                   self.parent_category = response.data.parent_category;
@@ -219,7 +219,7 @@
             var txt;
             var r = confirm("Delete this record?");
             if (r == true) {
-              axios.delete('/api/merchant/category/'+self.field.id+'/delete', {}).then((response) => {
+              axios.delete('/api/merchant/category/'+self.field.id+'/delete?api_token='+api_token, {}).then((response) => {
                 if (response.data.status) {
                   toastr.success(response.data.message);
                   this.fetchData();
@@ -242,7 +242,7 @@
 
               if (this.validateForm()) {
                 if (this.actionStatus == 'add') {
-                     axios.post('/api/merchant/category/submit', {
+                     axios.post('/api/merchant/category/submit?api_token='+api_token, {
                         name: this.field.name,
                         parent_category_id: this.field.parent_category,
                         active: this.field.active,
@@ -268,7 +268,7 @@
                 }
                 else if (this.actionStatus == 'edit') {
 
-                   axios.put('/api/merchant/category/'+ this.field.id +'/submit', {
+                   axios.put('/api/merchant/category/'+ this.field.id +'/submit?api_token='+api_token, {
                       name: this.field.name,
                       parent_category_id: this.field.parent_category,
                       active: this.field.active,

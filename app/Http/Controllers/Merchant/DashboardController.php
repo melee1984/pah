@@ -11,7 +11,8 @@ use Hash;
 
 use App\AccountType;
 use Cache;
-
+use Session;
+use Str;
 class DashboardController extends Controller
 {
     
@@ -45,18 +46,25 @@ class DashboardController extends Controller
 
     public function validateLogin(Request $request) {
 
-    	$this->validate($request, [
-	        'email' => 'required|email',
-	        'password' => 'required',
-	    ]);
+		$session_id = Session::getId();
+
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required',
+		]);
 
 	    $remember_me = $request->has('remember') ? true : false; 
 
-	    if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
+		if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
 	    {
-	         $user = auth()->user();
+	        $user = auth()->user();
+			$user->api_token = Str::random(60);
+			$user->save();
+
+			Session::setId($session_id);
+
 	         if ($user->isMerchant()) {
-				      return redirect()->intended('merchant/dashboard');	
+				return redirect()->intended('merchant/dashboard');	
 	         }
 	         else {
   	        	return back()

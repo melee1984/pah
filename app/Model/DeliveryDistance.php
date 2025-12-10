@@ -3,102 +3,94 @@
 namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Http;
 
 use Carbon\Carbon;
 use DateTime;
 use DateInterval;
 use DatePeriod;
 
-
 class DeliveryDistance extends Model
 {
-    public static function getCoordinateComputation($from_coordinates, $to_coordinates) {
+	public static function getCoordinateComputation($from_coordinates, $to_coordinates)
+	{
+		try {
 
-	   	try {
-	   		
-		$from_latlong = $from_coordinates;
-	   	$to_latlong = $to_coordinates;
+			\Log::info('Starting getCoordinateComputation', [
+				'from' => $from_coordinates,
+				'to' => $to_coordinates
+			]);
+			
+			$from_latlong = $from_coordinates;
+			$to_latlong = $to_coordinates;
 
-	   	// echo $from_latlong;
-	   	// echo "<br>";
-	   	// echo $to_latlong;
-	   	// die();
-	   	
-	   	$distance = "";
+			$apiKey = config('services.google.maps_key'); // store in .env: GOOGLE_MAPS_KEY
 
-	   	$unit = 'K';
-		$apiKey = 'AIzaSyBSGeqs54fvHY42AS3-VuZr-D5agAuM43U'; // Demo 
-		
-		// $distance_data = file_get_contents('https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='.$from_latlong.'&destinations='.$to_latlong.'&key='.$apiKey
-  //           );
-  	
-  		$Url = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='.$from_latlong.'&destinations='.$to_latlong.'&key='.$apiKey;
+			$url = 'https://maps.googleapis.com/maps/api/distancematrix/json';
 
-		if (!function_exists('curl_init')){ 
-	        die('CURL is not installed!');
-	    }
-	    $ch = curl_init();
-	    curl_setopt($ch, CURLOPT_URL, $Url);
-	    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	    $distance_data = curl_exec($ch);
-	    curl_close($ch);
+			// Use Laravel HTTP client instead of cURL
+			$response = Http::get($url, [
+				'units' => 'imperial',
+				'origins' => $from_latlong,
+				'destinations' => $to_latlong,
+				'key' => $apiKey,
+			]);
 
-		$distance_arr = json_decode($distance_data);
+			if (!$response->ok()) {
+				throw new \Exception('Failed to fetch distance data.');
+			}
 
-		$destination = $distance_arr->destination_addresses[0];
-		$origin = $distance_arr->origin_addresses[0];
+			$distance_arr = $response->json();
+			\Log::info('Distance Matrix API response', $distance_arr);
 
-	    $distance = $distance_arr->rows[0]->elements[0]->distance->text;
-	    $duration = $distance_arr->rows[0]->elements[0]->duration->text;
-	   
-	    $distance = preg_replace("/[^0-9.]/", "",  $distance);
-	    $duration = preg_replace("/[^0-9.]/", "",  $duration);
-	   	
-	   	// conver to KM
-	    $distance=$distance * 1.609344;
-	   
-		$distance=number_format($distance, 1, '.', '');
-		$duration=number_format($duration, 1, '.', '');   
+			// Check if API returned results
+			if (empty($distance_arr['rows'][0]['elements'][0]['distance']['text'])) {
+				throw new \Exception('Distance data not found.');
+			}
 
-		if (ceil($distance) <=1) {
-			$rate = 25;
+			$origin = $distance_arr['origin_addresses'][0] ?? '';
+			$destination = $distance_arr['destination_addresses'][0] ?? '';
+
+			$distance = $distance_arr['rows'][0]['elements'][0]['distance']['text'] ?? '0';
+			$duration = $distance_arr['rows'][0]['elements'][0]['duration']['text'] ?? '0';
+
+			// Extract numbers
+			$distance = floatval(preg_replace("/[^0-9.]/", "", $distance));
+			$duration = floatval(preg_replace("/[^0-9.]/", "", $duration));
+
+			// Convert miles to km
+			$distance = $distance * 1.609344;
+
+			$distance = number_format($distance, 1, '.', '');
+			$duration = number_format($duration, 1, '.', '');
+
+			// Compute rate
+			if (ceil($distance) <= 1) {
+				$rate = 25;
+			} else {
+				$rate = 25 + ((ceil($distance) - 1) * 10);
+			}
+
+			$data = [
+				'status' => 1,
+				'distance' => $distance . 'km',
+				'duration' => $duration,
+				'origin' => $origin,
+				'destination' => $destination,
+				'rate' => number_format($rate, 2),
+			];
+
+			\Log::info('Computed distance and rate', $data);
+			return $data;
+
+		} catch (\Exception $e) {
+			return [
+				'status' => 0,
+				'message' => $e->getMessage() ?: "Sorry, please pin your delivery location.",
+			];
 		}
-		else {
-			$rate = ((ceil($distance) - 1) * 10);	
-			$rate = 25 + $rate;
-		}
-
-		// 1 - 25.00 
-		// 2 - 35.00 
-		// 3 - 45.00 
-		// 4 - 55.00 
-		// 5 - 65.00 
-		// 6 - 75.00 
-		// 7 - 85.00 
-		// 8 - 95.00 
-		// 9 - 105.00 
-
-		$data['status'] = 1;
-		$data['distance'] = $distance . "km";
-        $data['duration'] = $duration;
-        $data['origin'] = $origin;
-        $data['destination'] = $destination;
-
-        $data['rate'] = number_format($rate,2);
-
-
-	   	} catch (Exception $e) {
-	   		
-	   		$data['status'] = 0;
-	   		$data['message'] = "Sorry, please pin your delivery location.";
-
-	   		die(json_encode($data));
-
-	   	}
-
-		return $data;
-
 	}
+
 
 	public static function getCalendarDelivery($merchant = "") {
 

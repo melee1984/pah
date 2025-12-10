@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     @include('includes.meta')
     @hasSection('title')
@@ -9,8 +8,7 @@
     <title>Pahatud Delivery Services</title>
     @endif
     @include('includes.gtag')
-    <script src="{{ asset('js/app.js') }}" defer></script>
-
+    @vite(['resources/js/app.js', 'resources/css/app.css'])
 
 </head>
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -23,8 +21,6 @@
         @include('includes.nav')
         @yield('content')
         <register-form></register-form>
-        <my-component></my-component>
-        <user-current-location></user-current-location>
     </div>
 
     @include('includes.footer')

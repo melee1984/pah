@@ -126,38 +126,41 @@ class AccessController extends Controller
    * Client Login
    */
   public function loginAccess(Request $request)
-  { 
-
-    $session_id = Session::getId();
-
-    $this->validate($request, [
-          'email' => 'required|email',
+  {
+      // 1. Validate input
+      $credentials = $request->validate([
+          'email'    => 'required|email',
           'password' => 'required',
       ]);
 
-      $remember_me = $request->has('remember') ? true : false; 
+      $remember = $request->boolean('remember');
 
-      if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
-      {
-          Session::setId($session_id);
-
-          $cart = Cart::whereSessionId($session_id)->first();
-
-          if ($cart) {
-            $cart->user_id = Auth::User()->id;
-            $cart->save();  
-          }
-
-          return redirect()->back();
-      }
-      else{
+      // 2. Attempt login
+      if (!Auth::attempt($credentials, $remember)) {
           return back()
-            ->with('display', 'alert-danger')
-            ->with('message','your username and password are wrong.')
-            ->withInput();
+              ->with('display', 'alert-danger')
+              ->with('message', 'Your email or password is incorrect.')
+              ->withInput();
       }
+
+      // 3. Merge session cart to logged-in user
+      $this->mergeCart(Session::getId(), Auth::id());
+
+      // 4. Redirect to intended page or homepage
+      return redirect()->intended('/');
   }
 
+  /**
+   * Merge session cart to logged-in user
+   */
+  protected function mergeCart(string $sessionId, int $userId): void
+  {
+      $cart = Cart::where('session_id', $sessionId)->first();
+
+      if ($cart) {
+          $cart->update(['user_id' => $userId]);
+      }
+  }
 
   public function registermobile(Request $request) {
 

@@ -98,5 +98,15 @@ class PageController extends Controller
 
     }
 
+    /** 
+     * Demo Pages
+     * 
+     * 
+     */
+    public function demoMap() 
+    {
+        return view('pages.demo.map');  
+    }
+
 
 }

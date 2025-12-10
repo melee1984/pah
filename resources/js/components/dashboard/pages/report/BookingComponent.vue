@@ -54,7 +54,7 @@
                     </td>
                     <td width="10%" v-if="booking.status">
                         <span v-if="booking.status.id!=4">
-                          <select class="form-control" v-model="booking.rider_id" style="font-size:12px;" @change="updateRider(booking.id)">
+                          <select class="form-control" v-model="booking.rider_id" style="font-size:12px;" @change="updateRider($event,booking.id)">
                             <option value="null">Select Rider</option>
                             <option v-for="rider in riders" :value="rider.id">{{ rider.name }}</option>
                           </select>
@@ -138,7 +138,6 @@
                     <!-- col-lg-12 end here -->
                 </div>
                 </div>
-              </p>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn" data-dismiss="modal">Close</button>
@@ -146,6 +145,7 @@
           </div>
         </div>
       </div>
+      <!-- MODAL -->
   </div>
 </template>
 <script>
@@ -190,7 +190,7 @@
                   console.log(error);
               });
           },
-          updateRider:function(orderid) {
+          updateRider:function(event, orderid) {
 
              let formData = new FormData();
                 formData.append('rider_id', event.target.value)
@@ -228,7 +228,10 @@
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-              $('#bookingDetails').modal('toggle');
+             
+              const modalEl = document.getElementById('bookingDetails');
+              const modal = new bootstrap.Modal(modalEl);
+              modal.show();
           }
           
         }

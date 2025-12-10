@@ -8,41 +8,38 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Restaurant\PageController as RestaurantPageController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
+// require __DIR__.'/auth.php';
+
+// -------------------------------------------------------
+// PUBLIC ROUTES
+// -------------------------------------------------------
+
+/** 
+ * Demo Gere
+ */
+
+Auth::routes(['verify' => true]);
+
+Route::get('/demo', [PageController::class, 'demoMap']);
 Route::get('/', [PageController::class, 'index']);
 
-// Route::get('/', function () {
-//     return Inertia::render('Welcome', [
-//         'canLogin' => Route::has('login'),
-//         'canRegister' => Route::has('register'),
-//         'laravelVersion' => Application::VERSION,
-//         'phpVersion' => PHP_VERSION,
-//     ]);
-// });
+Route::get('/imager', [\App\Http\Controllers\ImageController::class, 'image'])->name('cacheImage');
+// Route::get('/image/size', [\App\Http\Controllers\ImageController::class, 'imageResize'])->name('image-resize');
+Route::get('/image/size', [\App\Http\Controllers\ImageController::class, 'image'])->name('image-resize');
 
-Route::get('/imager', 'ImageController@image')->name('cacheImage');
-Route::get('/image/size', 'ImageController@imageResize')->name('image-resize');
+Route::get('/byplaceId', [\App\Http\Controllers\Map\DistanceController::class, 'getByPlaceId']);
+Route::get('/distance', [\App\Http\Controllers\Map\DistanceController::class, 'getKilometerByCoodinates']);
 
-Route::get('/byplaceId', 'Map\DistanceController@getByPlaceId');
+Route::get('/sign-in/fb/complete', [\App\Http\Controllers\Api\User\AccessController::class, 'registerFB'])->name('user.registerFB');
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-Route::get('/distance', 'Map\DistanceController@getKilometerByCoodinates');
-Route::get('/sign-in/fb/complete', 'Api\User\AccessController@registerFB')->name('user.registerFB');
 Route::post('/search', [RestaurantPageController::class, 'search'])->name('search');
 Route::get('/restaurants/{search_string}', [RestaurantPageController::class, 'searchTag'])->name('search.tag');
 
-Route::get('/home', 'PageController@index')->name('/');
-Route::get('/about-us', 'PageController@aboutus')->name('aboutus');
+Route::get('/home', [PageController::class, 'index'])->name('/');
+Route::get('/about-us', [PageController::class, 'aboutus'])->name('aboutus');
 Route::get('/be-partner', [PageController::class, 'bepartner'])->name('bepartner');
 
 Route::get('/contact-us', [PageController::class, 'contactus'])->name('contactus');
@@ -50,139 +47,148 @@ Route::get('/privacy-policy', [PageController::class, 'privacypolicy'])->name('p
 Route::get('/terms-of-use', [PageController::class, 'termsofuse'])->name('termsofuse');
 Route::get('/fraud-prevention', [PageController::class, 'fraudprevention'])->name('fraudprevention');
 Route::get('/payment-method', [PageController::class, 'paymentmethod'])->name('paymentmethod');
-// Front End Restaurant View 
+
+// Frontend Restaurant
 Route::get('/restaurant/{partner:slug}', [RestaurantPageController::class, 'view'])->name('restaurant.view');
 Route::get('/restaurants', [RestaurantPageController::class, 'show'])->name('restaurant.show');
-// Flowerstore 
+
+// Flowerstore
 Route::get('/flowerstore/{partner:slug}', [RestaurantPageController::class, 'view'])->name('flowerstore.view');
 Route::get('/flowerstore', [FlowerstoreController::class, 'show'])->name('flowerstore.show');
 
-/// Errand 
+// Errand
 Route::get('/request/booking', [RequestController::class, 'index'])->name('new.bookings');
-Route::get('/request-booking/completed', 'Booking\RequestController@success')->name('booking.success');
-// Category 
-Route::get('/category/{category}', 'CategoryController@bepartner')->name('category.section');
-Route::get('/partner/{partner}', 'PartnerController@bepartner')->name('partner.section');
-Route::post('newsletter/submit', 'NewsletterController@subscribe')->name('newsletter.submit');
-Route::get('/user/profile', 'ProfileController@index')->name('profile.home');
-Route::get('profile/soa', 'Merchant\ReportController@soa')->name('merchant.dashboard.report.soa');
-// Checkout 
-// 
-Route::post('login/submit', 'Api\User\AccessController@loginAccess')->name('login.submit');
-Route::post('contact/submit', 'PageController@storeContact')->name('contact.submit');
+Route::get('/request-booking/completed', [\App\Http\Controllers\Booking\RequestController::class, 'success'])->name('booking.success');
 
-Route::group(['middleware' => 'auth'], function() {
-    
-  Route::get('/checkout', 'Checkout\PageController@index')->name('checkout.index');
-  Route::get('checkout/{cart:order_no}/success', 'Api\CartController@success')->name('checkout.success');
-  // Dashboard 
-  Route::get('/dashboard', 'Booking\RequestController@bookings')->name('profile.dashboard');
-  //** BOOKINGS
-  Route::get('/profile/bookings', 'Booking\RequestController@bookings')->name('profile.bookings');
-  // Orders 
-  Route::get('/profile/orders', 'Order\OrderHistoryController@index')->name('profile.orders');
-  Route::get('/profile/order/{cart:order_no}', 'Order\OrderHistoryController@view')->name('profile.orders.view');
+// Category & Partner
+Route::get('/category/{category}', [\App\Http\Controllers\CategoryController::class, 'bepartner'])->name('category.section');
+Route::get('/partner/{partner}', [\App\Http\Controllers\PartnerController::class, 'bepartner'])->name('partner.section');
 
-  Route::get('/logout', 'Merchant\DashboardController@showPasswordResetForm');
-  
+Route::post('newsletter/submit', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])->name('newsletter.submit');
+
+// User Profile
+Route::get('/user/profile', [ProfileController::class, 'index'])->name('profile.home');
+
+// SOA
+Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('merchant.dashboard.report.soa');
+
+// API
+Route::post('login/submit', [\App\Http\Controllers\Api\User\AccessController::class, 'loginAccess'])->name('login.submit');
+Route::post('contact/submit', [PageController::class, 'storeContact'])->name('contact.submit');
+
+
+// -------------------------------------------------------
+// LOGGED IN USER ROUTES
+// -------------------------------------------------------
+Route::middleware('auth')->group(function () {
+
+    Route::get('/dashboard', function () {
+        return Inertia::render('Dashboard');
+    })->middleware(['verified'])->name('dashboard');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Checkout
+    Route::get('/checkout', [\App\Http\Controllers\Checkout\PageController::class, 'index'])->name('checkout.index');
+    Route::get('checkout/{cart:order_no}/success', [\App\Http\Controllers\Api\CartController::class, 'success'])->name('checkout.success');
+
+    // Dashboard & Bookings
+    Route::get('/dashboard', [\App\Http\Controllers\Booking\RequestController::class, 'bookings'])->name('profile.dashboard');
+    Route::get('/profile/bookings', [\App\Http\Controllers\Booking\RequestController::class, 'bookings'])->name('profile.bookings');
+
+    // Orders
+    Route::get('/profile/orders', [\App\Http\Controllers\Order\OrderHistoryController::class, 'index'])->name('profile.orders');
+    Route::get('/profile/order/{cart:order_no}', [\App\Http\Controllers\Order\OrderHistoryController::class, 'view'])->name('profile.orders.view');
+
+    Route::get('/logout', [\App\Http\Controllers\Merchant\DashboardController::class, 'showPasswordResetForm']);
 });
 
-// **********************************************************************
-// **********************************************************************
-// ********************** Admin Dashboard *******************************
-// **********************************************************************
-// **********************************************************************
- 
+
+// -------------------------------------------------------
+// ADMIN PANEL
+// -------------------------------------------------------
+
 Route::get('/data/login', [DashboardController::class, 'login']);
 Route::post('/data/dashboard/login/submit', [DashboardController::class, 'validateLogin'])->name('dashboard.login.submit');
 Route::get('/data/dashboard/logout', [DashboardController::class, 'logout'])->name('dashboard.logout');
 
-// Admin 
-Route::group(['middleware' => 'admin'], function() {
-	
-  Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
-  Route::get('data/dashboard/orders', [DashboardController::class, 'index'])->name('dashboard.orders');
-  Route::get('data/dashboard/bookings', [DashboardController::class, 'index'])->name('dashboard.bookings');
+Route::middleware('admin')->group(function () {
 
-  Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
+    Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
+    Route::get('data/dashboard/orders', [DashboardController::class, 'index'])->name('dashboard.orders');
+    Route::get('data/dashboard/bookings', [DashboardController::class, 'index'])->name('dashboard.bookings');
 
-  Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
-  Route::get('data/dashboard/riders', [DashboardController::class, 'index'])->name('dashboard.rider');
-  Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
-  Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
 
-  Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
-  Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
-  Route::get('data/dashboard/report/riders', [DashboardController::class, 'index'])->name('dashboard.report.riders');
+    Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
+    Route::get('data/dashboard/riders', [DashboardController::class, 'index'])->name('dashboard.rider');
+    Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
+    Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
 
-  Route::get('merchant/aulogin/{id}', function($loginId, Request $request) {
+    Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
+    Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
+    Route::get('data/dashboard/report/riders', [DashboardController::class, 'index'])->name('dashboard.report.riders');
 
-      Auth::logout();
-      $request->session()->invalidate();
-      $request->session()->regenerateToken();
+    // Auto-login as merchant
+    Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request) {
 
-      $user = User::find($loginId);
-      Auth::login($user, true);
+        \Illuminate\Support\Facades\Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-      return redirect()->route('merchant.dashboard.index');
-  });
+        $user = \App\Models\User::find($loginId);
+        \Illuminate\Support\Facades\Auth::login($user, true);
 
+        return redirect()->route('merchant.dashboard.index');
+    });
 });
 
-// End of the Admin Dashboard 
-// **********************************************************************
-// **********************************************************************
-// **********************************************************************
-// ******************* Merchant Dashboard *******************************
-// **********************************************************************
-// **********************************************************************
+// -------------------------------------------------------
+// MERCHANT DASHBOARD
+// -------------------------------------------------------
 
-Route::get( '/login/{social}', 'SocialLoginController@getSocialRedirect' );
-Route::get( '/login/{social}/callback', 'SocialLoginController@getSocialCallback' );
+Route::get('/login/{social}', [\App\Http\Controllers\SocialLoginController::class, 'getSocialRedirect']);
+Route::get('/login/{social}/callback', [\App\Http\Controllers\SocialLoginController::class, 'getSocialCallback']);
 
 Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
 Route::get('/merchant/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
 Route::get('/merchant/register', [\App\Http\Controllers\Merchant\DashboardController::class, 'register'])->name('merchant.register');
 
-Route::get('/merchant/forgot', 'Merchant\DashboardController@forgot')->name('merchant.forgot');
-Route::get('/merchant/reset', 'Merchant\DashboardController@forgot')->name('merchant.reset');
-Route::get('/merchant/logout', 'Merchant\DashboardController@logout')->name('merchant.logout');
-Route::get('/merchant/setpassword', 'Merchant\DashboardController@setPassword')->name('merchant.setPassword');
+Route::get('/merchant/forgot', [\App\Http\Controllers\Merchant\DashboardController::class, 'forgot'])->name('merchant.forgot');
+Route::get('/merchant/reset', [\App\Http\Controllers\Merchant\DashboardController::class, 'forgot'])->name('merchant.reset');
+Route::get('/merchant/logout', [\App\Http\Controllers\Merchant\DashboardController::class, 'logout'])->name('merchant.logout');
+Route::get('/merchant/setpassword', [\App\Http\Controllers\Merchant\DashboardController::class, 'setPassword'])->name('merchant.setPassword');
 
-Route::post('/merchant/dashboard/login/submit', 'Merchant\DashboardController@validateLogin')->name('merchant.login.submit');
-Route::post('/merchant/register/submit', 'Merchant\DashboardController@storeMerchant')->name('merchant.register.submit');
-Route::post('/merchant/reset/submit', 'Merchant\DashboardController@reset')->name('merchant.reset.submit');
+Route::post('/merchant/dashboard/login/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'validateLogin'])->name('merchant.login.submit');
+Route::post('/merchant/register/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'storeMerchant'])->name('merchant.register.submit');
+Route::post('/merchant/reset/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'reset'])->name('merchant.reset.submit');
 
-Route::get('/merchant/reset-password/{token}', 'Merchant\DashboardController@showPasswordResetForm');
-Route::post('/merchant/reset-password/{token}', 'Merchant\DashboardController@resetPassword');
+Route::get('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\DashboardController::class, 'showPasswordResetForm']);
+Route::post('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\DashboardController::class, 'resetPassword']);
 
-Route::group(['middleware' => 'merchant'], function() {
+Route::middleware('merchant')->group(function () {
 
-	Route::get('merchant/verify-status', 'Merchant\DashboardController@verification')->name('merchant.status');
-	Route::get('merchant/dashboard', 'Merchant\DashboardController@index')->name('merchant.dashboard.index');
-	Route::get('merchant/products', 'Merchant\ItemsController@index')->name('merchant.dashboard.product');
-	Route::get('merchant/product/{product}/edit', 'Merchant\ItemsController@edit')->name('merchant.dashboard.product.edit');
-	Route::get('merchant/products-addons', 'Merchant\ItemsController@productaddons')->name('merchant.dashboard.product-addons');
-	// Order 
-	Route::get('merchant/orders', 'Merchant\OrderController@index')->name('merchant.dashboard.orders');
-	Route::get('merchant/previous-orders', 'Merchant\OrderController@previous')->name('merchant.dashboard.previous-order');
-	// Settings 
-	Route::get('merchant/location', 'Merchant\LocationController@index')->name('merchant.dashboard.location');
-	Route::get('merchant/category', 'Merchant\CategoryController@index')->name('merchant.dashboard.category');
-	Route::get('merchant/settings', 'Merchant\SettingsController@index')->name('merchant.dashboard.settings');
-	Route::get('merchant/voucher', 'Merchant\VoucherController@index')->name('merchant.dashboard.voucher');
-	// Report
-	Route::get('merchant/report-sales-for-today', 'Merchant\ReportController@today')->name('merchant.dashboard.report.salestoday');
-	Route::get('merchant/report-sales', 'Merchant\ReportController@salesReport')->name('merchant.dashboard.report.report');
-	Route::get('merchant/soa', 'Merchant\ReportController@soa')->name('merchant.dashboard.report.soa');
+    Route::get('merchant/verify-status', [\App\Http\Controllers\Merchant\DashboardController::class, 'verification'])->name('merchant.status');
+    Route::get('merchant/dashboard', [\App\Http\Controllers\Merchant\DashboardController::class, 'index'])->name('merchant.dashboard.index');
 
+    Route::get('merchant/products', [\App\Http\Controllers\Merchant\ItemsController::class, 'index'])->name('merchant.dashboard.product');
+    Route::get('merchant/product/{product}/edit', [\App\Http\Controllers\Merchant\ItemsController::class, 'edit'])->name('merchant.dashboard.product.edit');
+
+    Route::get('merchant/products-addons', [\App\Http\Controllers\Merchant\ItemsController::class, 'productaddons'])->name('merchant.dashboard.product-addons');
+
+    Route::get('merchant/orders', [\App\Http\Controllers\Merchant\OrderController::class, 'index'])->name('merchant.dashboard.orders');
+    Route::get('merchant/previous-orders', [\App\Http\Controllers\Merchant\OrderController::class, 'previous'])->name('merchant.dashboard.previous-order');
+
+    // Settings
+    Route::get('merchant/location', [\App\Http\Controllers\Merchant\LocationController::class, 'index'])->name('merchant.dashboard.location');
+    Route::get('merchant/category', [\App\Http\Controllers\Merchant\CategoryController::class, 'index'])->name('merchant.dashboard.category');
+    Route::get('merchant/settings', [\App\Http\Controllers\Merchant\SettingsController::class, 'index'])->name('merchant.dashboard.settings');
+    Route::get('merchant/voucher', [\App\Http\Controllers\Merchant\VoucherController::class, 'index'])->name('merchant.dashboard.voucher');
+
+    // Reports
+    Route::get('merchant/report-sales-for-today', [\App\Http\Controllers\Merchant\ReportController::class, 'today'])->name('merchant.dashboard.report.salestoday');
+    Route::get('merchant/report-sales', [\App\Http\Controllers\Merchant\ReportController::class, 'salesReport'])->name('merchant.dashboard.report.report');
+    Route::get('merchant/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('merchant.dashboard.report.soa');
 });
-
-
-
-
-require __DIR__.'/auth.php';
-
-
-
-

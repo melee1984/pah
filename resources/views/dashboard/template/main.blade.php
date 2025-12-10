@@ -6,6 +6,7 @@
   <meta http-equiv="x-ua-compatible" content="ie=edge">
 
   <title>Pahatud | Admin Dashboard</title>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
   <!-- overlayScrollbars -->
@@ -20,7 +21,7 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
 
-  @vite('resources/js/app.js')
+  @vite('resources/js/dashboard.js')
 
   <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 
@@ -81,9 +82,12 @@
 
 <!-- REQUIRED SCRIPTS -->
 <!-- jQuery -->
-<script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
+<!-- <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script> -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <!-- jQuery UI 1.11.4 -->
-<script src="{{ asset('adminlte/plugins/jquery-ui/jquery-ui.min.js') }}"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
   $.widget.bridge('uibutton', $.ui.button)
@@ -105,7 +109,7 @@
 <!-- AdminLTE for demo purposes -->
 <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
-<script src="{{ asset('js/dashboard.js') }}" defer></script>
+@vite('resources/js/dashboard.js')
 
 <script type="text/javascript">
   var page_url = "{{ Request::path() }}";
@@ -130,8 +134,6 @@
     })
 
     $('#reservationdate').inputmask('dd/mm/yyyy', { 'placeholder': 'dd/mm/yyyy' })
-
-  
 
   });
    

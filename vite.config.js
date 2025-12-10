@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue2';
 import path from 'path';
-import { viteStaticCopy } from 'vite-plugin-static-copy'
+import commonjs from '@rollup/plugin-commonjs';
 
 export default defineConfig({
     plugins: [
@@ -24,20 +24,27 @@ export default defineConfig({
                 },
             },
         }),
+        commonjs(), 
     ],
-
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'resources/js'),
+            // '@sass': path.resolve(__dirname, 'resources/sass'),
             '@fonts': '/resources/fonts',
             '@node_modules': path.resolve(__dirname, 'node_modules'),
             'vue': path.resolve(__dirname, 'node_modules/vue/dist/vue.esm.js'),
         },
     },
     optimizeDeps: {
-        exclude: ['vue2-google-maps']
+         exclude: ['vue2-google-maps'],
     },
-
+     css: {
+        preprocessorOptions: {
+            scss: {
+                // additionalData: `@import "@sass/_pahatud.scss";`
+            },
+        },
+    },
     build: {
         outDir: 'public/build',
         manifest: true,

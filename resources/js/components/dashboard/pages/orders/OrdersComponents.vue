@@ -76,7 +76,7 @@
       </div><!-- /.card-body -->
     </div>
 
-     <div v-if="selectedOrder" class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+     <div class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -118,16 +118,16 @@
                                     </div>
                                     <!-- col-lg-6 end here -->
                                     <div class="col-lg-12">
-                                        Estimated Date/Time: <br><b> {{ selectedOrder.cart.delivery_date }} - {{ selectedOrder.cart.delivery_time }}</b> <br><br>
+                                        Estimated Date/Time: <br><b> {{ selectedOrder?.cart?.delivery_date }} - {{ selectedOrder?.cart?.delivery_time }}</b> <br><br>
 
                                         Merchant: <br>
-                                        <strong>{{ selectedOrder.partner.restaurant_name }} </strong> <br>
-                                        {{ selectedOrder.cart.partnerlocation.address_1 }}, {{ selectedOrder.cart.partnerlocation.address_2 }}, <br>{{ selectedOrder.cart.partnerlocation.mobile }} 
+                                        <strong>{{ selectedOrder?.partner?.restaurant_name }} </strong> <br>
+                                        {{ selectedOrder?.cart?.partnerlocation.address_1 }}, {{ selectedOrder?.cart?.partnerlocation.address_2 }}, <br>{{ selectedOrder?.cart?.partnerlocation.mobile }} 
                                         <br>
                                         <br>
                                         <p><b>Details</b></p>
                                         <table class="table">
-                                           <tr v-for="item in selectedOrder.cart.details">
+                                           <tr v-for="item in selectedOrder?.cart?.details">
                                             <td>
                                               {{ item.item.title }}
                                                <span v-for="it in item.variance_content">
@@ -147,17 +147,17 @@
 
                                           <p><b>Customer:</b> <br>
 
-                                          {{ selectedOrder.cart.fullname }} <br>
-                                          <span v-if="selectedOrder.cart.address">Address: {{ selectedOrder.cart.address.address_1 }}</span> <br>
-                                          <span v-if="selectedOrder.cart.mobile">Mobile: {{ selectedOrder.cart.mobile }}</span>
+                                          {{ selectedOrder?.cart?.fullname }} <br>
+                                          <span v-if="selectedOrder?.cart?.address">Address: {{ selectedOrder?.cart?.address.address_1 }}</span> <br>
+                                          <span v-if="selectedOrder?.cart?.mobile">Mobile: {{ selectedOrder?.cart?.mobile }}</span>
                                         </p>
 
                                         <p> 
                                             <b>Summary:</b> <br>
-                                            Sub Total: {{ selectedOrder.summary.sub_total }} <br>
-                                            Delivery Fee: {{ selectedOrder.summary.delivery_fee }} <br>
-                                            Discount: {{ selectedOrder.summary.discount }} <br>
-                                          Total: {{ selectedOrder.summary.total }} <br>
+                                            Sub Total: {{ selectedOrder?.summary?.sub_total }} <br>
+                                            Delivery Fee: {{ selectedOrder?.summary?.delivery_fee }} <br>
+                                            Discount: {{ selectedOrder?.summary?.discount }} <br>
+                                          Total: {{ selectedOrder?.summary?.total }} <br>
                                         </p>
 
                                         <div class="invoice-footer mt25">
@@ -179,7 +179,6 @@
                     <!-- col-lg-12 end here -->
                 </div>
                 </div>
-              </p>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn" data-dismiss="modal">Close</button>
@@ -271,9 +270,12 @@
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
+               // Show Bootstrap modal
+                const modalEl = document.getElementById('orderDetails');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+
           }
-          
         }
     }
 

@@ -188,11 +188,12 @@ class Cart extends Model
             $user_coordinate = $this->user_lat.",".$this->user_long;
 
             $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
-            $this->delivery_fee = $data['rate'];
-            $this->distance_rate = $data['distance'];
-            $this->duration = $data['duration'];
-            $this->origin = $data['origin'];
-            $this->destination = $data['destination'];
+            //
+            $this->delivery_fee = $data['rate'] ?? 0;
+            $this->distance_rate = $data['distance'] ?? 0;
+            $this->duration = $data['duration'] ?? '';
+            $this->origin = $data['origin'] ?? '';
+            $this->destination = $data['destination'] ?? '';
 
             // $this->delivery_fee = 50;
             // $this->distance_rate = "7KM";
