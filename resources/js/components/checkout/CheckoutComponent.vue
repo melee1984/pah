@@ -132,7 +132,8 @@
               pickup: {
                 date: "",
                 time: "",
-              }
+              }, 
+              modalSMSInstance: null,
           }
         },
           created() {
@@ -143,6 +144,13 @@
         },
         mounted() {
             this.fetchData();
+            // modal initialize 
+            const modalEl = document.getElementById("smsNotification");
+            this.modalSMSInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
+            
         },
         computed: {
             formOkay: function () {
@@ -189,7 +197,8 @@
               if (this.timerInterval == 0) {
                   axios.post('/api/checkout/sms/submit?api_token='+api_token).then((response) => {
                     if (response.data.status) {
-                      $('#smsNotification').modal(); this.resetOTP();
+                      this.openSMSNofication();
+                      this.resetOTP();
                     }
                     else {
                       toastr.error(response.data.message);
@@ -199,7 +208,7 @@
                   }); 
               }
               else {
-                  $('#smsNotification').modal();
+                  this.openSMSNofication();
               }
             },
             actionProfile: function(action) {
@@ -213,9 +222,12 @@
                   self.cart = response.data.cart;
                   self.summary = response.data.summary;
                   self.payments = response.data.payment;
+                  // not sure we have this. but maybe we have that avialable. 
                   self.delivery_time = response.data.delivery_time;
+                  // Delivery Date and time 
+                  self.dateArray = response.data.delivery_time;
+                  self.timingsArray = self.dateArray[0].times;
 
-                  self.dateArray = response.data.timings;
                   // Set by Default 
                   self.pickup.date = "";
                   self.pickup.time = "";
@@ -226,27 +238,26 @@
                   else {
                     self.pickup.date = self.dateArray[0].date;
                   }
-                  self.timingsArray = self.dateArray[0].timings;
+                  
                   if (self.cart.delivery_time) {
                     self.pickup.date = self.cart.delivery_time;
                   }
                   else {
-                    self.pickup.time = self.timingsArray[0].time;
+                    self.pickup.time = self.timingsArray[0].time; // but default should be now. 
                   }
                   
               })
               .catch(function (error) {
                   console.log(error);
               });
-
             },
             validate: function() {
             },
             editAccount: function() {
             },
             removeAddress: function(address) {
-              this.addresses.splice(address, 1);
-              this.fetchData();
+              this.addresses.splice(address, 0);
+              // this.fetchData();
             },
             updateCartAddress: function(address_id) {
                 this.cart.address_id = address_id;
@@ -259,8 +270,8 @@
             },
             selectPaymentOption: function(payment_id) {
 
-              $('#payment_option .card').removeClass('border-danger active');
-              $('#payment_'+payment_id).addClass('border-danger active');
+              $('#payment_option .card').removeClass('border-success active');
+              $('#payment_'+payment_id).addClass('border-success active');
 
                 let formData = new FormData();
                 formData.append('payment', payment_id)
@@ -297,6 +308,21 @@
               this.timingsArray = this.dateArray[selectedIndex-1].timings;
               this.pickup.time = this.timingsArray[0].time;
           },
+
+           openSMSNofication() {
+              if (!this.modalSMSInstance) {
+                const modalEl = document.getElementById("smsNotification");
+                this.modalSMSInstance = new bootstrap.Modal(modalEl);
+              }
+              this.modalSMSInstance.show();
+            },
+
+            closeSMSNofication() {
+              if (this.modalSMSInstance) {
+                this.modalSMSInstance.hide();
+              }
+            },
+            
             
         }
     }

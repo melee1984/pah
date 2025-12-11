@@ -449,7 +449,7 @@
 }
 
 #delivery_address .active {
-  background-color: #ffe6e6;
+  background-color: #e9ffe4;
 }
 
 #delivery_address .card-text {
@@ -466,7 +466,7 @@
 }
 
 #payment_option .active {
-  background-color: #ffe6e6;
+  background-color: #e9ffe4;
 }
 
 #payment_option .active .card-text {
@@ -475,7 +475,7 @@
 
 #payment_option .active .card-text .material-icons {
   font-size: 35px;
-  color: #f44336;
+  color: #e9ffe4;
 }
 
 #payment_option .card-text {

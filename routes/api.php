@@ -92,7 +92,7 @@ Route::post('merchant/forgot/submit', [PartnerController::class, 'resetPassword'
 // AUTHENTICATED API ROUTES
 // -------------------------------------------------------------
 
-Route::group(['middleware' => 'auth:api'], function () {
+Route::group(['middleware' => ['api', 'web']], function () {
 
     Route::post('checkout', [CartController::class, 'checkout']);
 
@@ -105,6 +105,7 @@ Route::group(['middleware' => 'auth:api'], function () {
     Route::post('checkout/profile/update/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'updateProfile']);
     Route::post('checkout/address/delete/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'deleteAddress']);
     Route::post('checkout/address/update/{userAddress}/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'updateAddress']);
+    Route::post('checkout/address/update/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'updateAddressSelected']);
     Route::post('checkout/address/add/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'addAddress']);
 
     Route::post('checkout/payment/update/submit', [CartController::class, 'updatePaymentGateway']);

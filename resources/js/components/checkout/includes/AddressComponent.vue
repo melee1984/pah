@@ -67,7 +67,6 @@
 </template>
 
 <script>
-   
     export default {
         data() {
           return {
@@ -94,17 +93,18 @@
         },
         computed: {
           validForm: function(){
-           if (localStorage.center) {
+            
+            if (localStorage.center) {
               var coordinates = JSON.parse(localStorage.center);
             }
 
-            if (!this.address.title) {
+            if (!this.addresses.title) {
               return false;
             }
-            else if (!this.address.address_1) {
+            else if (!this.addresses.address_1) {
               return false;
             }
-            else if (!this.address.landmark) {
+            else if (!this.addresses.landmark) {
               return false;
             }
             else  if (coordinates.lat=="") {
@@ -152,7 +152,9 @@
                 formData.append('address', address.id)
                 axios.post('/api/checkout/address/update/submit?api_token='+api_token, formData).then((response) => {
                   if (response.data.status) {
-                    this.$emit('onUpdateCartAddress', response.data.cart.address_id);
+
+                    
+                    this.$emit('onUpdateCartAddress', response.data.addresses.id);
                     toastr.success(response.data.message);
                   }
                   else {

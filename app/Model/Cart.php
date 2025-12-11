@@ -141,24 +141,99 @@ class Cart extends Model
    * [getTimingsSchedule description]
    * @return [type] [description]
    */
-  public function getTimingsSchedule()
-  {
+  // public function getTimingsSchedule()
+  // {
 
-    $data = array();
-    $begin = new DateTime(date('H:m', time()));
-    $end = new DateTime("19:00");
+  //   $data = array();
+  //   $begin = new DateTime(date('H:m', time()));
+  //   $end = new DateTime("19:00");
 
-    array_push($data, array('time' => 'ASAP'));
-    $interval = DateInterval::createFromDateString('45 min');
+  //   array_push($data, array('time' => 'ASAP'));
+  //   $interval = DateInterval::createFromDateString('45 min');
 
-    $times = new DatePeriod($begin, $interval, $end);
+  //   $times = new DatePeriod($begin, $interval, $end);
 
-    foreach ($times as $time) {
-      array_push($data, array('time' => $time->add($interval)->format('M d Y - g:i A')));
+  //   foreach ($times as $time) {
+  //     array_push($data, array('time' => $time->add($interval)->format('M d Y - g:i A')));
+  //   }
+
+  //   return $data;
+  // }
+
+ public function getTimingsSchedule(
+    $days = 2, 
+    $customDurationMinutes = 30, 
+    $customStartDate = null, 
+    $dayStartTime = '08:00', 
+    $dayEndTime = '23:00',
+    $intervalMinutes = 45
+) {
+    $data = [];
+
+    // Determine start date
+    $startDate = $customStartDate 
+        ? new DateTime($customStartDate) 
+        : new DateTime(); // default: today
+
+    $now = new DateTime(); // current time for comparison
+
+    for ($i = 0; $i < $days; $i++) {
+        $date = clone $startDate;
+        $date->modify("+$i day");
+        $dateString = $date->format('F d, Y');
+
+        $times = [];
+
+        // Determine start time
+        if ($i === 0) {
+            // First day: current time + custom duration
+            $begin = clone $now;
+            $begin->add(new DateInterval("PT{$customDurationMinutes}M"));
+
+            // Round up to the next interval
+            $minutes = (int)$begin->format('i');
+            $remainder = $intervalMinutes - ($minutes % $intervalMinutes);
+            if ($remainder != $intervalMinutes) {
+                $begin->add(new DateInterval("PT{$remainder}M"));
+            }
+
+            // Add ASAP as the first slot
+            $times[] = [
+                'time' => 'ASAP',
+                'disabled' => false
+            ];
+        } else {
+            // Other days: fixed start time
+            $begin = DateTime::createFromFormat('Y-m-d H:i', $date->format('Y-m-d') . " $dayStartTime");
+        }
+
+        // End time for the day
+        $end = DateTime::createFromFormat('Y-m-d H:i', $date->format('Y-m-d') . " $dayEndTime");
+
+        $interval = new DateInterval("PT{$intervalMinutes}M");
+        $period = new DatePeriod($begin, $interval, $end);
+
+        foreach ($period as $time) {
+            // Compare with current time only for today
+            $disabled = false;
+            if ($i === 0 && $time < $now) {
+                $disabled = true;
+            }
+
+            $times[] = [
+                'time' => $time->format('g:i A'),
+                'disabled' => $disabled
+            ];
+        }
+
+        $data[] = [
+            'date'  => $dateString,
+            'times' => $times,
+        ];
     }
 
     return $data;
-  }
+}
 
   /**
    * Validate and get the current delivery for this cart 
