@@ -93,12 +93,13 @@ export default {
     };
   },
   created() {
-    
     if (!localStorage.center) {
       this.getCurrentLocation();
     }
     if (localStorage.center) {
       this.coordinates = JSON.parse(localStorage.center);
+      this.latitude = this.coordinates.lat;
+      this.longitude = this.coordinates.lng;
     }
     if (localStorage.zoom) {
       this.zoom = parseInt(localStorage.zoom);
@@ -113,9 +114,7 @@ export default {
       const modalElement = document.getElementById("pinLocation");
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
-
       this.initMap();
-
     });
 
     Event.$on("CheckUserLocation", () => {
@@ -212,57 +211,75 @@ export default {
     validateFields: function () {
       let isValidated = true;
 
-      if (this.mapCoordinates.lat == "") {
+      if (this.coordinates.lat == "") {
         isValidated = false;
-      } else if (this.mapCoordinates.lng == "") {
+      } else if (this.coordinates.lng == "") {
         isValidated = false;
       }
       if (isValidated) {
         this.PinEnabled = true;
       }
     },
-    // usePlace(place) {
-    //   if (this.place) {
-    //     this.markers.push({
-    //       position: {
-    //         lat: this.place.geometry.location.lat(),
-    //         lng: this.place.geometry.location.lng(),
-    //       },
-    //     });
-    //     let center = {
-    //       lat: this.place.geometry.location.lat(),
-    //       lng: this.place.geometry.location.lng(),
-    //     };
-    //     let zoom = this.map.getZoom();
-    //     localStorage.center = JSON.stringify(center);
-    //     localStorage.zoom = zoom;
-    //     this.place = null;
-    //   }
-    //   this.setPin();
-    // },
+    usePlace(place) {
+      if (this.place) {
+        this.markers.push({
+          position: {
+            lat: this.place.geometry.location.lat(),
+            lng: this.place.geometry.location.lng(),
+          },
+        });
+        let center = {
+          lat: this.place.geometry.location.lat(),
+          lng: this.place.geometry.location.lng(),
+        };
+        let zoom = this.map.getZoom();
+        localStorage.center = JSON.stringify(center);
+        localStorage.zoom = zoom;
+        this.place = null;
+      }
+      this.setPin();
+    },
     // this should only run once but when click the map should load without issue//
 
     async initMapWithRetry(retries = 3, delay = 2000) {
-      if (!this.latitude || !this.longitude) {
-        const attempt = async (remaining) => {
-          try {
-            await this.initMap();
-            console.log("Map loaded successfully");
-          } catch (err) {
-            console.error("initMap failed:", err);
-            if (remaining === 0) return;
-            console.warn("Retrying map initialization…");
-            setTimeout(() => attempt(remaining - 1), delay);
-          }
-        };
-        attempt(retries);
-      }
-      else {
-        console.log("Map center exists, initializing map without retries");
-      }
-     
-    },
+        // --- CASE 1: No coordinates → load map with retry
+        if (!this.latitude || !this.longitude) {
 
+          const attempt = async (remaining) => {
+            try {
+              await this.initMap();
+              console.log("Map loaded successfully");
+            } catch (err) {
+              console.error("initMap failed:", err);
+              if (remaining === 0) return;
+              console.warn(`Retrying map initialization… (${remaining} left)`);
+              setTimeout(() => attempt(remaining - 1), delay);
+            }
+          };
+
+          attempt(retries);
+          return;
+        }
+
+        // --- CASE 2: Coordinates exist → verify session on backend
+        console.log("Coordinates found → checking existing session...");
+
+        try {
+          const response = await axios.post("/api/cart/validate-session", {
+            latitude: this.latitude,
+            longtitude: this.longitude,
+          });
+
+          if (response.data.status === "exists") {
+            console.log("Existing cart session found");
+          } else if (response.data.status === "created") {
+            console.log("New cart session created");
+          }
+
+        } catch (err) {
+          console.error("Error checking cart session:", err);
+        }
+    },
     async initMap() {
       const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
         google.maps.importLibrary("maps"),
@@ -375,8 +392,7 @@ export default {
 
         this.updateUserCartLocation();
 
-        Event.$emit('updateLocationAddress');
-
+        Event.$emit("updateLocationAddress");
       } catch (err) {
         console.error("Reverse geocode failed after retries:", err);
         this.address = "Unable to fetch address";

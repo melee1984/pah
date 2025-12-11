@@ -8,7 +8,7 @@
       </div>
     </div>
 
-    <div class="container-fluid p-0" id="restaurantView">
+    <div class="container-fluid" id="restaurantView">
       <div class="scroll">
         <nav class="text-center">
           <a

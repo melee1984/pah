@@ -161,9 +161,10 @@
 .category-fixed-on-the-top {
   background-color: white;
   /*padding: 5px 0px 48px 0px !important;*/
-  box-shadow: 0px -7px 7px #f9f9f9;
+  box-shadow: 5px 0px 7px #e6e6e6;
   z-index: 99;
   border-bottom: 1px solid #f1f1f1;
+  padding: 25px;
 }
 
 .img-banner {

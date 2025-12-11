@@ -72,6 +72,10 @@ Route::middleware(['api', 'web'])->group(function () {
     Route::post('item/add-cart', [CartController::class, 'addCart']);
 });
 
+Route::middleware(['web'])->group(function () {
+    Route::post('cart/validate-session', [CartController::class, 'validateSession']);
+});
+
 // Restaurants
 Route::get('restaurants', [RestaurantPageController::class, 'list']);
 Route::get('flowerstore', [FlowerstorePageController::class, 'list']);

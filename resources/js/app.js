@@ -131,4 +131,3 @@ Vue.use(VueSimpleAlert);
 window.vm = new Vue({
      el: '#app',
 });
-
