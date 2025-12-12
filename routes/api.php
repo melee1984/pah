@@ -156,7 +156,7 @@ Route::group(['middleware' => ['api', 'web']], function () {
 // MERCHANT OPEN APIs (No Auth)
 // ----------------------------------------------------------------------
 
-Route::prefix('merchant')->middleware(['auth:api'])->group(function () {
+Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
         
     Route::post('product/submit', [MerchantItemController::class, 'store']);
     Route::get('product/requirement', [MerchantItemController::class, 'requirementList']);

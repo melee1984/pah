@@ -159,7 +159,7 @@
         methods: {
           fetchData: function(page = 1) {
               var self = this;
-              axios.get('/api/merchant/product/list?page='+page).then(function (response) {
+              axios.get('/api/merchant/product/list?api_token='+api_token+'&page='+page).then(function (response) {
                   self.products = response.data.products;
                   self.productsTemp = self.products.data;
               })
@@ -173,9 +173,10 @@
           filterProduct: function() {
             console.log('test');
           },
+          
           filterCategory: function(category) {
               var self = this;
-              axios.post('/api/merchant/product/category/list', {
+              axios.post('/api/merchant/product/category/list?api_token='+api_token, {
                 category_id: category.id
               }).then(function (response) {
                   self.products = response.data.products;
@@ -188,7 +189,7 @@
           submitRecord: function() {
                 this.isSubmit = true;
                 if (this.validateForm()) {
-                     axios.post('/api/merchant/register/submit', {
+                     axios.post('/api/merchant/register/submit?api_token='+api_token, {
                         restaurant_name: this.field.restaurant_name,
                         firstname: this.field.firstname,
                         lastname: this.field.lastname,
@@ -215,7 +216,7 @@
                 return false;
             },
              updateStatus: function(product, val) {
-                axios.put('/api/merchant/product/'+product+'/status/submit', {
+                axios.put('/api/merchant/product/'+product+'/status/submit?api_token='+api_token, {
                   active: val
                 }).then((response) => {
                     if (response.data.status) {
