@@ -108,5 +108,9 @@ class PageController extends Controller
         return view('pages.demo.map');  
     }
 
+    public function restriction() 
+    {
+        return view('pages.location_restriction');  
+    }   
 
 }

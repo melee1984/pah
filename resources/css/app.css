@@ -239,8 +239,19 @@
   border-radius: 28px !important;
   width: 25px;
   text-align: right;
+  
 }
-
+.icon-theme-red {
+    font-size: 200px;
+    color: #fa5d5a;
+}
+a.btn-pahatud {
+  padding: 10px;
+}
+a.btn-pahatud:hover{ 
+  color: #e9e9e9;
+  padding: 10px;
+}
 .variant-title {
   font-size: 16px;
   font-weight: bold;

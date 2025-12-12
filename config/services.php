@@ -38,5 +38,10 @@ return [
     'google' => [
         'maps_key' => env('GOOGLE_MAPS_KEY'),
     ],
+    'delivery' => [
+        'rate' => env('DELIVERY_STARTING_RATE', 45),
+        'additional_km_rate' => env('ADDITIONAL_KM_RATE', 15),
+        
+    ],
 
 ];

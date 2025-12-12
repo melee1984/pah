@@ -131,7 +131,7 @@ export default {
     // this.validateFields();
   },
   mounted() {
-    this.initMapWithRetry(3, 2000);
+    this.initMapWithRetry(2, 2000);
   },
   computed: {
     // mapCoordinates() {
@@ -260,10 +260,8 @@ export default {
           attempt(retries);
           return;
         }
-
         // --- CASE 2: Coordinates exist → verify session on backend
         console.log("Coordinates found → checking existing session...");
-
         try {
           const response = await axios.post("/api/cart/validate-session", {
             latitude: this.latitude,
@@ -375,6 +373,8 @@ export default {
       } catch (err) {
         console.error("Failed to get location after retries:", err);
         alert("Unable to retrieve your location.");
+        // should be redirect to the page doesn't have location
+        window.location.replace('/location-restriction');
       }
     },
 

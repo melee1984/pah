@@ -31,7 +31,6 @@ class CartController extends Controller
     //
     public function index()
     {
-
         $session_id = Session::getId();
         $data = array();
         $product_items = array();
@@ -463,7 +462,6 @@ class CartController extends Controller
 
     public function process(Request $request)
     {
-
         $rules = [
             'smsCode' => 'required',
         ];

@@ -12,9 +12,9 @@
   	</div>
 
      <div class="row" v-if="addressAction=='view'">
-        <div class="col-md-4 col-sm-6 col-12 pr-1 pl-3" :id="'main_'+address.id" v-for="(address, index) in addresses">
-          <div class="card mr-1 mb-3" v-bind:class="{ active: address.id ==selectedaddressid }" :id="'address_'+address.id">
-              <div class="card-body p-3">
+        <div class="col-md-4 col-sm-6" :id="'main_'+address.id" v-for="(address, index) in addresses">
+          <div class="card mb-3" v-bind:class="{ active: address.id ==selectedaddressid }" :id="'address_'+address.id">
+              <div class="card-body">
                 <div class="text-right">
                    <a href="javascript:void(0)" alt="Edit" v-on:click="editAddress(address)" clas="action-link"><span class="material-icons">edit</span></a>
                    <a href="javascript:void(0)" alt="Delete" v-on:click="deleteAddress(address.id, index)" class="action-link"><span class="material-icons">delete</span></a>
@@ -27,9 +27,8 @@
               </div>
             </div>
           </div>
-
-          <div class="col-md-12 text-checkout-danger" v-if="selectedaddressid==null">
-            Note: Please select delivery address
+           <div class="col-md-12 text-checkout-danger" v-if="selectedaddressid==null">
+              Note: Please select delivery address
           </div>
       </div>
    </div>

@@ -36,16 +36,23 @@
                       <div class="row">
                       <div class="col-md-12" id="payment_option">
                         <h2 class="mt-3">Payment</h2>
-                         <div v-for="payment in payments" class="card mr-3 mb-3" v-bind:class="{ active: payment.id ==cart.payment_id }" style="width: 14rem;float:left;" :id="'payment_'+payment.id" v-on:click="selectPaymentOption(payment.id)">
-                          <div class="card-body p-2">
-                          <h6 class="card-title">{{ payment.title }}</h6>
-                            <p class="card-text">
-                              {{ payment.description }}
-                            </p>
-                            <span class="material-icons">{{ payment.class }}</span>
+                        <div class="row g-3">
+                          <div 
+                            v-for="payment in payments" 
+                            class="card col-md-4 m-1" 
+                            v-bind:class="{ active: payment.id == cart.payment_id }"  
+                            :id="'payment_' + payment.id" 
+                            v-on:click="selectPaymentOption(payment.id)"
+                          >
+                            <div class="card-body">
+                              <h6 class="card-title">{{ payment.title }}</h6>
+                              <p class="card-text">
+                                {{ payment.description }}
+                              </p>
+                              <span class="material-icons">{{ payment.class }}</span>
+                            </div>
                           </div>
                         </div>
-                    
                       </div>
                       <div class="col-md-12 text-checkout-danger" v-if="cart.payment_id==null"> 
                         Note: Please select payment gateway

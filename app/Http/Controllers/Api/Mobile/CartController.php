@@ -34,8 +34,6 @@ class CartController extends Controller
      */
     public function addCart(Request $request, $action = false) {
 
-
-
     	$data = array();
         $data['status'] = 1;
         $isNew = false;
@@ -313,10 +311,7 @@ class CartController extends Controller
         
         $data['cart'] =  $cart;
         $data['summary'] = $summary;
-       
-
         return $data;
-
     }
 
      public function modifyCartItem(Request $request, CartItem $cartItem, $status) {

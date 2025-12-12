@@ -73,6 +73,7 @@ import bookingForm from '@/components/booking/BookingComponent.vue';
 // Map
 import userCurrentLocation from '@/components/map/UserCurrentLocationComponent.vue';
 import userCurrentLocationDisplay from '@/components/map/UserCurrentLocationDisplayComponent.vue';
+import simpleGeoLocation from '@/components/map/SimpleGeoLocationComponent.vue';
 
 // Cart
 import cartBasket from '@/components/cart/BasketComponent.vue';
@@ -114,6 +115,8 @@ Vue.component('user-current-location-display', userCurrentLocationDisplay);
 Vue.component('cart-basket-summary', cartBasket);
 Vue.component('map-demo', dempMap);
 Vue.component('sample-map', demoMap2);
+Vue.component('get-current-location', simpleGeoLocation);
+
 
 /**
  * Mount Vue App

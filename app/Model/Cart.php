@@ -13,6 +13,7 @@ use DB;
 
 
 use App\Model\DeliveryDistance;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 class Cart extends Model
 {
@@ -349,5 +350,18 @@ class Cart extends Model
     return $total;
   }
 
+  public function isEmpty(): bool
+  {
+     $session_id = session()->getId();
+     // Retrieve cart for current session
+      $cart = Cart::where('session_id', $session_id)->first();
+
+      // If no cart exists or it has no items, return true
+      if (!$cart || $cart->cartItemList()->count() === 0) {
+          return true;
+      }
+
+      return false;
+  }
 
 }

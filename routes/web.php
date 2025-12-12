@@ -22,9 +22,9 @@ use Illuminate\Support\Facades\Route;
  */
 
 Auth::routes(['verify' => true]);
-
-Route::get('/demo', [PageController::class, 'demoMap']);
 Route::get('/', [PageController::class, 'index']);
+Route::get('/location-restriction', [PageController::class, 'restriction'])->name('location.restriction')   ;
+Route::get('/demo', [PageController::class, 'demoMap']);
 
 Route::get('/imager', [\App\Http\Controllers\ImageController::class, 'image'])->name('cacheImage');
 // Route::get('/image/size', [\App\Http\Controllers\ImageController::class, 'imageResize'])->name('image-resize');

@@ -66,9 +66,10 @@ class DeliveryDistance extends Model
 
 			// Compute rate
 			if (ceil($distance) <= 1) {
-				$rate = 25;
+				\Log::info('Distance is within 1 km, applying base rate.');
+				$rate = config('services.delivery.rate');;
 			} else {
-				$rate = 25 + ((ceil($distance) - 1) * 10);
+				$rate = config('services.delivery.rate') + ((ceil($distance) - 1) *  config('services.delivery.additional_km_rate'));
 			}
 
 			$data = [
