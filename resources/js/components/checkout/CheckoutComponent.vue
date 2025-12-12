@@ -35,24 +35,24 @@
                   <div class="card-body">
                       <div class="row">
                       <div class="col-md-12" id="payment_option">
-                        <h2 class="mt-3">Payment</h2>
-                        <div class="row g-3">
-                          <div 
+                        <h2 class="mt-3 mb-1">Payment</h2>
+                        <p class="text-muted mb-3"><small>Select a payment option.</small></p>
+                        <!-- Payment Options -->
+                        <ul class="list-group">
+                          <li 
                             v-for="payment in payments" 
-                            class="card col-md-4 m-1" 
-                            v-bind:class="{ active: payment.id == cart.payment_id }"  
-                            :id="'payment_' + payment.id" 
-                            v-on:click="selectPaymentOption(payment.id)"
+                            :key="payment.id"
+                            class="list-group-item d-flex justify-content-between align-items-center"
+                            :class="{ active: payment.id == cart.payment_id }"
+                            @click="selectPaymentOption(payment.id)"
                           >
-                            <div class="card-body">
-                              <h6 class="card-title">{{ payment.title }}</h6>
-                              <p class="card-text">
-                                {{ payment.description }}
-                              </p>
-                              <span class="material-icons">{{ payment.class }}</span>
+                            <div>
+                              <div class="fw-bold">{{ payment.title }}</div>
+                              <p class="mb-0"><small>{{ payment.description }}</small></p>
                             </div>
-                          </div>
-                        </div>
+                            <span class="material-icons">{{ payment.class }}</span>
+                          </li>
+                        </ul>
                       </div>
                       <div class="col-md-12 text-checkout-danger" v-if="cart.payment_id==null"> 
                         Note: Please select payment gateway

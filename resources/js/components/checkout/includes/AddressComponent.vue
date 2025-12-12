@@ -11,26 +11,42 @@
   		</div>
   	</div>
 
-     <div class="row" v-if="addressAction=='view'">
-        <div class="col-md-4 col-sm-6" :id="'main_'+address.id" v-for="(address, index) in addresses">
-          <div class="card mb-3" v-bind:class="{ active: address.id ==selectedaddressid }" :id="'address_'+address.id">
-              <div class="card-body">
-                <div class="text-right">
-                   <a href="javascript:void(0)" alt="Edit" v-on:click="editAddress(address)" clas="action-link"><span class="material-icons">edit</span></a>
-                   <a href="javascript:void(0)" alt="Delete" v-on:click="deleteAddress(address.id, index)" class="action-link"><span class="material-icons">delete</span></a>
-                </div>
-                <div  v-on:click="selectAddress(address)" >
-                  <h5 class="card-title">{{ address.title }}</h5>
-                   <p class="card-text">{{ address.address_1 }}</p>
-                   <p><strong><small>Note: {{ address.landmark }}</small></strong></p>
-                  </div>
-              </div>
-            </div>
-          </div>
-           <div class="col-md-12 text-checkout-danger" v-if="selectedaddressid==null">
-              Note: Please select delivery address
-          </div>
-      </div>
+    <!-- address --> 
+
+     <div v-if="addressAction === 'view'">
+    <ul class="list-group">
+      <li 
+        v-for="(address, index) in addresses" 
+        :key="address.id"
+        class="list-group-item d-flex justify-content-between align-items-start"
+        :class="{ active: address.id === selectedaddressid }"
+      >
+        <!-- Left: Address Info -->
+        <div @click="selectAddress(address)" class="flex-grow-1">
+          <h5 class="mb-1">{{ address.title }}</h5>
+          <p class="mb-1">{{ address.address_1 }}</p>
+          <small><strong>Note:</strong> {{ address.landmark }}</small>
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="ms-3 text-end">
+          <a href="javascript:void(0)" @click.stop="editAddress(address)" class="action-link me-2">
+            <span class="material-icons">edit</span>
+          </a>
+          <a href="javascript:void(0)" @click.stop="deleteAddress(address.id, index)" class="action-link">
+            <span class="material-icons">delete</span>
+          </a>
+        </div>
+      </li>
+    </ul>
+
+    <!-- Warning if no address selected -->
+    <div class="text-checkout-danger mt-2" v-if="selectedaddressid == null">
+      Note: Please select a delivery address
+    </div>
+  </div>
+
+    
    </div>
 
    <div class="col-md-12 col-sm-12" v-if="addressAction!='view'">
