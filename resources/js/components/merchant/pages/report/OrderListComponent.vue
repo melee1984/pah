@@ -38,8 +38,8 @@
                   </tr>
                   <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
                     <td width="15%">
-                        {{ order.submitted_date }}<br> xxxx
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>xxx Order # {{ order.cart.order_no }}  </strong></a>
+                        {{ order.submitted_date }}<br>
+                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
@@ -77,7 +77,7 @@
       </div><!-- /.card-body -->
     </div>
 
-     <div v-if="selectedOrder" class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+     <div  class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -103,20 +103,7 @@
                                         </div>
                                     </div>
                                     <!-- col-lg-6 end here -->
-                                    <div class="col-lg-6">
-                                        <!-- col-lg-6 start here -->
-                                        <div class="invoice-from">
-                                            <ul class="list-unstyled text-right">
-                                                <li>{{ selectedOrder?.partner?.restaurant_name }}</li>
-                                                <li v-if="selectedOrder?.cart?.partner_location_address_id">
-                                                  {{ selectedOrder?.cart?.partnerlocation?.address_1 }} <br>
-                                                  {{ selectedOrder?.cart?.partnerlocation?.address_2 }} <br>
-                                                  {{ selectedOrder?.cart?.partnerlocation?.mobile }} <br>
-                                                  {{ selectedOrder?.cart?.partnerlocation?.telephone }} <br>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                    </div>
+                                   
                                     <!-- col-lg-6 end here -->
                                     <div class="col-lg-12">
                                         <!-- col-lg-12 start here -->
@@ -227,13 +214,16 @@
                 riders: {},
                 selectedOrder: {},
                 statuses: {},
+                modalInstance: null,
             }
         },
         mounted() {
             console.log('Mounted Order List View Component')
-              this.fetchData();
-              this.selectedOrder = this.orders[0];  
-             this.startTimer();
+            this.fetchData();
+            this.selectedOrder = this.orders[0];  
+            this.startTimer();
+            this.initModal();
+
         },
         
         methods: {
@@ -294,12 +284,30 @@
                 }); 
           },
           displayOrderDetails: function(order) {
-              this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          }
+            this.selectedOrder = order;
+            this.openOrderDetails();
+          },
+          openOrderDetails() {
+            if (!this.modalInstance) {
+              const modalEl = document.getElementById("orderDetails");
+              this.modalInstance = new bootstrap.Modal(modalEl);
+            }
+            this.modalInstance.show();
+          },
+          closeOrderDetails() {
+            if (this.modalInstance) {
+              this.modalInstance.hide();
+            }
+          },
+          initModal() {
+            const modalEl = document.getElementById("orderDetails");
+            this.modalInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
+          },
+
         }
-
     }
-
 </script>
 
