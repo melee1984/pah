@@ -29,7 +29,7 @@
 	      </thead>
 	      <tbody>
 	      	<tr v-if="!product.variants">
-	      		<td colspan="4">No Record Found</td>
+	      		<td colspan="6">No Record Found</td>
 	      	</tr>
 	        <tr v-for="variant in product.variants">
 	          <td class="pull-right" width="10%">
@@ -61,8 +61,8 @@
 	      </tbody>
 	    </table>
 	</div>
-    <variant-add :productId="product.id" @populatedVariant="fetchVariantRecord"/>
-	<variant-details-view :product_header_id="selected_product_header_id" ref="variantDetails" />
+    <variant-add :productId="product.id" @populatedVariant="fetchVariantRecord" ref="addVariant"/>
+	<variant-details-view :product_header_id="selected_product_header_id" ref="modalAddVariantDetails" />
 </div>
 </template>
 
@@ -108,8 +108,9 @@
         	viewVariantDetails: function(variantHeader) {
         		this.selected_product_header_id = variantHeader.id;
         		this.selected_product_variant = variantHeader.product_details;
-        		this.$refs.variantDetails.reloadVariantDetails(variantHeader.id); 
-        		$('#modalAddVariantDetails').modal();
+        		this.$refs.modalAddVariantDetails.reloadVariantDetails(variantHeader.id); 
+				this.$refs.modalAddVariantDetails.openModalView();
+
         	}, 
         	viewVariantDetailsSet: function(action) {
         		this.displayVariantDetails = action;
@@ -118,7 +119,7 @@
         		this.actionVariant = action;
         	},
         	addVariant: function() {
-				$('#modalAddVariant').modal();
+				this.$refs.addVariant.openModalView();
 			},
 			deleteVariant: function(variant) {
 	            self = this;

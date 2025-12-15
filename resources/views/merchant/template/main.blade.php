@@ -19,8 +19,8 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
   <!-- Theme style -->
-  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-  
+    @vite(entrypoints: 'resources/js/merchant.js')
+
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
 <div class="wrapper" id="app">

@@ -18,7 +18,7 @@
                     <tbody>
                       <tr  v-for="category in categories">
                         <td v-on:click="filterCategory(category)">
-                           <a href="javascript:void(0)" disabled>
+                           <a href="javascript:void(0)" disabled class="categoryLink">
                               {{ category.name }}
                            </a>
                         </td>
