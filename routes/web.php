@@ -152,7 +152,7 @@ Route::middleware('admin')->group(function () {
 Route::get('/login/{social}', [\App\Http\Controllers\SocialLoginController::class, 'getSocialRedirect']);
 Route::get('/login/{social}/callback', [\App\Http\Controllers\SocialLoginController::class, 'getSocialCallback']);
 
-Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
+Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.dashboard.login');
 Route::get('/merchant/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
 Route::get('/merchant/register', [\App\Http\Controllers\Merchant\DashboardController::class, 'register'])->name('merchant.register');
 
