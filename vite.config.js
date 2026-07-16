@@ -45,15 +45,15 @@ export default defineConfig({
             },
         },
     },
-    build: {
-        outDir: 'public/build',
-        manifest: true,
-        rollupOptions: {
-            input: {
-                app: 'resources/js/app.js',
-                merchant: 'resources/js/merchant.js',
-                dashboard: 'resources/js/dashboard.js',
-            },
-        },
-    },
+    // build: {
+    //     outDir: 'public/build',
+    //     manifest: true,
+    //     rollupOptions: {
+    //         input: {
+    //             app: 'resources/js/app.js',
+    //             merchant: 'resources/js/merchant.js',
+    //             dashboard: 'resources/js/dashboard.js',
+    //         },
+    //     },
+    // },
 });
