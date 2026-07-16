@@ -713,6 +713,26 @@ div.footer-summary-basket .item-count {
   top: 3px;
   margin-left: 2px;
 }
+.cart-option .icofont-basket {
+  font-size: 32px;
+}
+.author-account .author-icon {
+    font-size: 30px;
+    color: #757170;
+}
+
+.cart-option .count-item {
+  width: 25px !important;
+  height: 25px !important;
+  line-height: 24px!important;
+  border-radius: 100% !important;
+  background: #fb524f!important;
+  color: #fff!important;
+  font-weight: 600 !important;
+  top: 26% !important;
+  right: 40% !important;
+  font-size: 10px !important;
+}
 
 .addcart-button {
   text-align: right;

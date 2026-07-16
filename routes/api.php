@@ -282,7 +282,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::group(['middleware' => 'auth:api'], function () {
 
-            Route::post('tokenization', [RiderOrderController::class, 'saveToken'])->name('save-token');
+            Route::post('token/save', [RiderOrderController::class, 'saveToken'])->name('rider.save-token');
             Route::post('bookings', [RiderOrderController::class, 'bookings']);
             Route::post('accepted/bookings', [RiderOrderController::class, 'getAcceptedBooking']);
             Route::post('accepted/day/bookings', [RiderOrderController::class, 'getAcceptedBookingByDate']);
@@ -307,7 +307,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::group(['middleware' => 'auth:api'], function () {
 
-            Route::post('tokenization', [StoreOrderController::class, 'saveToken'])->name('save-token');
+            Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');
             Route::post('bookings', [StoreOrderController::class, 'bookings']);
             Route::post('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);
             Route::post('accepted/day/bookings', [StoreOrderController::class, 'getAcceptedBookingByDate']);
