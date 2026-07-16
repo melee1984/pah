@@ -11,8 +11,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/merchant.js',
                 'resources/js/dashboard.js',
-                'resources/sass/app.scss',
-                'resources/sass/dashboard.scss',
+                'resources/scss/_pahatud.scss',
             ],
             refresh: true,
         }),
@@ -45,15 +44,7 @@ export default defineConfig({
             },
         },
     },
-    // build: {
-    //     outDir: 'public/build',
-    //     manifest: true,
-    //     rollupOptions: {
-    //         input: {
-    //             app: 'resources/js/app.js',
-    //             merchant: 'resources/js/merchant.js',
-    //             dashboard: 'resources/js/dashboard.js',
-    //         },
-    //     },
-    // },
+    build: {
+        
+    },
 });

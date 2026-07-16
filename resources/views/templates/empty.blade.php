@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
 
 <!-- Scripts -->
-@vite(['resources/js/app.js', 'resources/css/app.css'])
+@vite(['resources/js/app.js'])
 
 <body>
     <!-- preloader -->

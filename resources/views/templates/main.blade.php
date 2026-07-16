@@ -8,7 +8,7 @@
     <title>Pahatud Delivery Services</title>
     @endif
     @include('includes.gtag')
-    @vite(['resources/js/app.js', 'resources/css/app.css'])
+    @vite(['resources/js/app.js'])
 
 </head>
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
