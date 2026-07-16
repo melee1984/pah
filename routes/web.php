@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Route;
  */
 
 Auth::routes(['verify' => true]);
-Route::get('/', [PageController::class, 'index']);
+Route::get('/', [PageController::class, 'index'])->name('home');
 Route::get('/location-restriction', [PageController::class, 'restriction'])->name('location.restriction')   ;
 Route::get('/demo', [PageController::class, 'demoMap']);
 
