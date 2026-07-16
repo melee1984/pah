@@ -70,7 +70,7 @@ Route::post('newsletter/submit', [\App\Http\Controllers\NewsletterController::cl
 Route::get('/user/profile', [ProfileController::class, 'index'])->name('profile.home');
 
 // SOA
-Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('merchant.dashboard.report.soa');
+Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('profile.report.soa');
 
 // API
 Route::post('login/submit', [\App\Http\Controllers\Api\User\AccessController::class, 'loginAccess'])->name('login.submit');
