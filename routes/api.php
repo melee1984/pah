@@ -48,6 +48,9 @@ use App\Http\Controllers\Api\Mobile\Booking\BookingController as MobileBookingCo
 use App\Http\Controllers\Api\Mobile\Booking\AddressesController as MobileBookingAddressesController;
 use App\Http\Controllers\Api\Mobile\UserController as MobileUserController;
 
+use App\Http\Controllers\Api\Mobile\ResourcesController;
+
+
 // -------------------------------------------------------------
 // PUBLIC ROUTES
 // -------------------------------------------------------------
@@ -70,11 +73,15 @@ Route::middleware(['api', 'web'])->group(function () {
 
     Route::post('item/{action}/add-cart', [CartController::class, 'addCart']);
     Route::post('item/add-cart', [CartController::class, 'addCart']);
+
 });
 
 Route::middleware(['web'])->group(function () {
     Route::post('cart/validate-session', [CartController::class, 'validateSession']);
 });
+
+Route::get('home-categories', [ResourcesController::class, 'getCategories']);
+Route::get('home-cuisines', [ResourcesController::class, 'getCuisines']);
 
 // Restaurants
 Route::get('restaurants', [RestaurantPageController::class, 'list']);
