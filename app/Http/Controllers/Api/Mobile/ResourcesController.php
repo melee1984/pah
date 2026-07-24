@@ -84,29 +84,29 @@ class ResourcesController extends Controller
         ]);
     }
 
-    public function getPromoBanner() { 
-
+    public function getPromoBanner()
+    {
         return response()->json([
             [
                 'image' => 'promo-banner-1.jpg',
                 'title' => 'Special Offer',
-                "subtitle": "On orders over ₱299",
+                'subtitle' => 'On orders over ₱299',
                 'description' => 'Get 50% off on your first order!',
-                'cta_label' => 'Order now',
+                'cta_label' => 'Order Now',
             ],
             [
                 'image' => 'promo-banner-2.jpg',
                 'title' => 'New Menu',
+                'subtitle' => 'On orders over ₱299',
                 'description' => 'Check out our new delicious items!',
-                "subtitle" => "On orders over ₱299",
-                'cta_label' => 'Click here',
-            ]
+                'cta_label' => 'Explore Menu',
+            ],
         ]);
     }
 
-    public function getTopPics()
+    public function getTopPicks()
     {
-        return response()->json([
+        $topPicks = [
             [
                 'id' => 'pepperoni-pizza',
                 'name' => 'Pepperoni Pizza xxxx',
@@ -131,7 +131,9 @@ class ResourcesController extends Controller
                 'rating' => 4.8,
                 'prep_time_label' => '15–20 min',
             ],
-        ]);
+        ];
+
+        return response()->json($topPicks);
     }
 
 
