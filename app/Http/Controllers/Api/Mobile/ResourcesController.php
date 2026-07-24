@@ -84,4 +84,55 @@ class ResourcesController extends Controller
         ]);
     }
 
+    public function getPromoBanner() { 
+
+        return response()->json([
+            [
+                'image' => 'promo-banner-1.jpg',
+                'title' => 'Special Offer',
+                "subtitle": "On orders over ₱299",
+                'description' => 'Get 50% off on your first order!',
+                'cta_label' => 'Order now',
+            ],
+            [
+                'image' => 'promo-banner-2.jpg',
+                'title' => 'New Menu',
+                'description' => 'Check out our new delicious items!',
+                "subtitle" => "On orders over ₱299",
+                'cta_label' => 'Click here',
+            ]
+        ]);
+    }
+
+    public function getTopPics()
+    {
+        return response()->json([
+            [
+                'id' => 'pepperoni-pizza',
+                'name' => 'Pepperoni Pizza',
+                'restaurant_name' => 'Pizza House',
+                'image_url' => null,
+                'rating' => 4.7,
+                'prep_time_label' => '25–35 min',
+            ],
+            [
+                'id' => 'carbonara',
+                'name' => 'Carbonara',
+                'restaurant_name' => 'Pasta Lovers',
+                'image_url' => null,
+                'rating' => 4.6,
+                'prep_time_label' => '20–30 min',
+            ],
+            [
+                'id' => 'iced-caramel-macchiato',
+                'name' => 'Iced Caramel Macchiato',
+                'restaurant_name' => 'Brewed Daily',
+                'image_url' => null,
+                'rating' => 4.8,
+                'prep_time_label' => '15–20 min',
+            ],
+        ]);
+    }
+
+
 }
