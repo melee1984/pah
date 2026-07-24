@@ -109,7 +109,7 @@ class ResourcesController extends Controller
         return response()->json([
             [
                 'id' => 'pepperoni-pizza',
-                'name' => 'Pepperoni Pizza',
+                'name' => 'Pepperoni Pizza xxxx',
                 'restaurant_name' => 'Pizza House',
                 'image_url' => null,
                 'rating' => 4.7,
@@ -117,7 +117,7 @@ class ResourcesController extends Controller
             ],
             [
                 'id' => 'carbonara',
-                'name' => 'Carbonara',
+                'name' => 'Carbonara xcxcx',
                 'restaurant_name' => 'Pasta Lovers',
                 'image_url' => null,
                 'rating' => 4.6,
@@ -125,7 +125,7 @@ class ResourcesController extends Controller
             ],
             [
                 'id' => 'iced-caramel-macchiato',
-                'name' => 'Iced Caramel Macchiato',
+                'name' => 'Iced Caramel Macchiato xczxc',
                 'restaurant_name' => 'Brewed Daily',
                 'image_url' => null,
                 'rating' => 4.8,
