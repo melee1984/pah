@@ -104,7 +104,7 @@ class ResourcesController extends Controller
         ]);
     }
 
-    public function getTopPicks()
+    public function getTopPics()
     {
         $topPicks = [
             [
