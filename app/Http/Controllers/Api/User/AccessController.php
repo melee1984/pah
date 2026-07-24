@@ -49,19 +49,19 @@ class AccessController extends Controller
     // Validations
     $rules = [
       'email'=>'required|email',
-      'password'=>'required|min:8'
+      'password'=>'required|min:6'
     ];
 
     $session_id = Session::getId();
-
     $validator = Validator::make($request->all(), $rules);
 
     if ($validator->fails()) {
       // Validation failed
       return response()->json([
-        'status' => 0,
-        'message' => "The username and password you've enter might be incorrect. Please try again."
-      ]);
+      'status' => 0,
+      'message' => "The username and password you've entered might be incorrect. Please try again.",
+      'errors' => $validator->errors(), // remove this after debugging
+    ]);
       
     } else {
       // Fetch User
