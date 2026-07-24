@@ -83,7 +83,7 @@ Route::middleware(['web'])->group(function () {
 Route::get('home-categories', [ResourcesController::class, 'getCategories']);
 Route::get('home-cuisines', [ResourcesController::class, 'getCuisines']);
 Route::get('home-promo-banner', [ResourcesController::class, 'getPromoBanner']);
-Route::get('home-top-pics', [ResourcesController::class, 'getTopPicks']);
+Route::get('home-top-picks', [ResourcesController::class, 'getTopPicks']);
 Route::get('near/restaurants', [RestaurantPageController::class, 'list']);
 
 // Restaurants
