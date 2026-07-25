@@ -75,9 +75,12 @@ class RestaurantService
 
                 // Get the image here from the product library 
                 if ($product->img!="") {
-                        //
-                    $restaurant->img = Partners::imageResizeThumb($product, $product->id);
-                    $restaurant->image_url = Partners::imageResizeThumb($product, $product->id);
+                    
+                    $imagePath = Partners::imageResizeThumb($product, $product->id);
+
+                    $restaurant->img = $imagePath;
+                    $restaurant->image_url = $imagePath;
+                    $product->image_url  = $imagePath;
 
                     $hasItemImage = true;
                     break;
