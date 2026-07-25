@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Api\Restaurant\PageController;
-use Illuminate\Http\Request;
+use App\Partners;
+use App\PartnerTopPick;
 use App\Services\RestaurantService;
 
 class ResourcesController extends Controller
@@ -108,32 +108,42 @@ class ResourcesController extends Controller
 
     public function getTopPicks()
     {
-        $topPicks = [
-            [
-                'id' => 'pepperoni-pizza',
-                'name' => 'Pepperoni Pizza xxxx',
-                'restaurant_name' => 'Pizza House',
-                'image_url' => null,
-                'rating' => 4.7,
-                'prep_time_label' => '25–35 min',
-            ],
-            [
-                'id' => 'carbonara',
-                'name' => 'Carbonara xcxcx',
-                'restaurant_name' => 'Pasta Lovers',
-                'image_url' => null,
-                'rating' => 4.6,
-                'prep_time_label' => '20–30 min',
-            ],
-            [
-                'id' => 'iced-caramel-macchiato',
-                'name' => 'Iced Caramel Macchiato xczxc',
-                'restaurant_name' => 'Brewed Daily',
-                'image_url' => null,
-                'rating' => 4.8,
-                'prep_time_label' => '15–20 min',
-            ],
-        ];
+        $topPicks = PartnerTopPick::query()
+            ->where('active', true)
+            ->where(function ($query) {
+                $query->whereNull('expiration_date')
+                    ->orWhere('expiration_date', '>', now());
+            })
+            ->whereHas('partner.products', function ($query) {
+                $query->where('active', true);
+            })
+            ->with([
+                'partner.products' => function ($query) {
+                    $query->where('active', true)
+                        ->orderBy('created_at')
+                        ->orderBy('id');
+                },
+            ])
+            ->latest()
+            ->get()
+            ->unique('partner_id')
+            ->map(function ($topPick) {
+                $partner = $topPick->partner;
+                $product = $partner->products->first();
+
+                return [
+                    'id' => $partner->id,
+                    'partner_id' => $partner->id,
+                    'name' => $product->title,
+                    'restaurant_name' => $partner->restaurant_name,
+                    'image_url' => $product->img
+                        ? Partners::imageResizeThumb($product, $product->id)
+                        : null,
+                    'rating' => null,
+                    'prep_time_label' => null,
+                ];
+            })
+            ->values();
 
         return response()->json($topPicks);
     }
@@ -151,8 +161,7 @@ class ResourcesController extends Controller
             'promo_banners' => $promoBanners,
             'top_picks' => $topPicks,
             'restaurants' => RestaurantService::getRestaurants(), // Call the RestaurantService to get restaurants
-    ]);
+        ]);
 
     }
-
 }
