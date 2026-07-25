@@ -32,9 +32,9 @@ class CartController extends Controller
      * Add cart Item 
      * return success response 
      */
-    public function addCart(Request $request, $action = false) {
-
-    	$data = array();
+    public function addCart(Request $request, $action = false) 
+    {
+        $data = array();
         $data['status'] = 1;
         $isNew = false;
 
@@ -45,6 +45,8 @@ class CartController extends Controller
         $user = $request->user();
 
         if ($item) {
+
+            \Log::info("Session ID: " . $request->input('session_id'));
 
             $cart = Cart::whereSessionId($request->input('session_id'))
                             ->orderBy('created_at', 'desc')

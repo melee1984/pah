@@ -124,7 +124,6 @@ class CartController extends Controller
         $data['payment'] = PaymentMethod::active();
         $data['delivery_time'] = $delivery_timings;
         
-
         return response()->json($data, 200);
     }
 
