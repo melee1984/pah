@@ -32,6 +32,7 @@ class RestaurantService
                                     point('.$userLong.', '.$userLat.')) * 0.001) 
                                     from partner_location where partner_location.partner_id = partners.id limit 0,1)  as distance_km'))
                             ->where('account_type_id','<>',4)
+                            ->with('products','products.variants', 'category')
                             ->activeRestaurants()
                             ->orderBy('store_open', 'desc')
                             ->orderBy('distance_km', 'asc')
@@ -41,9 +42,9 @@ class RestaurantService
         else {
 
         // $restaurants = Partners::activeRestaurants();
-        // 
+        // display only the active restaurants and not the ghost restaurants
         $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
-                            ->with('products','products.variants')
+                            ->with('products','products.variants', 'products.category')
                             ->where('account_type_id','<>',4)
                             ->activeRestaurants()
                             ->orderBy('store_open', 'desc')
