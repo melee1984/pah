@@ -58,6 +58,12 @@ class Partners extends Model
     public function foodType() {
         return $this->hasMany('App\PartnerFoodType', 'partner_id', 'id');
     }
+
+    public function topPicks()
+    {
+        return $this->hasMany(PartnerTopPick::class, 'partner_id');
+    }
+
     /**
      * [category description]
      * @return [type] [description]
@@ -129,6 +135,7 @@ class Partners extends Model
             else {
                 return asset('uploads/no-img.png') ;   
             }
+            
 
          }
 
