@@ -47,7 +47,6 @@ class RestaurantService
                             ->where('account_type_id','<>',4)
                             ->activeRestaurants()
                             ->orderBy('store_open', 'desc')
-                            ->limit(1)
                             ->get();
 
         }
