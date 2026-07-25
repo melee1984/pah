@@ -18,23 +18,24 @@ class RestaurantService
         $cart = Cart::whereSessionId($session_id)->first();
 
         if ($cart && $cart->user_lat!="") {
-        $userLat = (float) $cart->user_lat;
-        $userLong = (float) $cart->user_long;
 
-        $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city' , 'budget_id' , 'account_type_id', DB::raw('
-                                (select (ST_Distance_Sphere(
-                                point(partner_location.longtitude, partner_location.latitude),
-                                point('.$userLong.', '.$userLat.')) * 0.001 / 1000) 
-                                from partner_location where partner_location.partner_id = partners.id limit 0,1)  as meter'), DB::raw('
-                                (select (ST_Distance_Sphere(
-                                point(partner_location.longtitude, partner_location.latitude),
-                                point('.$userLong.', '.$userLat.')) * 0.001) 
-                                from partner_location where partner_location.partner_id = partners.id limit 0,1)  as distance_km'))
-                        ->where('account_type_id','<>',4)
-                        ->activeRestaurants()
-                        ->orderBy('store_open', 'desc')
-                        ->orderBy('distance_km', 'asc')
-                        ->get();
+            $userLat = (float) $cart->user_lat;
+            $userLong = (float) $cart->user_long;
+
+            $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city' , 'budget_id' , 'account_type_id', DB::raw('
+                                    (select (ST_Distance_Sphere(
+                                    point(partner_location.longtitude, partner_location.latitude),
+                                    point('.$userLong.', '.$userLat.')) * 0.001 / 1000) 
+                                    from partner_location where partner_location.partner_id = partners.id limit 0,1)  as meter'), DB::raw('
+                                    (select (ST_Distance_Sphere(
+                                    point(partner_location.longtitude, partner_location.latitude),
+                                    point('.$userLong.', '.$userLat.')) * 0.001) 
+                                    from partner_location where partner_location.partner_id = partners.id limit 0,1)  as distance_km'))
+                            ->where('account_type_id','<>',4)
+                            ->activeRestaurants()
+                            ->orderBy('store_open', 'desc')
+                            ->orderBy('distance_km', 'asc')
+                            ->get();
                     
         }
         else {
@@ -42,9 +43,11 @@ class RestaurantService
         // $restaurants = Partners::activeRestaurants();
         // 
         $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
+                            ->with('products','products.variants')
                             ->where('account_type_id','<>',4)
                             ->activeRestaurants()
                             ->orderBy('store_open', 'desc')
+                            ->limit(1)
                             ->get();
 
         }
@@ -67,17 +70,19 @@ class RestaurantService
             // check primary if has an item item // then locate and get the image render 
             // otherwise use the merchant logo 
             $hasItemImage = false;
-            foreach($restaurant->products as $image) {
+            
+            foreach($restaurant->products as $product) {
 
                 // Get the image here from the product library 
-                if ($image->img!="") {
+                if ($product->img!="") {
                         //
-                    $restaurant->img = Partners::imageResizeThumb($image, $image->id);
-                    $restaurant->image_url = Partners::imageResizeThumb($image, $image->id);
+                    $restaurant->img = Partners::imageResizeThumb($product, $product->id);
+                    $restaurant->image_url = Partners::imageResizeThumb($product, $product->id);
 
                     $hasItemImage = true;
                     break;
                 }
+              
             }
 
             
