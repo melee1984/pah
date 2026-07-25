@@ -86,7 +86,6 @@ Route::middleware(['web'])->group(function () {
 // Route::get('home-top-picks', [ResourcesController::class, 'getTopPicks']);
 // Route::get('near/restaurants', [RestaurantPageController::class, 'list']);
 
-Route::get('data/dashboard', [ResourcesController::class, 'getDashboardData']);
 
 // Restaurants
 Route::get('restaurants', [RestaurantPageController::class, 'list']);
@@ -222,10 +221,13 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
 // ----------------------------------------------------------------------
 
 Route::group(['middleware' => 'isRequest'], function () {
-    Route::group(['prefix' => '797j'], function () {
+    Route::group(['prefix' => 'mobile'], function () {
 
         Route::get('home', [MobileHomeController::class, 'home']);
         Route::get('restaurants', [MobileHomeController::class, 'list']);
+
+        Route::get('data/dashboard', [ResourcesController::class, 'getDashboardData']);
+        
         Route::get('restaurant/search', [MobileHomeController::class, 'search']);
         Route::get('restaurant/{partner:id}', [MobileHomeController::class, 'restaurant']);
 
