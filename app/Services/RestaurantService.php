@@ -82,7 +82,7 @@ class RestaurantService
                     $restaurant->image_url = $imagePath;
                     $product->image_url  = $imagePath;
 
-                    $hasItemImage = true;
+                    $hasItemImage = true; // this will get the first image and break the loop
                     break;
                 }
               
