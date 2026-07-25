@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Restaurant\PageController;
 use Illuminate\Http\Request;
+use App\Services\RestaurantService;
 
 class ResourcesController extends Controller
 {
@@ -136,5 +138,21 @@ class ResourcesController extends Controller
         return response()->json($topPicks);
     }
 
+    public function getDashboardData()
+    {
+        $categories = $this->getCategories()->getData();
+        $cuisines = $this->getCuisines()->getData();
+        $promoBanners = $this->getPromoBanner()->getData();
+        $topPicks = $this->getTopPicks()->getData();
+
+        return response()->json([
+            'categories' => $categories,
+            'cuisines' => $cuisines,
+            'promo_banners' => $promoBanners,
+            'top_picks' => $topPicks,
+            'restaurants' => RestaurantService::getRestaurants(), // Call the RestaurantService to get restaurants
+    ]);
+
+    }
 
 }

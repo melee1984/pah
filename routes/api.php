@@ -80,11 +80,13 @@ Route::middleware(['web'])->group(function () {
     Route::post('cart/validate-session', [CartController::class, 'validateSession']);
 });
 
-Route::get('home-categories', [ResourcesController::class, 'getCategories']);
-Route::get('home-cuisines', [ResourcesController::class, 'getCuisines']);
-Route::get('home-promo-banner', [ResourcesController::class, 'getPromoBanner']);
-Route::get('home-top-picks', [ResourcesController::class, 'getTopPicks']);
-Route::get('near/restaurants', [RestaurantPageController::class, 'list']);
+// Route::get('home-categories', [ResourcesController::class, 'getCategories']);
+// Route::get('home-cuisines', [ResourcesController::class, 'getCuisines']);
+// Route::get('home-promo-banner', [ResourcesController::class, 'getPromoBanner']);
+// Route::get('home-top-picks', [ResourcesController::class, 'getTopPicks']);
+// Route::get('near/restaurants', [RestaurantPageController::class, 'list']);
+
+Route::get('data/dashboard', [ResourcesController::class, 'getDashboardData']);
 
 // Restaurants
 Route::get('restaurants', [RestaurantPageController::class, 'list']);

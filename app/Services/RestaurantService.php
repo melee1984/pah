@@ -1,22 +1,18 @@
 <?php
 
-namespace App\Http\Controllers\Api\Restaurant;
-
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+namespace App\Services;
 
 use App\Partners;
 use Illuminate\Support\Str;
-
 use DB;
 use Session;
 use App\Model\Cart;
 
-class PageController extends Controller
+class RestaurantService
 {
-    public function list() 
-   	{	
-        $data = array();
+    public static function getRestaurants()
+    {
+       $data = array();
 
         $session_id = Session::getId();
         $cart = Cart::whereSessionId($session_id)->first();
@@ -54,8 +50,8 @@ class PageController extends Controller
         }
 
         $restaurantIds = $restaurants->pluck('id');
-        $cuisineTags = $this->getCuisineTagsByPartner($restaurantIds);
-        $categoryTags = $this->getCategoryTagsByPartner($restaurantIds);
+        $cuisineTags = self::getCuisineTagsByPartner($restaurantIds);
+        $categoryTags = self::getCategoryTagsByPartner($restaurantIds);
 
         foreach($restaurants as $restaurant) {
 
@@ -84,6 +80,7 @@ class PageController extends Controller
                 }
             }
 
+            
             // verify if the img content image but if not then get the merchant logo 
             if (!$hasItemImage) {
                 $restaurant = Partners::imageResize($restaurant, 'logo');    // Get the Image Thumbnail 
@@ -91,11 +88,11 @@ class PageController extends Controller
 
         }
 
-        return response()->json($restaurants, 200);
-      
-   	}
+        return $restaurants;
 
-    private function getCuisineTagsByPartner($partnerIds)
+    }
+
+    private static function getCuisineTagsByPartner($partnerIds)
     {
         if ($partnerIds->isEmpty()) {
             return collect();
@@ -114,7 +111,7 @@ class PageController extends Controller
             });
     }
 
-    private function getCategoryTagsByPartner($partnerIds)
+    private static function getCategoryTagsByPartner($partnerIds)
     {
         if ($partnerIds->isEmpty()) {
             return collect();
@@ -131,4 +128,5 @@ class PageController extends Controller
                 return $tags->pluck('name');
             });
     }
+
 }
