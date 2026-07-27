@@ -50,4 +50,32 @@ class UserController extends Controller
     	return response()->json($data, 200);
     	
     }
+
+	public function addAddress(Request $request) {
+
+		$data = array();
+		$data['status'] = 0;
+		$user = $request->user();
+
+		$request->validate([
+			'title' => 'required|string|max:255',
+			'address' => 'required|string|max:255',
+			'latitude' => 'required|numeric',
+			'longitude' => 'required|numeric',
+		]);
+
+		$address = new UserAddress();
+		$address->user_id = $user->id;
+		$address->title =  $request->input('title');
+		$address->address_1 = $request->input('address');
+		$address->latitude = $request->input('latitude');
+		$address->longitude = $request->input('longitude');
+		$address->active = 1;
+
+		if ($address->save()) {
+			$data['status'] = 1;
+		}
+
+		return response()->json($data, 200);
+	}
 }

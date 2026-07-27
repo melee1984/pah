@@ -258,6 +258,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('address/add/submit', [MobileCheckoutController::class, 'addAddress']);
             Route::get('address/list', [MobileUserController::class, 'getAddresses']);
             Route::post('address/delete/submit', [MobileUserController::class, 'deleteAddress']);
+            Route::post('address/submit', [MobileUserController::class, 'addAddress']);
 
             Route::post('/byplaceId', [DistanceController::class, 'getByPlaceId']);
             Route::post('data/dashboard/update/{order}/status/submit', [AdminOrderController::class, 'updateOrderStatus']);
