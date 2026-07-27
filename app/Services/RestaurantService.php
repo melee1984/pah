@@ -72,7 +72,7 @@ class RestaurantService
             $hasItemImage = false;
             
             foreach($restaurant->products as $product) {
-                $product->getPriceDisplay();
+               
                 // Get the image here from the product library 
                 if ($product->img!="") {
                     $imagePath = Partners::imageResizeThumb($product, $product->id);
@@ -80,8 +80,9 @@ class RestaurantService
                     $restaurant->image_url = $imagePath;
                     $product->image_url  = $imagePath;
                     $hasItemImage = true; // this will get the first image and break the loop
-                    break;
                 }
+
+                 $product->getPriceDisplay();
             }
 
             
