@@ -63,14 +63,17 @@ class UserController extends Controller
 			'latitude' => 'required|numeric',
 			'longitude' => 'required|numeric',
 		]);
-
+		
+		$user->addresses()->update(['default' => 0]);
+		
 		$address = new UserAddress();
 		$address->user_id = $user->id;
 		$address->title =  $request->input('title');
 		$address->address_1 = $request->input('address');
-		$address->latitude = $request->input('latitude');
-		$address->longitude = $request->input('longitude');
+		$address->lat = $request->input('latitude');
+		$address->long = $request->input('longitude');
 		$address->active = 1;
+		$address->default = 1;
 
 		if ($address->save()) {
 			$data['status'] = 1;
