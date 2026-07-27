@@ -40,6 +40,28 @@ class CartController extends Controller
         //     ]
         // }
 
+        if ($request->has('is_not_available')) {
+            $unavailableItemAction = CartItem::resolveUnavailableItemAction(
+                $request->input('is_not_available')
+            );
+
+            if ($unavailableItemAction === null) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The is not available field must be remove_item, call_me, replace_similar, 0, 1, or 2.',
+                    'errors' => [
+                        'is_not_available' => [
+                            'The selected is not available value is invalid.',
+                        ],
+                    ],
+                ], 200);
+            }
+
+            $request->merge([
+                'is_not_available' => $unavailableItemAction,
+            ]);
+        }
+
         $validator = Validator::make($request->all(), [
             'session_id' => ['nullable', 'string', 'max:255'],
             'restaurant_id' => ['nullable', 'integer'],
