@@ -13,7 +13,7 @@ class UserController extends Controller
 
     	$data = array();
 
-    	$user = $request->user();
+    	$user = $request->user('api');
 
     	$addresses = UserAddress::whereUserId($user->id)
     							->whereActive(1)->get();
@@ -48,6 +48,6 @@ class UserController extends Controller
     	}
 
     	return response()->json($data, 200);
-
+    	
     }
 }

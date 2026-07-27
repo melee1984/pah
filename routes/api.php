@@ -237,9 +237,10 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::post('cart/{cartItem}/action/{status?}/submit', [MobileCartController::class, 'modifyCartItem']);
 
-        Route::group(['middleware' => 'api'], function () {
-
+        Route::group(['middleware' => ['auth:api']], function () {
+            //
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
+
             Route::post('item/{status?}/add-cart', [MobileCartController::class, 'addCart']);
 
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
