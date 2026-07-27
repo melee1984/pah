@@ -10,6 +10,7 @@ use App\Products;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Throwable;
 use Validator;
 
@@ -27,6 +28,7 @@ class CartController extends Controller
         //     "partner_id": 13,
         //     "product_id": 15,
         //     "quantity": 1,
+        //     "is_not_available": 0,
         //     "latitude": 37.4219983,
         //     "longitude": -122.084,
         //     "variants": [
@@ -44,6 +46,11 @@ class CartController extends Controller
             'partner_id' => ['nullable', 'integer'],
             'product_id' => ['required', 'integer'],
             'quantity' => ['sometimes', 'integer', 'min:1'],
+            'is_not_available' => [
+                'sometimes',
+                'integer',
+                Rule::in(array_keys(CartItem::UNAVAILABLE_ITEM_ACTIONS)),
+            ],
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
             'variants' => ['sometimes', 'array'],
@@ -218,7 +225,10 @@ class CartController extends Controller
                 $cartItem->price = $item->getPrice(true);
                 $cartItem->variance_content = $serializedVariants;
                 $cartItem->variance_total = $variantTotal;
-                $cartItem->is_not_available = $request->input('is_not_available');
+                $cartItem->is_not_available = $request->integer(
+                    'is_not_available',
+                    CartItem::UNAVAILABLE_ACTION_REMOVE_ITEM
+                );
                 $cartItem->instruction = $request->input('instruction');
                 $cartItem->price_comm_total = $item->getPriceComm();
                 $cartItem->variance_total_comm_total = $variantCommissionTotal;
