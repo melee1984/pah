@@ -256,7 +256,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('getorder/{order}', [MobileOrderController::class, 'getOrderById']);
 
             Route::post('address/add/submit', [MobileCheckoutController::class, 'addAddress']);
-            Route::post('address/list', [MobileUserController::class, 'getAddresses']);
+            Route::get('address/list', [MobileUserController::class, 'getAddresses']);
             Route::post('address/delete/submit', [MobileUserController::class, 'deleteAddress']);
 
             Route::post('/byplaceId', [DistanceController::class, 'getByPlaceId']);
