@@ -13,7 +13,8 @@ use Session;
 use App\Model\Cart;
 
 class PageController extends Controller
-{
+{   
+    // I might need to remove this function and move it to the RestaurantService class
     public function list() 
    	{	
         $data = array();
@@ -71,14 +72,14 @@ class PageController extends Controller
             // check primary if has an item item // then locate and get the image render 
             // otherwise use the merchant logo 
             $hasItemImage = false;
-            foreach($restaurant->products as $image) {
+
+            foreach($restaurant->products as $product) {
 
                 // Get the image here from the product library 
-                if ($image->img!="") {
+                if ($product->img!="") {
                         //
-                    $restaurant->img = Partners::imageResizeThumb($image, $image->id);
-                    $restaurant->image_url = Partners::imageResizeThumb($image, $image->id);
-
+                    $restaurant->img = Partners::imageResizeThumb($product, $product->id);
+                    $restaurant->image_url = Partners::imageResizeThumb($product, $product->id);
                     $hasItemImage = true;
                     break;
                 }
