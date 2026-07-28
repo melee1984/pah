@@ -48,141 +48,31 @@ class Orders extends Model
     }
 
     public function getActionLogs() {
+         $query = DB::table('library_status as status')
+            ->select('status.id', 'status.title', 'status.sorting', 'status.description')
+            ->selectSub(function ($query) {
+                $query->from('order_process as process')
+                    ->selectRaw('COUNT(process.id)')
+                    ->where('process.order_id', $this->id)
+                    ->whereColumn('process.status_id', 'status.id');
+            }, 'st')
+            ->selectSub(function ($query) {
+                $query->from('order_process as process')
+                    ->select('process.created_at')
+                    ->where('process.order_id', $this->id)
+                    ->whereColumn('process.status_id', 'status.id')
+                    ->orderBy('process.created_at', 'asc')
+                    ->limit(1);
+            }, 'datecreated')
+            ->orderBy('status.sorting', 'asc');
 
-            if ($this->status->id == 8) {
-                 $sql = "select  pah_db.library_status.id, pah_db.library_status.title, pah_db.library_status.sorting, pah_db.library_status.description, 
+         if ((int) $this->status_id === 8) {
+            $query->whereIn('status.id', [1, 8]);
+         } else {
+            $query->where('status.id', '!=', 8);
+         }
 
-                        (select 
-                          count(pah_db.order_process.id)
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ? 
-                            and pah_db.order_process.status_id = pah_db.library_status.id limit 0,1) 
-                            as st,
-                        (select 
-                          pah_db.order_process.created_at
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ?
-                            and pah_db.order_process.status_id = pah_db.library_status.id
-                            limit 0,1) as datecreated
-                        from 
-                            pah_db.library_status 
-                        where 
-                             pah_db.library_status.id in (1, 8)
-                        order by 
-                            pah_db.library_status.sorting asc ";
-                $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-            }
-            else {
-                  $sql = "select  pah_db.library_status.id, pah_db.library_status.title, pah_db.library_status.sorting, pah_db.library_status.description, 
-                        (select 
-                          count(pah_db.order_process.id)
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ? 
-                            and pah_db.order_process.status_id = pah_db.library_status.id limit 0,1) 
-                            as st,
-                        (select 
-                          pah_db.order_process.created_at
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ?
-                            and pah_db.order_process.status_id = pah_db.library_status.id
-                            limit 0,1) as datecreated
-                        from 
-                            pah_db.library_status 
-                        where 
-                             pah_db.library_status.id != 8
-                        order by 
-                            pah_db.library_status.sorting asc ";
-
-                 $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-
-            }
-                 
-            // if ($this->status->id == 8) {
-
-            //      $sql = "select  p1.library_status.id, p1.library_status.title, p1.library_status.sorting, p1.library_status.description, 
-
-            //             (select 
-            //               count(p1.order_process.id)
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ? 
-            //                 and p1.order_process.status_id = p1.library_status.id limit 0,1) 
-            //                 as st,
-
-            //             (select 
-            //               p1.order_process.created_at
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ?
-            //                 and p1.order_process.status_id = p1.library_status.id
-            //                 limit 0,1) as datecreated
-
-            //             from 
-            //                 p1.library_status 
-            //             where 
-            //                  p1.library_status.id in (1, 8)
-            //             order by 
-            //                 p1.library_status.sorting asc ";
-
-            //     $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-
-            // }
-            // else {
-
-            //      $sql = "select  p1.library_status.id, p1.library_status.title, p1.library_status.sorting, p1.library_status.description, 
-
-            //             (select 
-            //               count(p1.order_process.id)
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ? 
-            //                 and p1.order_process.status_id = p1.library_status.id limit 0,1) 
-            //                 as st,
-            //             (select 
-            //               p1.order_process.created_at
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ?
-            //                 and p1.order_process.status_id = p1.library_status.id
-            //                 limit 0,1) as datecreated
-            //             from 
-            //                 p1.library_status 
-            //             where 
-            //                  p1.library_status.id != 8
-            //             order by 
-            //                 p1.library_status.sorting asc ";
-
-            //      $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-
-            // }
+         $rs = $query->get();
 
          foreach($rs as $list) {
             if ($list->datecreated !="") {
