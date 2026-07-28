@@ -435,7 +435,7 @@ class AccessController extends Controller
               'session_id' => $session_id,
               'redirectURL' =>  URL::to($request->input('page')),
               'store' => $user->merchant,
-
+              'is_with_sms_otp' => true
             ]);
           }
         } else {
