@@ -42,7 +42,11 @@
                         Estimated Date/Time: <br><b> {{ order.cart.delivery_date }} - {{ order.cart.delivery_time }}</b> <br>
                         Merchant: <br>
                         <strong>{{ order.partner.restaurant_name }} </strong> <br>
-                        {{ order.cart.partnerlocation.address_1 }}, {{ order.cart.partnerlocation.address_2 }}, <br>{{ order.cart.partnerlocation.mobile }} 
+                        <template v-if="order.cart && order.cart.partnerlocation">
+                          {{ order.cart.partnerlocation.address_1 }}, {{ order.cart.partnerlocation.address_2 }},
+                          <br>{{ order.cart.partnerlocation.mobile }}
+                        </template>
+                        <span v-else class="text-muted">Merchant location unavailable</span>
                         
                        
                         <br><br>
@@ -107,12 +111,13 @@
                                         <div class="invoice-from">
                                             <ul class="list-unstyled text-right"v-if="selectedOrder.partner">
                                                 <li>{{ selectedOrder.partner.restaurant_name }}</li>
-                                                <li v-if="selectedOrder.cart.partner_location_address_id">
+                                                <li v-if="selectedOrder.cart && selectedOrder.cart.partnerlocation">
                                                   <p >{{ selectedOrder.cart.partnerlocation.address_1 }} <br>
                                                   {{ selectedOrder.cart.partnerlocation.address_2 }} <br>
                                                   {{ selectedOrder.cart.partnerlocation.mobile }} <br>
                                                   {{ selectedOrder.cart.partnerlocation.telephone }}</p>
                                                 </li>
+                                                <li v-else class="text-muted">Merchant location unavailable</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -122,7 +127,11 @@
 
                                         Merchant: <br>
                                         <strong>{{ selectedOrder?.partner?.restaurant_name }} </strong> <br>
-                                        {{ selectedOrder?.cart?.partnerlocation.address_1 }}, {{ selectedOrder?.cart?.partnerlocation.address_2 }}, <br>{{ selectedOrder?.cart?.partnerlocation.mobile }} 
+                                        <template v-if="selectedOrder?.cart?.partnerlocation">
+                                          {{ selectedOrder.cart.partnerlocation.address_1 }}, {{ selectedOrder.cart.partnerlocation.address_2 }},
+                                          <br>{{ selectedOrder.cart.partnerlocation.mobile }}
+                                        </template>
+                                        <span v-else class="text-muted">Merchant location unavailable</span>
                                         <br>
                                         <br>
                                         <p><b>Details</b></p>
@@ -148,7 +157,7 @@
                                           <p><b>Customer:</b> <br>
 
                                           {{ selectedOrder?.cart?.fullname }} <br>
-                                          <span v-if="selectedOrder?.cart?.address">Address: {{ selectedOrder?.cart?.address.address_1 }}</span> <br>
+                                          <span v-if="selectedOrder?.cart?.address">Address: {{ selectedOrder.cart.address.address_1 }}</span> <br>
                                           <span v-if="selectedOrder?.cart?.mobile">Mobile: {{ selectedOrder?.cart?.mobile }}</span>
                                         </p>
 
@@ -280,4 +289,3 @@
     }
 
 </script>
-
