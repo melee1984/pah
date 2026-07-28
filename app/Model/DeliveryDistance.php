@@ -65,11 +65,14 @@ class DeliveryDistance extends Model
 			$duration = number_format($duration, 1, '.', '');
 
 			// Compute rate
+			$baseRate = (float) config('services.delivery.rate', 0);
+			$additionalKilometerRate = (float) config('services.delivery.additional_km_rate', 0);
+
 			if (ceil($distance) <= 1) {
 				\Log::info('Distance is within 1 km, applying base rate.');
-				$rate = config('services.delivery.rate');
+				$rate = $baseRate;
 			} else {
-				$rate = config('services.delivery.rate') + ((ceil($distance) - 1) *  config('services.delivery.additional_km_rate'));
+				$rate = $baseRate + ((ceil($distance) - 1) * $additionalKilometerRate);
 			}
 
 			$data = [
@@ -78,7 +81,7 @@ class DeliveryDistance extends Model
 				'duration' => $duration,
 				'origin' => $origin,
 				'destination' => $destination,
-				'rate' => number_format($rate, 2),
+				'rate' => round($rate, 2),
 			];
 
 			\Log::info('Computed distance and rate', $data);

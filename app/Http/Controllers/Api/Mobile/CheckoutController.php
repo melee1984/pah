@@ -155,17 +155,58 @@ class CheckoutController extends Controller
     public function process(Request $request) {
 
         $rules = [
+            'session_id' => 'required|string',
             'deliveryDate'=>'required',
             'deliveryTime'=>'required',
-            'deliveryAddressId' => 'required',
-            'deliveryPaymentId' => 'required',
+            'deliveryAddressId' => 'required|integer',
+            'deliveryPaymentId' => 'required|integer',
         ];
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 0,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 200);
+        }
 
         $session_id = $request->input('session_id');
         $user = $request->user();
 
         $cart = Cart::whereSessionId($session_id)
                         ->whereUserId($user->id)->first();
+
+        if (!$cart) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Cart not found for this user and session.',
+            ], 200);
+        }
+
+        $userAddress = UserAddress::where('id', $request->input('deliveryAddressId'))
+            ->whereUserId($user->id)
+            ->where('active', 1)
+            ->first();
+
+        if (!$userAddress) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'The selected delivery address is invalid.',
+            ], 200);
+        }
+
+        $paymentMethod = PaymentMethod::where('id', $request->input('deliveryPaymentId'))
+            ->where('active', 1)
+            ->first();
+
+        if (!$paymentMethod) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'The selected payment method is invalid.',
+            ], 200);
+        }
 
         if ($cart->sms_code_validated_at == "") {
 
@@ -188,7 +229,7 @@ class CheckoutController extends Controller
                 $cart->delivery_date = $deliveryDate;
                 $cart->delivery_time = $request->input('deliveryTime');
                 $cart->address_id = $request->input('deliveryAddressId'); // address of the user  
-                $cart->payment_id = 3; //$request->input('deliveryPaymentId');
+                $cart->payment_id = $request->input('deliveryPaymentId');
                 $cart->partner_location_address_id = $cart->partner->location->id ?? null; // dapat naa address is partner location address id
                     
 
@@ -203,8 +244,6 @@ class CheckoutController extends Controller
                     $cart_id = $cart->id;
 
                     // copy selected address 
-                    $userAddress = UserAddress::find($cart->address_id);
-
                     $cartUserAddress = CartUserAddress::updateOrCreate([
                         'cart_id' => $cart_id, 
                         'user_id' => $cart->user_id,],

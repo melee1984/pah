@@ -274,7 +274,8 @@ class Cart extends Model
 
       $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
       //
-      $this->delivery_fee = $data['rate'] ?? 0;
+      $delivery_fee = str_replace(',', '', (string) ($data['rate'] ?? 0));
+      $this->delivery_fee = is_numeric($delivery_fee) ? round((float) $delivery_fee, 2) : 0;
       $this->distance_rate = $data['distance'] ?? 0;
       $this->duration = $data['duration'] ?? '';
       $this->origin = $data['origin'] ?? '';
@@ -291,9 +292,9 @@ class Cart extends Model
 
       return $this->save();
 
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
 
-      \Log::error('Error during deliveryr rate computation.' . $e->message);
+      \Log::error('Error during delivery rate computation. ' . $e->getMessage());
 
       return false;
     }
