@@ -181,14 +181,18 @@ class CheckoutController extends Controller
                 else {
                     $deliveryDate = $request->input('deliveryDate');
                 }
+                // samplke
                 $cart->processed_at = now();
                 $cart->mobile = $user->mobile;
                 $cart->fullname = $user->firstname . " " . $user->lastname;; 
                 $cart->email = $user->email;
                 $cart->delivery_date = $deliveryDate;
                 $cart->delivery_time = $request->input('deliveryTime');
-                $cart->address_id = $request->input('deliveryAddressId'); // Static 
-                $cart->payment_id = $request->input('deliveryPaymentId');
+                $cart->address_id = $request->input('deliveryAddressID'); // address of the user  
+                $cart->payment_id = 3; //$request->input('deliveryPaymentID');
+                $cart->partner_location_address_id = $cart->partner->location->id ?? null; // dapat naa address is partner location address id
+                    
+
                 $cart->order_no = $cart->generateOrderNo();
                 $cart->sms_code = "";
                 $cart->active = 1;
