@@ -106,8 +106,7 @@ class CheckoutController extends Controller
             $session_id = $request->input('session_id');
             $user = $request->user();
 
-            $cart = Cart::whereSessionId($session_id)
-                            ->whereUserId($user->id)->first();
+            $cart = Cart::whereSessionId($session_id)->whereUserId($user->id)->first();
 
            if ($cart->sms_code == "") {
                 $data['message'] = "Invalid OTP code.";
@@ -188,8 +187,8 @@ class CheckoutController extends Controller
                 $cart->email = $user->email;
                 $cart->delivery_date = $deliveryDate;
                 $cart->delivery_time = $request->input('deliveryTime');
-                $cart->address_id = $request->input('deliveryAddressID'); // address of the user  
-                $cart->payment_id = 3; //$request->input('deliveryPaymentID');
+                $cart->address_id = $request->input('deliveryAddressId'); // address of the user  
+                $cart->payment_id = 3; //$request->input('deliveryPaymentId');
                 $cart->partner_location_address_id = $cart->partner->location->id ?? null; // dapat naa address is partner location address id
                     
 
