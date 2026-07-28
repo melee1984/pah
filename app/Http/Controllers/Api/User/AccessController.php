@@ -105,7 +105,7 @@ class AccessController extends Controller
               'access_token' => $this->apiToken,
               'session_id' => $session_id,
               'redirectURL' =>  URL::to($request->input('page')),
-
+              'is_with_sms_otp' => true
             ]);
           }
         } else {
@@ -378,7 +378,7 @@ class AccessController extends Controller
   }
 
   /**
-   * Client Login
+   * Client Login / User Login 
    */
   public function loginStore(Request $request)
   { 
