@@ -253,7 +253,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('user/reset/session', [MobileCheckoutController::class, 'resetSession']);
 
             Route::post('order/{order}', [MobileOrderController::class, 'index']);
-            Route::post('getorders', [MobileOrderController::class, 'orders']);
+            Route::get('getorders', [MobileOrderController::class, 'orders']);
             Route::post('getorder/{order}', [MobileOrderController::class, 'getOrderById']);
 
             Route::post('address/add/submit', [MobileCheckoutController::class, 'addAddress']);
