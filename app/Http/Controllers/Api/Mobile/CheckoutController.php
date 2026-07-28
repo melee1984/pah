@@ -154,12 +154,34 @@ class CheckoutController extends Controller
 
     public function process(Request $request) {
 
+        if ($request->has('deliveryPaymentId')) {
+            $deliveryPaymentId = PaymentMethod::resolveCheckoutId(
+                $request->input('deliveryPaymentId')
+            );
+
+            if ($deliveryPaymentId === null) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The delivery payment method must be credit_card, gcash, cod, 1, 2, or 3.',
+                    'errors' => [
+                        'deliveryPaymentId' => [
+                            'The selected delivery payment method is invalid.',
+                        ],
+                    ],
+                ], 200);
+            }
+
+            $request->merge([
+                'deliveryPaymentId' => $deliveryPaymentId,
+            ]);
+        }
+
         $rules = [
             'session_id' => 'required|string',
             'deliveryDate'=>'required',
             'deliveryTime'=>'required',
             'deliveryAddressId' => 'required|integer',
-            'deliveryPaymentId' => 'required',
+            'deliveryPaymentId' => 'required|integer',
         ];
 
         $validator = Validator::make($request->all(), $rules);
