@@ -159,7 +159,7 @@ class CheckoutController extends Controller
             'deliveryDate'=>'required',
             'deliveryTime'=>'required',
             'deliveryAddressId' => 'required|integer',
-            'deliveryPaymentId' => 'required|integer',
+            'deliveryPaymentId' => 'required',
         ];
 
         $validator = Validator::make($request->all(), $rules);
