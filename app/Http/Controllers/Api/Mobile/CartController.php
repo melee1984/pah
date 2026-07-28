@@ -203,10 +203,10 @@ class CartController extends Controller
                     $cart->details()->delete();
                     $cart->delivery_fee = 0;
                     $cart->distance_rate = 0;
+                    $cart->partner_location_address_id = $cart->partner->location->id ?? null; // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
                     $cart->duration = 0;
                     $cart->origin = null;
                     $cart->destination = null;
-                    $cart->partner_location_address_id = null;
                 }
 
                 if ((blank($cart->user_long) || blank($cart->user_lat))

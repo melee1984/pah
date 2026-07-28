@@ -240,12 +240,13 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::group(['middleware' => ['auth:api']], function () {
             //
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
+            Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
 
             Route::post('item/{status?}/add-cart', [MobileCartController::class, 'addCart']);
 
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
             Route::post('checkout', [MobileCheckoutController::class, 'checkout']);
-            Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
+            
             Route::post('checkout/sms/submit', [MobileCheckoutController::class, 'smsSending']);
             Route::post('checkout/sms/confirm/submit', [MobileCheckoutController::class, 'validatedSMScode']);
             Route::post('checkout/update/user/submit', [MobileCheckoutController::class, 'updateUserProfile']);
@@ -291,7 +292,9 @@ Route::group(['middleware' => 'isRequest'], function () {
 // ----------------------------------------------------------------------
 
 Route::group(['middleware' => 'isRequest'], function () {
-    Route::group(['prefix' => 'rasjh'], function () {
+    Route::group(['prefix' => 'rider'], function () {
+
+        // (basedURL)api/rider/account/login
 
         Route::post('account/login', [AccessController::class, 'login']);
         Route::post('login/submit', [AccessController::class, 'login']);
