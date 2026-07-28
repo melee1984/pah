@@ -35,6 +35,8 @@ class CheckoutController extends Controller
     
     public function checkout(Request $request) {
 
+
+    
     	$session_id = $request->input('session_id');
 
         $cart = Cart::whereSessionId($session_id)->first();
@@ -155,6 +157,13 @@ class CheckoutController extends Controller
 
     public function process(Request $request) {
 
+        $rules = [
+            'deliveryDate'=>'required',
+            'deliveryTime'=>'required',
+            'deliveryAddressId' => 'required',
+            'deliveryPaymentId' => 'required',
+        ];
+
         $session_id = $request->input('session_id');
         $user = $request->user();
 
@@ -274,6 +283,8 @@ class CheckoutController extends Controller
         $session_id = $request->input('session_id');
 
         $smsCode = rand(12345,10012);
+        // just makeing it static for now to avoid sending sms to the user
+        $smsCode = 12345;
 
         if (Auth::User()->mobile != "")  {
 
