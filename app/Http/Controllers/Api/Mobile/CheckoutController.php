@@ -35,8 +35,6 @@ class CheckoutController extends Controller
     
     public function checkout(Request $request) {
 
-
-    
     	$session_id = $request->input('session_id');
 
         $cart = Cart::whereSessionId($session_id)->first();
@@ -207,21 +205,21 @@ class CheckoutController extends Controller
                     $cartUserAddress = CartUserAddress::updateOrCreate([
                         'cart_id' => $cart_id, 
                         'user_id' => $cart->user_id,],
-                       array(
-                        'cart_id' => $cart_id, 
-                        'user_id' => $cart->user_id, 
-                        'address_1' => $userAddress->address_1,  
-                        'address_2' => $userAddress->address_2,  
-                        'zip_code' => $userAddress->zip_code,  
-                        'mobile' => $userAddress->mobile,  
-                        'landmark' => $userAddress->landmark,   
-                        'country_id'=> $userAddress->country_id,   
-                        'province_id'=> $userAddress->province_id,   
-                        'city_id' => $userAddress->city_id,  
-                        'barangay_id'=> $userAddress->barangay_id,   
-                        'lat' => $userAddress->lat,  
-                        'long' => $userAddress->long,  
-                       )
+                        array(
+                                'cart_id' => $cart_id, 
+                                'user_id' => $cart->user_id, 
+                                'address_1' => $userAddress->address_1 ?? null,  
+                                'address_2' => $userAddress->address_2 ?? null,  
+                                'zip_code' => $userAddress->zip_code ?? null,  
+                                'mobile' => $userAddress->mobile ?? null,  
+                                'landmark' => $userAddress->landmark ?? null,   
+                                'country_id'=> $userAddress->country_id ?? null,   
+                                'province_id'=> $userAddress->province_id ?? null,   
+                                'city_id' => $userAddress->city_id ?? null,  
+                                'barangay_id'=> $userAddress->barangay_id ?? null,   
+                                'lat' => $userAddress->lat ?? null,  
+                                'long' => $userAddress->long ?? null,  
+                        )
                     );
 
                     try {
