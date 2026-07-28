@@ -197,13 +197,12 @@ class CartController extends Controller
                 if (! $cart) {
                     $cart = new Cart;
                     $cart->session_id = $sessionId;
-                }
+                }   
 
                 if ($action === 'new' && $cart->exists) {
                     $cart->details()->delete();
                     $cart->delivery_fee = 0;
                     $cart->distance_rate = 0;
-                    $cart->partner_location_address_id = $cart->partner->location->id ?? null; // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
                     $cart->duration = 0;
                     $cart->origin = null;
                     $cart->destination = null;
@@ -221,6 +220,8 @@ class CartController extends Controller
 
                 $cart->ip_address = $request->ip();
                 $cart->partner_id = $partnerId;
+                // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
+                $cart->partner_location_address_id = $cart->partner->location->id ?? null; 
                 $cart->active = $user ? 1 : 0;
 
                 if ($user) {
@@ -256,6 +257,7 @@ class CartController extends Controller
                 $cartItem->variance_total_comm_total = $variantCommissionTotal;
                 $cartItem->discount_amount = $item->getDiscountAmount();
                 $cartItem->qty = (int) $cartItem->qty + $quantity;
+                
                 $cartItem->save();
 
                 return $cart;
