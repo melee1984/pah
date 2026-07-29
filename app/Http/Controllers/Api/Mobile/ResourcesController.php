@@ -172,16 +172,17 @@ class ResourcesController extends Controller
     {
         $user = $request->user();
 
-        $cart = Cart::whereSessionId($request->session()->getId())->first();
+        $cart = Cart::whereSessionId($request->session_id)->first();
         
         if (!$cart) {
             return response()->json(['message' => 'Cart not found.'], 404);
         }
 
-        $cart->latitude = $request->input('latitude');
-        $cart->longitude = $request->input('longitude');
+        $cart->user_lat = $request->input('latitude');
+        $cart->user_long = $request->input('longitude');
+       
         $cart->save();
 
-            return response()->json(['message' => 'User coordinates updated successfully.']);
+        return response()->json(['message' => 'User coordinates updated successfully.']);
     }
 }
