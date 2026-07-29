@@ -163,7 +163,7 @@ class ResourcesController extends Controller
             'cuisines' => $cuisines,
             'promo_banners' => $promoBanners,
             'top_picks' => $topPicks,
-            'restaurants' => RestaurantService::getRestaurants(), // Call the RestaurantService to get restaurants
+            'restaurants' => RestaurantService::getRestaurants($request), // Call the RestaurantService to get restaurants
         ]);
 
     }

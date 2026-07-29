@@ -10,11 +10,11 @@ use App\Model\Cart;
 
 class RestaurantService
 {
-    public static function getRestaurants()
+    public static function getRestaurants($request)
     {
        $data = array();
 
-        $session_id = Session::getId();
+        $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
 
         if ($cart && $cart->user_lat!="") {
