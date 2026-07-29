@@ -75,10 +75,10 @@ class RestaurantService
         foreach($restaurants as $restaurant) {
 
             $restaurant->short_title = Str::limit($restaurant->restaurant_name, 20);
-            $restaurant->rating = null;
+            $restaurant->rating = 5.0;
             $restaurant->rating_count = 0;
-            $restaurant->prep_time_min_minutes = null;
-            $restaurant->prep_time_max_minutes = null;
+            $restaurant->prep_time_min_minutes = 30;
+            $restaurant->prep_time_max_minutes = 45;
             $restaurant->distance_km = isset($restaurant->distance_km) ? round((float) $restaurant->distance_km, 2) : null;
             $restaurant->cuisine_tags = $cuisineTags->get($restaurant->id, collect())->values();
             $restaurant->category_tags = $categoryTags->get($restaurant->id, collect())->values();
