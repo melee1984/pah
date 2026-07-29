@@ -148,13 +148,14 @@ class ResourcesController extends Controller
         return response()->json($topPicks);
     }
 
-    public function getDashboardData()
+    public function getDashboardData(Request $request)
     {
         $categories = $this->getCategories()->getData();
         $cuisines = $this->getCuisines()->getData();
         $promoBanners = $this->getPromoBanner()->getData();
         $topPicks = $this->getTopPicks()->getData();
 
+        
         return response()->json([
             'categories' => $categories,
             'cuisines' => $cuisines,
@@ -163,5 +164,22 @@ class ResourcesController extends Controller
             'restaurants' => RestaurantService::getRestaurants(), // Call the RestaurantService to get restaurants
         ]);
 
+    }
+
+    public function updateUserCoordinates(Request $request)
+    {
+        $user = $request->user();
+
+        $cart = Cart::whereSessionId($request->session()->getId())->first();
+        
+        if (!$cart) {
+            return response()->json(['message' => 'Cart not found.'], 404);
+        }
+
+        $cart->latitude = $request->input('latitude');
+        $cart->longitude = $request->input('longitude');
+        $cart->save();
+
+            return response()->json(['message' => 'User coordinates updated successfully.']);
     }
 }

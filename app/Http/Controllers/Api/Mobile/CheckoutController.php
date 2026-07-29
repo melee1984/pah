@@ -325,6 +325,7 @@ class CheckoutController extends Controller
                     $data['status'] = 1;
                     $data['order_id'] = $order->id;
                     $data['order'] = $order;
+                    $data['order_no'] = $order->cart->order_no;
 
                 }
                 else {

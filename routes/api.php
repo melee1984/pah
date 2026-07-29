@@ -239,6 +239,9 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::group(['middleware' => ['auth:api']], function () {
             //
+
+            Route::post('user/coordinates', [ResourcesController::class, 'updateUserCoordinates']);
+
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
             Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
 
