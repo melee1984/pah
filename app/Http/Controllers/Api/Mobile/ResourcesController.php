@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
+use App\Model\Cart;
 use App\Partners;
 use App\PartnerTopPick;
 use App\Services\RestaurantService;
