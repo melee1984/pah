@@ -14,6 +14,8 @@ class RestaurantService
     {
        $data = array();
 
+       \Log::info(['message' => 'Fetching restaurants for the mobile app', 'request' => $request->all()]);
+       
         $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
 
