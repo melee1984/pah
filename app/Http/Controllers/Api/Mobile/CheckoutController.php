@@ -82,6 +82,8 @@ class CheckoutController extends Controller
         $data['payment'] = PaymentMethod::active();
         $data['delivery_time'] = $delivery_timings;
 
+        \Log::info('Checkout data: ' . json_encode($data));
+
         return response()->json($data, 200);
 
     }
