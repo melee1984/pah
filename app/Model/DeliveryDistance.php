@@ -14,8 +14,7 @@ class DeliveryDistance extends Model
 {
 	public static function getCoordinateComputation($from_coordinates, $to_coordinates)
 	{	
-
-	// just making sure that we are not waisting time and resources if the coordinates are the same
+		// just making sure that we are not waisting time and resources if the coordinates are the same
 		$data = [
 			'status' => 1,
 			'distance' => '5 km',
@@ -78,15 +77,7 @@ class DeliveryDistance extends Model
 			$duration = number_format($duration, 1, '.', '');
 
 			// Compute rate
-			$baseRate = (float) config('services.delivery.rate', 0);
-			$additionalKilometerRate = (float) config('services.delivery.additional_km_rate', 0);
-
-			if (ceil($distance) <= 1) {
-				\Log::info('Distance is within 1 km, applying base rate.');
-				$rate = $baseRate;
-			} else {
-				$rate = $baseRate + ((ceil($distance) - 1) * $additionalKilometerRate);
-			}
+			$rate = self::getRateFromDistanceKilometers($distance);
 
 			$data = [
 				'status' => 1,
@@ -106,6 +97,27 @@ class DeliveryDistance extends Model
 				'message' => $e->getMessage() ?: "Sorry, please pin your delivery location.",
 			];
 		}
+	}
+
+	public static function getRateFromDistanceKilometers($distanceKilometers): float
+	{
+		if (is_string($distanceKilometers)) {
+			$distanceKilometers = str_replace(',', '', trim($distanceKilometers));
+		}
+
+		if (!is_numeric($distanceKilometers) || (float) $distanceKilometers < 0) {
+			return 0.0;
+		}
+
+		$distanceKilometers = (float) $distanceKilometers;
+		$baseRate = (float) config('services.delivery.rate', 0);
+		$additionalKilometerRate = (float) config('services.delivery.additional_km_rate', 0);
+		$billableKilometers = max(1, (int) ceil($distanceKilometers));
+
+		return round(
+			$baseRate + (($billableKilometers - 1) * $additionalKilometerRate),
+			2
+		);
 	}
 
 

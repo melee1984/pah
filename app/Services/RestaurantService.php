@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Partners;
+use App\Model\DeliveryDistance;
 use Illuminate\Support\Str;
 use DB;
 use Session;
@@ -38,6 +39,7 @@ class RestaurantService
                             ->activeRestaurants()
                             ->orderBy('store_open', 'desc')
                             ->orderBy('distance_km', 'asc')
+                            ->limit(15)
                             ->get();
             
             // \Log::info([
@@ -82,7 +84,11 @@ class RestaurantService
             $restaurant->rating_count = 0;
             $restaurant->prep_time_min_minutes = 30;
             $restaurant->prep_time_max_minutes = 45;
-            $restaurant->distance_km = isset($restaurant->distance_km) ? round((float) $restaurant->distance_km, 2) : null;
+            $distanceKilometers = isset($restaurant->distance_km) ? (float) $restaurant->distance_km : null;
+            $restaurant->distance_km = $distanceKilometers !== null ? round($distanceKilometers, 2) : null;
+            $restaurant->delivery_fee = $distanceKilometers !== null
+                ? DeliveryDistance::getRateFromDistanceKilometers($distanceKilometers)
+                : 0.0;
             $restaurant->cuisine_tags = $cuisineTags->get($restaurant->id, collect())->values();
             $restaurant->category_tags = $categoryTags->get($restaurant->id, collect())->values();
 
