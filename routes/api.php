@@ -244,11 +244,10 @@ Route::group(['middleware' => 'isRequest'], function () {
 
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
             Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
-
             Route::post('item/{status?}/add-cart', [MobileCartController::class, 'addCart']);
 
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
-            Route::post('checkout', [MobileCheckoutController::class, 'checkout']);
+            Route::get('checkout', [MobileCheckoutController::class, 'checkout']);
             
             Route::post('checkout/sms/submit', [MobileCheckoutController::class, 'smsSending']);
             Route::post('checkout/sms/confirm/submit', [MobileCheckoutController::class, 'validatedSMScode']);
