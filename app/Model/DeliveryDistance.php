@@ -13,90 +13,99 @@ use DatePeriod;
 class DeliveryDistance extends Model
 {
 	public static function getCoordinateComputation($from_coordinates, $to_coordinates)
-	{	
-		// just making sure that we are not waisting time and resources if the coordinates are the same
-		$data = [
-			'status' => 1,
-			'distance' => '5 km',
-			'duration' => '10 mins',
-			'origin' => "",
-			'destination' => "",
-			'rate' => round(75, 2),
-		];
-
-		return $data;
-
+	{
 		try {
-
-			\Log::info('Starting getCoordinateComputation', [
-				'from' => $from_coordinates,
-				'to' => $to_coordinates
-			]);
-			
-			$from_latlong = $from_coordinates;
-			$to_latlong = $to_coordinates;
-
-			$apiKey = config('services.google.maps_key'); // store in .env: GOOGLE_MAPS_KEY
-
-			$url = 'https://maps.googleapis.com/maps/api/distancematrix/json';
-
-			// Use Laravel HTTP client instead of cURL
-			$response = Http::get($url, [
-				'units' => 'imperial',
-				'origins' => $from_latlong,
-				'destinations' => $to_latlong,
-				'key' => $apiKey,
-			]);
-
-			if (!$response->ok()) {
-				throw new \Exception('Failed to fetch distance data.');
-			}
-
-			$distance_arr = $response->json();
-			\Log::info('Distance Matrix API response', $distance_arr);
-
-			// Check if API returned results
-			if (empty($distance_arr['rows'][0]['elements'][0]['distance']['text'])) {
-				throw new \Exception('Distance data not found.');
-			}
-
-			$origin = $distance_arr['origin_addresses'][0] ?? '';
-			$destination = $distance_arr['destination_addresses'][0] ?? '';
-
-			$distance = $distance_arr['rows'][0]['elements'][0]['distance']['text'] ?? '0';
-			$duration = $distance_arr['rows'][0]['elements'][0]['duration']['text'] ?? '0';
-
-			// Extract numbers
-			$distance = floatval(preg_replace("/[^0-9.]/", "", $distance));
-			$duration = floatval(preg_replace("/[^0-9.]/", "", $duration));
-
-			// Convert miles to km
-			$distance = $distance * 1.609344;
-
-			$distance = number_format($distance, 1, '.', '');
-			$duration = number_format($duration, 1, '.', '');
-
-			// Compute rate
-			$rate = self::getRateFromDistanceKilometers($distance);
-
-			$data = [
-				'status' => 1,
-				'distance' => $distance . 'km',
-				'duration' => $duration,
-				'origin' => $origin,
-				'destination' => $destination,
-				'rate' => round($rate, 2),
-			];
-
-			\Log::info('Computed distance and rate', $data);
-			return $data;
-
-		} catch (\Exception $e) {
+			[$fromLatitude, $fromLongitude] = self::parseCoordinates($from_coordinates);
+			[$toLatitude, $toLongitude] = self::parseCoordinates($to_coordinates);
+		} catch (\InvalidArgumentException $exception) {
 			return [
 				'status' => 0,
-				'message' => $e->getMessage() ?: "Sorry, please pin your delivery location.",
+				'message' => $exception->getMessage(),
 			];
 		}
+
+		$originCoordinates = $fromLatitude . ',' . $fromLongitude;
+		$destinationCoordinates = $toLatitude . ',' . $toLongitude;
+		$apiKey = config('services.google.maps_key');
+
+		\Log::info('Starting getCoordinateComputation', [
+			'from' => $originCoordinates,
+			'to' => $destinationCoordinates,
+		]);
+
+		if (!empty($apiKey)) {
+			try {
+				$response = Http::timeout(10)->get(
+					'https://maps.googleapis.com/maps/api/distancematrix/json',
+					[
+						'units' => 'metric',
+						'origins' => $originCoordinates,
+						'destinations' => $destinationCoordinates,
+						'key' => $apiKey,
+					]
+				);
+
+				$responseData = $response->json();
+				$elementStatus = data_get($responseData, 'rows.0.elements.0.status');
+
+				\Log::info('Distance Matrix API response', [
+					'http_status' => $response->status(),
+					'status' => data_get($responseData, 'status'),
+					'element_status' => $elementStatus,
+				]);
+
+				if (
+					!$response->successful()
+					|| data_get($responseData, 'status') !== 'OK'
+					|| $elementStatus !== 'OK'
+				) {
+					throw new \RuntimeException(
+						data_get($responseData, 'error_message', 'Distance route data was not available.')
+					);
+				}
+
+				$distanceMeters = data_get($responseData, 'rows.0.elements.0.distance.value');
+				$durationSeconds = data_get($responseData, 'rows.0.elements.0.duration.value');
+
+				if (!is_numeric($distanceMeters) || !is_numeric($durationSeconds)) {
+					throw new \RuntimeException('Distance route data was incomplete.');
+				}
+
+				return self::buildCoordinateComputationResult(
+					(float) $distanceMeters / 1000,
+					(int) ceil((float) $durationSeconds / 60),
+					(string) data_get($responseData, 'origin_addresses.0', $originCoordinates),
+					(string) data_get($responseData, 'destination_addresses.0', $destinationCoordinates)
+				);
+			} catch (\Throwable $exception) {
+				\Log::warning('Distance Matrix API failed; using coordinate distance fallback.', [
+					'message' => $exception->getMessage(),
+					'from' => $originCoordinates,
+					'to' => $destinationCoordinates,
+				]);
+			}
+		}
+
+		$distanceKilometers = self::getStraightLineDistanceKilometers(
+			$fromLatitude,
+			$fromLongitude,
+			$toLatitude,
+			$toLongitude
+		);
+		$estimatedSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.fast_speed_kph', 30)
+		);
+		$durationMinutes = (int) ceil(
+			($distanceKilometers / $estimatedSpeedKilometersPerHour) * 60
+		);
+
+		return self::buildCoordinateComputationResult(
+			$distanceKilometers,
+			$durationMinutes,
+			$originCoordinates,
+			$destinationCoordinates
+		);
 	}
 
 	public static function getRateFromDistanceKilometers($distanceKilometers): float
@@ -163,6 +172,77 @@ class DeliveryDistance extends Model
 			'min_minutes' => $minimumPreparationMinutes + $minimumTravelMinutes,
 			'max_minutes' => $maximumPreparationMinutes + $maximumTravelMinutes,
 		];
+	}
+
+	private static function parseCoordinates($coordinates): array
+	{
+		if (is_string($coordinates)) {
+			$coordinates = array_map('trim', explode(',', $coordinates));
+		}
+
+		if (!is_array($coordinates)) {
+			throw new \InvalidArgumentException('The delivery coordinates are invalid.');
+		}
+
+		$latitude = $coordinates['latitude'] ?? $coordinates['lat'] ?? $coordinates[0] ?? null;
+		$longitude = $coordinates['longitude'] ?? $coordinates['lng'] ?? $coordinates[1] ?? null;
+
+		if (
+			!is_numeric($latitude)
+			|| !is_numeric($longitude)
+			|| (float) $latitude < -90
+			|| (float) $latitude > 90
+			|| (float) $longitude < -180
+			|| (float) $longitude > 180
+		) {
+			throw new \InvalidArgumentException('The delivery coordinates are invalid.');
+		}
+
+		return [(float) $latitude, (float) $longitude];
+	}
+
+	private static function getStraightLineDistanceKilometers(
+		float $fromLatitude,
+		float $fromLongitude,
+		float $toLatitude,
+		float $toLongitude
+	): float {
+		$earthRadiusKilometers = 6371;
+		$latitudeDifference = deg2rad($toLatitude - $fromLatitude);
+		$longitudeDifference = deg2rad($toLongitude - $fromLongitude);
+		$fromLatitudeRadians = deg2rad($fromLatitude);
+		$toLatitudeRadians = deg2rad($toLatitude);
+
+		$haversine = sin($latitudeDifference / 2) ** 2
+			+ cos($fromLatitudeRadians)
+			* cos($toLatitudeRadians)
+			* sin($longitudeDifference / 2) ** 2;
+
+		return round(
+			2 * $earthRadiusKilometers * asin(min(1, sqrt($haversine))),
+			2
+		);
+	}
+
+	private static function buildCoordinateComputationResult(
+		float $distanceKilometers,
+		int $durationMinutes,
+		string $origin,
+		string $destination
+	): array {
+		$distanceKilometers = round(max(0, $distanceKilometers), 2);
+		$data = [
+			'status' => 1,
+			'distance' => number_format($distanceKilometers, 2, '.', '') . 'km',
+			'duration' => max(0, $durationMinutes),
+			'origin' => $origin,
+			'destination' => $destination,
+			'rate' => self::getRateFromDistanceKilometers($distanceKilometers),
+		];
+
+		\Log::info('Computed distance and delivery rate', $data);
+
+		return $data;
 	}
 
 
