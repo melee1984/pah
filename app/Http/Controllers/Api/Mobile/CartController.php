@@ -40,6 +40,10 @@ class CartController extends Controller
         //     ]
         // }
 
+        if ($request->action === 'new') {
+            $action = 'new';
+        }
+        
         if ($request->has('is_not_available')) {
             $unavailableItemAction = CartItem::resolveUnavailableItemAction(
                 $request->input('is_not_available')
