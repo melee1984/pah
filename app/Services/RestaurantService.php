@@ -19,6 +19,14 @@ class RestaurantService
 
         if ($cart && $cart->user_lat!="") {
 
+    
+            \Log::info([
+                'message' => 'Cart found with user coordinates',
+                'cart_id' => $cart->id,
+                'user_lat' => $cart->user_lat,
+                'user_long' => $cart->user_long,
+            ]);
+    
             $userLat = (float) $cart->user_lat;
             $userLong = (float) $cart->user_long;
 
@@ -41,14 +49,21 @@ class RestaurantService
         }
         else {
 
-        // $restaurants = Partners::activeRestaurants();
-        // display only the active restaurants and not the ghost restaurants
-        $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
-                            ->with('products','products.variants', 'products.category')
-                            ->where('account_type_id','<>',4)
-                            ->activeRestaurants()
-                            ->orderBy('store_open', 'desc')
-                            ->get();
+            \Log::info([
+                'message' => 'Cart not found or user coordinates not set',
+                'cart_id' => $cart ? $cart->id : null,
+                'user_lat' => $cart ? $cart->user_lat : null,
+                'user_long' => $cart ? $cart->user_long : null,
+            ]);
+
+            // $restaurants = Partners::activeRestaurants();
+            // display only the active restaurants and not the ghost restaurants
+            $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
+                                ->with('products','products.variants', 'products.category')
+                                ->where('account_type_id','<>',4)
+                                ->activeRestaurants()
+                                ->orderBy('store_open', 'desc')
+                                ->get();
 
         }
 
