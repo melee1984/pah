@@ -25,6 +25,8 @@ class DeliveryDistance extends Model
 			'rate' => round(75, 2),
 		];
 
+		return $data;
+
 		try {
 
 			\Log::info('Starting getCoordinateComputation', [
