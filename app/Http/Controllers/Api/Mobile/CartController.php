@@ -289,7 +289,10 @@ class CartController extends Controller
 
         if (! $cart->delivery_fee) {
             try {
+                // Calculate the delivery fee for the cart
+                // This will update the cart's delivery_fee, distance_rate, and duration fields
                 $cart->deliveryRate();
+                // 
             } catch (Throwable $exception) {
                 \Log::warning('Unable to calculate the mobile cart delivery fee.', [
                     'exception' => $exception,

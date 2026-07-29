@@ -252,6 +252,8 @@ class Cart extends Model
       // and if multiple then validate asa ang pinaka duol 
       // 
 
+      
+
       $nearest_store_location = DB::table('partner_location')
         ->select('id', 'latitude', 'longtitude', 'address_1', DB::raw('
                  (select ST_Distance_Sphere(
@@ -272,7 +274,13 @@ class Cart extends Model
       $part_coordinate = $nearest_store_location->latitude . "," . $nearest_store_location->longtitude;
       $user_coordinate = $this->user_lat . "," . $this->user_long;
 
+      \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
+      \Log::info(['Cart Information' => $this]);
+
       $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
+
+      \Log::info(['delivery_rate_data' => $data]);
+
       //
       $delivery_fee = str_replace(',', '', (string) ($data['rate'] ?? 0));
       $this->delivery_fee = is_numeric($delivery_fee) ? round((float) $delivery_fee, 2) : 0;
