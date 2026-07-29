@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Partners;
 use App\PartnerTopPick;
 use App\Services\RestaurantService;
+use Illuminate\Http\Request;
 
 class ResourcesController extends Controller
 {
