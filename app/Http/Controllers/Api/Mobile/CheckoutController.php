@@ -330,7 +330,12 @@ class CheckoutController extends Controller
                     $data['order_id'] = $order->id;
                     $data['order'] = $order;
                     $data['order_no'] = $order->cart->order_no;
+
+                    \Log::info(['summary' => $cart->cartItemSummary(), 'order' => $order, 'cart' => $cart]);
+                    
                     $data['summary'] = $cart->cartItemSummary();
+                    
+                    $data['session_id'] = Session::getId(); // Need to send another 
 
                 }
                 else {
