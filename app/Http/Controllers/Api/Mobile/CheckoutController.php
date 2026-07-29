@@ -338,7 +338,7 @@ class CheckoutController extends Controller
                     $session_id = Session::getId();
                     Session::setId($session_id); ///
 
-                    $data['session_id'] = $session_id  // Need to send another 
+                    $data['session_id'] = $session_id;  // Need to send another 
 
                 }
                 else {
