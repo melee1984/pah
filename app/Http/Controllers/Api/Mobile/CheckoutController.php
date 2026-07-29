@@ -314,7 +314,11 @@ class CheckoutController extends Controller
                         }
 
                     } catch (Exception $e) {
-                        \Log('Error on saving Order ' . $cart_id );
+                        
+                        \Log::error('Error creating order for cart ID: ' . $cart_id, [
+                            'exception' => $e->getMessage(),
+                        ]);
+                    
                     }
 
                     // regenerate session 

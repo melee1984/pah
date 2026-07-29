@@ -274,12 +274,12 @@ class Cart extends Model
       $part_coordinate = $nearest_store_location->latitude . "," . $nearest_store_location->longtitude;
       $user_coordinate = $this->user_lat . "," . $this->user_long;
 
-      \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
-      \Log::info(['Cart Information' => $this]);
+      // \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
+      // \Log::info(['Cart Information' => $this]);
 
       $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
 
-      \Log::info(['delivery_rate_data' => $data]);
+      // \Log::info(['delivery_rate_data' => $data]);
 
       //
       $delivery_fee = str_replace(',', '', (string) ($data['rate'] ?? 0));
