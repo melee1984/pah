@@ -18,13 +18,13 @@ class RestaurantService
         $cart = Cart::whereSessionId($session_id)->first();
 
         if ($cart && $cart->user_lat!="") {
-
     
             \Log::info([
                 'message' => 'Cart found with user coordinates',
                 'cart_id' => $cart->id,
                 'user_lat' => $cart->user_lat,
                 'user_long' => $cart->user_long,
+                'session_id' => $session_id,
             ]);
     
             $userLat = (float) $cart->user_lat;
@@ -54,6 +54,7 @@ class RestaurantService
                 'cart_id' => $cart ? $cart->id : null,
                 'user_lat' => $cart ? $cart->user_lat : null,
                 'user_long' => $cart ? $cart->user_long : null,
+                'session_id' => $session_id,
             ]);
 
             // $restaurants = Partners::activeRestaurants();
