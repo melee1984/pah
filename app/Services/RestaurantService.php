@@ -21,14 +21,6 @@ class RestaurantService
 
         if ($cart && $cart->user_lat!="") {
     
-            \Log::info([
-                'message' => 'Cart found with user coordinates',
-                'cart_id' => $cart->id,
-                'user_lat' => $cart->user_lat,
-                'user_long' => $cart->user_long,
-                'session_id' => $session_id,
-            ]);
-    
             $userLat = (float) $cart->user_lat;
             $userLong = (float) $cart->user_long;
 
@@ -47,20 +39,20 @@ class RestaurantService
                             ->orderBy('store_open', 'desc')
                             ->orderBy('distance_km', 'asc')
                             ->get();
+            
+            \Log::info([
+                'message' => 'Cart found with user coordinates',
+                'cart_id' => $cart->id,
+                'user_lat' => $cart->user_lat,
+                'user_long' => $cart->user_long,
+                'session_id' => $session_id,
+            ]);
+
                     
         }
         else {
-
-            \Log::info([
-                'message' => 'Cart not found or user coordinates not set',
-                'cart_id' => $cart ? $cart->id : null,
-                'user_lat' => $cart ? $cart->user_lat : null,
-                'user_long' => $cart ? $cart->user_long : null,
-                'session_id' => $session_id,
-                'restaurant' => $restaurants
-            ]);
-
-            // $restaurants = Partners::activeRestaurants();
+            
+        // $restaurants = Partners::activeRestaurants();
             // display only the active restaurants and not the ghost restaurants
             $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
                                 ->with('products','products.variants', 'products.category')
@@ -69,7 +61,20 @@ class RestaurantService
                                 ->orderBy('store_open', 'desc')
                                 ->get();
 
+              \Log::info([
+                'message' => 'Cart not found or user coordinates not set',
+                'cart_id' => $cart ? $cart->id : null,
+                'user_lat' => $cart ? $cart->user_lat : null,
+                'user_long' => $cart ? $cart->user_long : null,
+                'session_id' => $session_id,
+                'restaurant' => $restaurants
+            ]);
+
+
         }
+
+
+       
 
         $restaurantIds = $restaurants->pluck('id');
         $cuisineTags = self::getCuisineTagsByPartner($restaurantIds);
