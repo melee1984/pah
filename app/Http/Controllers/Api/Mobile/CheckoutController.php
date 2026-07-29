@@ -197,6 +197,9 @@ class CheckoutController extends Controller
         $session_id = $request->input('session_id');
         $user = $request->user();
 
+        \Log::info('Processing checkout for user ID: ' . $user->id . ' with session ID: ' . $session_id);
+        \Log::info('user data: ' . json_encode($user));
+        
         $cart = Cart::whereSessionId($session_id)
                         ->whereUserId($user->id)->first();
 
