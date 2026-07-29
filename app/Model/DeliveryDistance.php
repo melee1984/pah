@@ -120,6 +120,51 @@ class DeliveryDistance extends Model
 		);
 	}
 
+	public static function getEstimatedDeliveryTimeFromDistanceKilometers($distanceKilometers): array
+	{
+		$minimumPreparationMinutes = max(
+			0,
+			(int) config('services.delivery.preparation_min_minutes', 30)
+		);
+		$maximumPreparationMinutes = max(
+			$minimumPreparationMinutes,
+			(int) config('services.delivery.preparation_max_minutes', 45)
+		);
+
+		if (is_string($distanceKilometers)) {
+			$distanceKilometers = str_replace(',', '', trim($distanceKilometers));
+		}
+
+		if (!is_numeric($distanceKilometers) || (float) $distanceKilometers < 0) {
+			return [
+				'min_minutes' => $minimumPreparationMinutes,
+				'max_minutes' => $maximumPreparationMinutes,
+			];
+		}
+
+		$distanceKilometers = (float) $distanceKilometers;
+		$fastSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.fast_speed_kph', 30)
+		);
+		$slowSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.slow_speed_kph', 20)
+		);
+
+		$minimumTravelMinutes = (int) ceil(
+			($distanceKilometers / $fastSpeedKilometersPerHour) * 60
+		);
+		$maximumTravelMinutes = (int) ceil(
+			($distanceKilometers / $slowSpeedKilometersPerHour) * 60
+		);
+
+		return [
+			'min_minutes' => $minimumPreparationMinutes + $minimumTravelMinutes,
+			'max_minutes' => $maximumPreparationMinutes + $maximumTravelMinutes,
+		];
+	}
+
 
 	public static function getCalendarDelivery($merchant = "") {
 

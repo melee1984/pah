@@ -82,9 +82,12 @@ class RestaurantService
             $restaurant->short_title = Str::limit($restaurant->restaurant_name, 20);
             $restaurant->rating = 5.0;
             $restaurant->rating_count = 0;
-            $restaurant->prep_time_min_minutes = 30;
-            $restaurant->prep_time_max_minutes = 45;
             $distanceKilometers = isset($restaurant->distance_km) ? (float) $restaurant->distance_km : null;
+            $estimatedDeliveryTime = DeliveryDistance::getEstimatedDeliveryTimeFromDistanceKilometers(
+                $distanceKilometers
+            );
+            $restaurant->prep_time_min_minutes = $estimatedDeliveryTime['min_minutes'];
+            $restaurant->prep_time_max_minutes = $estimatedDeliveryTime['max_minutes'];
             $restaurant->distance_km = $distanceKilometers !== null ? round($distanceKilometers, 2) : null;
             $restaurant->delivery_fee = $distanceKilometers !== null
                 ? DeliveryDistance::getRateFromDistanceKilometers($distanceKilometers)

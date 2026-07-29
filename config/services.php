@@ -41,7 +41,10 @@ return [
     'delivery' => [
         'rate' => env('DELIVERY_STARTING_RATE', 45),
         'additional_km_rate' => env('ADDITIONAL_KM_RATE', 15),
-        
+        'preparation_min_minutes' => env('DELIVERY_PREPARATION_MIN_MINUTES', 30),
+        'preparation_max_minutes' => env('DELIVERY_PREPARATION_MAX_MINUTES', 45),
+        'fast_speed_kph' => env('DELIVERY_FAST_SPEED_KPH', 30),
+        'slow_speed_kph' => env('DELIVERY_SLOW_SPEED_KPH', 20),
     ],
 
 ];
