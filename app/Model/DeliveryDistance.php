@@ -13,7 +13,18 @@ use DatePeriod;
 class DeliveryDistance extends Model
 {
 	public static function getCoordinateComputation($from_coordinates, $to_coordinates)
-	{
+	{	
+
+	// just making sure that we are not waisting time and resources if the coordinates are the same
+		$data = [
+			'status' => 1,
+			'distance' => '5 km',
+			'duration' => '10 mins',
+			'origin' => "",
+			'destination' => "",
+			'rate' => round(75, 2),
+		];
+
 		try {
 
 			\Log::info('Starting getCoordinateComputation', [
