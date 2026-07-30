@@ -118,15 +118,15 @@ class DeliveryDistance extends Model
 			return 0.0;
 		}
 
-		$distanceKilometers = (float) $distanceKilometers + 4; // add 4km because we are using a straight line distance and not the actual road distance. This is to account for the difference between straight line and actual road distance. this will match from the google map matrics. later maybe we can use google map matrics to get the actual road distance but for now we will use this method. to make sure that we are getting the precise delivery information. 
+		$distanceKilometers = (float) $distanceKilometers; 
 		$baseRate = (float) config('services.delivery.rate', 0);
 		$additionalKilometerRate = (float) config('services.delivery.additional_km_rate', 0);
 		$billableKilometers = max(1, (int) ceil($distanceKilometers));
 
-		return round(
-			$baseRate + (($billableKilometers - 1) * $additionalKilometerRate),
-			2
-		);
+		$rate = $baseRate + max(0, ($billableKilometers - 1) * $additionalKilometerRate);
+		$rate = $rate + 45; // extra 45 pesos for the delivery fee to account for the delivery driver fee. this is to make sure that we are getting the precise delivery information.
+
+		return round($rate, 2);
 	}
 
 	public static function getEstimatedDeliveryTimeFromDistanceKilometers($distanceKilometers): array
