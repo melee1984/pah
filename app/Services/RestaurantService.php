@@ -15,7 +15,7 @@ class RestaurantService
     {
        $data = array();
 
-        \Log::info(['message' => 'Fetching restaurants for the mobile app', 'request' => $request->all()]);
+        \Log::info(['message' => 'Fetching restaurants input', 'request' => $request->all()]);
        
         $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
@@ -50,10 +50,10 @@ class RestaurantService
                         ->get();
             
             \Log::info([
-                'message' => 'Cart found with user coordinates',
-                'cart_id' => $cart->id,
-                'user_lat' => $cart->user_lat,
-                'user_long' => $cart->user_long,
+                'message' => 'Fetched restaurants for the mobile app',
+                'cart_id' => $cart->id ?? null,
+                'user_lat' => $userLat,
+                'user_long' => $userLong,
                 'session_id' => $session_id,
             ]);
        
