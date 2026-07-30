@@ -40,6 +40,8 @@ class CartController extends Controller
         //     ]
         // }
 
+        \Log::info(['request' => $request->all()]);
+
         if ($request->action === 'new') {
             $action = 'new';
         }

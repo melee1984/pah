@@ -172,6 +172,12 @@ class ResourcesController extends Controller
     {
         $user = $request->user();
 
+        \Log::info('Updating user coordinates', [
+            'user_id' => $user->id,
+            'latitude' => $request->input('latitude'),
+            'longitude' => $request->input('longitude'),
+        ]);
+        
         $cart = Cart::whereSessionId($request->session_id)->first();
         
         if (!$cart) {
