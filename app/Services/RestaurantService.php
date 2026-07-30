@@ -69,7 +69,6 @@ class RestaurantService
                 'user_lat' => $cart ? $cart->user_lat : null,
                 'user_long' => $cart ? $cart->user_long : null,
                 'session_id' => $session_id,
-                'restaurant' => $restaurants
             ]);
         }
 
