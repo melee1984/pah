@@ -240,7 +240,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
             Route::post('item/{status?}/add-cart', [MobileCartController::class, 'addCart']);
             Route::post('cart/{cartItem}/action/{status?}/submit', [MobileCartController::class, 'modifyCartItem']);
-            
+
             Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
             Route::get('checkout', [MobileCheckoutController::class, 'checkout']);
@@ -300,9 +300,9 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::group(['middleware' => 'auth:api'], function () {
 
             Route::post('token/save', [RiderOrderController::class, 'saveToken'])->name('rider.save-token');
-            Route::post('bookings', [RiderOrderController::class, 'bookings']);
-            Route::post('accepted/bookings', [RiderOrderController::class, 'getAcceptedBooking']);
-            Route::post('accepted/day/bookings', [RiderOrderController::class, 'getAcceptedBookingByDate']);
+            Route::get('bookings', [RiderOrderController::class, 'bookings']);
+            Route::get('accepted/bookings', [RiderOrderController::class, 'getAcceptedBooking']);
+            Route::get('accepted/day/bookings', [RiderOrderController::class, 'getAcceptedBookingByDate']);
             Route::post('bookings/{order}/{action}/submit', [RiderOrderController::class, 'acceptBooking']);
 
             Route::post('bookings/job/{booking}/{action}/submit', [RiderOrderController::class, 'acceptJobBooking']);
@@ -312,12 +312,14 @@ Route::group(['middleware' => 'isRequest'], function () {
 });
 
 
+api/bookings/bookings 
+
 // ----------------------------------------------------------------------
 // STORE DASHBOARD MOBILE API
 // ----------------------------------------------------------------------
 
 Route::group(['middleware' => 'isRequest'], function () {
-    Route::group(['prefix' => 'vjhgf'], function () {
+    Route::group(['prefix' => 'merchant'], function () {
 
         Route::post('account/login', [AccessController::class, 'loginStore']);
         Route::post('login/submit', [AccessController::class, 'loginStore']);
