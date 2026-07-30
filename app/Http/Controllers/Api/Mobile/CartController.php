@@ -221,7 +221,7 @@ class CartController extends Controller
                     $cart->user_long = $request->input('longitude');
                     $cart->user_lat = $request->input('latitude');
                 }
-                
+
                 $cart->ip_address = $request->ip();
                 $cart->partner_id = $partnerId;
                 // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
@@ -237,7 +237,7 @@ class CartController extends Controller
 
                 $cart->save();
 
-                Log::info('CartController@addCart: Saving cart', [
+                \Log::info('CartController@addCart: Saving cart', [
                     'session_id' => $cart->session_id,
                     'user_long' => $cart->user_long,
                     'user_lat' => $cart->user_lat,
