@@ -279,7 +279,8 @@ class Cart extends Model
 
       $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
 
-      // \Log::info(['delivery_rate_data' => $data]);
+      \Log::info(['delivery_rate_data' => $data]);
+      \Log::info(['Nearest Partner Location' => $nearest_store_location]);
 
       //
       $delivery_fee = str_replace(',', '', (string) ($data['rate'] ?? 0));
