@@ -99,6 +99,9 @@ Route::post('register/submit', [RegisterController::class, 'store']);
 Route::post('merchant/register/submit', [PartnerController::class, 'insertMerchantPartner']);
 Route::post('merchant/forgot/submit', [PartnerController::class, 'resetPassword']);
 
+Route::post('account/logout', [AccessController::class, 'postLogout'])
+    ->middleware('auth:api');
+
 // -------------------------------------------------------------
 // AUTHENTICATED API ROUTES
 // -------------------------------------------------------------
@@ -234,7 +237,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::group(['middleware' => ['auth:api']], function () {
             //
-
+            Route::post('account/logout', [AccessController::class, 'postLogout']);
             Route::post('user/coordinates', [ResourcesController::class, 'updateUserCoordinates']);
 
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
@@ -299,6 +302,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::group(['middleware' => 'auth:api'], function () {
 
+            Route::post('account/logout', [AccessController::class, 'postLogout']);
             Route::post('token/save', [RiderOrderController::class, 'saveToken'])->name('rider.save-token');
             Route::get('bookings', [RiderOrderController::class, 'bookings']);
             Route::get('accepted/bookings', [RiderOrderController::class, 'getAcceptedBooking']);
@@ -324,6 +328,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::group(['middleware' => 'auth:api'], function () {
 
+            Route::post('account/logout', [AccessController::class, 'postLogout']);
             Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');
             Route::post('bookings', [StoreOrderController::class, 'bookings']);
             Route::post('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);

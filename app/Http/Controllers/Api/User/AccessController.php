@@ -354,21 +354,14 @@ class AccessController extends Controller
    */
   public function postLogout(Request $request)
   {
-    $token = $request->header('Authorization');
-    $user = User::where('api_token',$token)->first();
-    if($user) {
-      $postArray = ['api_token' => null];
-      $logout = User::where('id',$user->id)->update($postArray);
-      if($logout) {
-        return response()->json([
-          'message' => 'User Logged Out',
-        ]);
-      }
-    } else {
-      return response()->json([
-        'message' => 'User not found',
-      ]);
-    }
+    $request->user()->forceFill([
+      'api_token' => null,
+    ])->save();
+
+    return response()->json([
+      'status' => 1,
+      'message' => 'User logged out successfully.',
+    ]);
   }
 
 
