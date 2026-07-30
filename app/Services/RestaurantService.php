@@ -23,7 +23,7 @@ class RestaurantService
         $userLat = null;
         $userLong = null;
 
-        if (!$cart) {
+        if ($cart) {
             $userLat = (float) $cart->user_lat;
             $userLong = (float) $cart->user_long;
         }
