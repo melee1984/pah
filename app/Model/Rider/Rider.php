@@ -6,6 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Rider extends Model
 {
-   	protected $table = 'rider';
-	public $timestamps = true;
+    protected $table = 'rider';
+
+    public $timestamps = true;
+
+    protected $casts = [
+        'active' => 'boolean',
+        'date_join' => 'datetime',
+    ];
 }
