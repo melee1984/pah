@@ -181,11 +181,22 @@ class DeliveryDistance extends Model
 		}
 
 		if (!is_array($coordinates)) {
-			throw new \InvalidArgumentException('The delivery coordinates are invalid.');
+			throw new \InvalidArgumentException(
+				'The delivery coordinates are invalid.'
+			);
 		}
 
-		$latitude = $coordinates['latitude'] ?? $coordinates['lat'] ?? $coordinates[0] ?? null;
-		$longitude = $coordinates['longitude'] ?? $coordinates['lng'] ?? $coordinates[1] ?? null;
+		$latitude = $coordinates['latitude']
+			?? $coordinates['lat']
+			?? $coordinates[0]
+			?? null;
+
+		$longitude = $coordinates['longitude']
+			?? $coordinates['longtitude']
+			?? $coordinates['lng']
+			?? $coordinates['long']
+			?? $coordinates[1]
+			?? null;
 
 		if (
 			!is_numeric($latitude)
@@ -195,10 +206,15 @@ class DeliveryDistance extends Model
 			|| (float) $longitude < -180
 			|| (float) $longitude > 180
 		) {
-			throw new \InvalidArgumentException('The delivery coordinates are invalid.');
+			throw new \InvalidArgumentException(
+				'The delivery coordinates are invalid.'
+			);
 		}
 
-		return [(float) $latitude, (float) $longitude];
+		return [
+			(float) $latitude,
+			(float) $longitude,
+		];
 	}
 
 	private static function getStraightLineDistanceKilometers(
