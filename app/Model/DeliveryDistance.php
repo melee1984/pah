@@ -265,7 +265,6 @@ class DeliveryDistance extends Model
 		$billableKilometers = max(1, (int) ceil($distanceKilometers));
 
 		$rate = $baseRate + max(0, ($billableKilometers - 1) * $additionalKilometerRate);
-		$rate = $rate + 45; // extra 45 pesos for the delivery fee to account for the delivery driver fee. this is to make sure that we are getting the precise delivery information.
 
 		return round($rate, 2);
 	}
