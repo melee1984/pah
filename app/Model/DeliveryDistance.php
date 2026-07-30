@@ -3,6 +3,7 @@
 namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 
 use Carbon\Carbon;
@@ -12,6 +13,146 @@ use DatePeriod;
 
 class DeliveryDistance extends Model
 {
+	public static function getBatchCoordinateComputations(array $origins, $to_coordinates): array
+	{
+		if (empty(config('services.google.maps_key')) || empty($origins)) {
+			return [];
+		}
+
+		try {
+			[$toLatitude, $toLongitude] = self::parseCoordinates($to_coordinates);
+		} catch (\InvalidArgumentException $exception) {
+			return [];
+		}
+
+		$destinationCoordinates = self::formatCoordinates(
+			$toLatitude,
+			$toLongitude,
+			6
+		);
+		$results = [];
+		$validOrigins = [];
+
+		foreach ($origins as $key => $coordinates) {
+			try {
+				[$latitude, $longitude] = self::parseCoordinates($coordinates);
+			} catch (\InvalidArgumentException $exception) {
+				continue;
+			}
+
+			$originCoordinates = self::formatCoordinates(
+				$latitude,
+				$longitude,
+				6
+			);
+			$validOrigins[$key] = $originCoordinates;
+		}
+
+		$batchSize = min(
+			25,
+			max(1, (int) config('services.google.distance_matrix_batch_size', 25))
+		);
+		$maximumBatches = max(
+			0,
+			(int) config('services.google.distance_matrix_max_batches', 1)
+		);
+		$batches = array_slice(
+			array_chunk($validOrigins, $batchSize, true),
+			0,
+			$maximumBatches
+		);
+
+		foreach ($batches as $batch) {
+			if (!self::reserveDistanceMatrixElements(count($batch))) {
+				break;
+			}
+
+			try {
+				$response = Http::timeout(10)->get(
+					'https://maps.googleapis.com/maps/api/distancematrix/json',
+					[
+						'units' => 'metric',
+						'origins' => implode('|', $batch),
+						'destinations' => $destinationCoordinates,
+						'key' => config('services.google.maps_key'),
+					]
+				);
+				$responseData = $response->json();
+
+				if (
+					!$response->successful()
+					|| data_get($responseData, 'status') !== 'OK'
+				) {
+					throw new \RuntimeException(
+						data_get($responseData, 'error_message', 'Distance route data was not available.')
+					);
+				}
+
+				foreach (array_keys($batch) as $rowIndex => $key) {
+					$element = data_get($responseData, "rows.{$rowIndex}.elements.0");
+
+					if (
+						data_get($element, 'status') !== 'OK'
+						|| !is_numeric(data_get($element, 'distance.value'))
+						|| !is_numeric(data_get($element, 'duration.value'))
+					) {
+						continue;
+					}
+
+					$result = [
+						'distance_km' => round(
+							(float) data_get($element, 'distance.value') / 1000,
+							2
+						),
+						'duration_minutes' => (int) ceil(
+							(float) data_get($element, 'duration.value') / 60
+						),
+					];
+					$results[$key] = $result;
+				}
+			} catch (\Throwable $exception) {
+				\Log::warning('Distance Matrix batch failed; using restaurant distance fallback.', [
+					'message' => $exception->getMessage(),
+					'origin_count' => count($batch),
+				]);
+			}
+		}
+
+		return $results;
+	}
+
+	private static function reserveDistanceMatrixElements(int $elementCount): bool
+	{
+		$dailyLimit = max(
+			0,
+			(int) config('services.google.distance_matrix_daily_element_limit', 1000)
+		);
+
+		if ($elementCount < 1 || $dailyLimit < $elementCount) {
+			return false;
+		}
+
+		$cacheKey = 'google_distance_matrix_elements:' . now()->format('Y-m-d');
+		$expiresAt = now()->endOfDay();
+
+		try {
+			Cache::add($cacheKey, 0, $expiresAt);
+			$usedElements = Cache::increment($cacheKey, $elementCount);
+
+			if ($usedElements <= $dailyLimit) {
+				return true;
+			}
+
+			Cache::decrement($cacheKey, $elementCount);
+		} catch (\Throwable $exception) {
+			\Log::warning('Distance Matrix budget counter failed; skipping Google request.', [
+				'message' => $exception->getMessage(),
+			]);
+		}
+
+		return false;
+	}
+
 	public static function getCoordinateComputation($from_coordinates, $to_coordinates)
 	{
 		try {
@@ -174,6 +315,26 @@ class DeliveryDistance extends Model
 		];
 	}
 
+	public static function getEstimatedDeliveryTimeFromDurationMinutes($durationMinutes): array
+	{
+		$minimumPreparationMinutes = max(
+			0,
+			(int) config('services.delivery.preparation_min_minutes', 30)
+		);
+		$maximumPreparationMinutes = max(
+			$minimumPreparationMinutes,
+			(int) config('services.delivery.preparation_max_minutes', 45)
+		);
+		$durationMinutes = is_numeric($durationMinutes)
+			? max(0, (int) ceil((float) $durationMinutes))
+			: 0;
+
+		return [
+			'min_minutes' => $minimumPreparationMinutes + $durationMinutes,
+			'max_minutes' => $maximumPreparationMinutes + $durationMinutes,
+		];
+	}
+
 	private static function parseCoordinates($coordinates): array
 	{
 		if (is_string($coordinates)) {
@@ -215,6 +376,16 @@ class DeliveryDistance extends Model
 			(float) $latitude,
 			(float) $longitude,
 		];
+	}
+
+	private static function formatCoordinates(
+		float $latitude,
+		float $longitude,
+		int $precision
+	): string {
+		return number_format($latitude, $precision, '.', '')
+			. ','
+			. number_format($longitude, $precision, '.', '');
 	}
 
 	private static function getStraightLineDistanceKilometers(
@@ -318,5 +489,45 @@ class DeliveryDistance extends Model
         }
 		return $datePicker;
     }
+
+	public static function getDashboardCoordinateComputations(
+		array $origins,
+		$to_coordinates
+	): array {
+		try {
+			[$toLatitude, $toLongitude] = self::parseCoordinates($to_coordinates);
+		} catch (\InvalidArgumentException $exception) {
+			return [];
+		}
+
+		$estimatedSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.fast_speed_kph', 30)
+		);
+		$results = [];
+
+		foreach ($origins as $key => $coordinates) {
+			try {
+				[$fromLatitude, $fromLongitude] = self::parseCoordinates($coordinates);
+			} catch (\InvalidArgumentException $exception) {
+				continue;
+			}
+
+			$distanceKilometers = self::getStraightLineDistanceKilometers(
+				$fromLatitude,
+				$fromLongitude,
+				$toLatitude,
+				$toLongitude
+			);
+			$results[$key] = [
+				'distance_km' => $distanceKilometers,
+				'duration_minutes' => (int) ceil(
+					($distanceKilometers / $estimatedSpeedKilometersPerHour) * 60
+				),
+			];
+		}
+
+		return $results;
+	}
 
 }

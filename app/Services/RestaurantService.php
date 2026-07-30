@@ -24,13 +24,22 @@ class RestaurantService
         $userLong = null;
 
         if ($cart) {
-            $userLat = (float) $cart->user_lat;
-            $userLong = (float) $cart->user_long;
+            $userLat = $cart->user_lat;
+            $userLong = $cart->user_long;
         }
         else {
-            $userLat = (float) $request->input('latitude');
-            $userLong = (float) $request->input('longitude');   
+            $userLat = $request->input('latitude');
+            $userLong = $request->input('longitude');
         }
+
+        $hasValidUserCoordinates = is_numeric($userLat)
+            && is_numeric($userLong)
+            && (float) $userLat >= -90
+            && (float) $userLat <= 90
+            && (float) $userLong >= -180
+            && (float) $userLong <= 180;
+        $userLat = $hasValidUserCoordinates ? (float) $userLat : 0.0;
+        $userLong = $hasValidUserCoordinates ? (float) $userLong : 0.0;
 
         $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city' , 'budget_id' , 'account_type_id', DB::raw('
                                 (select (ST_Distance_Sphere(
@@ -75,6 +84,43 @@ class RestaurantService
      
 
         $restaurantIds = $restaurants->pluck('id');
+        $partnerLocations = DB::table('partner_location')
+            ->whereIn('partner_id', $restaurantIds)
+            ->orderBy('id')
+            ->get(['partner_id', 'latitude', 'longtitude'])
+            ->filter(function ($location) {
+                return is_numeric($location->latitude)
+                    && is_numeric($location->longtitude);
+            })
+            ->unique('partner_id')
+            ->keyBy('partner_id');
+        $restaurantOrigins = $partnerLocations
+            ->mapWithKeys(function ($location, $partnerId) {
+                return [
+                    $partnerId => [
+                        'latitude' => $location->latitude,
+                        'longitude' => $location->longtitude,
+                    ],
+                ];
+            })
+            ->all();
+        $userCoordinates = [
+            'latitude' => $userLat,
+            'longitude' => $userLong,
+        ];
+        $routeComputations = [];
+
+        if ($hasValidUserCoordinates) {
+            $routeComputations = config('services.google.distance_matrix_dashboard_enabled', false)
+                ? DeliveryDistance::getBatchCoordinateComputations(
+                    $restaurantOrigins,
+                    $userCoordinates
+                )
+                : DeliveryDistance::getDashboardCoordinateComputations(
+                    $restaurantOrigins,
+                    $userCoordinates
+                );
+        }
         $cuisineTags = self::getCuisineTagsByPartner($restaurantIds);
         $categoryTags = self::getCategoryTagsByPartner($restaurantIds);
 
@@ -83,12 +129,20 @@ class RestaurantService
             $restaurant->short_title = Str::limit($restaurant->restaurant_name, 20);
             $restaurant->rating = 5.0;
             $restaurant->rating_count = 0;
-            $distanceKilometers = isset($restaurant->distance_km) ? (float) $restaurant->distance_km : null;
-            $estimatedDeliveryTime = DeliveryDistance::getEstimatedDeliveryTimeFromDistanceKilometers(
-                $distanceKilometers
-            );
+            $routeComputation = $routeComputations[$restaurant->id] ?? null;
+            $distanceKilometers = $routeComputation['distance_km']
+                ?? (isset($restaurant->distance_km) ? (float) $restaurant->distance_km : null);
+            $travelDurationMinutes = $routeComputation['duration_minutes'] ?? null;
+            $estimatedDeliveryTime = $travelDurationMinutes !== null
+                ? DeliveryDistance::getEstimatedDeliveryTimeFromDurationMinutes(
+                    $travelDurationMinutes
+                )
+                : DeliveryDistance::getEstimatedDeliveryTimeFromDistanceKilometers(
+                    $distanceKilometers
+                );
             $restaurant->prep_time_min_minutes = $estimatedDeliveryTime['min_minutes'];
             $restaurant->prep_time_max_minutes = $estimatedDeliveryTime['max_minutes'];
+            $restaurant->travel_duration_minutes = $travelDurationMinutes;
             $restaurant->distance_km = $distanceKilometers !== null ? round($distanceKilometers, 2) : null;
             $restaurant->delivery_fee = $distanceKilometers !== null
                 ? DeliveryDistance::getRateFromDistanceKilometers($distanceKilometers)

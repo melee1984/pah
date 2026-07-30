@@ -37,6 +37,10 @@ return [
 
     'google' => [
         'maps_key' => env('GOOGLE_MAPS_KEY'),
+        'distance_matrix_batch_size' => env('GOOGLE_DISTANCE_MATRIX_BATCH_SIZE', 25),
+        'distance_matrix_max_batches' => env('GOOGLE_DISTANCE_MATRIX_MAX_BATCHES', 1),
+        'distance_matrix_daily_element_limit' => env('GOOGLE_DISTANCE_MATRIX_DAILY_ELEMENT_LIMIT', 1000),
+        'distance_matrix_dashboard_enabled' => env('GOOGLE_DISTANCE_MATRIX_DASHBOARD_ENABLED', false),
     ],
     'delivery' => [
         'rate' => env('DELIVERY_STARTING_RATE', 45),
