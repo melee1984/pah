@@ -250,9 +250,6 @@ class Cart extends Model
 
       // recheck the number of partner available 
       // and if multiple then validate asa ang pinaka duol 
-      // 
-
-      
 
       $nearest_store_location = DB::table('partner_location')
         ->select('id', 'latitude', 'longtitude', 'address_1', DB::raw('
@@ -272,15 +269,23 @@ class Cart extends Model
       $this->partner_location_address_id = $nearest_store_location->id;
       // $part_coordinate = $this->partner->location->latitude.",".$this->partner->location->longtitude;
       $part_coordinate = $nearest_store_location->latitude . "," . $nearest_store_location->longtitude;
+    // mau coordinate niiya sa user 
       $user_coordinate = $this->user_lat . "," . $this->user_long;
+
+      \Log::info('Computing delivery rate for cart', [
+        'cart_id' => $this->id,
+        'partner_id' => $this->partner->id,
+        'user_coordinate' => $user_coordinate,
+        'partner_coordinate' => $part_coordinate,
+      ]);
 
       // \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
       // \Log::info(['Cart Information' => $this]);
 
       $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
 
-      \Log::info(['delivery_rate_data' => $data]);
-      \Log::info(['Nearest Partner Location' => $nearest_store_location]);
+      // \Log::info(['delivery_rate_data' => $data]);
+      // \Log::info(['Nearest Partner Location' => $nearest_store_location]);
 
       //
       $delivery_fee = str_replace(',', '', (string) ($data['rate'] ?? 0));

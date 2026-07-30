@@ -239,9 +239,6 @@ class DeliveryDistance extends Model
 			'destination' => $destination,
 			'rate' => self::getRateFromDistanceKilometers($distanceKilometers),
 		];
-
-		\Log::info('Computed distance and delivery rate', $data);
-
 		return $data;
 	}
 
