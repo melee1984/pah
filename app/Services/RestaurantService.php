@@ -15,7 +15,7 @@ class RestaurantService
     {
        $data = array();
 
-       \Log::info(['message' => 'Fetching restaurants for the mobile app', 'request' => $request->all()]);
+    //    \Log::info(['message' => 'Fetching restaurants for the mobile app', 'request' => $request->all()]);
        
         $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
@@ -42,13 +42,13 @@ class RestaurantService
                             ->limit(15)
                             ->get();
             
-            // \Log::info([
-            //     'message' => 'Cart found with user coordinates',
-            //     'cart_id' => $cart->id,
-            //     'user_lat' => $cart->user_lat,
-            //     'user_long' => $cart->user_long,
-            //     'session_id' => $session_id,
-            // ]);
+            \Log::info([
+                'message' => 'Cart found with user coordinates',
+                'cart_id' => $cart->id,
+                'user_lat' => $cart->user_lat,
+                'user_long' => $cart->user_long,
+                'session_id' => $session_id,
+            ]);
 
                     
         }
@@ -63,14 +63,14 @@ class RestaurantService
                                 ->orderBy('store_open', 'desc')
                                 ->get();
 
-            //   \Log::info([
-            //     'message' => 'Cart not found or user coordinates not set',
-            //     'cart_id' => $cart ? $cart->id : null,
-            //     'user_lat' => $cart ? $cart->user_lat : null,
-            //     'user_long' => $cart ? $cart->user_long : null,
-            //     'session_id' => $session_id,
-            //     'restaurant' => $restaurants
-            // ]);
+              \Log::info([
+                'message' => 'Cart not found or user coordinates not set',
+                'cart_id' => $cart ? $cart->id : null,
+                'user_lat' => $cart ? $cart->user_lat : null,
+                'user_long' => $cart ? $cart->user_long : null,
+                'session_id' => $session_id,
+                'restaurant' => $restaurants
+            ]);
         }
 
         $restaurantIds = $restaurants->pluck('id');
