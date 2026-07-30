@@ -225,17 +225,12 @@ Route::group(['middleware' => 'isRequest'], function () {
 
         Route::get('home', [MobileHomeController::class, 'home']);
         Route::get('restaurants', [MobileHomeController::class, 'list']);
-
         Route::get('data/dashboard', [ResourcesController::class, 'getDashboardData']);
-        
         Route::get('restaurant/search', [MobileHomeController::class, 'search']);
         Route::get('restaurant/{partner:id}', [MobileHomeController::class, 'restaurant']);
-
         Route::post('account/login', [AccessController::class, 'login']);
         Route::post('account/register', [AccessController::class, 'register']);
         Route::post('login/submit', [AccessController::class, 'login']);
-
-        Route::post('cart/{cartItem}/action/{status?}/submit', [MobileCartController::class, 'modifyCartItem']);
 
         Route::group(['middleware' => ['auth:api']], function () {
             //
@@ -243,9 +238,10 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('user/coordinates', [ResourcesController::class, 'updateUserCoordinates']);
 
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
-            Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
             Route::post('item/{status?}/add-cart', [MobileCartController::class, 'addCart']);
-
+            Route::post('cart/{cartItem}/action/{status?}/submit', [MobileCartController::class, 'modifyCartItem']);
+            
+            Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
             Route::get('checkout', [MobileCheckoutController::class, 'checkout']);
             
