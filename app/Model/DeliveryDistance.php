@@ -28,10 +28,10 @@ class DeliveryDistance extends Model
 		$destinationCoordinates = $toLatitude . ',' . $toLongitude;
 		$apiKey = config('services.google.maps_key');
 
-		\Log::info('Starting getCoordinateComputation', [
-			'from' => $originCoordinates,
-			'to' => $destinationCoordinates,
-		]);
+		// \Log::info('Starting getCoordinateComputation', [
+		// 	'from' => $originCoordinates,
+		// 	'to' => $destinationCoordinates,
+		// ]);
 
 		if (!empty($apiKey)) {
 			try {
@@ -255,6 +255,9 @@ class DeliveryDistance extends Model
 			'destination' => $destination,
 			'rate' => self::getRateFromDistanceKilometers($distanceKilometers),
 		];
+
+		\Log::info('Computed delivery distance and rate', $data);
+		
 		return $data;
 	}
 

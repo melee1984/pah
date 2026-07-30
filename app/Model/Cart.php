@@ -272,12 +272,12 @@ class Cart extends Model
     // mau coordinate niiya sa user 
       $user_coordinate = $this->user_lat . "," . $this->user_long;
 
-      \Log::info('Computing delivery rate for cart', [
-        'cart_id' => $this->id,
-        'partner_id' => $this->partner->id,
-        'user_coordinate' => $user_coordinate,
-        'partner_coordinate' => $part_coordinate,
-      ]);
+      // \Log::info('Computing delivery rate for cart', [
+      //   'cart_id' => $this->id,
+      //   'partner_id' => $this->partner->id,
+      //   'user_coordinate' => $user_coordinate,
+      //   'partner_coordinate' => $part_coordinate,
+      // ]);
 
       // \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
       // \Log::info(['Cart Information' => $this]);
