@@ -20,27 +20,34 @@ class RestaurantService
         $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
 
-        if ($cart && $cart->user_lat!="") {
-    
+        $userLat = null;
+        $userLong = null;
+
+        if (!$cart) {
             $userLat = (float) $cart->user_lat;
             $userLong = (float) $cart->user_long;
+        }
+        else {
+            $userLat = (float) $request->input('latitude');
+            $userLong = (float) $request->input('longitude');   
+        }
 
-            $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city' , 'budget_id' , 'account_type_id', DB::raw('
-                                    (select (ST_Distance_Sphere(
-                                    point(partner_location.longtitude, partner_location.latitude),
-                                    point('.$userLong.', '.$userLat.')) * 0.001 / 1000) 
-                                    from partner_location where partner_location.partner_id = partners.id limit 0,1)  as meter'), DB::raw('
-                                    (select (ST_Distance_Sphere(
-                                    point(partner_location.longtitude, partner_location.latitude),
-                                    point('.$userLong.', '.$userLat.')) * 0.001) 
-                                    from partner_location where partner_location.partner_id = partners.id limit 0,1)  as distance_km'))
-                            ->where('account_type_id','<>',4)
-                            ->with('products','products.variants', 'category')
-                            ->activeRestaurants()
-                            ->orderBy('store_open', 'desc')
-                            ->orderBy('distance_km', 'asc')
-                            ->limit(15)
-                            ->get();
+        $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city' , 'budget_id' , 'account_type_id', DB::raw('
+                                (select (ST_Distance_Sphere(
+                                point(partner_location.longtitude, partner_location.latitude),
+                                point('.$userLong.', '.$userLat.')) * 0.001 / 1000) 
+                                from partner_location where partner_location.partner_id = partners.id limit 0,1)  as meter'), DB::raw('
+                                (select (ST_Distance_Sphere(
+                                point(partner_location.longtitude, partner_location.latitude),
+                                point('.$userLong.', '.$userLat.')) * 0.001) 
+                                from partner_location where partner_location.partner_id = partners.id limit 0,1)  as distance_km'))
+                        ->where('account_type_id','<>',4)
+                        ->with('products','products.variants', 'category')
+                        ->activeRestaurants()
+                        ->orderBy('store_open', 'desc')
+                        ->orderBy('distance_km', 'asc')
+                        ->limit(15)
+                        ->get();
             
             \Log::info([
                 'message' => 'Cart found with user coordinates',
@@ -49,28 +56,23 @@ class RestaurantService
                 'user_long' => $cart->user_long,
                 'session_id' => $session_id,
             ]);
+       
+        // display only the active restaurants and not the ghost restaurants
+        // $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
+        //                     ->with('products','products.variants', 'products.category')
+        //                     ->where('account_type_id','<>',4)
+        //                     ->activeRestaurants()
+        //                     ->orderBy('store_open', 'desc')
+        //                     ->get();
 
-                    
-        }
-        else {
-            
-        // $restaurants = Partners::activeRestaurants();
-            // display only the active restaurants and not the ghost restaurants
-            $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
-                                ->with('products','products.variants', 'products.category')
-                                ->where('account_type_id','<>',4)
-                                ->activeRestaurants()
-                                ->orderBy('store_open', 'desc')
-                                ->get();
-
-              \Log::info([
-                'message' => 'Cart not found or user coordinates not set',
-                'cart_id' => $cart ? $cart->id : null,
-                'user_lat' => $cart ? $cart->user_lat : null,
-                'user_long' => $cart ? $cart->user_long : null,
-                'session_id' => $session_id,
-            ]);
-        }
+        //   \Log::info([
+        //     'message' => 'Cart not found or user coordinates not set',
+        //     'cart_id' => $cart ? $cart->id : null,
+        //     'user_lat' => $cart ? $cart->user_lat : null,
+        //     'user_long' => $cart ? $cart->user_long : null,
+        //     'session_id' => $session_id,
+        // ]);
+     
 
         $restaurantIds = $restaurants->pluck('id');
         $cuisineTags = self::getCuisineTagsByPartner($restaurantIds);
