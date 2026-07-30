@@ -212,6 +212,8 @@ class CheckoutController extends Controller
             ], 200);
         }
 
+        \Log::info('checkout input data: ' . json_encode($request->all()));
+
         $userAddress = UserAddress::where('id', $request->input('deliveryAddressId'))
             ->whereUserId($user->id)
             ->where('active', 1)
