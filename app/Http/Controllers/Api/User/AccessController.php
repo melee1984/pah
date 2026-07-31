@@ -289,12 +289,12 @@ class AccessController extends Controller
   {
     // Validations
     $rules = [
-      'firstname'     => 'required',
-      'lastname'     => 'required',
-      'email'    => 'required|unique:users,email',
+      'firstname' => 'required',
+      'lastname'  => 'required',
+      'email'     => 'required|email|unique:users,email',
       'mobile'    => 'required',
-      'password' => 'required|min:5'
-    ];
+      'password'  => 'required|min:5|confirmed',
+    ];  
 
     $validator = Validator::make($request->all(), $rules);
 
@@ -307,7 +307,7 @@ class AccessController extends Controller
 
       $user = new User;
       $user->lastname = $request->input('lastname');
-      $user->firstname = $request->input('fullname');
+      $user->firstname = $request->input('firstname');
       $user->email = $request->input('email');
       $user->mobile = $request->input('mobile');
       $user->password =  Hash::make($request->input('password'));
@@ -340,8 +340,8 @@ class AccessController extends Controller
             'mobile' => $user->mobile,
             'session_id' => $session_id,
             'photo' => $user->avatar
-
         ]);
+        
       } else {
         return response()->json([
             'message' => 'Registration failed, please try again.',
