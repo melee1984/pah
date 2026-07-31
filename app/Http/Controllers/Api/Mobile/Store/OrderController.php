@@ -109,7 +109,7 @@ class OrderController extends Controller
     					->whereDate('submitted_at', $day)
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
-						->paginate(10);
+						->get();
 
 		foreach($orders as $order) {
 			$order->summary = $order->cart->cartItemSummary();
