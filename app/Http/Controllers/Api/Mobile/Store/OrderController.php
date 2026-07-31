@@ -211,4 +211,29 @@ class OrderController extends Controller
         }
 
     }
+
+	public function toggleStoreOnline(Request $request)
+	{
+		$merchant = Auth::user()->merchant;
+
+		if (! $merchant) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'Merchant not found.',
+			], 404);
+		}
+
+		$merchant->update([
+			'store_open' => ! $merchant->store_open,
+		]);
+
+		return response()->json([
+			'status' => 1,
+			'message' => $merchant->store_open
+				? 'Store is now online.'
+				: 'Store is now offline.',
+			'store_online' => $merchant->store_open,
+		]);
+	}
+	
 }

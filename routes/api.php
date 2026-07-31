@@ -336,6 +336,8 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('bookings/{order}/{action}/submit', [StoreOrderController::class, 'acceptBooking']);
 
             Route::post('token/submit', [StoreOrderController::class, 'saveTokenDeviceStore']);
+            Route::post('toggle/store/online', [StoreOrderController::class, 'toggleStoreOnline']);
+
         });
     });
 });
