@@ -140,7 +140,7 @@ class OrderController extends Controller
 	
 		$data = array();	
 		
-		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->restaurant_name);
+		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->id);
 
 		$orders = Orders::wherePartnerId($request->user()->id)
 					->orderby('submitted_at','desc')
@@ -172,7 +172,7 @@ class OrderController extends Controller
 
     	return response()->json($data, 200);
 
-		}
+	}
 
     public function acceptBooking(Orders $order, $action, Request $request) {
 		
