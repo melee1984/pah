@@ -27,7 +27,7 @@ class OrderController extends Controller
     					->whereNull('store_accepted_at')
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
-						->paginate(10);
+						->get();
 
 		foreach($orders as $order) {
 
@@ -67,7 +67,7 @@ class OrderController extends Controller
     					->whereDate('submitted_at', Carbon::today())
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
-						->paginate(10);
+						->get();
 						
 		foreach($orders as $order) {
 			$order->summary = $order->cart->cartItemSummary();
