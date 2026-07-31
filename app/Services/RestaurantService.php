@@ -20,17 +20,8 @@ class RestaurantService
         $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
 
-        $userLat = null;
-        $userLong = null;
-
-        if ($cart) {
-            $userLat = $cart->user_lat;
-            $userLong = $cart->user_long;
-        }
-        else {
-            $userLat = $request->input('latitude');
-            $userLong = $request->input('longitude');
-        }
+        $userLat = $request->input('latitude') ?: ($cart ? $cart->user_lat : null);
+        $userLong = $request->input('longitude') ?: ($cart ? $cart->user_long : null);
 
         $hasValidUserCoordinates = is_numeric($userLat)
             && is_numeric($userLong)
