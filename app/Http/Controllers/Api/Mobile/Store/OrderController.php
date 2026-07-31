@@ -226,9 +226,9 @@ class OrderController extends Controller
 			], 404);
 		}
 
-		$merchant->update([
-			'store_open' => ! $merchant->store_open,
-		]);
+		$merchant->store_open = ! (bool) $merchant->store_open;
+    	$merchant->save();
+		$merchant->refresh();
 
 		return response()->json([
 			'status' => 1,
