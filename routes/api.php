@@ -330,6 +330,9 @@ Route::group(['middleware' => 'isRequest'], function () {
 
             Route::post('account/logout', [AccessController::class, 'postLogout']);
             Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');
+
+            Route::get('orders', [StoreOrderController::class, 'orders']);
+        
             Route::get('bookings', [StoreOrderController::class, 'bookings']);
             Route::get('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);
             Route::get('accepted/day/bookings', [StoreOrderController::class, 'getAcceptedBookingByDate']);

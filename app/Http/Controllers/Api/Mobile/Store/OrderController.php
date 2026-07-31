@@ -135,6 +135,42 @@ class OrderController extends Controller
     }
 
 
+	public function orders(Request $request) {
+	
+		$data = array();	
+		
+		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->restaurant_name);
+
+		$orders = Orders::wherePartnerId($request->user()->id)
+					->orderby('submitted_at','desc')
+					->get();
+
+		foreach($orders as $order) {
+
+			if (!$order->cart->option_id) {
+				$order->summary = $order->cart->cartItemSummary();
+				$product_items = $order->cart->cartItemList();    
+				$order->cart_total = $order->cart->cartItemTotal();
+				foreach($product_items as $list) {
+					$list->variance_content = unserialize($list->variance_content);
+
+					if ($list->item) {
+						$list->price = number_format($list->item->getPrice() + number_format($list->variance_total,2),2);
+					}
+				}
+
+				$order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
+				$order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
+				$order->cart->address;
+				$order->status;  
+				$order->logs = $order->getActionLogs();
+			}
+		}
+			
+			return response()->json($orders, 200);
+		
+	}
+
     public function acceptBooking(Orders $order, $action, Request $request) {
 		
 		$data = array();
