@@ -142,10 +142,10 @@ class OrderController extends Controller
 		
 		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->id);
 
-		$orders = Orders::wherePartnerId($request->user()->id)
+		$orders = Orders::wherePartnerId($request->user()->merchant->id)
 					->orderby('submitted_at','desc')
 					->get();
-
+		
 		foreach($orders as $order) {
 
 			if (!$order->cart->option_id) {
