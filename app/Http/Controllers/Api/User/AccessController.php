@@ -378,7 +378,7 @@ class AccessController extends Controller
     // Validations
     $rules = [
       'email'=>'required|email',
-      'password'=>'required|min:8'
+      'password'=>'required|min:6'
     ];
 
     $session_id = Session::getId();
