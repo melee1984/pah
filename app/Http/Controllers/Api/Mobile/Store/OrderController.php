@@ -13,6 +13,7 @@ use App\Model\Orders\OrderProcess;
 use Carbon\Carbon;
 
 use App\PushNotification;
+use Auth;
 
 class OrderController extends Controller
 {	
@@ -235,5 +236,5 @@ class OrderController extends Controller
 			'store_online' => $merchant->store_open,
 		]);
 	}
-	
+
 }
