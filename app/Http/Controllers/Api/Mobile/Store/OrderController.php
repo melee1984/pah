@@ -217,6 +217,8 @@ class OrderController extends Controller
 	{
 		$merchant = Auth::user()->merchant;
 
+		\Log::info('Toggle store online request for merchant ID: ' . $merchant->id, ['current_status' => $merchant->store_open]);
+
 		if (! $merchant) {
 			return response()->json([
 				'status' => 0,
