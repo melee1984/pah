@@ -53,6 +53,7 @@ class OrderController extends Controller
 			$order->logs = $order->getActionLogs();
 
 		}
+		
 
     	return response()->json($orders, 200);
 
@@ -166,10 +167,12 @@ class OrderController extends Controller
 				$order->logs = $order->getActionLogs();
 			}
 		}
-			
-			return response()->json($orders, 200);
 		
-	}
+		$data['orders'] = $orders;
+
+    	return response()->json($data, 200);
+
+		}
 
     public function acceptBooking(Orders $order, $action, Request $request) {
 		
