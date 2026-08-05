@@ -341,6 +341,11 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('token/submit', [StoreOrderController::class, 'saveTokenDeviceStore']);
             Route::post('toggle/store/online', [StoreOrderController::class, 'toggleStoreOnline']);
 
+            // we need to have the products and categories locate per merchant login
+            Route::get('products', [StoreOrderController::class, 'products']);
+            Route::post('products/status/update', [StoreOrderController::class, 'updateProductStatus']);
+            // we need to an update to the product and category to be able to update the status of the product and category
+            // 
         });
     });
 });

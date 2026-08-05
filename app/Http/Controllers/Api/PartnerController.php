@@ -70,7 +70,8 @@ class PartnerController extends Controller
 			'address' => 'required',
 	        'city' => 'required|max:30',
 			'email' => 'required',
-			'password' => 'required',
+			'password' => 'required|min:8',
+			'terms_accepted' => 'accepted',
 	    ]);
 		
 		$user =  User::create([

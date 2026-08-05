@@ -279,4 +279,49 @@ class OrderController extends Controller
 		]);
 	}
 
+	public function products(Request $request) 
+	{
+		$merchant = Auth::user()->merchant;
+
+		return response()->json([
+			'status' => 1,
+			'products' => $merchant->products()->with('category')->get(),
+		]);
+
+	}	
+
+	public function updateProductStatus(Request $request) 
+	{
+		$merchant = Auth::user()->merchant;
+
+		$productId = $request->input('product_id');
+		$newStatus = $request->input('status');
+
+		if (! $productId || ! in_array($newStatus, [0, 1])) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'Invalid product ID or status.',
+			], 400);
+		}
+
+		$product = $merchant->products()->find($productId);
+
+		if (! $product) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'Product not found.',
+			], 404);
+		}
+
+		$product->status = $newStatus;
+		$product->save();
+
+		return response()->json([
+			'status' => 1,
+			'message' => 'Product status updated successfully.',
+			'product' => $product,
+		]);
+
+	}
+
 }

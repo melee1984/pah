@@ -50,5 +50,8 @@ return [
         'fast_speed_kph' => env('DELIVERY_FAST_SPEED_KPH', 30),
         'slow_speed_kph' => env('DELIVERY_SLOW_SPEED_KPH', 20),
     ],
+    'firebase' => [
+        'server_key' => env('FIREBASE_SERVER_KEY'),
+    ],
 
 ];

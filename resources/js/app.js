@@ -5,6 +5,7 @@ import VueSimpleAlert from 'vue-simple-alert';
 import Swal from 'sweetalert2'
 
 import 'sweetalert2/themes/bootstrap-5.css'
+import '../scss/_pahatud.scss';
 
 
 // Global Event Bus

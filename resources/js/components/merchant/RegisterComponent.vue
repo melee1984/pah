@@ -97,7 +97,7 @@
         <div class="row">
           <div class="col-8">
             <div class="icheck-primary">
-              <input type="checkbox" id="agreeTerms" name="terms" value="agree">
+              <input type="checkbox" id="agreeTerms" name="terms" value="agree" required v-model="field.termsAccepted">
               <label for="agreeTerms">
                I agree to the <a href="javascript:void(0)" v-on:click="IAgreeTerms()">Terms and Conditions</a>
               </label>
@@ -140,6 +140,7 @@
                   password: '',
                   facebook: '',
                   accountType: '',
+                  termsAccepted: false,
                 },
                 errors: {},
                 isSubmit: false,
@@ -174,6 +175,7 @@
                         password: this.field.password,
                         facebook: this.field.facebook,
                         accountType: this.field.accountType,
+                        terms_accepted: this.field.termsAccepted,
 
                       }).then((response) => {
 
@@ -249,6 +251,9 @@
                   $('#password').addClass('border-danger ding');
                   this.errors.push("Password is required.");
                 }
+                if (!this.field.termsAccepted) {
+                  this.errors.push("You must agree to the Terms and Conditions.");
+                }
 
                 if (!this.errors.length) {
                   return true;
@@ -271,6 +276,7 @@
                 this.field.password = "";
                 this.field.facebook = "";
                 this.field.accountType = "";
+                this.field.termsAccepted = false;
                 
                 this.errors = {};
                 this.isSubmit = false;
