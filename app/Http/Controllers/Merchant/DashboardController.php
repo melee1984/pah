@@ -9,8 +9,6 @@ use DB;
 use App\User;
 use Hash;
 
-use App\AccountType;
-use Cache;
 use Session;
 use Str;
 class DashboardController extends Controller
@@ -24,12 +22,7 @@ class DashboardController extends Controller
 		  return view('merchant.pages.login');
     }
     public function register() {
-
-        $accountType = Cache::remember('sector', 60 , function () {
-            return AccountType::get();
-        });
-
-        return view('merchant.pages.register', compact('accountType'));
+        return redirect()->to(route('home').'#become-a-partner');
 
     }
     public function forgot(Request $request) {

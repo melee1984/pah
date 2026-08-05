@@ -72,7 +72,7 @@ class PageController extends Controller
     }
     public function bepartner() {
 
-        return view('pages.bepartner');
+        return redirect()->to(route('home').'#become-a-partner');
     }
 
      /**
