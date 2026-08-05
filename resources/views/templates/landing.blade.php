@@ -44,5 +44,17 @@
     @include('includes.footer')
     <a href="#" class="scrollToTop"><i class="icofont-swoosh-up"></i></a>
     @include('pages.includes.js')
+    <script>
+        document.addEventListener('click', function (event) {
+            const playStoreLink = event.target.closest('a[href*="play.google.com/store/apps/details?id=io.pahatud.com"]');
+
+            if (!playStoreLink) {
+                return;
+            }
+
+            event.preventDefault();
+            window.alert('The PahatudFood mobile app is currently awaiting Google Play approval. Please check back soon!');
+        });
+    </script>
 </body>
 </html>
