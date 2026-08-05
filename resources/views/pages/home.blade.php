@@ -150,11 +150,13 @@
                     <span class="home-step-number">03</span>
                     <span class="home-step-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 6h11v10H3z" />
-                            <path d="M14 9h4l3 4v3h-7z" />
-                            <path d="M17 9v4h4" />
-                            <circle cx="7" cy="18" r="2" />
-                            <circle cx="18" cy="18" r="2" />
+                            <circle cx="5.5" cy="17.5" r="2.5" />
+                            <circle cx="18.5" cy="17.5" r="2.5" />
+                            <path d="M8 17.5h4.5l2.2-5h3.8" />
+                            <path d="M12.5 17.5 10 11H7.5" />
+                            <path d="M10 11h5l2 3.5" />
+                            <path d="M14 8h3l1.2 2" />
+                            <path d="M4 13h4" />
                         </svg>
                     </span>
                     <h3>We deliver</h3>
