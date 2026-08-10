@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use Auth;
-use App\Location;
+use App\PartnerLocation;
 use Str;
 
 class LocationController extends Controller
@@ -16,7 +16,7 @@ class LocationController extends Controller
     {	
     	$data = array();
 
-    	$location = Location::wherePartnerId(Auth::User()->merchant->id)
+		$location = PartnerLocation::wherePartnerId(Auth::User()->merchant->id)
     					->orderby('address_1','asc')
     					->paginate(50);
 
@@ -25,7 +25,7 @@ class LocationController extends Controller
     	return response()->json($data, 200);
     }
 
-    public function updateStatus(Location $location, Request $request) {
+    public function updateStatus(PartnerLocation $location, Request $request) {
 
     	$data = array();
 
@@ -55,15 +55,15 @@ class LocationController extends Controller
 			'telephone' => 'required|max:75',
 	    ]);
 
-		$status = Location::create([
-			'partner_id'	=> Auth::User()->merchant->id,
-	    	'address_1' => $request->input('address_1'),
-	    	'address_2' => $request->input('address_2'), 
-	    	'zip' => $request->input('zip'),
-	    	'city' => $request->input('city'),
-	    	'mobile' => $request->input('mobile'),
-	    	'telephone' => $request->input('telephone'),
-	    	'active'	=> $request->input('active'),
+		$status = PartnerLocation::create([
+			'partner_id' => Auth::User()->merchant->id,
+			'address_1' => $request->input('address_1'),
+			'address_2' => $request->input('address_2'),
+			'zip_code' => $request->input('zip'),
+			'city' => $request->input('city'),
+			'mobile' => $request->input('mobile'),
+			'telephone' => $request->input('telephone'),
+			'active' => $request->input('active'),
 		]);
 	   
 		if ($status) {
@@ -78,7 +78,7 @@ class LocationController extends Controller
 		return response()->json($data, 200);
 
     }	
-    public function update(Location $location, Request $request) {
+    public function update(PartnerLocation $location, Request $request) {
 
     	$validatedData = $request->validate([
 			'address_1' => 'required',
@@ -112,10 +112,10 @@ class LocationController extends Controller
 
     }	
 
-    public function destroy(Location $location) {
+    public function destroy(PartnerLocation $location) {
 
     	$data = array();
-    	$delete = Location::find($location->id);
+		$delete = PartnerLocation::find($location->id);
     	$status = $delete->delete();
 
     	if ($status) {

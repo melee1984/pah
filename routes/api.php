@@ -317,7 +317,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
 
 // ----------------------------------------------------------------------
-// STORE DASHBOARD MOBILE API
+// STORE/Merchant DASHBOARD MOBILE API
 // ----------------------------------------------------------------------
 
 Route::group(['middleware' => 'isRequest'], function () {
@@ -329,14 +329,15 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::group(['middleware' => 'auth:api'], function () {
 
             Route::post('account/logout', [AccessController::class, 'postLogout']);
-            Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');
+            // Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');
+            Route::post('location/{partnerLocation}/device-token', [StoreOrderController::class, 'updateLocationDeviceToken'])->name('merchant.location.update-device-token');
 
             Route::get('orders', [StoreOrderController::class, 'orders']);
         
-            Route::get('bookings', [StoreOrderController::class, 'bookings']);
-            Route::get('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);
-            Route::get('accepted/day/bookings', [StoreOrderController::class, 'getAcceptedBookingByDate']);
-            Route::post('bookings/{order}/{action}/submit', [StoreOrderController::class, 'acceptBooking']);
+            // Route::get('bookings', [StoreOrderController::class, 'bookings']);
+            // Route::get('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);
+            // Route::get('accepted/day/bookings', [StoreOrderController::class, 'getAcceptedBookingByDate']);
+            // Route::post('bookings/{order}/{action}/submit', [StoreOrderController::class, 'acceptBooking']);
 
             Route::post('token/submit', [StoreOrderController::class, 'saveTokenDeviceStore']);
             Route::post('toggle/store/online', [StoreOrderController::class, 'toggleStoreOnline']);

@@ -10,6 +10,7 @@ use Validator;
 
 use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
+use App\PartnerLocation;
 use Carbon\Carbon;
 
 use App\PushNotification;
@@ -251,6 +252,49 @@ class OrderController extends Controller
         	return response()->json(['Token is empty']);
         }
 
+    }
+
+    public function updateDeviceId(Request $request)
+    {
+        $validated = $request->validate([
+            'device_id' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+        $user->device_id = $validated['device_id'];
+        $user->save();
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Device ID updated successfully.',
+            'device_id' => $user->device_id,
+        ]);
+    }
+
+    public function updateLocationDeviceToken(PartnerLocation $partnerLocation, Request $request)
+    {
+		$merchant = $request->user()->merchant;
+
+        if (! $merchant || (int) $partnerLocation->partner_id !== (int) $merchant->id) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant location not found.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'device_token' => ['required', 'string', 'max:255'],
+        ]);
+
+        $partnerLocation->device_token = $validated['device_token'];
+        $partnerLocation->save();
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Merchant location device token updated successfully.',
+            'location_id' => $partnerLocation->id,
+            'device_token' => $partnerLocation->device_token,
+        ]);
     }
 
 	public function toggleStoreOnline(Request $request)
