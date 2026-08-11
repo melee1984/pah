@@ -12,7 +12,7 @@ use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
 use App\PartnerLocation;
 use Carbon\Carbon;
-
+use App\Products;
 use App\PushNotification;
 use Auth;
 
@@ -324,12 +324,27 @@ class OrderController extends Controller
 	}
 
 	public function products(Request $request) 
-	{
-		$merchant = Auth::user()->merchant;
+	{	
+		$user = $request->user();
+		$merchant = $user->merchant;
+
+		$merchant->load(['products' => function ($query) {
+			$query->with('category');
+		}]);
+		
+		$products = $merchant->products->map(function ($product) {
+
+			$product->variance_content = unserialize($product->variance_content);
+			$product->price = number_format($product->getPrice(), 2);
+			$product->image_url = $product->getProductImage();
+
+			return $product;
+		});
 
 		return response()->json([
 			'status' => 1,
-			'products' => $merchant->products()->with('category')->get(),
+			'products' => $products,
+			'categories' => $user->categories()->get(),
 		]);
 
 	}	
