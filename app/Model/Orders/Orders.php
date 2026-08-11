@@ -6,15 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 use DB;
 use App\Model\Orders\OrderProcess;
+use App\Model\Bookings\BookingStatus;
 
 class Orders extends Model
 {
+    public const STATUS_ORDER_PLACED = 1;
+
+    public const STATUS_ORDER_ACCEPTED = 2;
+
+    public const STATUS_PROCESSING = 3;
+
+    public const STATUS_READY_FOR_PICKUP = 4;
+
+    public const STATUS_RIDER_ON_THE_WAY = 5;
+
+    public const STATUS_PAYMENT_CONFIRMED = 6;
+
+    public const STATUS_DELIVERED = 7;
+
     protected $table = 'order';
 	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id','status_id');
 	public $timestamps = true;
 
     protected $dates = [
         'submitted_at',
+        'store_accepted_at',
         'delivered_at',
         'updated_at',
         'created_at'
@@ -44,11 +60,11 @@ class Orders extends Model
      */
     public function status() 
     {
-         return $this->hasOne('App\LibraryStatus','id', 'status_id');
+         return $this->hasOne(BookingStatus::class, 'id', 'status_id');
     }
 
     public function getActionLogs() {
-         $query = DB::table('library_status as status')
+         $query = DB::table('library_booking_status as status')
             ->select('status.id', 'status.title', 'status.sorting', 'status.description')
             ->selectSub(function ($query) {
                 $query->from('order_process as process')

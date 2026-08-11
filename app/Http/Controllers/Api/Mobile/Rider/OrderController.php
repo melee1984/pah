@@ -259,11 +259,11 @@ class OrderController extends Controller
 
 			} else if ($action == "pickup") {
 
-				$order->status_id = 5;
+				$order->status_id = Orders::STATUS_RIDER_ON_THE_WAY;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 5, // item pickup  
+                    'status_id' => Orders::STATUS_RIDER_ON_THE_WAY,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
@@ -276,23 +276,23 @@ class OrderController extends Controller
 			else if ($action == "delivered") {
 
 				// Item Pickup 
-				$order->status_id = 6;
+				$order->status_id = Orders::STATUS_PAYMENT_CONFIRMED;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 6, // item pickup  
+                    'status_id' => Orders::STATUS_PAYMENT_CONFIRMED,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
 
 				// Item Delivered 
-                $order->status_id = 7;
+                $order->status_id = Orders::STATUS_DELIVERED;
 				$order->save();
 
 				PushNotification::sendPushOrder($order);
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 7, // item pickup  
+                    'status_id' => Orders::STATUS_DELIVERED,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);

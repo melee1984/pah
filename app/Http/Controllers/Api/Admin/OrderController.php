@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use App\Model\Orders\Orders;
 use App\Model\Cart;
 use App\Model\Riders;
-use App\LibraryStatus;
+use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Partners;
 use Auth;
@@ -42,7 +42,7 @@ class OrderController extends Controller
 
         $data['orders'] = $orders;
         $data['riders'] = Riders::active()->get();
-        $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
+        $data['statuses'] = BookingStatus::orderBy('sorting','asc')->get();
 
     	return response()->json($data, 200);
     }   

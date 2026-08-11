@@ -15,6 +15,8 @@ use Carbon\Carbon;
 use App\Products;
 use App\PushNotification;
 use Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {	
@@ -175,6 +177,174 @@ class OrderController extends Controller
     	return response()->json($data, 200);
 
 	}
+
+    public function acceptOrder(Orders $order, Request $request)
+    {
+        $user = $request->user();
+        $merchant = $user?->merchant;
+
+        if (! $merchant) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant account not found.',
+            ], 403);
+        }
+
+        $result = DB::transaction(function () use ($merchant, $order, $user) {
+            $order = Orders::query()
+                ->whereKey($order->getKey())
+                ->where('partner_id', $merchant->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $order) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Order not found.',
+                ], 404)];
+            }
+
+            if ($order->store_accepted_at
+                && (int) $order->accepted_by_store_id === (int) $merchant->id) {
+                return [
+                    'order' => $order,
+                    'already_accepted' => true,
+                ];
+            }
+
+            if ($order->store_accepted_at || $order->accepted_by_store_id) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Order has already been accepted.',
+                ], 409)];
+            }
+
+            if (! $order->submitted_at || (int) $order->status_id !== Orders::STATUS_ORDER_PLACED) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Only pending submitted orders can be accepted.',
+                ], 409)];
+            }
+
+            $order->accepted_by_store_id = $merchant->id;
+            $order->store_accepted_at = now();
+            $order->status_id = Orders::STATUS_PROCESSING;
+            $order->save();
+
+            foreach ([Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING] as $statusId) {
+                OrderProcess::updateOrCreate([
+                    'status_id' => $statusId,
+                    'order_id' => $order->id,
+                ], [
+                    'user_id' => $user->id,
+                ]);
+            }
+
+            return [
+                'order' => $order,
+                'already_accepted' => false,
+            ];
+        });
+
+        if (isset($result['response'])) {
+            return $result['response'];
+        }
+
+        if (! $result['already_accepted']) {
+            try {
+                PushNotification::sendPushOrder($result['order']);
+            } catch (\Throwable $exception) {
+                Log::warning('Order accepted, but the customer notification failed.', [
+                    'order_id' => $result['order']->id,
+                    'exception' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => $result['already_accepted']
+                ? 'Order was already accepted.'
+                : 'Order accepted successfully.',
+            'order_id' => $result['order']->id,
+            'order_status_id' => $result['order']->status_id,
+            'store_accepted_at' => $result['order']->store_accepted_at,
+        ]);
+    }
+
+    public function markOrderReadyForPickup(Orders $order, Request $request)
+    {
+        $user = $request->user();
+        $merchant = $user?->merchant;
+
+        if (! $merchant) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant account not found.',
+            ], 403);
+        }
+
+        $result = DB::transaction(function () use ($merchant, $order, $user) {
+            $order = Orders::query()
+                ->whereKey($order->getKey())
+                ->where('partner_id', $merchant->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $order) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Order not found.',
+                ], 404)];
+            }
+
+            if ((int) $order->status_id === Orders::STATUS_READY_FOR_PICKUP
+                && $order->store_accepted_at
+                && (int) $order->accepted_by_store_id === (int) $merchant->id) {
+                return [
+                    'order' => $order,
+                    'already_ready' => true,
+                ];
+            }
+
+            if (! $order->store_accepted_at
+                || (int) $order->accepted_by_store_id !== (int) $merchant->id
+                || (int) $order->status_id !== Orders::STATUS_PROCESSING) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Only processing orders can be marked ready for pickup.',
+                ], 409)];
+            }
+
+            $order->status_id = Orders::STATUS_READY_FOR_PICKUP;
+            $order->save();
+
+            OrderProcess::updateOrCreate([
+                'status_id' => Orders::STATUS_READY_FOR_PICKUP,
+                'order_id' => $order->id,
+            ], [
+                'user_id' => $user->id,
+            ]);
+
+            return [
+                'order' => $order,
+                'already_ready' => false,
+            ];
+        });
+
+        if (isset($result['response'])) {
+            return $result['response'];
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => $result['already_ready']
+                ? 'Order was already ready for pickup.'
+                : 'Order is ready for pickup.',
+            'order_id' => $result['order']->id,
+            'order_status_id' => $result['order']->status_id,
+        ]);
+    }
 
     public function acceptBooking(Orders $order, $action, Request $request) {
 		
