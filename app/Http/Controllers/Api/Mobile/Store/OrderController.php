@@ -372,7 +372,7 @@ class OrderController extends Controller
 			], 404);
 		}
 
-		$product->status = $newStatus;
+		$product->active = $newStatus;
 		$product->save();
 
 		return response()->json([
