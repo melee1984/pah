@@ -143,10 +143,19 @@ class OrderController extends Controller
 	public function orders(Request $request) {
 	
 		$data = array();	
+		$validated = $request->validate([
+			'merchant_location_id' => ['nullable', 'integer', 'min:1'],
+		]);
+		$merchantLocationId = $validated['merchant_location_id'] ?? null;
 		
 		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->id);
 
 		$orders = Orders::wherePartnerId($request->user()->merchant->id)
+					->when($merchantLocationId, function ($query) use ($merchantLocationId) {
+						$query->whereHas('cart', function ($cartQuery) use ($merchantLocationId) {
+							$cartQuery->where('partner_location_address_id', $merchantLocationId);
+						});
+					})
 					->with('rider')
 					->orderby('submitted_at','desc')
 					->get();
