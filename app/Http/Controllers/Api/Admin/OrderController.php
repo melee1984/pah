@@ -14,6 +14,7 @@ use App\Partners;
 use Auth;
 use Validator;
 use App\User;
+use App\LibraryStatus;
 
 use App\PushNotification;
 class OrderController extends Controller
@@ -22,11 +23,11 @@ class OrderController extends Controller
     public function getList() 
     {	 
          $orders = Orders::with('cart')
-            ->whereNotNull('submitted_at') 
-            ->whereNull('delivered_at')
-            // ->whereRaw('status_id != 8')
-            ->with('partner')
-            ->orderBy('created_at', 'desc')->get();
+                ->whereNotNull('submitted_at') 
+                ->whereNull('delivered_at')
+                // ->whereRaw('status_id != 8')
+                ->with('partner')
+                ->orderBy('created_at', 'desc')->get();
 
         foreach($orders as $order) {
 
@@ -42,7 +43,7 @@ class OrderController extends Controller
 
         $data['orders'] = $orders;
         $data['riders'] = Riders::active()->get();
-        $data['statuses'] = BookingStatus::orderBy('sorting','asc')->get();
+        $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
     	return response()->json($data, 200);
     }   
