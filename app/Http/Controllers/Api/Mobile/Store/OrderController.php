@@ -564,12 +564,19 @@ class OrderController extends Controller
         }
 
         $validated = $request->validate([
-            'device_token' => ['required', 'string', 'max:255'],
+            'device_token' => ['nullable', 'string', 'max:255'],
+            'latitude' => ['nullable', 'required_with:longtitude', 'numeric', 'between:-90,90'],
+            'longtitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
         ]);
 
-        $partnerLocation->device_token = $validated['device_token'];
-        $partnerLocation->latitude = $validated['latitude'];
-        $partnerLocation->longtitude = $validated['longtitude'];
+        if ($request->filled('device_token')) {
+            $partnerLocation->device_token = $validated['device_token'];
+        }
+
+        if ($request->filled('latitude') && $request->filled('longtitude')) {
+            $partnerLocation->latitude = $validated['latitude'];
+            $partnerLocation->longtitude = $validated['longtitude'];
+        }
 
         $partnerLocation->save();
 
