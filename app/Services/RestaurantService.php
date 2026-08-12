@@ -117,8 +117,11 @@ class RestaurantService
         foreach($restaurants as $restaurant) {
 
             $location = $restaurant->locations->firstWhere('id', $restaurant->location_id);
+            $location?->makeHidden(['device_token']);
             $restaurant->setRelation('location', $location);
-            $restaurant->unsetRelation('locations');
+            $restaurant->setRelation('storeLocation', $location);
+            // $restaurant->unsetRelation('locations');
+
             $restaurant->listing_id = $restaurant->id.'-'.$restaurant->location_id;
 
             $restaurant->short_title = Str::limit($restaurant->restaurant_name, 20);
