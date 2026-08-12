@@ -33,6 +33,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->group('isRequest', [
             \App\Http\Middleware\isRequest::class,
         ]);
+
+        $middleware->alias([
+            'rider.application' => \App\Http\Middleware\AuthenticateRiderApplication::class,
+            'rider.approved' => \App\Http\Middleware\EnsureApprovedRider::class,
+        ]);
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {

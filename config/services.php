@@ -54,4 +54,24 @@ return [
         'server_key' => env('FIREBASE_SERVER_KEY'),
     ],
 
+    'rider_call_relay' => [
+        'number' => env('RIDER_CALL_RELAY_NUMBER'),
+    ],
+
+    'rider_cod' => [
+        'method' => env('RIDER_COD_REMITTANCE_METHOD', 'contact_support'),
+        'account_name' => env('RIDER_COD_ACCOUNT_NAME'),
+        'account_number' => env('RIDER_COD_ACCOUNT_NUMBER'),
+        'notes' => env(
+            'RIDER_COD_REMITTANCE_NOTES',
+            'Contact Pahatud support for the current COD remittance destination.',
+        ),
+    ],
+
+    'semaphore' => [
+        'url' => env('SEMAPHORE_API_URL', 'https://semaphore.co/api/v4/messages'),
+        'key' => env('SEMAPHORE_API_KEY'),
+        'sender' => env('SEMAPHORE_SENDER_NAME', 'PahatudFood'),
+    ],
+
 ];
