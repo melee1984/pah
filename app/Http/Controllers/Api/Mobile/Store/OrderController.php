@@ -55,7 +55,6 @@ class OrderController extends Controller
 			$order->formated_submitted_at_ = date("D, d M h:ia", strtotime($order->submitted_at));
 
 			$order->logs = $order->getActionLogs();
-			
 
 		}
 		
@@ -148,8 +147,11 @@ class OrderController extends Controller
 		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->id);
 
 		$orders = Orders::wherePartnerId($request->user()->merchant->id)
+					->with('rider')
 					->orderby('submitted_at','desc')
 					->get();
+
+					
 		
 		foreach($orders as $order) {
 
