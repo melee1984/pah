@@ -274,6 +274,7 @@ class OrderController extends Controller
             'order_id' => $result['order']->id,
             'order_status_id' => $result['order']->status_id,
             'store_accepted_at' => $result['order']->store_accepted_at,
+            'action' => $result['order']->getAction(),
         ]);
     }
 
@@ -348,6 +349,7 @@ class OrderController extends Controller
                 : 'Order is ready for pickup.',
             'order_id' => $result['order']->id,
             'order_status_id' => $result['order']->status_id,
+            'action' => $result['order']->getAction(),
         ]);
     }
 

@@ -83,6 +83,14 @@ class MerchantOrderAcceptanceTest extends TestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('Order accepted successfully.', $response->getData(true)['message']);
+        $this->assertSame([
+            'label' => 'Order Processing',
+            'button' => [
+                'label' => 'Ready For Pickup',
+                'action' => 'ready-for-pickup',
+            ],
+            'send_to_rider' => true,
+        ], $response->getData(true)['action']);
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
             'status_id' => Orders::STATUS_PROCESSING,
@@ -146,6 +154,11 @@ class MerchantOrderAcceptanceTest extends TestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('Order is ready for pickup.', $response->getData(true)['message']);
+        $this->assertSame([
+            'label' => 'Waiting for Rider to Pickup',
+            'button' => null,
+            'send_to_rider' => false,
+        ], $response->getData(true)['action']);
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
             'status_id' => Orders::STATUS_READY_FOR_PICKUP,
