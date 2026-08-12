@@ -32,19 +32,20 @@ class RestaurantService
         $userLat = $hasValidUserCoordinates ? (float) $userLat : 0.0;
         $userLong = $hasValidUserCoordinates ? (float) $userLong : 0.0;
 
-        $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city' , 'budget_id' , 'account_type_id', DB::raw('
-                                (select (ST_Distance_Sphere(
+        $restaurants = Partners::select('partners.user_id', 'partners.restaurant_name', 'partners.id', 'partners.img', 'partners.address', 'partners.slug', 'partners.city', 'partners.budget_id', 'partners.account_type_id', 'partners.store_open', 'partner_location.id as location_id', DB::raw('
+                                (ST_Distance_Sphere(
                                 point(partner_location.longtitude, partner_location.latitude),
-                                point('.$userLong.', '.$userLat.')) * 0.001 / 1000) 
-                                from partner_location where partner_location.partner_id = partners.id limit 0,1)  as meter'), DB::raw('
-                                (select (ST_Distance_Sphere(
+                                point('.$userLong.', '.$userLat.')) * 0.001 / 1000) as meter'), DB::raw('
+                                (ST_Distance_Sphere(
                                 point(partner_location.longtitude, partner_location.latitude),
-                                point('.$userLong.', '.$userLat.')) * 0.001) 
-                                from partner_location where partner_location.partner_id = partners.id limit 0,1)  as distance_km'))
-                        ->where('account_type_id','<>',4)
-                        ->with('products','products.variants', 'category')
-                        ->activeRestaurants()
-                        ->orderBy('store_open', 'desc')
+                                point('.$userLong.', '.$userLat.')) * 0.001) as distance_km'))
+                        ->join('partner_location', 'partner_location.partner_id', '=', 'partners.id')
+                        ->where('partner_location.active', 1)
+                        ->where('partners.account_type_id', '<>', 4)
+                        ->where('partners.active', 1)
+                        ->whereNotNull('partners.verified_at')
+                        ->with('products', 'products.variants', 'category', 'foodType', 'locations')
+                        ->orderBy('partners.store_open', 'desc')
                         ->orderBy('distance_km', 'asc')
                         ->limit(15)
                         ->get();
@@ -75,20 +76,18 @@ class RestaurantService
      
 
         $restaurantIds = $restaurants->pluck('id');
-        $partnerLocations = DB::table('partner_location')
-            ->whereIn('partner_id', $restaurantIds)
-            ->orderBy('id')
-            ->get(['partner_id', 'latitude', 'longtitude'])
-            ->filter(function ($location) {
-                return is_numeric($location->latitude)
-                    && is_numeric($location->longtitude);
-            })
-            ->unique('partner_id')
-            ->keyBy('partner_id');
-        $restaurantOrigins = $partnerLocations
-            ->mapWithKeys(function ($location, $partnerId) {
+        $restaurantOrigins = $restaurants
+            ->mapWithKeys(function ($restaurant) {
+                $location = $restaurant->locations->firstWhere('id', $restaurant->location_id);
+
+                if (! $location
+                    || ! is_numeric($location->latitude)
+                    || ! is_numeric($location->longtitude)) {
+                    return [];
+                }
+
                 return [
-                    $partnerId => [
+                    $restaurant->location_id => [
                         'latitude' => $location->latitude,
                         'longitude' => $location->longtitude,
                     ],
@@ -117,10 +116,15 @@ class RestaurantService
 
         foreach($restaurants as $restaurant) {
 
+            $location = $restaurant->locations->firstWhere('id', $restaurant->location_id);
+            $restaurant->setRelation('location', $location);
+            $restaurant->unsetRelation('locations');
+            $restaurant->listing_id = $restaurant->id.'-'.$restaurant->location_id;
+
             $restaurant->short_title = Str::limit($restaurant->restaurant_name, 20);
             $restaurant->rating = 5.0;
             $restaurant->rating_count = 0;
-            $routeComputation = $routeComputations[$restaurant->id] ?? null;
+            $routeComputation = $routeComputations[$restaurant->location_id] ?? null;
             $distanceKilometers = $routeComputation['distance_km']
                 ?? (isset($restaurant->distance_km) ? (float) $restaurant->distance_km : null);
             $travelDurationMinutes = $routeComputation['duration_minutes'] ?? null;
