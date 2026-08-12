@@ -189,6 +189,10 @@ class OrderController extends Controller
             return $this->markOrderReadyForPickup($order, $request);
         }
 
+        if ($request->input('action') === 'cancel') {
+            return $this->cancelOrder($order, $request);
+        }
+
         $user = $request->user();
         $merchant = $user?->merchant;
 
@@ -351,6 +355,93 @@ class OrderController extends Controller
             'message' => $result['already_ready']
                 ? 'Order was already ready for pickup.'
                 : 'Order is ready for pickup.',
+            'order_id' => $result['order']->id,
+            'order_status_id' => $result['order']->status_id,
+            'action' => $result['order']->getAction(),
+        ]);
+    }
+
+    public function cancelOrder(Orders $order, Request $request)
+    {
+        $user = $request->user();
+        $merchant = $user?->merchant;
+
+        if (! $merchant) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant account not found.',
+            ], 403);
+        }
+
+        $result = DB::transaction(function () use ($merchant, $order, $user) {
+            $order = Orders::query()
+                ->whereKey($order->getKey())
+                ->where('partner_id', $merchant->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $order) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Order not found.',
+                ], 404)];
+            }
+
+            if ((int) $order->status_id === Orders::STATUS_CANCELLED) {
+                return [
+                    'order' => $order,
+                    'already_cancelled' => true,
+                ];
+            }
+
+            if (! in_array((int) $order->status_id, [
+                Orders::STATUS_ORDER_PLACED,
+                Orders::STATUS_ORDER_ACCEPTED,
+                Orders::STATUS_PROCESSING,
+                Orders::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Orders already picked up or completed cannot be cancelled.',
+                ], 409)];
+            }
+
+            $order->status_id = Orders::STATUS_CANCELLED;
+            $order->save();
+
+            OrderProcess::updateOrCreate([
+                'status_id' => Orders::STATUS_CANCELLED,
+                'order_id' => $order->id,
+            ], [
+                'user_id' => $user->id,
+            ]);
+
+            return [
+                'order' => $order,
+                'already_cancelled' => false,
+            ];
+        });
+
+        if (isset($result['response'])) {
+            return $result['response'];
+        }
+
+        if (! $result['already_cancelled']) {
+            try {
+                PushNotification::sendPushOrder($result['order']);
+            } catch (\Throwable $exception) {
+                Log::warning('Order cancelled, but the customer notification failed.', [
+                    'order_id' => $result['order']->id,
+                    'exception' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => $result['already_cancelled']
+                ? 'Order was already cancelled.'
+                : 'Order cancelled successfully.',
             'order_id' => $result['order']->id,
             'order_status_id' => $result['order']->status_id,
             'action' => $result['order']->getAction(),

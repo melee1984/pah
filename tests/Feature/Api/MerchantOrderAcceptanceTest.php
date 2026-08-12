@@ -89,6 +89,10 @@ class MerchantOrderAcceptanceTest extends TestCase
                 'label' => 'Ready For Pickup',
                 'action' => 'ready-for-pickup',
             ],
+            'cancel' => [
+                'label' => 'Cancel Order',
+                'action' => 'cancel',
+            ],
             'send_to_rider' => true,
         ], $response->getData(true)['action']);
         $this->assertDatabaseHas('order', [
@@ -157,6 +161,10 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertSame([
             'label' => 'Waiting for Rider to Pickup',
             'button' => null,
+            'cancel' => [
+                'label' => 'Cancel Order',
+                'action' => 'cancel',
+            ],
             'send_to_rider' => false,
         ], $response->getData(true)['action']);
         $this->assertDatabaseHas('order', [
@@ -229,6 +237,71 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertDatabaseCount('order_process', 3);
     }
 
+    public function test_merchant_can_cancel_its_order_through_the_accept_endpoint(): void
+    {
+        $order = $this->createOrder(partnerId: 20);
+        $request = $this->merchantRequest(merchantId: 20, action: 'cancel');
+
+        $response = (new OrderController)->acceptOrder($order, $request);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('Order cancelled successfully.', $response->getData(true)['message']);
+        $this->assertSame([
+            'label' => 'Cancel Order',
+            'button' => null,
+            'cancel' => null,
+            'send_to_rider' => false,
+        ], $response->getData(true)['action']);
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'status_id' => Orders::STATUS_CANCELLED,
+        ]);
+        $this->assertDatabaseHas('order_process', [
+            'order_id' => $order->id,
+            'status_id' => Orders::STATUS_CANCELLED,
+            'user_id' => 10,
+        ]);
+    }
+
+    public function test_merchant_cannot_cancel_another_merchants_order(): void
+    {
+        $order = $this->createOrder(partnerId: 99);
+
+        $response = (new OrderController)->cancelOrder(
+            $order,
+            $this->merchantRequest(merchantId: 20),
+        );
+
+        $this->assertSame(404, $response->getStatusCode());
+        $this->assertSame('Order not found.', $response->getData(true)['message']);
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'status_id' => Orders::STATUS_ORDER_PLACED,
+        ]);
+    }
+
+    public function test_merchant_cannot_cancel_an_order_after_rider_pickup(): void
+    {
+        $order = $this->createOrder(partnerId: 20);
+        $order->status_id = Orders::STATUS_RIDER_ON_THE_WAY;
+        $order->save();
+
+        $response = (new OrderController)->cancelOrder(
+            $order,
+            $this->merchantRequest(merchantId: 20),
+        );
+
+        $this->assertSame(409, $response->getStatusCode());
+        $this->assertSame(
+            'Orders already picked up or completed cannot be cancelled.',
+            $response->getData(true)['message'],
+        );
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'status_id' => Orders::STATUS_RIDER_ON_THE_WAY,
+        ]);
+    }
+
     public function test_order_action_describes_the_merchant_display_for_each_status(): void
     {
         $order = $this->createOrder(partnerId: 20);
@@ -238,6 +311,10 @@ class MerchantOrderAcceptanceTest extends TestCase
             'button' => [
                 'label' => 'Accept Order',
                 'action' => 'accept',
+            ],
+            'cancel' => [
+                'label' => 'Cancel Order',
+                'action' => 'cancel',
             ],
             'send_to_rider' => false,
         ], $order->getAction());
@@ -249,6 +326,10 @@ class MerchantOrderAcceptanceTest extends TestCase
                 'label' => 'Ready For Pickup',
                 'action' => 'ready-for-pickup',
             ],
+            'cancel' => [
+                'label' => 'Cancel Order',
+                'action' => 'cancel',
+            ],
             'send_to_rider' => true,
         ], $order->getAction());
 
@@ -256,6 +337,10 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertSame([
             'label' => 'Waiting for Rider to Pickup',
             'button' => null,
+            'cancel' => [
+                'label' => 'Cancel Order',
+                'action' => 'cancel',
+            ],
             'send_to_rider' => false,
         ], $order->getAction());
 
@@ -263,6 +348,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertSame([
             'label' => 'Cancel Order',
             'button' => null,
+            'cancel' => null,
             'send_to_rider' => false,
         ], $order->getAction());
     }

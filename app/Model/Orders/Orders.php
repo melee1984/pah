@@ -111,6 +111,10 @@ class Orders extends Model
                     'label' => 'Accept Order',
                     'action' => 'accept',
                 ],
+                'cancel' => [
+                    'label' => 'Cancel Order',
+                    'action' => 'cancel',
+                ],
                 'send_to_rider' => false,
             ],
             self::STATUS_ORDER_ACCEPTED, self::STATUS_PROCESSING => [
@@ -119,21 +123,31 @@ class Orders extends Model
                     'label' => 'Ready For Pickup',
                     'action' => 'ready-for-pickup',
                 ],
+                'cancel' => [
+                    'label' => 'Cancel Order',
+                    'action' => 'cancel',
+                ],
                 'send_to_rider' => true,
             ],
             self::STATUS_READY_FOR_PICKUP => [
                 'label' => 'Waiting for Rider to Pickup',
                 'button' => null,
+                'cancel' => [
+                    'label' => 'Cancel Order',
+                    'action' => 'cancel',
+                ],
                 'send_to_rider' => false,
             ],
             self::STATUS_CANCELLED => [
                 'label' => 'Cancel Order',
                 'button' => null,
+                'cancel' => null,
                 'send_to_rider' => false,
             ],
             default => [
                 'label' => $this->status?->title ?? $this->status?->description,
                 'button' => null,
+                'cancel' => null,
                 'send_to_rider' => false,
             ],
         };

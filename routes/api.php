@@ -335,6 +335,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('orders', [StoreOrderController::class, 'orders']);
             Route::post('orders/{order}/accept', [StoreOrderController::class, 'acceptOrder'])->name('merchant.orders.accept');
             Route::post('orders/{order}/ready-for-pickup', [StoreOrderController::class, 'markOrderReadyForPickup'])->name('merchant.orders.ready-for-pickup');
+            Route::post('orders/{order}/cancel', [StoreOrderController::class, 'cancelOrder'])->name('merchant.orders.cancel');
             // Route::get('bookings', [StoreOrderController::class, 'bookings']);
             Route::get('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);
             // Route::get('accepted/day/bookings', [StoreOrderController::class, 'getAcceptedBookingByDate']);
