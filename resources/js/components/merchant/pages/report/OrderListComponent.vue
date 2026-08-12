@@ -76,7 +76,8 @@
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
                     </td>
                     <td width="25%">
-                        Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
+                        Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br>
+                        <span><strong>Store Location:</strong> {{ storeAddress(order) }}</span><br>
                         Delivery Date/Time: {{ order.cart.delivery_time }}
                         <br>
                         Customer: {{ order.cart.fullname }} <br>
@@ -131,8 +132,19 @@
                                           <img width="100" :src="'/uploads/user/'+selectedOrder.partner.id+'/'+selectedOrder.partner.img" alt="Invoice logo">
                                         </div>
                                     </div>
-                                    <!-- col-lg-6 end here -->
-                                   
+                                    <div class="col-lg-6">
+                                        <div class="invoice-from">
+                                            <ul class="list-unstyled text-right">
+                                                <li><strong>{{ selectedOrder?.partner?.restaurant_name }}</strong></li>
+                                                <li><strong>Store Location</strong></li>
+                                                <li>{{ storeAddress(selectedOrder) }}</li>
+                                                <li v-if="storeContact(selectedOrder)">{{ storeContact(selectedOrder) }}</li>
+                                                <li v-if="storeCoordinates(selectedOrder)">
+                                                  Coordinates: {{ storeCoordinates(selectedOrder) }}
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                     <!-- col-lg-6 end here -->
                                     <div class="col-lg-12">
                                         <!-- col-lg-12 start here -->
@@ -153,7 +165,7 @@
                                             <ul class="list-unstyled">
                                                  <li><strong>Invoiced To</strong></li>
                                                 <li>Fullname: {{ selectedOrder?.cart?.fullname }}</li>
-                                                <li>Address: {{ selectedOrder?.cart?.address.address_1 }}</li>
+                                                <li>Address: {{ selectedOrder?.cart?.address?.address_1 }}</li>
                                                 <li>Mobile: {{ selectedOrder?.cart?.mobile }}</li>
                                             </ul>
                                         </div>
@@ -294,6 +306,42 @@
         },
         
         methods: {
+          storeLocation: function(order) {
+            return order && order.cart ? order.cart.partnerlocation : null;
+          },
+          storeAddress: function(order) {
+            const location = this.storeLocation(order);
+
+            if (location) {
+              return [location.address_1, location.address_2, location.city, location.zip_code]
+                .filter(Boolean)
+                .join(', ') || 'Not available';
+            }
+
+            const partner = order ? order.partner : null;
+
+            return partner
+              ? [partner.address, partner.city].filter(Boolean).join(', ') || 'Not available'
+              : 'Not available';
+          },
+          storeContact: function(order) {
+            const location = this.storeLocation(order);
+
+            if (!location) {
+              return '';
+            }
+
+            return [location.mobile, location.telephone].filter(Boolean).join(' / ');
+          },
+          storeCoordinates: function(order) {
+            const location = this.storeLocation(order);
+
+            if (!location || !location.latitude || !location.longtitude) {
+              return '';
+            }
+
+            return location.latitude + ', ' + location.longtitude;
+          },
           statusBadgeClass: function(statusId) {
             statusId = Number(statusId);
 

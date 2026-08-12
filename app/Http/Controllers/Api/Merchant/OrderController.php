@@ -23,8 +23,12 @@ class OrderController extends Controller
         $total_comm = 0;
         $total_net = 0;
 
-        $orders = Orders::with('cart')
-            ->with('partner')
+        $orders = Orders::with([
+                'cart',
+                'cart.address',
+                'cart.partnerlocation',
+                'partner',
+            ])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at') 
             ->whereNull('delivered_at')
@@ -34,9 +38,6 @@ class OrderController extends Controller
 
             $order->rider;
             $order->status;
-            $order->cart->address;
-            $order->cart->partnerlocation;
-
             $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
