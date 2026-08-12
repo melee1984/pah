@@ -227,7 +227,8 @@ class CartController extends Controller
                 $cart->ip_address = $request->ip();
                 $cart->partner_id = $partnerId;
                 // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
-                $cart->partner_location_address_id = $cart->partner->location->id ?? null; 
+                // dapat makuha niya nag iyaha order if multiple location and merchant 
+                $cart->partner_location_address_id = $request->location_id ?? $cart->partner->location->id ?? null;
                 $cart->active = $user ? 1 : 0;
 
                 if ($user) {
