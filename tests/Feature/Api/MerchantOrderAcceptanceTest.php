@@ -157,6 +157,29 @@ class MerchantOrderAcceptanceTest extends TestCase
         ]);
     }
 
+    public function test_accept_endpoint_dispatches_ready_for_pickup_action(): void
+    {
+        $order = $this->createOrder(partnerId: 20);
+        $request = $this->merchantRequest(merchantId: 20);
+        $controller = new OrderController;
+        $controller->acceptOrder($order, $request);
+
+        $readyRequest = $this->merchantRequest(merchantId: 20, action: 'ready-for-pickup');
+        $response = $controller->acceptOrder($order, $readyRequest);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('Order is ready for pickup.', $response->getData(true)['message']);
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'status_id' => Orders::STATUS_READY_FOR_PICKUP,
+        ]);
+        $this->assertDatabaseHas('order_process', [
+            'order_id' => $order->id,
+            'status_id' => Orders::STATUS_READY_FOR_PICKUP,
+            'user_id' => 10,
+        ]);
+    }
+
     public function test_pending_order_cannot_skip_processing(): void
     {
         $order = $this->createOrder(partnerId: 20);
@@ -245,7 +268,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         return Orders::findOrFail($orderId);
     }
 
-    private function merchantRequest(int $merchantId): Request
+    private function merchantRequest(int $merchantId, ?string $action = null): Request
     {
         $merchant = new Partners;
         $merchant->id = $merchantId;
@@ -253,7 +276,11 @@ class MerchantOrderAcceptanceTest extends TestCase
         $user = User::findOrFail(10);
         $user->setRelation('merchant', $merchant);
 
-        $request = Request::create('/api/merchant/orders/1/accept', 'POST');
+        $request = Request::create(
+            '/api/merchant/orders/1/accept',
+            'POST',
+            $action ? ['action' => $action] : [],
+        );
         $request->setUserResolver(fn () => $user);
 
         return $request;

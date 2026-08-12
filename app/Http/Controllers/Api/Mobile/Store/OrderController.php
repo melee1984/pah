@@ -181,6 +181,10 @@ class OrderController extends Controller
 
     public function acceptOrder(Orders $order, Request $request)
     {
+        if ($request->input('action') === 'ready-for-pickup') {
+            return $this->markOrderReadyForPickup($order, $request);
+        }
+
         $user = $request->user();
         $merchant = $user?->merchant;
 
