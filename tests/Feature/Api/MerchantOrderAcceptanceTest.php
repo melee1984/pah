@@ -193,6 +193,44 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertDatabaseCount('order_process', 3);
     }
 
+    public function test_order_action_describes_the_merchant_display_for_each_status(): void
+    {
+        $order = $this->createOrder(partnerId: 20);
+
+        $this->assertSame([
+            'label' => 'Pending',
+            'button' => [
+                'label' => 'Accept Order',
+                'action' => 'accept',
+            ],
+            'send_to_rider' => false,
+        ], $order->getAction());
+
+        $order->status_id = Orders::STATUS_PROCESSING;
+        $this->assertSame([
+            'label' => 'Order Processing',
+            'button' => [
+                'label' => 'Ready For Pickup',
+                'action' => 'ready-for-pickup',
+            ],
+            'send_to_rider' => true,
+        ], $order->getAction());
+
+        $order->status_id = Orders::STATUS_READY_FOR_PICKUP;
+        $this->assertSame([
+            'label' => 'Waiting for Rider to Pickup',
+            'button' => null,
+            'send_to_rider' => false,
+        ], $order->getAction());
+
+        $order->status_id = Orders::STATUS_CANCELLED;
+        $this->assertSame([
+            'label' => 'Cancel Order',
+            'button' => null,
+            'send_to_rider' => false,
+        ], $order->getAction());
+    }
+
     private function createOrder(int $partnerId): Orders
     {
         $orderId = DB::table('order')->insertGetId([

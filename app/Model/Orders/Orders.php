@@ -24,6 +24,8 @@ class Orders extends Model
 
     public const STATUS_DELIVERED = 7;
 
+    public const STATUS_CANCELLED = 8;
+
     protected $table = 'order';
 	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id','status_id');
 	public $timestamps = true;
@@ -97,9 +99,45 @@ class Orders extends Model
          }
 
          return $rs;
-                
-
     }
+
+    public function getAction()
+    {
+        return match ((int) $this->status_id) {
+            self::STATUS_ORDER_PLACED => [
+                'label' => 'Pending',
+                'button' => [
+                    'label' => 'Accept Order',
+                    'action' => 'accept',
+                ],
+                'send_to_rider' => false,
+            ],
+            self::STATUS_ORDER_ACCEPTED, self::STATUS_PROCESSING => [
+                'label' => 'Order Processing',
+                'button' => [
+                    'label' => 'Ready For Pickup',
+                    'action' => 'ready-for-pickup',
+                ],
+                'send_to_rider' => true,
+            ],
+            self::STATUS_READY_FOR_PICKUP => [
+                'label' => 'Waiting for Rider to Pickup',
+                'button' => null,
+                'send_to_rider' => false,
+            ],
+            self::STATUS_CANCELLED => [
+                'label' => 'Cancel Order',
+                'button' => null,
+                'send_to_rider' => false,
+            ],
+            default => [
+                'label' => $this->status?->title ?? $this->status?->description,
+                'button' => null,
+                'send_to_rider' => false,
+            ],
+        };
+    }
+
     /**
      * [status description]
      * @return [type] [description]

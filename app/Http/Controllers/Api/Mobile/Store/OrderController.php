@@ -169,6 +169,7 @@ class OrderController extends Controller
 				$order->status;  
 				$order->user;
 				$order->logs = $order->getActionLogs();
+				$order->action = $order->getAction();
 			}
 		}
 		
