@@ -62,13 +62,13 @@
                        </span>
                     </td>
                     <td width="10%" v-if="order.status">
-                        <span v-if="order.status.id!=4">
+                        <span v-if="order.status.id!=5">
                           <select class="form-control" v-model="order.rider_id" style="font-size:12px;" id="optRider" @change="updateRider(order.id)">
                             <option value="0">Select Rider</option>
                             <option v-for="rider in riders" :value="rider.id">{{ rider.name }}</option>
                           </select>
                         </span>
-                        <span v-if="order.status.id==4" >
+                        <span v-if="order.status.id==5" >
                             <p v-if="order.rider">{{ order.rider.name }}</p>
                         </span>
                     </td>
