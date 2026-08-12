@@ -6,7 +6,7 @@
           <div class="col-md-6">
           <h3 class="card-title">
             <i class="fas fa-chart-pie mr-1"></i>
-            Orders
+            Order Management
           </h3>
         </div> 
          <div class="col-md-6 text-right">
@@ -15,6 +15,38 @@
         </div> 
       </div><!-- /.card-header -->
       <div class="card-body">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'orders' }"
+              @click="activeList = 'orders'"
+            >
+              Orders <span class="badge badge-primary ml-1">{{ orders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'completed' }"
+              @click="activeList = 'completed'"
+            >
+              Completed <span class="badge badge-success ml-1">{{ completedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'cancelled' }"
+              @click="activeList = 'cancelled'"
+            >
+              Cancelled <span class="badge badge-danger ml-1">{{ cancelledOrders.length }}</span>
+            </button>
+          </li>
+        </ul>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
@@ -33,7 +65,7 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
+                  <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'orders' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
@@ -61,16 +93,24 @@
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger">{{ order.status.title }}</a>
                        </span>
                     </td>
-                    <td width="10%" v-if="order.status">
-                        <span v-if="order.status.id!=5">
-                          <select class="form-control" v-model="order.rider_id" style="font-size:12px;" id="optRider" @change="updateRider(order.id)">
+                    <td width="10%">
+                      <template v-if="order.status">
+                        <span v-if="activeList === 'orders' && order.status.id!=5">
+                          <select class="form-control" v-model="order.rider_id" style="font-size:12px;" @change="updateRider(order.id, order.rider_id)">
                             <option value="0">Select Rider</option>
                             <option v-for="rider in riders" :value="rider.id">{{ rider.name }}</option>
                           </select>
                         </span>
-                        <span v-if="order.status.id==5" >
+                        <span v-else>
                             <p v-if="order.rider">{{ order.rider.name }}</p>
+                            <span v-else class="text-muted">Not assigned</span>
                         </span>
+                      </template>
+                    </td>
+                  </tr>
+                  <tr v-if="displayedOrders.length === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
                 </tbody>
@@ -169,7 +209,7 @@
                                           Total: {{ selectedOrder?.summary?.total }} <br>
                                         </p>
 
-                                        <div class="invoice-footer mt25">
+                                        <div class="invoice-footer mt25" v-if="selectedOrderIsActive">
                                               <label for="">Delivery Status</label>
                                                <select class="form-control"  id="optStatus" v-if="statuses" v-model="selectedOrder.status_id" @change="updateStatus($event)">
                                                     <option value="0">Select Status</option>
@@ -204,12 +244,44 @@
                 field: {
                 },
                 errors: {},
-                orders: {},
+                orders: [],
+                completedOrders: [],
+                cancelledOrders: [],
+                activeList: 'orders',
                 timerInterval: 10,
-                riders: {},
+                riders: [],
                 selectedOrder: {},
-                statuses: {},
+                statuses: [],
             }
+        },
+        computed: {
+          displayedOrders: function() {
+            if (this.activeList === 'completed') {
+              return this.completedOrders;
+            }
+
+            if (this.activeList === 'cancelled') {
+              return this.cancelledOrders;
+            }
+
+            return this.orders;
+          },
+          activeListLabel: function() {
+            if (this.activeList === 'completed') {
+              return 'Completed';
+            }
+
+            if (this.activeList === 'cancelled') {
+              return 'Cancelled';
+            }
+
+            return 'Active';
+          },
+          selectedOrderIsActive: function() {
+            return this.selectedOrder
+              && Number(this.selectedOrder.status_id) !== 7
+              && Number(this.selectedOrder.status_id) !== 8;
+          }
         },
         mounted() {
             console.log('Mounted Order List View Component')
@@ -234,6 +306,8 @@
               var self = this;
               axios.get('/api/dashboard/order/list?api_token='+api_token).then(function (response) {
                 self.orders = response.data.orders;
+                self.completedOrders = response.data.completedOrders;
+                self.cancelledOrders = response.data.cancelledOrders;
                 self.riders = response.data.riders;
                 self.statuses = response.data.statuses;
                 
@@ -241,10 +315,10 @@
                   console.log(error);
               });
           },
-          updateRider:function(orderid) {
+          updateRider:function(orderid, riderId) {
 
              let formData = new FormData();
-                formData.append('rider_id', $('#optRider').val())
+                formData.append('rider_id', riderId)
 
                 axios.post('/api/data/dashboard/update/'+orderid+'/rider/submit?api_token='+api_token, formData).then((response) => {
                   if (response.data.status) {

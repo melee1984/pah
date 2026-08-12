@@ -24,8 +24,6 @@ class OrderController extends Controller
     {	 
          $orders = Orders::with('cart')
                 ->whereNotNull('submitted_at') 
-                ->whereNull('delivered_at')
-                // ->whereRaw('status_id != 8')
                 ->with('partner')
                 ->orderBy('created_at', 'desc')->get();
 
@@ -41,7 +39,12 @@ class OrderController extends Controller
             $order->cart->cartItemVariance();
         }
 
-        $data['orders'] = $orders;
+        $data['orders'] = $orders->whereNotIn('status_id', [
+            Orders::STATUS_DELIVERED,
+            Orders::STATUS_CANCELLED,
+        ])->values();
+        $data['completedOrders'] = $orders->where('status_id', Orders::STATUS_DELIVERED)->values();
+        $data['cancelledOrders'] = $orders->where('status_id', Orders::STATUS_CANCELLED)->values();
         $data['riders'] = Riders::active()->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 

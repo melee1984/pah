@@ -15,6 +15,38 @@
         </div> 
       </div><!-- /.card-header -->
       <div class="card-body">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'pending' }"
+              @click="activeList = 'pending'"
+            >
+              Pending Orders <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'accepted' }"
+              @click="activeList = 'accepted'"
+            >
+              Accepted Orders <span class="badge badge-success ml-1">{{ acceptedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'cancelled' }"
+              @click="activeList = 'cancelled'"
+            >
+              Cancelled <span class="badge badge-secondary ml-1">{{ cancelledOrders.length }}</span>
+            </button>
+          </li>
+        </ul>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
@@ -33,10 +65,12 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-if="orders.length <=0">
-                    <td colspan="9">No record found...</td>
+                  <tr v-if="displayedOrders.length === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      No {{ activeListLabel.toLowerCase() }} orders found.
+                    </td>
                   </tr>
-                  <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
+                  <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'accepted' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
@@ -60,12 +94,7 @@
                     </td>
                     <td width="10%">
                       <span v-if="order.status">
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-if="order.status.id==1">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-success" v-if="order.status.id==2">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-warning" v-if="order.status.id==3">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-secondary" v-if="order.status.id==4">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-secondary" v-if="order.status.id==5">{{ order.status.title }}</a>
-
+                        <span class="badge" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
                        </span>
                     </td>
                    
@@ -209,13 +238,51 @@
                 field: {
                 },
                 errors: {},
-                orders: {},
+                orders: [],
+                activeList: 'pending',
                 timerInterval: 60,
-                riders: {},
+                riders: [],
                 selectedOrder: {},
-                statuses: {},
+                statuses: [],
                 modalInstance: null,
             }
+        },
+        computed: {
+          pendingOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 1);
+          },
+          acceptedOrders: function() {
+            return this.orders.filter(order => {
+              const statusId = Number(order.status_id);
+
+              return statusId >= 2 && statusId <= 6;
+            });
+          },
+          cancelledOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 8);
+          },
+          displayedOrders: function() {
+            if (this.activeList === 'accepted') {
+              return this.acceptedOrders;
+            }
+
+            if (this.activeList === 'cancelled') {
+              return this.cancelledOrders;
+            }
+
+            return this.pendingOrders;
+          },
+          activeListLabel: function() {
+            if (this.activeList === 'accepted') {
+              return 'Accepted';
+            }
+
+            if (this.activeList === 'cancelled') {
+              return 'Cancelled';
+            }
+
+            return 'Pending';
+          },
         },
         mounted() {
             console.log('Mounted Order List View Component')
@@ -227,6 +294,23 @@
         },
         
         methods: {
+          statusBadgeClass: function(statusId) {
+            statusId = Number(statusId);
+
+            if (statusId === 1) {
+              return 'badge-danger';
+            }
+
+            if (statusId === 2) {
+              return 'badge-success';
+            }
+
+            if (statusId === 8) {
+              return 'badge-secondary';
+            }
+
+            return 'badge-warning';
+          },
           startTimer: function () {
            setInterval(() => {
                 this.timerInterval--;
@@ -310,4 +394,3 @@
         }
     }
 </script>
-
