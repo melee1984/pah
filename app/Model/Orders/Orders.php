@@ -65,8 +65,9 @@ class Orders extends Model
          return $this->hasOne(BookingStatus::class, 'id', 'status_id');
     }
 
+    // get should be the latest status of the order
     public function getActionLogs() {
-         $query = DB::table('library_booking_status as status')
+         $query = DB::table('library_status as status')
             ->select('status.id', 'status.title', 'status.sorting', 'status.description')
             ->selectSub(function ($query) {
                 $query->from('order_process as process')
