@@ -27,6 +27,7 @@ class OrderController extends Controller
 		$user = $request->user();
 
     	$orders = Orders::wherePartnerId($user->merchant->id)
+						->with('rider')
     					->whereNull('store_accepted_at')
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
@@ -54,7 +55,7 @@ class OrderController extends Controller
 			$order->formated_submitted_at_ = date("D, d M h:ia", strtotime($order->submitted_at));
 
 			$order->logs = $order->getActionLogs();
-			$order->rider;
+			
 
 		}
 		
