@@ -138,8 +138,14 @@ class Orders extends Model
                 ],
                 'send_to_rider' => false,
             ],
+            self::STATUS_DELIVERED => [
+                'label' => 'Order Delivered',
+                'button' => null,
+                'cancel' => null,
+                'send_to_rider' => false,
+            ],
             self::STATUS_CANCELLED => [
-                'label' => 'Cancel Order',
+                'label' => 'Cancelled Order',
                 'button' => null,
                 'cancel' => null,
                 'send_to_rider' => false,
