@@ -568,6 +568,9 @@ class OrderController extends Controller
         ]);
 
         $partnerLocation->device_token = $validated['device_token'];
+        $partnerLocation->latitude = $validated['latitude'];
+        $partnerLocation->longtitude = $validated['longtitude'];
+
         $partnerLocation->save();
 
         return response()->json([
