@@ -14,6 +14,7 @@ use App\PartnerLocation;
 use Carbon\Carbon;
 use App\Products;
 use App\PushNotification;
+use App\Services\RiderOfferDispatcher;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -272,6 +273,21 @@ class OrderController extends Controller
             return $result['response'];
         }
 
+        $riderDeliveryReference = null;
+        $pickupCode = null;
+        try {
+            $dispatcher = app(RiderOfferDispatcher::class);
+            $riderDeliveryReference = $dispatcher->dispatchOrder($result['order']);
+            if ($riderDeliveryReference) {
+                $pickupCode = $dispatcher->pickupCode((int) $result['order']->id);
+            }
+        } catch (\Throwable $exception) {
+            Log::error('Order accepted, but rider dispatch failed.', [
+                'order_id' => $result['order']->id,
+                'exception' => $exception->getMessage(),
+            ]);
+        }
+
         if (! $result['already_accepted']) {
             try {
                 PushNotification::sendPushOrder($result['order']);
@@ -292,6 +308,8 @@ class OrderController extends Controller
             'order_status_id' => $result['order']->status_id,
             'store_accepted_at' => $result['order']->store_accepted_at,
             'action' => $result['order']->getAction(),
+            'rider_delivery_id' => $riderDeliveryReference,
+            'pickup_code' => $pickupCode,
         ]);
     }
 
@@ -436,6 +454,7 @@ class OrderController extends Controller
         }
 
         if (! $result['already_cancelled']) {
+            app(RiderOfferDispatcher::class)->cancelOrder((int) $result['order']->id);
             try {
                 PushNotification::sendPushOrder($result['order']);
             } catch (\Throwable $exception) {
