@@ -232,6 +232,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::get('restaurant/search', [MobileHomeController::class, 'search']);
         Route::get('restaurant/{partner:id}', [MobileHomeController::class, 'restaurant']);
         Route::post('account/login', [AccessController::class, 'login']);
+        Route::post('account/google', [AccessController::class, 'google']);
         Route::post('account/register', [AccessController::class, 'register']);
         Route::post('login/submit', [AccessController::class, 'login']);
 

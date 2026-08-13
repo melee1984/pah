@@ -36,6 +36,10 @@ return [
     ],
 
     'google' => [
+        'client_ids' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', env('GOOGLE_CLIENT_IDS', env('GOOGLE_CLIENT_ID', '')))
+        ))),
         'maps_key' => env('GOOGLE_MAPS_KEY'),
         'distance_matrix_batch_size' => env('GOOGLE_DISTANCE_MATRIX_BATCH_SIZE', 25),
         'distance_matrix_max_batches' => env('GOOGLE_DISTANCE_MATRIX_MAX_BATCHES', 1),

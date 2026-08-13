@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 use Str;
 use Validator;
@@ -120,6 +121,125 @@ class AccessController extends Controller
       }
     }
 
+  }
+
+  /**
+   * Sign in or register a mobile user with a Google ID token.
+   */
+  public function google(Request $request)
+  {
+    $validator = Validator::make($request->all(), [
+      'id_token' => 'required|string',
+    ]);
+
+    if ($validator->fails()) {
+      return response()->json([
+        'status' => 0,
+        'message' => 'A Google ID token is required.',
+        'errors' => $validator->errors(),
+      ], 422);
+    }
+
+    $clientIds = config('services.google.client_ids', []);
+
+    if (empty($clientIds)) {
+      return response()->json([
+        'status' => 0,
+        'message' => 'Google Sign-In is not configured.',
+      ], 503);
+    }
+
+    try {
+      $googleResponse = Http::acceptJson()
+        ->timeout(10)
+        ->get('https://oauth2.googleapis.com/tokeninfo', [
+          'id_token' => $request->input('id_token'),
+        ]);
+    } catch (\Throwable $exception) {
+      report($exception);
+
+      return response()->json([
+        'status' => 0,
+        'message' => 'Google Sign-In is temporarily unavailable.',
+      ], 503);
+    }
+
+    $googleUser = $googleResponse->json();
+    $issuer = $googleUser['iss'] ?? null;
+    $emailVerified = filter_var(
+      $googleUser['email_verified'] ?? false,
+      FILTER_VALIDATE_BOOLEAN
+    );
+
+    if (
+      !$googleResponse->successful()
+      || !in_array($googleUser['aud'] ?? null, $clientIds, true)
+      || !in_array($issuer, ['accounts.google.com', 'https://accounts.google.com'], true)
+      || empty($googleUser['sub'])
+      || empty($googleUser['email'])
+      || !$emailVerified
+      || (int) ($googleUser['exp'] ?? 0) <= now()->timestamp
+    ) {
+      return response()->json([
+        'status' => 0,
+        'message' => 'The Google ID token is invalid or expired.',
+      ], 401);
+    }
+
+    $user = User::where('provider', 'google')
+      ->where('provider_id', $googleUser['sub'])
+      ->first();
+
+    if (!$user) {
+      $user = User::where('email', $googleUser['email'])->first();
+    }
+
+    if ($user && $user->provider && $user->provider !== 'google') {
+      return response()->json([
+        'status' => 0,
+        'message' => 'This email is already linked to another sign-in provider.',
+      ], 409);
+    }
+
+    $isNewUser = !$user;
+    $user = $user ?: new User;
+    $user->firstname = $googleUser['given_name']
+      ?? $googleUser['name']
+      ?? strstr($googleUser['email'], '@', true);
+    $user->lastname = $googleUser['family_name'] ?? ($user->lastname ?: '');
+    $user->email = $googleUser['email'];
+    $user->avatar = $googleUser['picture'] ?? $user->avatar;
+    $user->password = $user->password ?: '';
+    $user->provider = 'google';
+    $user->provider_id = $googleUser['sub'];
+    $user->ip_address = $request->ip();
+    $user->api_token = $this->apiToken;
+    $user->email_verified_at = $user->email_verified_at ?: now();
+    $user->save();
+
+    Auth::login($user);
+
+    $sessionId = Session::getId();
+    $cart = Cart::firstOrCreate([
+      'session_id' => $sessionId,
+      'ip_address' => $request->ip(),
+    ]);
+    $cart->user_id = $user->id;
+    $cart->save();
+
+    return response()->json([
+      'status' => 1,
+      'name' => trim($user->firstname.' '.$user->lastname),
+      'firstname' => $user->firstname,
+      'lastname' => $user->lastname,
+      'email' => $user->email,
+      'currency' => 'PHP',
+      'access_token' => $this->apiToken,
+      'mobile' => $user->mobile,
+      'session_id' => $sessionId,
+      'photo' => $user->avatar,
+      'is_new_user' => $isNewUser,
+    ]);
   }
 
   /**
