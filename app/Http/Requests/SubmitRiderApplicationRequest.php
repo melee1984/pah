@@ -27,7 +27,7 @@ class SubmitRiderApplicationRequest extends FormRequest
                 Rule::unique('users', 'email'),
             ],
             'mobile' => ['required', 'string', 'max:25', 'regex:/^\+?[0-9][0-9\s-]{6,24}$/'],
-            'password' => ['required', 'string', 'min:8', 'max:72', 'confirmed'],
+            'password' => ['required', 'string', 'min:7', 'max:72', 'confirmed'],
             'birth_date' => [
                 'required',
                 'date_format:Y-m-d',

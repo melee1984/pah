@@ -22,7 +22,7 @@ class CreateRiderApplicationRequest extends FormRequest
                 Rule::unique('rider_applications', 'email'),
                 Rule::unique('users', 'email'),
             ],
-            'password' => ['required', 'string', 'min:8', 'max:72', 'confirmed'],
+            'password' => ['required', 'string', 'min:7', 'max:72', 'confirmed'],
         ];
     }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
 use App\Services\RiderApiService;
+use App\Services\RiderOfferDispatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -94,6 +95,9 @@ class OperationsController extends Controller
             'heartbeat_at' => now(),
             'updated_at' => now(),
         ]);
+        if ($validated['state'] === 'available') {
+            app(RiderOfferDispatcher::class)->dispatchPendingForRider($rider->id);
+        }
 
         return $this->availability($request);
     }
@@ -114,6 +118,9 @@ class OperationsController extends Controller
             'heartbeat_at' => now(),
             'updated_at' => now(),
         ]);
+        if ($state === 'available') {
+            app(RiderOfferDispatcher::class)->dispatchPendingForRider($rider->id);
+        }
 
         return response()->json([
             'message' => 'Availability heartbeat recorded.',

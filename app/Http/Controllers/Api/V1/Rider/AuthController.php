@@ -425,7 +425,7 @@ class AuthController extends Controller
             'challenge_id' => ['required', 'uuid'],
             'verification_token' => ['required', 'string'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8', 'max:72', 'confirmed'],
+            'password' => ['required', 'string', 'min:7', 'max:72', 'confirmed'],
         ]);
         $challenge = DB::table('rider_api_otp_challenges')
             ->where('reference', $validated['challenge_id'])

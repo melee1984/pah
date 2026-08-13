@@ -86,6 +86,11 @@ class DeliveryController extends Controller
             abort_if($activeExists, 409, 'Finish the active delivery before accepting another offer.');
 
             $delivery = DB::table('rider_api_deliveries')->where('id', $record->delivery_id)->first();
+            abort_if(
+                $delivery->rider_id && (int) $delivery->rider_id !== (int) $rider->id,
+                409,
+                'This delivery was accepted by another rider.',
+            );
             $wallet = $this->riders->wallet($rider->id);
             if (
                 $delivery->cod_centavos > 0
@@ -100,6 +105,15 @@ class DeliveryController extends Controller
                 'responded_at' => now(),
                 'updated_at' => now(),
             ]);
+            DB::table('rider_api_offers')
+                ->where('delivery_id', $record->delivery_id)
+                ->where('id', '!=', $record->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'expired',
+                    'responded_at' => now(),
+                    'updated_at' => now(),
+                ]);
             DB::table('rider_api_delivery_events')->insert([
                 'delivery_id' => $record->delivery_id,
                 'event_id' => (string) Str::uuid(),
@@ -125,6 +139,26 @@ class DeliveryController extends Controller
                     'updated_at' => now(),
                 ],
             );
+            foreach (['merchant', 'customer'] as $type) {
+                $exists = DB::table('rider_api_conversations')
+                    ->where('rider_id', $rider->id)
+                    ->where('type', $type)
+                    ->where('delivery_reference', $delivery->reference)
+                    ->exists();
+                if (! $exists) {
+                    DB::table('rider_api_conversations')->insert([
+                        'reference' => (string) Str::uuid(),
+                        'rider_id' => $rider->id,
+                        'type' => $type,
+                        'delivery_reference' => $delivery->reference,
+                        'subject' => $type === 'merchant'
+                            ? $delivery->merchant_name
+                            : 'Delivery customer',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
 
             return DB::table('rider_api_deliveries')->where('id', $record->delivery_id)->first();
         });

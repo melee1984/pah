@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\RiderApplication;
+use App\Services\RiderOfferDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +13,18 @@ use Tests\TestCase;
 class FullRiderApiTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_rider_application_accepts_a_seven_character_password(): void
+    {
+        $this->api()
+            ->postJson('/api/v1/rider/applications', [
+                'email' => 'seven-character@example.com',
+                'password' => 'letmein',
+                'password_confirmation' => 'letmein',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('application.status', 'draft');
+    }
 
     public function test_login_rejects_a_pending_rider_application(): void
     {
@@ -211,9 +224,61 @@ class FullRiderApiTest extends TestCase
             ->assertJsonPath('performance.completed_deliveries', 0);
     }
 
-    private function loginApprovedRider(): string
+    public function test_available_riders_receive_merchant_orders_and_only_one_can_accept(): void
     {
-        $userId = $this->createUser('rider@example.com');
+        $firstToken = $this->loginApprovedRider('first-rider@example.com');
+        $firstRiderId = DB::table('rider')->latest('id')->value('id');
+        $this->loginApprovedRider('second-rider@example.com');
+        $secondRiderId = DB::table('rider')->latest('id')->value('id');
+        $deliveryReference = (string) Str::uuid();
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => $deliveryReference,
+            'current_state' => 'offered',
+            'merchant_name' => 'Pahatud Test Store',
+            'pickup_area' => 'Lahug',
+            'dropoff_area' => 'Mabolo',
+            'earnings_centavos' => 8500,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->authenticated($firstToken)
+            ->putJson('/api/v1/rider/availability', ['state' => 'available'])
+            ->assertOk();
+        app(RiderOfferDispatcher::class)->dispatchPendingForRider($secondRiderId);
+
+        $firstOffer = DB::table('rider_api_offers')
+            ->where('rider_id', $firstRiderId)
+            ->where('delivery_id', $deliveryId)
+            ->value('reference');
+        $secondOffer = DB::table('rider_api_offers')
+            ->where('rider_id', $secondRiderId)
+            ->where('delivery_id', $deliveryId)
+            ->value('reference');
+        $this->assertNotNull($firstOffer);
+        $this->assertNotNull($secondOffer);
+
+        $this->authenticated($firstToken)
+            ->postJson("/api/v1/rider/offers/{$firstOffer}/accept")
+            ->assertOk()
+            ->assertJsonPath('delivery.id', $deliveryReference);
+        $this->assertDatabaseHas('rider_api_deliveries', [
+            'id' => $deliveryId,
+            'rider_id' => $firstRiderId,
+            'current_state' => 'accepted',
+        ]);
+        $this->assertDatabaseHas('rider_api_offers', [
+            'reference' => $secondOffer,
+            'status' => 'expired',
+        ]);
+    }
+
+    private function loginApprovedRider(string $email = 'rider@example.com'): string
+    {
+        $userId = $this->createUser($email);
         DB::table('rider')->insert([
             'name' => 'Carlo Juan',
             'date_join' => now(),
@@ -226,7 +291,7 @@ class FullRiderApiTest extends TestCase
 
         return $this->api()
             ->postJson('/api/v1/rider/auth/login', [
-                'email' => 'rider@example.com',
+                'email' => $email,
                 'password' => 'secret-password',
                 'device_id' => (string) Str::uuid(),
                 'device_name' => 'Test phone',
