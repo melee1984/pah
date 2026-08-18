@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Riders extends Model
 {
 	protected $table = 'rider';
-	protected $fillable = array('name','date_join', 'licence_no', 'mobile');
+	protected $fillable = array('name','date_join', 'licence_no', 'mobile', 'is_active');
 	public $timestamps = true;
 
 	protected $hidden = array('created_at', 'updated_at');

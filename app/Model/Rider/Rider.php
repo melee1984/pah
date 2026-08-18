@@ -12,6 +12,7 @@ class Rider extends Model
 
     protected $casts = [
         'active' => 'boolean',
+        'is_active' => 'boolean',
         'date_join' => 'datetime',
     ];
 }

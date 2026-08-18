@@ -86,6 +86,7 @@ class RiderApiService
             'email' => $user->email,
             'mobile' => $rider->mobile ?: $user->mobile,
             'active' => (bool) $rider->active,
+            'is_active' => (bool) $rider->is_active,
             'date_joined' => $rider->date_join?->toISOString(),
         ];
     }

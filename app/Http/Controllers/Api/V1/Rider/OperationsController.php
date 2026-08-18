@@ -95,6 +95,7 @@ class OperationsController extends Controller
             'heartbeat_at' => now(),
             'updated_at' => now(),
         ]);
+        $this->syncOnlineStatus($rider->id, $validated['state'] !== 'offline');
         if ($validated['state'] === 'available') {
             app(RiderOfferDispatcher::class)->dispatchPendingForRider($rider->id);
         }
@@ -118,6 +119,7 @@ class OperationsController extends Controller
             'heartbeat_at' => now(),
             'updated_at' => now(),
         ]);
+        $this->syncOnlineStatus($rider->id, $state !== 'offline');
         if ($state === 'available') {
             app(RiderOfferDispatcher::class)->dispatchPendingForRider($rider->id);
         }
@@ -333,5 +335,28 @@ class OperationsController extends Controller
     private function decode(?string $json, mixed $default = null): mixed
     {
         return $json ? json_decode($json, true, 512, JSON_THROW_ON_ERROR) : $default;
+    }
+
+    private function syncOnlineStatus(int $riderId, bool $isActive): void
+    {
+        $current = (bool) DB::table('rider')->where('id', $riderId)->value('is_active');
+
+        if ($current === $isActive) {
+            return;
+        }
+
+        DB::transaction(function () use ($riderId, $isActive) {
+            DB::table('rider')->where('id', $riderId)->update([
+                'is_active' => $isActive,
+                'updated_at' => now(),
+            ]);
+            DB::table('rider_api_activity_logs')->insert([
+                'rider_id' => $riderId,
+                'type' => $isActive ? 'time_in' : 'time_out',
+                'recorded_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
     }
 }

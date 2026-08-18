@@ -42,6 +42,7 @@ use App\Http\Controllers\Api\V1\Rider\CommunicationController as V1RiderCommunic
 use App\Http\Controllers\Api\V1\Rider\DeliveryController as V1RiderDeliveryController;
 use App\Http\Controllers\Api\V1\Rider\OperationsController as V1RiderOperationsController;
 use App\Http\Controllers\Api\V1\Rider\ProfileController as V1RiderProfileController;
+use App\Http\Controllers\Api\V1\Rider\RiderController as V1RiderController;
 use App\Http\Controllers\Api\V1\Rider\WalletController as V1RiderWalletController;
 
 // Mobile
@@ -341,6 +342,12 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::delete('devices/{device}', [V1RiderAuthController::class, 'revokeDevice']);
 
             Route::get('dashboard', [V1RiderOperationsController::class, 'dashboard']);
+            Route::get('status', [V1RiderController::class, 'status']);
+            Route::put('status', [V1RiderController::class, 'updateStatus']);
+            Route::get('wallet/balance', [V1RiderController::class, 'walletBalance']);
+            Route::get('overview/today', [V1RiderController::class, 'todayOverview']);
+            Route::get('activity-logs', [V1RiderController::class, 'activityLogs']);
+            Route::post('activity-logs', [V1RiderController::class, 'recordActivity']);
             Route::get('availability', [V1RiderOperationsController::class, 'availability']);
             Route::put('availability', [V1RiderOperationsController::class, 'updateAvailability']);
             Route::post('availability/heartbeat', [V1RiderOperationsController::class, 'heartbeat']);

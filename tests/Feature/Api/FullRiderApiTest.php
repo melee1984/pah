@@ -276,6 +276,95 @@ class FullRiderApiTest extends TestCase
         ]);
     }
 
+    public function test_rider_status_wallet_overview_and_activity_logs_are_available(): void
+    {
+        $token = $this->loginApprovedRider();
+        $riderId = DB::table('rider')->value('id');
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/status')
+            ->assertOk()
+            ->assertJsonPath('status.is_active', false)
+            ->assertJsonPath('status.indicator.color', 'gray');
+
+        $this->authenticated($token)
+            ->putJson('/api/v1/rider/status', ['is_active' => true])
+            ->assertOk()
+            ->assertJsonPath('status.is_active', true)
+            ->assertJsonPath('status.indicator.color', 'green')
+            ->assertJsonPath('activity_recorded', true);
+
+        $this->authenticated($token)
+            ->putJson('/api/v1/rider/status', ['is_active' => true])
+            ->assertOk()
+            ->assertJsonPath('activity_recorded', false);
+
+        DB::table('rider_api_wallets')->insert([
+            'rider_id' => $riderId,
+            'available_centavos' => 12345,
+            'pending_centavos' => 0,
+            'cash_collected_centavos' => 0,
+            'amount_owed_centavos' => 0,
+            'daily_cod_limit_centavos' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $deliveryReference = (string) Str::uuid();
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => $deliveryReference,
+            'rider_id' => $riderId,
+            'current_state' => 'delivered',
+            'merchant_name' => 'Pahatud Test Store',
+            'earnings_centavos' => 8500,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'accepted_at' => now(),
+            'completed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('rider_api_wallet_transactions')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'type' => 'earning',
+            'amount_centavos' => 8500,
+            'balance_after_centavos' => 12345,
+            'description' => 'Delivery earnings',
+            'related_type' => 'delivery',
+            'related_reference' => $deliveryReference,
+            'occurred_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/wallet/balance')
+            ->assertOk()
+            ->assertJsonPath('balance.amount_centavos', 12345)
+            ->assertJsonPath('balance.formatted', '₱123.45');
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/overview/today')
+            ->assertOk()
+            ->assertJsonPath('overview.total_deliveries', 1)
+            ->assertJsonPath('overview.completed_deliveries', 1)
+            ->assertJsonPath('overview.total_earnings_centavos', 8500);
+
+        $this->authenticated($token)
+            ->postJson('/api/v1/rider/activity-logs', ['type' => 'time_out'])
+            ->assertOk()
+            ->assertJsonPath('status.is_active', false)
+            ->assertJsonPath('activity_recorded', true);
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/activity-logs')
+            ->assertOk()
+            ->assertJsonCount(2, 'activity_logs')
+            ->assertJsonPath('activity_logs.0.type', 'time_out')
+            ->assertJsonPath('activity_logs.1.type', 'time_in');
+    }
+
     private function loginApprovedRider(string $email = 'rider@example.com'): string
     {
         $userId = $this->createUser($email);
