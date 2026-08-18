@@ -192,10 +192,6 @@ class CartController extends Controller
                     ->lockForUpdate()
                     ->first();
 
-                if ($cart && $cart->partner_location_address_id !== $request->partner_location_id) {
-                    throw new \DomainException('Adding an item from another restaurant location requires a new cart.');
-                }
-
                 if ($cart
                     && $cart->partner_id
                     && (int) $cart->partner_id !== $partnerId
@@ -217,6 +213,10 @@ class CartController extends Controller
                     $cart->origin = null;
                     $cart->destination = null;
                     $cart->partner_location_address_id = $request->partner_location_id; // it should be set to the new location id
+                }
+
+                 if ($cart && $cart->partner_location_address_id !== $request->partner_location_id) {
+                    throw new \DomainException('Adding an item from another restaurant location requires a new cart.');
                 }
 
                 if ((blank($cart->user_long) || blank($cart->user_lat))
