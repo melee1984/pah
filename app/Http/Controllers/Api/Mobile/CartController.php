@@ -216,6 +216,7 @@ class CartController extends Controller
                     $cart->duration = 0;
                     $cart->origin = null;
                     $cart->destination = null;
+                    $cart->partner_location_address_id = $request->partner_location_id; // it should be set to the new location id
                 }
 
                 if ((blank($cart->user_long) || blank($cart->user_lat))
