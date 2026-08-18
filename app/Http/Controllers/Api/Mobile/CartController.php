@@ -9,7 +9,6 @@ use App\Partners;
 use App\Products;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Throwable;
 use Validator;
@@ -69,7 +68,7 @@ class CartController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'session_id' => ['nullable', 'string', 'max:255'],
+            'session_id' => ['required', 'string', 'max:255'],
             'restaurant_id' => ['nullable', 'integer'],
             'partner_id' => ['nullable', 'integer'],
             'product_id' => ['required', 'integer'],
@@ -159,19 +158,6 @@ class CartController extends Controller
         $user = $request->user('api') ?: $request->user();
         $sessionId = $request->input('session_id');
 
-        if (! $sessionId && $user) {
-            $sessionId = Cart::where('user_id', $user->id)
-                ->whereNull('processed_at')
-                ->latest('created_at')
-                ->value('session_id');
-        }
-
-        $sessionId = $sessionId ?: (string) Str::uuid();
-
-        if (Cart::where('session_id', $sessionId)->whereNotNull('processed_at')->exists()) {
-            $sessionId = (string) Str::uuid();
-        }
-
         $quantity = $request->integer('quantity', 1);
 
         try {
@@ -191,6 +177,16 @@ class CartController extends Controller
                     ->latest('created_at')
                     ->lockForUpdate()
                     ->first();
+
+                if ($cart && $cart->processed_at) {
+                    throw new \DomainException(
+                        'This cart session has already been checked out. Please provide a new session_id.'
+                    );
+                }
+
+                if ($cart && $cart->user_id && $user && (int) $cart->user_id !== (int) $user->id) {
+                    throw new \DomainException('This cart session belongs to another user.');
+                }
 
                 if ($cart
                     && $cart->partner_id
@@ -215,7 +211,11 @@ class CartController extends Controller
                     $cart->partner_location_address_id = $request->partner_location_id; // it should be set to the new location id
                 }
 
-                 if ($cart && $cart->partner_location_address_id !== $request->partner_location_id) {
+                if ($cart->exists
+                    && $cart->details()->exists()
+                    && $cart->partner_location_address_id !== null
+                    && (int) $cart->partner_location_address_id !== $request->integer('partner_location_id')
+                    && $action !== 'new') {
                     throw new \DomainException('Adding an item from another restaurant location requires a new cart.');
                 }
 
@@ -323,6 +323,7 @@ class CartController extends Controller
             'status' => 1,
             'message' => 'Successfully updated cart',
             'session_id' => $sessionId,
+            'cart_created' => $cart->wasRecentlyCreated,
             'data' => $this->cart($sessionId),
         ], 200);
     }
