@@ -266,7 +266,8 @@ class Cart extends Model
       }
 
       // Saving location of the partner 
-      $this->partner_location_address_id = $nearest_store_location->id;
+      // $this->partner_location_address_id = $nearest_store_location->id; // removing this since this doesn't require anymore. 
+      // we have this partner_location_address_id sa cart table. so we can use that instead of this.
       // $part_coordinate = $this->partner->location->latitude.",".$this->partner->location->longtitude;
       $part_coordinate = $nearest_store_location->latitude . "," . $nearest_store_location->longtitude;
     // mau coordinate niiya sa user 
