@@ -192,6 +192,10 @@ class CartController extends Controller
                     ->lockForUpdate()
                     ->first();
 
+                if ($cart && $cart->partner_location_address_id !== $request->partner_location_id) {
+                    throw new \DomainException('Adding an item from another restaurant location requires a new cart.');
+                }
+
                 if ($cart
                     && $cart->partner_id
                     && (int) $cart->partner_id !== $partnerId
@@ -228,7 +232,7 @@ class CartController extends Controller
                 $cart->partner_id = $partnerId;
                 // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
                 // dapat makuha niya nag iyaha order if multiple location and merchant 
-                $cart->partner_location_address_id = $request->location_id ?? $cart->partner->location->id ?? null;
+                $cart->partner_location_address_id = $request->partner_location_id;
                 $cart->active = $user ? 1 : 0;
 
                 if ($user) {
