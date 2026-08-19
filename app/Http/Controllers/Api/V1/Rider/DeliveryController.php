@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
 use App\Model\Bookings\Bookings;
+use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\Model\Rider\RiderDeclineOrder;
 use App\Services\RiderApiService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -702,6 +704,94 @@ class DeliveryController extends Controller
         ]);
     }
 
+    public function acceptAction(Request $request, Orders $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'action' => ['required', Rule::in(['accept', 'ready-for-pickup', 'pickup-order', 'delivered'])],
+        ]);
+        $riderId = $this->riders->rider($request)->id;
+        $payload = $request->all();
+
+        $updatedOrder = DB::transaction(function () use ($request, $validated, $riderId, $order, $payload) {
+            $lockedOrder = Orders::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+            $action = $validated['action'];
+
+            if ($action === 'accept') {
+                abort_if(! $lockedOrder->store_accepted_at, 409, 'This order is not available for riders yet.');
+                abort_if($lockedOrder->accepted_at, 409, 'This order has already been accepted.');
+                abort_if(
+                    $lockedOrder->rider_id && (int) $lockedOrder->rider_id !== (int) $riderId,
+                    409,
+                    'This order is assigned to another rider.',
+                );
+
+                $lockedOrder->rider_id = $riderId;
+                $lockedOrder->accepted_by_rider_id = $riderId;
+                $lockedOrder->accepted_at = now();
+            } else {
+                abort_if(
+                    (int) $lockedOrder->rider_id !== (int) $riderId
+                    && (int) $lockedOrder->accepted_by_rider_id !== (int) $riderId,
+                    403,
+                    'This order is assigned to another rider.',
+                );
+
+                $transition = match ($action) {
+                    'ready-for-pickup' => ['from' => [Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING], 'to' => Orders::STATUS_READY_FOR_PICKUP],
+                    'pickup-order' => ['from' => [Orders::STATUS_READY_FOR_PICKUP], 'to' => Orders::STATUS_RIDER_ON_THE_WAY],
+                    'delivered' => ['from' => [Orders::STATUS_RIDER_ON_THE_WAY, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
+                };
+
+                abort_if(
+                    ! in_array((int) $lockedOrder->status_id, $transition['from'], true),
+                    409,
+                    'This action is not allowed for the current order status.',
+                );
+
+                $lockedOrder->status_id = $transition['to'];
+            }
+
+            $lockedOrder->save();
+
+            if ($action !== 'accept') {
+                OrderProcess::query()->firstOrCreate([
+                    'status_id' => $lockedOrder->status_id,
+                    'order_id' => $lockedOrder->id,
+                    'user_id' => $request->user()->id,
+                ]);
+            }
+
+            DB::table('rider_api_activity_logs')->insert([
+                'rider_id' => $riderId,
+                'order_id' => $lockedOrder->id,
+                'type' => 'booking_action',
+                'payload' => json_encode($payload, JSON_THROW_ON_ERROR),
+                'recorded_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return $lockedOrder->fresh();
+        });
+
+        return response()->json([
+            'message' => 'Order action completed.',
+            'order' => [
+                'id' => (string) $updatedOrder->id,
+                'status_id' => (int) $updatedOrder->status_id,
+                'rider_id' => (string) $updatedOrder->rider_id,
+                'accepted_by_rider_id' => (string) $updatedOrder->accepted_by_rider_id,
+                'accepted_at' => $updatedOrder->accepted_at
+                    ? Carbon::parse($updatedOrder->accepted_at)->toISOString()
+                    : null,
+                'action' => $updatedOrder->getRiderAction(),
+            ],
+        ]);
+    }
+
     private function applyLegacyOrderFilters($orders, $bookings, array $validated): void
     {
         match ($validated['status'] ?? null) {
@@ -743,7 +833,7 @@ class DeliveryController extends Controller
             'summary' => $cart?->cartItemSummary(),
             'cart_total' => $cart?->cartItemTotal(),
             'logs' => $order->getActionLogs(),
-            'action' => $order->getAction(),
+            'action' => $order->getRiderAction(),
             'submitted_at_' => $order->submitted_at
                 ? date('d-m-Y G:ia', strtotime($order->submitted_at))
                 : null,

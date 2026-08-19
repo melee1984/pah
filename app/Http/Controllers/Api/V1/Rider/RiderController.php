@@ -85,7 +85,7 @@ class RiderController extends Controller
     {
         $validated = $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
-            'type' => ['nullable', Rule::in(['time_in', 'time_out', 'booking_accepted', 'booking_declined'])],
+            'type' => ['nullable', Rule::in(['time_in', 'time_out', 'booking_accepted', 'booking_declined', 'booking_action'])],
             'limit' => ['nullable', 'integer', 'between:1,100'],
         ]);
         $query = DB::table('rider_api_activity_logs')
@@ -107,6 +107,7 @@ class RiderController extends Controller
                 'id' => (string) $log->id,
                 'type' => $log->type,
                 'order_id' => $log->order_id ? (string) $log->order_id : null,
+                'payload' => $log->payload ? json_decode($log->payload, true, 512, JSON_THROW_ON_ERROR) : null,
                 'recorded_at' => Carbon::parse($log->recorded_at)->toISOString(),
             ])->values(),
             'next_cursor' => $paginator->nextCursor()?->encode(),

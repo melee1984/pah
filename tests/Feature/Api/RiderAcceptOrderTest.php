@@ -31,6 +31,16 @@ class RiderAcceptOrderTest extends TestCase
                 $table->timestamps();
             });
         }
+
+        if (! Schema::hasTable('order_process')) {
+            Schema::create('order_process', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('status_id');
+                $table->unsignedBigInteger('order_id');
+                $table->unsignedBigInteger('user_id');
+                $table->timestamps();
+            });
+        }
     }
 
     public function test_rider_can_accept_an_available_order(): void
@@ -86,6 +96,60 @@ class RiderAcceptOrderTest extends TestCase
             'accepted_by_rider_id' => null,
             'accepted_at' => null,
         ]);
+    }
+
+    public function test_rider_action_updates_the_status_and_records_the_app_payload(): void
+    {
+        [$user, $riderId] = $this->createRider('action-test@example.com');
+        $orderId = DB::table('order')->insertGetId([
+            'status_id' => 4,
+            'rider_id' => $riderId,
+            'accepted_by_rider_id' => $riderId,
+            'store_accepted_at' => now(),
+            'accepted_at' => now(),
+            'submitted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $payload = [
+            'action' => 'pickup-order',
+            'latitude' => 14.5995,
+            'longitude' => 120.9842,
+            'device_timestamp' => '2026-08-19T22:05:00+08:00',
+        ];
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/action", $payload)
+            ->assertOk()
+            ->assertJsonPath('message', 'Order action completed.')
+            ->assertJsonPath('order.status_id', 5);
+
+        $this->assertDatabaseHas('order', [
+            'id' => $orderId,
+            'status_id' => 5,
+        ]);
+        $this->assertDatabaseHas('order_process', [
+            'order_id' => $orderId,
+            'status_id' => 5,
+            'user_id' => $user->id,
+        ]);
+
+        $activity = DB::table('rider_api_activity_logs')
+            ->where('rider_id', $riderId)
+            ->where('order_id', $orderId)
+            ->where('type', 'booking_action')
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertSame($payload, json_decode($activity->payload, true, 512, JSON_THROW_ON_ERROR));
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/activity-logs?type=booking_action')
+            ->assertOk()
+            ->assertJsonPath('activity_logs.0.payload.action', 'pickup-order')
+            ->assertJsonPath('activity_logs.0.payload.device_timestamp', $payload['device_timestamp']);
     }
 
     /**

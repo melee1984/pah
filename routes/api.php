@@ -354,6 +354,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
             Route::post('orders/{order}/decline', [V1RiderDeliveryController::class, 'declineBooking']);
             Route::post('orders/{order}/accept', [V1RiderDeliveryController::class, 'acceptBooking']);
+            Route::post('orders/{order}/action', [V1RiderDeliveryController::class, 'acceptAction']);
 
             Route::get('orders/{order}', [V1RiderDeliveryController::class, 'order']);
 
