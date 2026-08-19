@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile\Rider;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use Session;
 use Validator;
@@ -263,10 +264,23 @@ class OrderController extends Controller
 
 			} else if ($action == "decline") {
 
-				RiderDeclineOrder::query()->firstOrCreate([
-					'rider_id' => $user->rider->id,
-					'order_id' => $order->id,
-				]);
+				DB::transaction(function () use ($user, $order) {
+					$decline = RiderDeclineOrder::query()->firstOrCreate([
+						'rider_id' => $user->rider->id,
+						'order_id' => $order->id,
+					]);
+
+					if ($decline->wasRecentlyCreated) {
+						DB::table('rider_api_activity_logs')->insert([
+							'rider_id' => $user->rider->id,
+							'order_id' => $order->id,
+							'type' => 'order_declined',
+							'recorded_at' => now(),
+							'created_at' => now(),
+							'updated_at' => now(),
+						]);
+					}
+				});
 				$data['status'] = 1;
 				$data['message'] = 'Order declined.';
 

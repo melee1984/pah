@@ -633,10 +633,23 @@ class DeliveryController extends Controller
         abort_if($order->accepted_at, 409, 'An accepted order can no longer be declined.');
         abort_if($order->rider_id && (int) $order->rider_id !== (int) $riderId, 403);
 
-        RiderDeclineOrder::query()->firstOrCreate([
-            'rider_id' => $riderId,
-            'order_id' => $order->id,
-        ]);
+        DB::transaction(function () use ($riderId, $order) {
+            $decline = RiderDeclineOrder::query()->firstOrCreate([
+                'rider_id' => $riderId,
+                'order_id' => $order->id,
+            ]);
+
+            if ($decline->wasRecentlyCreated) {
+                DB::table('rider_api_activity_logs')->insert([
+                    'rider_id' => $riderId,
+                    'order_id' => $order->id,
+                    'type' => 'order_declined',
+                    'recorded_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        });
 
         return response()->json([
             'message' => 'Order declined.',
