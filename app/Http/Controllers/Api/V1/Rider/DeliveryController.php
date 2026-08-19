@@ -707,8 +707,9 @@ class DeliveryController extends Controller
     public function acceptAction(Request $request, Orders $order): JsonResponse
     {
         $validated = $request->validate([
-            'action' => ['required', Rule::in(['accept', 'ready-for-pickup', 'pickup-order', 'delivered'])],
+            'action' => ['required', Rule::in(['accept', 'ready-for-pickup', 'pickup-order', 'delivered-order', 'cancelled', 'failed'])],
         ]);
+
         $riderId = $this->riders->rider($request)->id;
         $payload = $request->all();
 
@@ -742,7 +743,7 @@ class DeliveryController extends Controller
                 $transition = match ($action) {
                     'ready-for-pickup' => ['from' => [Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING], 'to' => Orders::STATUS_READY_FOR_PICKUP],
                     'pickup-order' => ['from' => [Orders::STATUS_READY_FOR_PICKUP], 'to' => Orders::STATUS_RIDER_ON_THE_WAY],
-                    'delivered' => ['from' => [Orders::STATUS_RIDER_ON_THE_WAY, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
+                    'delivered-order' => ['from' => [Orders::STATUS_RIDER_ON_THE_WAY, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
                 };
 
                 abort_if(
