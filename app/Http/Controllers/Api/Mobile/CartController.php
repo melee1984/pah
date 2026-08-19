@@ -309,7 +309,7 @@ class CartController extends Controller
             try {
                 // Calculate the delivery fee for the cart
                 // This will update the cart's delivery_fee, distance_rate, and duration fields
-                $cart->deliveryRate();
+                $cart->deliveryRate($request->partner_location_id);
                 // 
             } catch (Throwable $exception) {
                 \Log::warning('Unable to calculate the mobile cart delivery fee.', [

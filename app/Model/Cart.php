@@ -245,7 +245,7 @@ class Cart extends Model
    * Validate and get the current delivery for this cart 
    * @return [type] [description]
    */
-  public function deliveryRate()
+  public function deliveryRate($store_location_id = null)
   {
 
     try {
@@ -256,20 +256,33 @@ class Cart extends Model
       // recheck the number of partner available 
       // and if multiple then validate asa ang pinaka duol 
 
-      $nearest_store_location = DB::table('partner_location')
-        ->select('id', 'latitude', 'longtitude', 'address_1', DB::raw('
-                 (select ST_Distance_Sphere(
-                  point(partner_location.longtitude, partner_location.latitude),
-                  point(' . $this->user_long . ', ' . $this->user_lat . ')) * 0.001 / 1000)  as meter'))
-        ->whereActive(1)
-        ->wherePartnerId($this->partner->id)
-        ->orderby('meter', 'asc')
-        ->first();
+      
+
+      if ($store_location_id == null) {
+          $nearest_store_location = DB::table('partner_location')
+          ->select('id', 'latitude', 'longtitude', 'address_1', DB::raw('
+                  (select ST_Distance_Sphere(
+                    point(partner_location.longtitude, partner_location.latitude),
+                    point(' . $this->user_long . ', ' . $this->user_lat . ')) * 0.001 / 1000)  as meter'))
+          ->whereActive(1)
+          ->wherePartnerId($this->partner->id)
+          ->orderby('meter', 'asc')
+          ->first();
+      }
+      else 
+      { 
+        $nearest_store_location = DB::table('partner_location')
+          ->select('id', 'latitude', 'longtitude', 'address_1')
+          ->whereActive(1)
+          ->wherePartnerId($this->partner->id)
+          ->whereId($store_location_id)
+          ->first();
+      }
 
       if (!$nearest_store_location) {
         return false;
       }
-
+     
       // Saving location of the partner 
       // $this->partner_location_address_id = $nearest_store_location->id; // removing this since this doesn't require anymore. 
       // we have this partner_location_address_id sa cart table. so we can use that instead of this.
@@ -285,7 +298,7 @@ class Cart extends Model
       //   'partner_coordinate' => $part_coordinate,
       // ]);
 
-      // \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
+      \Log::info(['Partner/Merchant/Restuarnat Information' => $nearest_store_location]);
       // \Log::info(['Cart Information' => $this]);
 
       $data = DeliveryDistance::getCoordinateComputation($part_coordinate, $user_coordinate);
