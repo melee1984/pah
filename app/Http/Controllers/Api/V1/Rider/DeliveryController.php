@@ -648,6 +648,15 @@ class DeliveryController extends Controller
             $lockedOrder->accepted_at = now();
             $lockedOrder->save();
 
+            DB::table('rider_api_activity_logs')->insert([
+                'rider_id' => $riderId,
+                'order_id' => $lockedOrder->id,
+                'type' => 'booking_accepted',
+                'recorded_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
             return $lockedOrder;
         });
 

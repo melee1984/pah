@@ -85,7 +85,7 @@ class RiderController extends Controller
     {
         $validated = $request->validate([
             'date' => ['nullable', 'date_format:Y-m-d'],
-            'type' => ['nullable', Rule::in(['time_in', 'time_out', 'booking_declined'])],
+            'type' => ['nullable', Rule::in(['time_in', 'time_out', 'booking_accepted', 'booking_declined'])],
             'limit' => ['nullable', 'integer', 'between:1,100'],
         ]);
         $query = DB::table('rider_api_activity_logs')

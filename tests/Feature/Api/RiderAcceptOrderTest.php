@@ -54,6 +54,17 @@ class RiderAcceptOrderTest extends TestCase
             'accepted_by_rider_id' => $riderId,
         ]);
         $this->assertNotNull(DB::table('order')->where('id', $orderId)->value('accepted_at'));
+        $this->assertDatabaseHas('rider_api_activity_logs', [
+            'rider_id' => $riderId,
+            'order_id' => $orderId,
+            'type' => 'booking_accepted',
+        ]);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/activity-logs?type=booking_accepted')
+            ->assertOk()
+            ->assertJsonPath('activity_logs.0.type', 'booking_accepted')
+            ->assertJsonPath('activity_logs.0.order_id', (string) $orderId);
     }
 
     public function test_rider_cannot_accept_an_order_assigned_to_another_rider(): void
