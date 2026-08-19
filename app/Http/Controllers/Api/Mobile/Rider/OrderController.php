@@ -274,7 +274,7 @@ class OrderController extends Controller
 						DB::table('rider_api_activity_logs')->insert([
 							'rider_id' => $user->rider->id,
 							'order_id' => $order->id,
-							'type' => 'order_declined',
+							'type' => 'booking_declined',
 							'recorded_at' => now(),
 							'created_at' => now(),
 							'updated_at' => now(),

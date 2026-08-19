@@ -118,7 +118,7 @@ POST /orders/{orderId}/decline
 Declining an available order hides it from that rider's dashboard and order
 list without removing it for other riders. Repeating the decline request is
 safe and does not create duplicate decline or activity records. The action is
-available from `GET /activity-logs?type=order_declined`, including its
+available from `GET /activity-logs?type=booking_declined`, including its
 `order_id`.
 
 Delivery event requests require a client-generated UUID. Replayed UUIDs are

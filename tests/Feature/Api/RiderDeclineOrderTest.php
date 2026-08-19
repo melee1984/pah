@@ -75,14 +75,14 @@ class RiderDeclineOrderTest extends TestCase
         $this->assertDatabaseHas('rider_api_activity_logs', [
             'rider_id' => $riderId,
             'order_id' => $orderId,
-            'type' => 'order_declined',
+            'type' => 'booking_declined',
         ]);
         $this->assertDatabaseCount('rider_api_activity_logs', 1);
 
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
-            ->getJson('/api/v1/rider/activity-logs?type=order_declined')
+            ->getJson('/api/v1/rider/activity-logs?type=booking_declined')
             ->assertOk()
-            ->assertJsonPath('activity_logs.0.type', 'order_declined')
+            ->assertJsonPath('activity_logs.0.type', 'booking_declined')
             ->assertJsonPath('activity_logs.0.order_id', (string) $orderId);
 
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
