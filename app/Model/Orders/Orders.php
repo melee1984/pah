@@ -104,6 +104,30 @@ class Orders extends Model
          return $rs;
     }
 
+    public function getRiderAction()
+    {
+        $action = null;
+
+        if ((int) $this->status_id === self::STATUS_ORDER_PLACED) {
+            $action = [
+                'label' => 'Accept Booking',
+                'action' => 'accept',
+            ];
+        } elseif ((int) $this->status_id === self::STATUS_ORDER_ACCEPTED || (int) $this->status_id === self::STATUS_PROCESSING) {
+            $action = [
+                'label' => 'Ready For Pickup',
+                'action' => 'ready-for-pickup',
+            ];
+        }
+        elseif ((int) $this->status_id === self::STATUS_READY_FOR_PICKUP) {
+            $action = [
+                'label' => 'Pickup Order',
+                'action' => 'pickup-order',
+            ];
+        }
+
+        return $action;
+    }
     public function getAction()
     {
         return match ((int) $this->status_id) {
