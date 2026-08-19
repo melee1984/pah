@@ -625,7 +625,44 @@ class DeliveryController extends Controller
         ]);
     }
 
-    public function declineOrder(Request $request, Orders $order): JsonResponse
+    public function acceptBooking(Request $request, Orders $order): JsonResponse
+    {
+        $riderId = $this->riders->rider($request)->id;
+
+        $acceptedOrder = DB::transaction(function () use ($riderId, $order) {
+            $lockedOrder = Orders::query()
+                ->whereKey($order->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            abort_if(! $lockedOrder->store_accepted_at, 409, 'This order is not available for riders yet.');
+            abort_if($lockedOrder->accepted_at, 409, 'This order has already been accepted.');
+            abort_if(
+                $lockedOrder->rider_id && (int) $lockedOrder->rider_id !== (int) $riderId,
+                409,
+                'This order is assigned to another rider.',
+            );
+
+            $lockedOrder->rider_id = $riderId;
+            $lockedOrder->accepted_by_rider_id = $riderId;
+            $lockedOrder->accepted_at = now();
+            $lockedOrder->save();
+
+            return $lockedOrder;
+        });
+
+        return response()->json([
+            'message' => 'Order accepted.',
+            'order' => [
+                'id' => (string) $acceptedOrder->id,
+                'rider_id' => (string) $acceptedOrder->rider_id,
+                'accepted_by_rider_id' => (string) $acceptedOrder->accepted_by_rider_id,
+                'accepted_at' => $acceptedOrder->accepted_at?->toISOString(),
+            ],
+        ]);
+    }
+
+    public function declineBooking(Request $request, Orders $order): JsonResponse
     {
         $riderId = $this->riders->rider($request)->id;
 

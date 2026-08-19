@@ -34,6 +34,7 @@ class Orders extends Model
     protected $dates = [
         'submitted_at',
         'store_accepted_at',
+        'accepted_at',
         'delivered_at',
         'updated_at',
         'created_at'
