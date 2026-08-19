@@ -746,6 +746,11 @@ class DeliveryController extends Controller
                     'delivered-order' => ['from' => [Orders::STATUS_RIDER_ON_THE_WAY, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
                 };
 
+                if ($action === 'delivered-order' && $lockedOrder->payment?->type === 'cod') {
+                    // this will identify that the order is delivered and what ever payment gateway, so we can set the delivered_at timestamp
+                    $lockedOrder->delivered_at = now();
+                }
+
                 abort_if(
                     ! in_array((int) $lockedOrder->status_id, $transition['from'], true),
                     409,
