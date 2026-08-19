@@ -742,8 +742,8 @@ class DeliveryController extends Controller
 
                 $transition = match ($action) {
                     'ready-for-pickup' => ['from' => [Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING], 'to' => Orders::STATUS_READY_FOR_PICKUP],
-                    'pickup-order' => ['from' => [Orders::STATUS_READY_FOR_PICKUP], 'to' => Orders::STATUS_RIDER_ON_THE_WAY],
-                    'delivered-order' => ['from' => [Orders::STATUS_RIDER_ON_THE_WAY, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
+                    'pickup-order' => ['from' => [Orders::STATUS_READY_FOR_PICKUP], 'to' => Orders::STATUS_RIDER_PICKED_UP],
+                    'delivered-order' => ['from' => [Orders::STATUS_RIDER_PICKED_UP, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
                 };
 
                 if ($action === 'delivered-order' && $lockedOrder->payment?->type === 'cod') {

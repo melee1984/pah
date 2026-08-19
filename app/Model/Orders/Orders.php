@@ -19,7 +19,7 @@ class Orders extends Model
 
     public const STATUS_READY_FOR_PICKUP = 4;
 
-    public const STATUS_RIDER_ON_THE_WAY = 5;
+    public const STATUS_RIDER_PICKED_UP = 5;
 
     public const STATUS_PAYMENT_CONFIRMED = 6;
 
@@ -125,7 +125,7 @@ class Orders extends Model
                 'action' => 'pickup-order',
             ];
         }
-        elseif ((int) $this->status_id === self::STATUS_RIDER_ON_THE_WAY) {
+        elseif ((int) $this->status_id === self::STATUS_RIDER_PICKED_UP) {
             $action = [
                 'label' => 'Delivered Order',
                 'action' => 'delivered-order',

@@ -66,7 +66,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             ['id' => Orders::STATUS_ORDER_ACCEPTED, 'description' => 'Order Accepted'],
             ['id' => Orders::STATUS_PROCESSING, 'description' => 'Processing'],
             ['id' => Orders::STATUS_READY_FOR_PICKUP, 'description' => 'Ready for Pickup'],
-            ['id' => Orders::STATUS_RIDER_ON_THE_WAY, 'description' => 'Rider on the Way'],
+            ['id' => Orders::STATUS_RIDER_PICKED_UP, 'description' => 'Rider Picked Up'],
             ['id' => Orders::STATUS_PAYMENT_CONFIRMED, 'description' => 'Payment Confirmed'],
             ['id' => Orders::STATUS_DELIVERED, 'description' => 'Delivered'],
         ]);
@@ -283,7 +283,7 @@ class MerchantOrderAcceptanceTest extends TestCase
     public function test_merchant_cannot_cancel_an_order_after_rider_pickup(): void
     {
         $order = $this->createOrder(partnerId: 20);
-        $order->status_id = Orders::STATUS_RIDER_ON_THE_WAY;
+        $order->status_id = Orders::STATUS_RIDER_PICKED_UP;
         $order->save();
 
         $response = (new OrderController)->cancelOrder(
@@ -298,7 +298,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         );
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
-            'status_id' => Orders::STATUS_RIDER_ON_THE_WAY,
+            'status_id' => Orders::STATUS_RIDER_PICKED_UP,
         ]);
     }
 

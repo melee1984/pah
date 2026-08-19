@@ -286,11 +286,11 @@ class OrderController extends Controller
 
 			} else if ($action == "pickup") {
 
-				$order->status_id = Orders::STATUS_RIDER_ON_THE_WAY;
+				$order->status_id = Orders::STATUS_RIDER_PICKED_UP;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => Orders::STATUS_RIDER_ON_THE_WAY,
+                    'status_id' => Orders::STATUS_RIDER_PICKED_UP,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
