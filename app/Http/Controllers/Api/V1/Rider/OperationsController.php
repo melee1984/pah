@@ -45,7 +45,7 @@ class OperationsController extends Controller
 			$order->formated_submitted_at_ = date("D, d M h:ia", strtotime($order->submitted_at));
 
 			$order->logs = $order->getActionLogs();
-
+            $order->action = $order->getAction();
 		}
 		
 
