@@ -3,6 +3,7 @@
 namespace App\Model\Rider;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Rider extends Model
 {
@@ -15,4 +16,9 @@ class Rider extends Model
         'is_active' => 'boolean',
         'date_join' => 'datetime',
     ];
+
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(RiderApiWallet::class, 'rider_id');
+    }
 }

@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Model\Orders\Orders;
 use App\Model\Rider\Rider;
 use App\RiderApplication;
 use App\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -169,5 +171,18 @@ class RiderApiService
             'expired_documents' => 'Renew your expired rider documents before signing in.',
             default => 'This account is not an approved rider account.',
         };
+    }
+
+    /**
+     * @return Collection<int, Orders>
+     */
+    public function bookings(int $riderId): Collection
+    {
+        return Orders::query()
+            ->with(['cart', 'status'])
+            ->where('rider_id', $riderId)
+            ->whereNotNull('store_accepted_at')
+            ->orderByDesc('submitted_at')
+            ->get();
     }
 }

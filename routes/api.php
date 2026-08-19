@@ -303,6 +303,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
 Route::group(['middleware' => 'isRequest'], function () {
     Route::prefix('v1/rider')->group(function () {
+
         Route::post('auth/login', [V1RiderAuthController::class, 'login']);
         Route::post('auth/otp/send', [V1RiderAuthController::class, 'sendOtp']);
         Route::post('auth/otp/verify', [V1RiderAuthController::class, 'verifyOtp']);
@@ -313,6 +314,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             ->name('v1.rider.applications.create');
 
         Route::middleware('rider.application')->group(function () {
+
             Route::get('applications/current', [RiderApplicationController::class, 'current']);
             Route::get('applications/{application}', [RiderApplicationController::class, 'show']);
             Route::patch('applications/{application}/personal', [RiderApplicationController::class, 'updatePersonal']);
@@ -336,19 +338,27 @@ Route::group(['middleware' => 'isRequest'], function () {
         });
 
         Route::middleware(['auth:sanctum', 'rider.approved'])->group(function () {
+
+
+            // This should display the information about the rider's dashboard, including earnings, deliveries, and other relevant metrics.
+            Route::get('dashboard', [V1RiderOperationsController::class, 'dashboard']);
+            Route::get('wallet/balance', [V1RiderController::class, 'walletBalance']);
+
             Route::get('devices', [V1RiderAuthController::class, 'devices']);
             Route::post('devices', [V1RiderAuthController::class, 'registerDevice']);
             Route::patch('devices/{device}', [V1RiderAuthController::class, 'updateDevice']);
             Route::delete('devices/{device}', [V1RiderAuthController::class, 'revokeDevice']);
-
-            Route::get('dashboard', [V1RiderOperationsController::class, 'dashboard']);
             Route::get('status', [V1RiderController::class, 'status']);
-            Route::put('status', [V1RiderController::class, 'updateStatus']);
-            Route::get('wallet/balance', [V1RiderController::class, 'walletBalance']);
-            Route::get('overview/today', [V1RiderController::class, 'todayOverview']);
-            Route::get('activity-logs', [V1RiderController::class, 'activityLogs']);
-            Route::post('activity-logs', [V1RiderController::class, 'recordActivity']);
             Route::get('availability', [V1RiderOperationsController::class, 'availability']);
+            Route::get('activity-logs', [V1RiderController::class, 'activityLogs']);
+            Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
+            Route::get('orders/{order}', [V1RiderDeliveryController::class, 'order']);
+
+            Route::get('overview/today', [V1RiderController::class, 'todayOverview']);
+            
+            Route::put('status', [V1RiderController::class, 'updateStatus']);
+            Route::post('activity-logs', [V1RiderController::class, 'recordActivity']);
+            
             Route::put('availability', [V1RiderOperationsController::class, 'updateAvailability']);
             Route::post('availability/heartbeat', [V1RiderOperationsController::class, 'heartbeat']);
             Route::get('availability/schedule', [V1RiderOperationsController::class, 'schedule']);
@@ -360,10 +370,11 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('location/batch', [V1RiderOperationsController::class, 'saveLocationBatch']);
             Route::get('location/config', [V1RiderOperationsController::class, 'locationConfig']);
 
-            Route::get('offers/current', [V1RiderDeliveryController::class, 'currentOffer']);
-            Route::get('offers/{offer}', [V1RiderDeliveryController::class, 'offer']);
-            Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);
-            Route::post('offers/{offer}/decline', [V1RiderDeliveryController::class, 'declineOffer']);
+            // Route::get('offers/current', [V1RiderDeliveryController::class, 'currentOffer']);
+            // Route::get('offers/{offer}', [V1RiderDeliveryController::class, 'offer']);
+            // Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);
+            // Route::post('offers/{offer}/decline', [V1RiderDeliveryController::class, 'declineOffer']);
+            
             Route::get('deliveries/active', [V1RiderDeliveryController::class, 'active']);
             Route::get('deliveries/{delivery}', [V1RiderDeliveryController::class, 'show']);
             Route::get('deliveries/{delivery}/route', [V1RiderDeliveryController::class, 'route']);
@@ -377,9 +388,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('deliveries/{delivery}/issues', [V1RiderDeliveryController::class, 'issue']);
             Route::post('deliveries/{delivery}/calls', [V1RiderDeliveryController::class, 'call']);
             Route::post('deliveries/{delivery}/share-trip', [V1RiderDeliveryController::class, 'shareTrip']);
-            Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
-            Route::get('orders/{order}', [V1RiderDeliveryController::class, 'order']);
-
+        
             Route::get('wallet', [V1RiderWalletController::class, 'wallet']);
             Route::get('wallet/earnings', [V1RiderWalletController::class, 'earnings']);
             Route::get('wallet/transactions', [V1RiderWalletController::class, 'transactions']);
