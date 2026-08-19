@@ -353,6 +353,15 @@ class OrderController extends Controller
             if (! $order->store_accepted_at
                 || (int) $order->accepted_by_store_id !== (int) $request->store_location_id
                 || (int) $order->status_id !== Orders::STATUS_PROCESSING) {
+
+                \Log::info(['Order not ready for pickup' => [
+                    'order_id' => $order->id,
+                    'store_accepted_at' => $order->store_accepted_at,
+                    'accepted_by_store_id' => $order->accepted_by_store_id,
+                    'request_store_location_id' => $request->store_location_id,
+                    'status_id' => $order->status_id,
+                ]]);
+
                 return ['response' => response()->json([
                     'status' => 0,
                     'message' => 'Only processing orders can be marked ready for pickup.',
