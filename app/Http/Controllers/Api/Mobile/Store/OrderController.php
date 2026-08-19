@@ -213,7 +213,7 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $user) {
+        $result = DB::transaction(function () use ($merchant, $order, $user, $request) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
@@ -227,8 +227,10 @@ class OrderController extends Controller
                 ], 404)];
             }
 
-            if ($order->store_accepted_at
-                && (int) $order->accepted_by_store_id === (int) $merchant->id) {
+            // Check if the order has already been accepted by the store
+            // If the order has already been accepted, return a response indicating that the order was already accepted
+            // 
+            if ($order->store_accepted_at && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
                 return [
                     'order' => $order,
                     'already_accepted' => true,
@@ -249,7 +251,7 @@ class OrderController extends Controller
                 ], 409)];
             }
 
-            $order->accepted_by_store_id = $merchant->id;
+            $order->accepted_by_store_id = $order->cart->partner_location_address_id; // This should update the accepted_by_store_id to the partner location address id instead of the merchant id
             $order->store_accepted_at = now();
             $order->status_id = Orders::STATUS_PROCESSING;
             $order->save();
@@ -325,7 +327,7 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $user) {
+        $result = DB::transaction(function () use ($merchant, $order, $request, $user) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
@@ -341,7 +343,7 @@ class OrderController extends Controller
 
             if ((int) $order->status_id === Orders::STATUS_READY_FOR_PICKUP
                 && $order->store_accepted_at
-                && (int) $order->accepted_by_store_id === (int) $merchant->id) {
+                && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
                 return [
                     'order' => $order,
                     'already_ready' => true,
@@ -349,7 +351,7 @@ class OrderController extends Controller
             }
 
             if (! $order->store_accepted_at
-                || (int) $order->accepted_by_store_id !== (int) $merchant->id
+                || (int) $order->accepted_by_store_id !== (int) $request->store_location_id
                 || (int) $order->status_id !== Orders::STATUS_PROCESSING) {
                 return ['response' => response()->json([
                     'status' => 0,
