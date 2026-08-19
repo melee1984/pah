@@ -125,6 +125,13 @@ class Orders extends Model
                 'action' => 'pickup-order',
             ];
         }
+        elseif ((int) $this->status_id === self::STATUS_RIDER_ON_THE_WAY) {
+            $action = [
+                'label' => 'Delivered Order',
+                'action' => 'delivered-order',
+            ];
+        }
+
 
         return $action;
     }
