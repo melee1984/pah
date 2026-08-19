@@ -10,6 +10,7 @@ use Validator;
 
 use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
+use App\Model\Rider\RiderDeclineOrder;
 use Carbon\Carbon;
 use App\Model\Bookings\BookingOrderProcess;
 
@@ -25,7 +26,10 @@ class OrderController extends Controller
      	$data = array();
      	$dataContainer = array();
 
-     	$orders = Orders::whereRiderId($request->user()->rider->id)
+        $orders = Orders::whereRiderId($request->user()->rider->id)
+                        ->whereDoesntHave('riderDeclines', function ($query) use ($request) {
+                            $query->where('rider_id', $request->user()->rider->id);
+                        })
     					->whereNull('accepted_at')
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
@@ -256,6 +260,15 @@ class OrderController extends Controller
 				$status = $order->save();
 				$data['status'] = 1;
 
+
+			} else if ($action == "decline") {
+
+				RiderDeclineOrder::query()->firstOrCreate([
+					'rider_id' => $user->rider->id,
+					'order_id' => $order->id,
+				]);
+				$data['status'] = 1;
+				$data['message'] = 'Order declined.';
 
 			} else if ($action == "pickup") {
 

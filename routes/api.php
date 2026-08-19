@@ -352,6 +352,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('availability', [V1RiderOperationsController::class, 'availability']);
             Route::get('activity-logs', [V1RiderController::class, 'activityLogs']);
             Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
+            Route::post('orders/{order}/decline', [V1RiderDeliveryController::class, 'declineOrder']);
             Route::get('orders/{order}', [V1RiderDeliveryController::class, 'order']);
 
             Route::get('overview/today', [V1RiderController::class, 'todayOverview']);

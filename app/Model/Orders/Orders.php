@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use DB;
 use App\Model\Orders\OrderProcess;
 use App\Model\Bookings\BookingStatus;
+use App\Model\Rider\RiderDeclineOrder;
 
 class Orders extends Model
 {
@@ -166,6 +167,11 @@ class Orders extends Model
     public function rider() 
     {
          return $this->hasOne('App\Model\Riders','id', 'rider_id');
+    }
+
+    public function riderDeclines()
+    {
+         return $this->hasMany(RiderDeclineOrder::class, 'order_id');
     }
 
      public function partner() {

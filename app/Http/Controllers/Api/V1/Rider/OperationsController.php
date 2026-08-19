@@ -21,7 +21,7 @@ class OperationsController extends Controller
         $rider = $this->rider->rider($request);
         $wallet = $this->rider->wallet($rider->id);
         $availability = $this->rider->availability($rider->id);
-        $orders = $this->rider->bookings(); // check order available for rider 
+        $orders = $this->rider->bookings($rider->id); // check order available for rider
 
         foreach($orders as $order) {
 

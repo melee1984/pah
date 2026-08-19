@@ -112,7 +112,12 @@ POST /deliveries/{deliveryId}/share-trip
 
 GET /orders
 GET /orders/{orderId}
+POST /orders/{orderId}/decline
 ```
+
+Declining an available order hides it from that rider's dashboard and order
+list without removing it for other riders. Repeating the decline request is
+safe and does not create a duplicate record.
 
 Delivery event requests require a client-generated UUID. Replayed UUIDs are
 idempotent. Illegal or out-of-order transitions return `409 Conflict` with the

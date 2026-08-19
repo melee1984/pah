@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Rider;
 use App\Http\Controllers\Controller;
 use App\Model\Bookings\Bookings;
 use App\Model\Orders\Orders;
+use App\Model\Rider\RiderDeclineOrder;
 use App\Services\RiderApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -574,6 +575,12 @@ class DeliveryController extends Controller
         $orders = Orders::query()
             ->with(['cart', 'status'])
             ->whereNotNull('store_accepted_at')
+            ->whereNotExists(function ($query) use ($riderId) {
+                $query->selectRaw('1')
+                    ->from('rider_decline_order')
+                    ->whereColumn('rider_decline_order.order_id', 'order.id')
+                    ->where('rider_decline_order.rider_id', $riderId);
+            })
             ->where(function ($query) use ($riderId) {
                 $query->where(function ($query) use ($riderId) {
                     $query->whereNull('accepted_at')
@@ -615,6 +622,24 @@ class DeliveryController extends Controller
         return response()->json([
             'orders' => $items,
             'next_cursor' => null,
+        ]);
+    }
+
+    public function declineOrder(Request $request, Orders $order): JsonResponse
+    {
+        $riderId = $this->riders->rider($request)->id;
+
+        abort_if(! $order->store_accepted_at, 409, 'This order is not available for riders yet.');
+        abort_if($order->accepted_at, 409, 'An accepted order can no longer be declined.');
+        abort_if($order->rider_id && (int) $order->rider_id !== (int) $riderId, 403);
+
+        RiderDeclineOrder::query()->firstOrCreate([
+            'rider_id' => $riderId,
+            'order_id' => $order->id,
+        ]);
+
+        return response()->json([
+            'message' => 'Order declined.',
         ]);
     }
 
