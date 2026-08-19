@@ -36,12 +36,11 @@ class RiderController extends Controller
     public function walletBalance(Request $request): JsonResponse
     {
         $wallet = $this->riders->wallet($this->riders->rider($request)->id);
-        $balance = (int) $wallet->available_centavos;
+        $balance = $wallet->credit_amount;
 
         return response()->json([
             'balance' => [
-                'amount_centavos' => $balance,
-                'amount' => $balance / 100,
+                'credit_amount' => $balance,
                 'formatted' => '₱'.number_format($balance / 100, 2),
                 'currency' => 'PHP',
             ],

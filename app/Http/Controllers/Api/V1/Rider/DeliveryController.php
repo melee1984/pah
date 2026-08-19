@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
+use App\Model\Bookings\Bookings;
+use App\Model\Orders\Orders;
 use App\Services\RiderApiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -568,36 +570,121 @@ class DeliveryController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'limit' => ['nullable', 'integer', 'between:1,100'],
         ]);
-        $query = DB::table('rider_api_deliveries')
-            ->where('rider_id', $this->riders->rider($request)->id)
-            ->orderByDesc('created_at');
-
-        match ($validated['status'] ?? null) {
-            'active' => $query->whereNotIn('current_state', self::TERMINAL_STATES),
-            'completed' => $query->where('current_state', 'delivered'),
-            'cancelled' => $query->where('current_state', 'cancelled'),
-            'failed' => $query->where('current_state', 'failed'),
-            default => null,
-        };
-        if (isset($validated['date_from'])) {
-            $query->whereDate('created_at', '>=', $validated['date_from']);
-        }
-        if (isset($validated['date_to'])) {
-            $query->whereDate('created_at', '<=', $validated['date_to']);
-        }
-        if (isset($validated['search'])) {
-            $query->where(function ($query) use ($validated) {
-                $query->where('reference', 'like', "%{$validated['search']}%")
-                    ->orWhere('merchant_name', 'like', "%{$validated['search']}%");
+        $riderId = $this->riders->rider($request)->id;
+        $orders = Orders::query()
+            ->with(['cart', 'status'])
+            ->whereNotNull('store_accepted_at')
+            ->where(function ($query) use ($riderId) {
+                $query->where(function ($query) use ($riderId) {
+                    $query->whereNull('accepted_at')
+                        ->where(function ($query) use ($riderId) {
+                            $query->whereNull('rider_id')->orWhere('rider_id', $riderId);
+                        });
+                })->orWhere(function ($query) use ($riderId) {
+                    $query->whereNotNull('accepted_at')
+                        ->where(function ($query) use ($riderId) {
+                            $query->where('rider_id', $riderId)
+                                ->orWhere('accepted_by_rider_id', $riderId);
+                        });
+                });
             });
-        }
+        $bookings = Bookings::query()
+            ->with(['dropoff', 'pickup', 'status'])
+            ->where(function ($query) use ($riderId) {
+                $query->where('rider_id', $riderId)
+                    ->orWhere(function ($query) use ($riderId) {
+                        $query->whereNotNull('accepted_at')
+                            ->where('accepted_by_rider_id', $riderId);
+                    });
+            });
 
-        $paginator = $query->cursorPaginate($validated['limit'] ?? 20);
+        $this->applyLegacyOrderFilters($orders, $bookings, $validated);
+
+        $items = $orders->get()
+            ->map(fn (Orders $order) => $this->legacyOrderData($order))
+            ->merge($bookings->get()->map(fn (Bookings $booking) => $this->legacyBookingData($booking)))
+            ->sortByDesc('sort_date')
+            ->take($validated['limit'] ?? 20)
+            ->map(function (array $item) {
+                unset($item['sort_date']);
+
+                return $item;
+            })
+            ->values();
 
         return response()->json([
-            'orders' => collect($paginator->items())->map(fn (object $delivery) => $this->deliverySummary($delivery)),
-            'next_cursor' => $paginator->nextCursor()?->encode(),
+            'orders' => $items,
+            'next_cursor' => null,
         ]);
+    }
+
+    private function applyLegacyOrderFilters($orders, $bookings, array $validated): void
+    {
+        match ($validated['status'] ?? null) {
+            'active' => [$orders->whereNotIn('status_id', [7, 8]), $bookings->whereNotIn('status_id', [6, 7])],
+            'completed' => [$orders->where('status_id', 7), $bookings->where('status_id', 6)],
+            'cancelled' => [$orders->where('status_id', 8), $bookings->where('status_id', 7)],
+            'failed' => [$orders->whereRaw('1 = 0'), $bookings->whereRaw('1 = 0')],
+            default => null,
+        };
+
+        if (isset($validated['date_from'])) {
+            $orders->whereDate('submitted_at', '>=', $validated['date_from']);
+            $bookings->whereDate('created_at', '>=', $validated['date_from']);
+        }
+        if (isset($validated['date_to'])) {
+            $orders->whereDate('submitted_at', '<=', $validated['date_to']);
+            $bookings->whereDate('created_at', '<=', $validated['date_to']);
+        }
+        if (isset($validated['search'])) {
+            $search = $validated['search'];
+            $orders->whereHas('cart', fn ($query) => $query->where('order_no', 'like', "%{$search}%"));
+            $bookings->where('job_order', 'like', "%{$search}%");
+        }
+    }
+
+    private function legacyOrderData(Orders $order): array
+    {
+        $cart = $order->cart;
+
+        if ($cart) {
+            $cart->loadMissing(['address', 'payment', 'partnerlocation', 'details.item']);
+        }
+
+        return [
+            ...$order->toArray(),
+            'type' => 'order',
+            'option' => 1,
+            'job_order_format' => 'JO '.($cart?->order_no ?? $order->id),
+            'summary' => $cart?->cartItemSummary(),
+            'cart_total' => $cart?->cartItemTotal(),
+            'logs' => $order->getActionLogs(),
+            'action' => $order->getAction(),
+            'submitted_at_' => $order->submitted_at
+                ? date('d-m-Y G:ia', strtotime($order->submitted_at))
+                : null,
+            'formated_submitted_at_' => $order->submitted_at
+                ? date('D, d M h:ia', strtotime($order->submitted_at))
+                : null,
+            'sort_date' => $order->submitted_at ?? $order->created_at,
+        ];
+    }
+
+    private function legacyBookingData(Bookings $booking): array
+    {
+        return [
+            ...$booking->toArray(),
+            'type' => 'booking',
+            'option' => 2,
+            'job_order_format' => 'JO '.$booking->job_order,
+            'created_at_format' => $booking->created_at
+                ? date('D, d M h:ia', strtotime($booking->created_at))
+                : null,
+            'booking_date_and_time_format' => date('F d, Y', strtotime($booking->booking_date)).' @ '.date('h:ia', strtotime($booking->booking_time)),
+            'delivery_rate_format' => number_format($booking->delivery_rate, 2),
+            'logs' => $booking->getActionLogs(),
+            'sort_date' => $booking->created_at,
+        ];
     }
 
     public function order(Request $request, string $order): JsonResponse
