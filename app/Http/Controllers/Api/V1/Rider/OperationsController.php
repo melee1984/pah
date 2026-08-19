@@ -12,21 +12,50 @@ use Illuminate\Validation\Rule;
 
 class OperationsController extends Controller
 {
-    public function __construct(private readonly RiderApiService $riders) {}
+    public function __construct(private readonly RiderApiService $rider) {}
 
     public function dashboard(Request $request): JsonResponse
-    {
-        $rider = $this->riders->rider($request);
-        $wallet = $this->riders->wallet($rider->id);
-        $availability = $this->riders->availability($rider->id);
-        $bookings = $this->riders->bookings(); // check order available for rider 
+    {   
+        $user = $request->user();
+
+        $rider = $this->rider->rider($request);
+        $wallet = $this->rider->wallet($rider->id);
+        $availability = $this->rider->availability($rider->id);
+        $orders = $this->rider->bookings(); // check order available for rider 
+
+        foreach($orders as $order) {
+
+			$order->summary = $order->cart->cartItemSummary();
+			$order->cart->address;
+			$order->cart->payment;
+			$order->cart->partnerlocation;
+			$product_items = $order->cart->cartItemList();    
+			$order->cart_total = $order->cart->cartItemTotal();
+			
+			foreach($product_items as $list) {
+			    $list->variance_content = unserialize($list->variance_content);
+
+			    if ($list->item) {
+			        $list->price = number_format($list->item->getPrice() + number_format($list->variance_total,2),2);
+			    }
+			}
+
+			$order->status;  
+			$order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
+			$order->formated_submitted_at_ = date("D, d M h:ia", strtotime($order->submitted_at));
+
+			$order->logs = $order->getActionLogs();
+
+		}
+		
 
         return response()->json([
             'wallet' => [
-                'credits' => $wallet->amount_owed_centavos,
+                'credits' => $wallet->credit_amount,
             ],
             'availability' => $this->availabilityData($availability),
-            'bookings' => $bookings,
+            'bookings' => $orders,
+            'rider' => $user->rider
         ]);
     }
 

@@ -42,6 +42,11 @@ class Cart extends Model
     return $this->hasOne('App\PaymentMethod', 'id', 'payment_id');
   }
 
+  public function user()
+  {
+    return $this->hasOne('App\User', 'id', 'user_id');
+  }
+
   public function partner()
   {
     return $this->hasOne('App\Partners', 'id', 'partner_id');

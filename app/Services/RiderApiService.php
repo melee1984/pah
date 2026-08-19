@@ -176,11 +176,10 @@ class RiderApiService
     /**
      * @return Collection<int, Orders>
      */
-    public function bookings(int $riderId): Collection
+    public function bookings(): Collection
     {
         return Orders::query()
             ->with(['cart', 'status'])
-            ->where('rider_id', $riderId)
             ->whereNotNull('store_accepted_at')
             ->orderByDesc('submitted_at')
             ->get();
