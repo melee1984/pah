@@ -259,8 +259,6 @@ class CheckoutController extends Controller
                 $cart->delivery_time = $request->input('deliveryTime');
                 $cart->address_id = $request->input('deliveryAddressId'); // address of the user  
                 $cart->payment_id = $request->input('deliveryPaymentId');
-                $cart->partner_location_address_id = $cart->partner->location->id ?? null; // dapat naa address is partner location address id
-                    
 
                 $cart->order_no = $cart->generateOrderNo();
                 $cart->sms_code = "";
