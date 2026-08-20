@@ -717,7 +717,8 @@ class DeliveryController extends Controller
             $lockedOrder = Orders::query()
                 ->whereKey($order->getKey())
                 ->lockForUpdate()
-                ->firstOrFail();9
+                ->firstOrFail();
+
             $action = $validated['action'];
 
             if ($action === 'accept') {
