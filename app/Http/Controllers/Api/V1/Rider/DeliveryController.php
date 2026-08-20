@@ -734,9 +734,9 @@ class DeliveryController extends Controller
                 $lockedOrder->accepted_by_rider_id = $riderId;
                 $lockedOrder->accepted_by_rider_at = now();
             } else {
-                abort_if(
+               abort_if(
                     (int) $lockedOrder->rider_id !== (int) $riderId
-                    && (int) $lockedOrder->accepted_by_rider_id !== (int) $77.                                                                                               riderId,
+                    && (int) $lockedOrder->accepted_by_rider_id !== (int) $riderId,
                     403,
                     'This order is assigned to another rider.',
                 );
