@@ -60,14 +60,13 @@ class MerchantOrderAcceptanceTest extends TestCase
             'id' => 10,
             'device_token_food' => null,
         ]);
-
+        // 
         DB::table('library_booking_status')->insert([
             ['id' => Orders::STATUS_ORDER_PLACED, 'description' => 'Order Placed'],
             ['id' => Orders::STATUS_ORDER_ACCEPTED, 'description' => 'Order Accepted'],
             ['id' => Orders::STATUS_PROCESSING, 'description' => 'Processing'],
             ['id' => Orders::STATUS_READY_FOR_PICKUP, 'description' => 'Ready for Pickup'],
             ['id' => Orders::STATUS_RIDER_PICKED_UP, 'description' => 'Rider Picked Up'],
-            ['id' => Orders::STATUS_PAYMENT_CONFIRMED, 'description' => 'Payment Confirmed'],
             ['id' => Orders::STATUS_DELIVERED, 'description' => 'Delivered'],
         ]);
     }

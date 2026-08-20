@@ -717,7 +717,7 @@ class DeliveryController extends Controller
             $lockedOrder = Orders::query()
                 ->whereKey($order->getKey())
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->firstOrFail();9
             $action = $validated['action'];
 
             if ($action === 'accept') {
@@ -731,11 +731,11 @@ class DeliveryController extends Controller
 
                 $lockedOrder->rider_id = $riderId;
                 $lockedOrder->accepted_by_rider_id = $riderId;
-                $lockedOrder->accepted_at = now();
+                $lockedOrder->accepted_by_rider_at = now();
             } else {
                 abort_if(
                     (int) $lockedOrder->rider_id !== (int) $riderId
-                    && (int) $lockedOrder->accepted_by_rider_id !== (int) $riderId,
+                    && (int) $lockedOrder->accepted_by_rider_id !== (int) $77.                                                                                               riderId,
                     403,
                     'This order is assigned to another rider.',
                 );
@@ -743,7 +743,7 @@ class DeliveryController extends Controller
                 $transition = match ($action) {
                     'ready-for-pickup' => ['from' => [Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING], 'to' => Orders::STATUS_READY_FOR_PICKUP],
                     'pickup-order' => ['from' => [Orders::STATUS_READY_FOR_PICKUP], 'to' => Orders::STATUS_RIDER_PICKED_UP],
-                    'delivered-order' => ['from' => [Orders::STATUS_RIDER_PICKED_UP, Orders::STATUS_PAYMENT_CONFIRMED], 'to' => Orders::STATUS_DELIVERED],
+                    'delivered-order' => ['from' => [Orders::STATUS_RIDER_PICKED_UP], 'to' => Orders::STATUS_DELIVERED],
                 };
 
                 if ($action === 'delivered-order' && $lockedOrder->payment?->type === 'cod') {

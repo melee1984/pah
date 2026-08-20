@@ -302,16 +302,6 @@ class OrderController extends Controller
 			}
 			else if ($action == "delivered") {
 
-				// Item Pickup 
-				$order->status_id = Orders::STATUS_PAYMENT_CONFIRMED;
-				$order->save();
-
-				OrderProcess::updateOrCreate([
-                    'status_id' => Orders::STATUS_PAYMENT_CONFIRMED,
-                    'order_id' => $order->id,
-                    'user_id' => $user->id,
-                ]);
-
 				// Item Delivered 
                 $order->status_id = Orders::STATUS_DELIVERED;
 				$order->save();

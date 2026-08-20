@@ -21,11 +21,9 @@ class Orders extends Model
 
     public const STATUS_RIDER_PICKED_UP = 5;
 
-    public const STATUS_PAYMENT_CONFIRMED = 6;
+    public const STATUS_DELIVERED = 6;
 
-    public const STATUS_DELIVERED = 7;
-
-    public const STATUS_CANCELLED = 8;
+    public const STATUS_CANCELLED = 7;
 
     protected $table = 'order';
 	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id','status_id');
@@ -87,10 +85,10 @@ class Orders extends Model
             }, 'datecreated')
             ->orderBy('status.sorting', 'asc');
 
-         if ((int) $this->status_id === 8) {
-            $query->whereIn('status.id', [1, 8]);
+         if ((int) $this->status_id === 7) {
+            $query->whereIn('status.id', [1, 7]);
          } else {
-            $query->where('status.id', '!=', 8);
+            $query->where('status.id', '!=', 7);
          }
 
          $rs = $query->get();
@@ -135,6 +133,8 @@ class Orders extends Model
 
         return $action;
     }
+
+    // order action for merchant 
     public function getAction()
     {
         return match ((int) $this->status_id) {
