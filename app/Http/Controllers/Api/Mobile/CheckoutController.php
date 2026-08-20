@@ -277,6 +277,7 @@ class CheckoutController extends Controller
                         array(
                                 'cart_id' => $cart_id, 
                                 'user_id' => $cart->user_id, 
+                                'title' => $userAddress->title ?? null, 
                                 'address_1' => $userAddress->address_1 ?? null,  
                                 'address_2' => $userAddress->address_2 ?? null,  
                                 'zip_code' => $userAddress->zip_code ?? null,  
