@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
+use App\LibraryStatus;
 use App\Model\Bookings\Bookings;
+use App\Model\Bookings\BookingStatus as BookingsBookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\Model\Rider\RiderDeclineOrder;
@@ -17,6 +19,8 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use App\Model\Bookings\BookingStatus;
+
 use RuntimeException;
 use Throwable;
 
@@ -639,6 +643,7 @@ class DeliveryController extends Controller
             $lockedOrder->rider_id = $riderId;
             $lockedOrder->accepted_by_rider_id = $riderId;
             $lockedOrder->accepted_at = now();
+            $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_ACCEPTED;
             $lockedOrder->save();
 
             DB::table('rider_api_activity_logs')->insert([
@@ -724,6 +729,8 @@ class DeliveryController extends Controller
                 $lockedOrder->rider_id = $riderId;
                 $lockedOrder->accepted_by_rider_id = $riderId;
                 $lockedOrder->accepted_by_rider_at = now();
+                $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_ACCEPTED;
+                
             } else {
                abort_if(
                     (int) $lockedOrder->rider_id !== (int) $riderId
@@ -741,6 +748,8 @@ class DeliveryController extends Controller
                 if ($action === 'delivered-order') {
                     // this will identify that the order is delivered and what ever payment gateway, so we can set the delivered_at timestamp
                     $lockedOrder->delivered_at = now();
+                    $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
+                    $lockedOrder->order_status_id = LibraryStatus::STATUS_DELIVERED;
                 }
 
                 abort_if(
@@ -748,15 +757,13 @@ class DeliveryController extends Controller
                     409,
                     'This action is not allowed for the current order status.',
                 );
-
-                $lockedOrder->status_id = $transition['to'];
             }
 
             $lockedOrder->save();
 
             if ($action !== 'accept') {
                 OrderProcess::query()->firstOrCreate([
-                    'status_id' => $lockedOrder->status_id,
+                    'status_id' => $lockedOrder->order_status_id,
                     'order_id' => $lockedOrder->id,
                     'user_id' => $request->user()->id,
                 ]);
@@ -779,7 +786,7 @@ class DeliveryController extends Controller
             'message' => 'Order action completed.',
             'order' => [
                 'id' => (string) $updatedOrder->id,
-                'status_id' => (int) $updatedOrder->status_id,
+                'status_id' => (int) $updatedOrder->order_status_id,
                 'rider_id' => (string) $updatedOrder->rider_id,
                 'accepted_by_rider_id' => (string) $updatedOrder->accepted_by_rider_id,
                 'accepted_at' => $updatedOrder->accepted_at
