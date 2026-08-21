@@ -748,9 +748,9 @@ class DeliveryController extends Controller
 
                     'picked-order' => [
                         'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
-                        'to' => BookingStatus::STATUS_BOOKING_RIDER_ON_WAY_TO_CUSTOMER,
+                        'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
                     ],
-
+                    // diiah nako. 
                     'arrival-at-customer' => [
                         'from' => [BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP],
                         'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
