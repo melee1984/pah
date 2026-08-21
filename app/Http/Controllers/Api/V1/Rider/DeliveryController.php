@@ -748,7 +748,7 @@ class DeliveryController extends Controller
 
                     'picked-order' => [
                         'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
-                        'to' => BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP,
+                        'to' => BookingStatus::STATUS_BOOKING_RIDER_ON_WAY_TO_CUSTOMER,
                     ],
 
                     'arrival-at-customer' => [
@@ -780,7 +780,7 @@ class DeliveryController extends Controller
                 else if ($action == 'ready-for-pickup') {
                     $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP;
                 }
-                else if ($action == 'pickup-order') {
+                 else if ($action == 'picked-order') {
                     $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP;
                 }
                 else if ($action == 'arrival-at-customer') {
