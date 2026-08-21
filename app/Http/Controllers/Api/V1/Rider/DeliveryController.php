@@ -621,7 +621,7 @@ class DeliveryController extends Controller
             'next_cursor' => null,
         ]);
     }
-
+    // rider accepts the order, and the order is locked for update to prevent race conditions
     public function acceptBooking(Request $request, Orders $order): JsonResponse
     {
         $riderId = $this->riders->rider($request)->id;
@@ -633,17 +633,18 @@ class DeliveryController extends Controller
                 ->firstOrFail();
 
             abort_if(! $lockedOrder->store_accepted_at, 409, 'This order is not available for riders yet.');
-            abort_if($lockedOrder->accepted_at, 409, 'This order has already been accepted.');
+            abort_if($lockedOrder->accepted_by_rider_at, 409, 'This order has already been accepted.');
             abort_if(
                 $lockedOrder->rider_id && (int) $lockedOrder->rider_id !== (int) $riderId,
                 409,
                 'This order is assigned to another rider.',
             );
+            abort_if($lockedOrder->booking_status_id === BookingStatus::STATUS_BOOKING_ACCEPTED, 409, 'This order has already been accepted.');
 
             $lockedOrder->rider_id = $riderId;
             $lockedOrder->accepted_by_rider_id = $riderId;
-            $lockedOrder->accepted_at = now();
             $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_ACCEPTED;
+
             $lockedOrder->save();
 
             DB::table('rider_api_activity_logs')->insert([
