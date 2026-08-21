@@ -352,6 +352,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('availability', [V1RiderOperationsController::class, 'availability']);
             Route::get('activity-logs', [V1RiderController::class, 'activityLogs']);
             Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
+            Route::get('bookings-orders', [V1RiderDeliveryController::class, 'orders']);
             Route::post('orders/{order}/decline', [V1RiderDeliveryController::class, 'declineBooking']);
             Route::post('orders/{order}/accept', [V1RiderDeliveryController::class, 'acceptBooking']);
             Route::post('orders/{order}/action', [V1RiderDeliveryController::class, 'acceptAction']);

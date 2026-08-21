@@ -567,7 +567,7 @@ class DeliveryController extends Controller
     public function orders(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['nullable', Rule::in(['active', 'completed', 'cancelled', 'failed'])],
+            'status' => ['nullable', Rule::in(['new', 'accepted', 'completed', 'cancelled', 'failed', 'active'])],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
             'search' => ['nullable', 'string', 'max:100'],
@@ -607,11 +607,14 @@ class DeliveryController extends Controller
                     });
             });
 
-        $this->applyLegacyOrderFilters($orders, $bookings, $validated);
+        $this->applyLegacyOrderFilters($orders, $bookings, $validated, $riderId);
 
-        $items = $orders->get()
+        $items = collect($orders->get()
             ->map(fn (Orders $order) => $this->legacyOrderData($order))
-            ->merge($bookings->get()->map(fn (Bookings $booking) => $this->legacyBookingData($booking)))
+            ->all())
+            ->merge($bookings->get()
+                ->map(fn (Bookings $booking) => $this->legacyBookingData($booking))
+                ->all())
             ->sortByDesc('sort_date')
             ->take($validated['limit'] ?? 20)
             ->map(function (array $item) {
@@ -799,13 +802,47 @@ class DeliveryController extends Controller
         ]);
     }
 
-    private function applyLegacyOrderFilters($orders, $bookings, array $validated): void
+    private function applyLegacyOrderFilters($orders, $bookings, array $validated, int $riderId): void
     {
         match ($validated['status'] ?? null) {
-            'active' => [$orders->whereNotIn('status_id', [7, 8]), $bookings->whereNotIn('status_id', [6, 7])],
-            'completed' => [$orders->where('status_id', 7), $bookings->where('status_id', 6)],
-            'cancelled' => [$orders->where('status_id', 8), $bookings->where('status_id', 7)],
-            'failed' => [$orders->whereRaw('1 = 0'), $bookings->whereRaw('1 = 0')],
+            'new' => [
+                $orders->whereNull('accepted_at')
+                    ->whereNotIn('status_id', [7, 8])
+                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, self::TERMINAL_STATES)),
+                $bookings->whereNull('accepted_at')
+                    ->whereNotIn('status_id', [6, 7])
+                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, self::TERMINAL_STATES)),
+            ],
+            'accepted' => [
+                $orders->whereNotNull('accepted_at')
+                    ->whereNotIn('status_id', [7, 8])
+                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, self::TERMINAL_STATES)),
+                $bookings->whereNotNull('accepted_at')
+                    ->whereNotIn('status_id', [6, 7])
+                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, self::TERMINAL_STATES)),
+            ],
+            'active' => [
+                $orders->whereNotIn('status_id', [7, 8])
+                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, self::TERMINAL_STATES)),
+                $bookings->whereNotIn('status_id', [6, 7])
+                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, self::TERMINAL_STATES)),
+            ],
+            'completed' => [
+                $orders->where(fn ($query) => $query->where('status_id', 7)
+                    ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, ['delivered']))),
+                $bookings->where(fn ($query) => $query->where('status_id', 6)
+                    ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, ['delivered']))),
+            ],
+            'cancelled' => [
+                $orders->where(fn ($query) => $query->where('status_id', 8)
+                    ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, ['cancelled']))),
+                $bookings->where(fn ($query) => $query->where('status_id', 7)
+                    ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, ['cancelled']))),
+            ],
+            'failed' => [
+                $orders->whereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, ['failed'])),
+                $bookings->whereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, ['failed'])),
+            ],
             default => null,
         };
 
@@ -822,6 +859,15 @@ class DeliveryController extends Controller
             $orders->whereHas('cart', fn ($query) => $query->where('order_no', 'like', "%{$search}%"));
             $bookings->where('job_order', 'like', "%{$search}%");
         }
+    }
+
+    private function linkedDeliveryInStates($query, string $legacyColumn, string $legacyTable, int $riderId, array $states): void
+    {
+        $query->selectRaw('1')
+            ->from('rider_api_deliveries')
+            ->whereColumn("rider_api_deliveries.{$legacyColumn}", "{$legacyTable}.id")
+            ->where('rider_api_deliveries.rider_id', $riderId)
+            ->whereIn('rider_api_deliveries.current_state', $states);
     }
 
     private function legacyOrderData(Orders $order): array
