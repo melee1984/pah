@@ -741,9 +741,9 @@ class DeliveryController extends Controller
                 );
 
                 $transition = match ($action) {
-                    'ready-for-pickup' => ['from' => [Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING], 'to' => Orders::STATUS_READY_FOR_PICKUP],
-                    'pickup-order' => ['from' => [Orders::STATUS_READY_FOR_PICKUP], 'to' => Orders::STATUS_RIDER_PICKED_UP],
-                    'delivered-order' => ['from' => [Orders::STATUS_RIDER_PICKED_UP], 'to' => Orders::STATUS_DELIVERED],
+                    'ready-for-pickup' => ['from' => [BookingStatus::STATUS_ORDER_ACCEPTED, BookingStatus::STATUS_PROCESSING], 'to' => BookingStatus::STATUS_READY_FOR_PICKUP],
+                    'pickup-order' => ['from' => [BookingStatus::STATUS_READY_FOR_PICKUP], 'to' => BookingStatus::STATUS_RIDER_PICKED_UP],
+                    'delivered-order' => ['from' => [BookingStatus::STATUS_RIDER_PICKED_UP], 'to' => BookingStatus::STATUS_DELIVERED],
                 };
 
                 if ($action === 'delivered-order') {
@@ -754,7 +754,7 @@ class DeliveryController extends Controller
                 }
 
                 abort_if(
-                    ! in_array((int) $lockedOrder->status_id, $transition['from'], true),
+                    ! in_array((int) $lockedOrder->booking_status_id, $transition['from'], true),
                     409,
                     'This action is not allowed for the current order status.',
                 );
