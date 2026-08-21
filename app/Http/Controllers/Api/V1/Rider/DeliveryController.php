@@ -597,24 +597,12 @@ class DeliveryController extends Controller
                         });
                 });
             });
-        $bookings = Bookings::query()
-            ->with(['dropoff', 'pickup', 'status'])
-            ->where(function ($query) use ($riderId) {
-                $query->where('rider_id', $riderId)
-                    ->orWhere(function ($query) use ($riderId) {
-                        $query->whereNotNull('accepted_at')
-                            ->where('accepted_by_rider_id', $riderId);
-                    });
-            });
-
-        $this->applyLegacyOrderFilters($orders, $bookings, $validated, $riderId);
+     
+        $this->applyLegacyOrderFilters($orders, $validated, $riderId);
 
         $items = collect($orders->get()
             ->map(fn (Orders $order) => $this->legacyOrderData($order))
             ->all())
-            ->merge($bookings->get()
-                ->map(fn (Bookings $booking) => $this->legacyBookingData($booking))
-                ->all())
             ->sortByDesc('sort_date')
             ->take($validated['limit'] ?? 20)
             ->map(function (array $item) {
@@ -797,70 +785,56 @@ class DeliveryController extends Controller
                 'accepted_at' => $updatedOrder->accepted_at
                     ? Carbon::parse($updatedOrder->accepted_at)->toISOString()
                     : null,
-                'action' => $updatedOrder->getRiderAction(),
+                'delivered_at' => $updatedOrder->delivered_at,  
             ],
         ]);
     }
 
-    private function applyLegacyOrderFilters($orders, $bookings, array $validated, int $riderId): void
+    private function applyLegacyOrderFilters($orders, array $validated, int $riderId): void
     {
         match ($validated['status'] ?? null) {
             'new' => [
                 $orders->whereNull('accepted_at')
                     ->whereNotIn('status_id', [7, 8])
                     ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, self::TERMINAL_STATES)),
-                $bookings->whereNull('accepted_at')
-                    ->whereNotIn('status_id', [6, 7])
-                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, self::TERMINAL_STATES)),
             ],
             'accepted' => [
                 $orders->whereNotNull('accepted_at')
                     ->whereNotIn('status_id', [7, 8])
                     ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, self::TERMINAL_STATES)),
-                $bookings->whereNotNull('accepted_at')
-                    ->whereNotIn('status_id', [6, 7])
-                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, self::TERMINAL_STATES)),
             ],
             'active' => [
                 $orders->whereNotIn('status_id', [7, 8])
                     ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, self::TERMINAL_STATES)),
-                $bookings->whereNotIn('status_id', [6, 7])
-                    ->whereNotExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, self::TERMINAL_STATES)),
             ],
             'completed' => [
                 $orders->where(fn ($query) => $query->where('status_id', 7)
                     ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, ['delivered']))),
-                $bookings->where(fn ($query) => $query->where('status_id', 6)
-                    ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, ['delivered']))),
             ],
             'cancelled' => [
                 $orders->where(fn ($query) => $query->where('status_id', 8)
                     ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, ['cancelled']))),
-                $bookings->where(fn ($query) => $query->where('status_id', 7)
-                    ->orWhereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, ['cancelled']))),
             ],
             'failed' => [
                 $orders->whereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_order_id', 'order', $riderId, ['failed'])),
-                $bookings->whereExists(fn ($query) => $this->linkedDeliveryInStates($query, 'legacy_booking_id', 'bookings', $riderId, ['failed'])),
             ],
             default => null,
         };
 
         if (isset($validated['date_from'])) {
             $orders->whereDate('submitted_at', '>=', $validated['date_from']);
-            $bookings->whereDate('created_at', '>=', $validated['date_from']);
         }
         if (isset($validated['date_to'])) {
             $orders->whereDate('submitted_at', '<=', $validated['date_to']);
-            $bookings->whereDate('created_at', '<=', $validated['date_to']);
         }
         if (isset($validated['search'])) {
             $search = $validated['search'];
             $orders->whereHas('cart', fn ($query) => $query->where('order_no', 'like', "%{$search}%"));
-            $bookings->where('job_order', 'like', "%{$search}%");
         }
     }
-
+    // This function is used to filter orders based on their linked delivery states. 
+    // It adds a subquery to the main query to check if there are any linked deliveries for the given rider that are in the specified states. 
+    // If such deliveries exist, the main query will be filtered accordingly.
     private function linkedDeliveryInStates($query, string $legacyColumn, string $legacyTable, int $riderId, array $states): void
     {
         $query->selectRaw('1')
@@ -910,6 +884,7 @@ class DeliveryController extends Controller
             'booking_date_and_time_format' => date('F d, Y', strtotime($booking->booking_date)).' @ '.date('h:ia', strtotime($booking->booking_time)),
             'delivery_rate_format' => number_format($booking->delivery_rate, 2),
             'logs' => $booking->getActionLogs(),
+            'action' => $booking->getRiderAction(),
             'sort_date' => $booking->created_at,
         ];
     }
