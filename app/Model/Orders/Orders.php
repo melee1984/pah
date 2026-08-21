@@ -50,7 +50,12 @@ class Orders extends Model
      */
     public function status() 
     {
-         return $this->hasOne(BookingStatus::class, 'id', 'status_id');
+         return $this->hasOne(LibraryStatus::class, 'id', 'order_status_id');
+    }
+
+    public function bookingstatus() 
+    {
+         return $this->hasOne(BookingStatus::class, 'id', 'booking_status_id');
     }
 
     // get should be the latest status of the order
@@ -72,9 +77,9 @@ class Orders extends Model
                     ->limit(1);
             }, 'datecreated')
             ->orderBy('status.sorting', 'asc');
-
-         if ((int) $this->status_id === LibraryStatus::STATUS_CANCELLED) {
-            $query->whereIn('status.id', [LibraryStatus::STATUS_ORDER_PLACED, LibraryStatus::STATUS_CANCELLED]);
+        // if the order is cancelled, we will show the cancelled status as well
+         if ((int) $this->order_status_id === LibraryStatus::STATUS_CANCELLED) {
+            $query->whereIn('status.id', [LibraryStatus::STATUS_CANCELLED]);
          } else {
             $query->where('status.id', '!=', LibraryStatus::STATUS_CANCELLED);
          }
@@ -94,24 +99,24 @@ class Orders extends Model
     {
         $action = null;
 
-        if ((int) $this->status_id === LibraryStatus::STATUS_ORDER_PLACED) {
+        if ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_PLACED) {
             $action = [
                 'label' => 'Accept Booking',
                 'action' => 'accept',
             ];
-        } elseif ((int) $this->status_id === LibraryStatus::STATUS_ORDER_ACCEPTED || (int) $this->status_id === LibraryStatus::STATUS_PROCESSING) {
+        } elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ACCEPTED || (int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_PROCESSING) {
             $action = [
                 'label' => 'Ready For Pickup',
                 'action' => 'ready-for-pickup',
             ];
         }
-        elseif ((int) $this->status_id === LibraryStatus::STATUS_READY_FOR_PICKUP) {
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP) {
             $action = [
                 'label' => 'Pickup Order',
                 'action' => 'pickup-order',
             ];
         }
-        elseif ((int) $this->status_id === LibraryStatus::STATUS_RIDER_PICKED_UP) {
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
             $action = [
                 'label' => 'Delivered Order',
                 'action' => 'delivered-order',
@@ -125,7 +130,7 @@ class Orders extends Model
     // order action for merchant 
     public function getAction()
     {
-        return match ((int) $this->status_id) {
+        return match ((int) $this->order_status_id) {
             LibraryStatus::STATUS_ORDER_PLACED => [
                 'label' => 'Pending',
                 'button' => [
