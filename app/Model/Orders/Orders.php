@@ -11,20 +11,6 @@ use App\Model\Rider\RiderDeclineOrder;
 
 class Orders extends Model
 {
-    public const STATUS_ORDER_PLACED = 1;
-
-    public const STATUS_ORDER_ACCEPTED = 2;
-
-    public const STATUS_PROCESSING = 3;
-
-    public const STATUS_READY_FOR_PICKUP = 4;
-
-    public const STATUS_RIDER_PICKED_UP = 5;
-
-    public const STATUS_DELIVERED = 6;
-
-    public const STATUS_CANCELLED = 7;
-
     protected $table = 'order';
 	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id', 'rider_id', 'store_accepted_at', 'accepted_by_rider_at', 'accepted_at', 'delivered_at', 'updated_at', 'created_at', 'order_status_id', 'booking_status_id');
 	public $timestamps = true;

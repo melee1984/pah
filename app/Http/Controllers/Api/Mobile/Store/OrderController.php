@@ -18,6 +18,7 @@ use App\Services\RiderOfferDispatcher;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\LibraryStatus;
 
 class OrderController extends Controller
 {	
@@ -244,7 +245,7 @@ class OrderController extends Controller
                 ], 409)];
             }
 
-            if (! $order->submitted_at || (int) $order->order_status_id !== Orders::STATUS_ORDER_PLACED) {
+            if (! $order->submitted_at || (int) $order->order_status_id !== LibraryStatus::STATUS_ORDER_PLACED) {
                 return ['response' => response()->json([
                     'status' => 0,
                     'message' => 'Only pending submitted orders can be accepted.',
@@ -253,10 +254,10 @@ class OrderController extends Controller
 
             $order->accepted_by_store_id = $order->cart->partner_location_address_id; // This should update the accepted_by_store_id to the partner location address id instead of the merchant id
             $order->store_accepted_at = now();
-            $order->order_status_id = Orders::STATUS_PROCESSING;
+            $order->order_status_id = LibraryStatus::STATUS_PROCESSING;
             $order->save();
 
-            foreach ([Orders::STATUS_ORDER_ACCEPTED, Orders::STATUS_PROCESSING] as $statusId) {
+            foreach ([LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING] as $statusId) {
                 OrderProcess::updateOrCreate([
                     'status_id' => $statusId,
                     'order_id' => $order->id,
@@ -341,7 +342,7 @@ class OrderController extends Controller
                 ], 404)];
             }
 
-            if ((int) $order->order_status_id === Orders::STATUS_READY_FOR_PICKUP
+            if ((int) $order->order_status_id === LibraryStatus::STATUS_READY_FOR_PICKUP
                 && $order->store_accepted_at
                 && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
                 return [
@@ -352,7 +353,7 @@ class OrderController extends Controller
 
             if (! $order->store_accepted_at
                 || (int) $order->accepted_by_store_id !== (int) $request->store_location_id
-                || (int) $order->order_status_id !== Orders::STATUS_PROCESSING) {
+                || (int) $order->order_status_id !== LibraryStatus::STATUS_PROCESSING) {
 
                 \Log::info(['Order not ready for pickup' => [
                     'order_id' => $order->id,
@@ -368,11 +369,11 @@ class OrderController extends Controller
                 ], 409)];
             }
 
-            $order->order_status_id = Orders::STATUS_READY_FOR_PICKUP;
+            $order->order_status_id = LibraryStatus::STATUS_READY_FOR_PICKUP;
             $order->save();
 
             OrderProcess::updateOrCreate([
-                'status_id' => Orders::STATUS_READY_FOR_PICKUP,
+                'status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
                 'order_id' => $order->id,
             ], [
                 'user_id' => $user->id,
@@ -425,7 +426,7 @@ class OrderController extends Controller
                 ], 404)];
             }
 
-            if ((int) $order->order_status_id === Orders::STATUS_CANCELLED) {
+            if ((int) $order->order_status_id === LibraryStatus::STATUS_CANCELLED) {
                 return [
                     'order' => $order,
                     'already_cancelled' => true,
@@ -433,10 +434,10 @@ class OrderController extends Controller
             }
 
             if (! in_array((int) $order->order_status_id, [
-                Orders::STATUS_ORDER_PLACED,
-                Orders::STATUS_ORDER_ACCEPTED,
-                Orders::STATUS_PROCESSING,
-                Orders::STATUS_READY_FOR_PICKUP,
+                LibraryStatus::STATUS_ORDER_PLACED,
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
             ], true)) {
                 return ['response' => response()->json([
                     'status' => 0,
@@ -444,12 +445,12 @@ class OrderController extends Controller
                 ], 409)];
             }
 
-            $order->order_status_id = Orders::STATUS_CANCELLED;
+            $order->order_status_id = LibraryStatus::STATUS_CANCELLED;
             $order->booking_status_id = 8; // cancelled
             $order->save();
 
             OrderProcess::updateOrCreate([
-                'status_id' => Orders::STATUS_CANCELLED,
+                'status_id' => LibraryStatus::STATUS_CANCELLED,
                 'order_id' => $order->id,
             ], [
                 'user_id' => $user->id,
@@ -500,19 +501,19 @@ class OrderController extends Controller
 
 				$order->accepted_by_store_id = $user->merchant->id;
 				$order->store_accepted_at = now();
-				$order->order_status_id = Orders::STATUS_ACCEPTED;
+				$order->order_status_id = LibraryStatus::STATUS_ORDER_ACCEPTED;
 				$status = $order->save();
 
 				if ($status) {
 
 					OrderProcess::updateOrCreate([
-	                    'status_id' => 2, // item pickup  
+	                    'status_id' => LibraryStatus::STATUS_ORDER_ACCEPTED, // item pickup  
 	                    'order_id' => $order->id,
 	                    'user_id' => $user->accepted_by_store_id,
 	                ]);
 
 					OrderProcess::updateOrCreate([
-	                    'status_id' => 3, // Processing   
+	                    'status_id' => LibraryStatus::STATUS_PROCESSING, // Processing   
 	                    'order_id' => $order->id,
 	                    'user_id' => $user->accepted_by_store_id,
 	                ]);
@@ -526,11 +527,11 @@ class OrderController extends Controller
 
 			} else if ($action == "readyforpickup") {
 
-				$order->order_status_id = Orders::STATUS_READY_FOR_PICKUP;
+				$order->order_status_id = LibraryStatus::STATUS_READY_FOR_PICKUP;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 4, // item pickup  
+                    'status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP, // item pickup  
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
