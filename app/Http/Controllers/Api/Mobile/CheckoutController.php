@@ -297,8 +297,7 @@ class CheckoutController extends Controller
                         $order = Orders::updateOrCreate([
                                 'user_id' => $cart->user_id,
                                 'cart_id' => $cart_id,
-                                'status_id' => 1,
-                                'order_status_id' => 1
+                                'order_status_id' => 1,
                             ], 
                             array(
                                 'user_id' => $cart->user_id,
@@ -311,7 +310,7 @@ class CheckoutController extends Controller
                         if ($order) {
 
                             OrderProcess::updateOrCreate([
-                                'order_status_id' => 1,
+                                'status_id' => 1,
                                 'order_id' => $order->id
                             ]);
 
