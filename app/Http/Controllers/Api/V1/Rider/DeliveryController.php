@@ -643,6 +643,7 @@ class DeliveryController extends Controller
 
             $lockedOrder->rider_id = $riderId;
             $lockedOrder->accepted_by_rider_id = $riderId;
+            $lockedOrder->accepted_by_rider_at = now();
             $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_ACCEPTED;
 
             $lockedOrder->save();
