@@ -9,6 +9,7 @@ use App\User;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Model\Bookings\BookingStatus;
 
 class RiderApiService
 {
@@ -199,6 +200,7 @@ class RiderApiService
             ->whereNotNull('store_accepted_at')
             ->whereNull('accepted_by_rider_at')
             ->whereNull('accepted_by_rider_id')
+            ->whereBookingStatusId(BookingStatus::STATUS_BOOKING_PLACED)
             ->whereNotExists(function ($query) use ($riderId) { // this hide the orders that are declined by the rider
                 $query->selectRaw('1')
                     ->from('rider_decline_order')

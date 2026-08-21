@@ -19,6 +19,7 @@ use Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\LibraryStatus;
+use App\Model\Bookings\BookingStatus;
 
 class OrderController extends Controller
 {	
@@ -370,6 +371,7 @@ class OrderController extends Controller
             }
 
             $order->order_status_id = LibraryStatus::STATUS_READY_FOR_PICKUP;
+            $order->booking_status_id = BookingStatus::STATUS_BOOKING_PLACED;
             $order->save();
 
             OrderProcess::updateOrCreate([
