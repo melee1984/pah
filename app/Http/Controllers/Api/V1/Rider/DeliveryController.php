@@ -754,8 +754,11 @@ class DeliveryController extends Controller
                     'arrival-at-customer' => [
                         'from' => [BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP],
                         'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
+                    ],  
+                    'confirm-arrival' => [
+                        'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
+                        'to' => BookingStatus::STATUS_BOOKING_DELIVERED,
                     ],
-
                     'delivered-order' => [
                         'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
                         'to' => BookingStatus::STATUS_BOOKING_DELIVERED,
@@ -785,6 +788,9 @@ class DeliveryController extends Controller
                 }
                 else if ($action == 'arrival-at-customer') {
                     $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER;
+                } 
+                  else if ($action == 'confirm-arrival') {
+                    $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
                 } 
                
             }
