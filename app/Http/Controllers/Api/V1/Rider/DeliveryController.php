@@ -756,8 +756,8 @@ class DeliveryController extends Controller
                         'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
                     ],  
                     'confirm-arrival' => [
-                        'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
-                        'to' => BookingStatus::STATUS_BOOKING_DELIVERED,
+                        'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER, BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP],
+                        'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
                     ],
                     'delivered-order' => [
                         'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
