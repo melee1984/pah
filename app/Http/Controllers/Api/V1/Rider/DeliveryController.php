@@ -791,6 +791,7 @@ class DeliveryController extends Controller
                 } 
                   else if ($action == 'confirm-arrival') {
                     $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
+                    $lockedOrder->order_status_id = LibraryStatus::STATUS_DELIVERED;
                 } 
                
             }
