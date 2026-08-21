@@ -257,8 +257,14 @@ class OrderController extends Controller
 			if ($action == "accept") {
 
 				$order->accepted_by_rider_id = $user->rider->id;
+
+				$order->booking_status_id = Orders::STATUS_ORDER_ACCEPTED;
+				$order->order_status_id = Orders::STATUS_ORDER_ACCEPTED;
+
 				$order->accepted_at = now();
+
 				$status = $order->save();
+
 				$data['status'] = 1;
 
 
@@ -286,7 +292,8 @@ class OrderController extends Controller
 
 			} else if ($action == "pickup") {
 
-				$order->status_id = Orders::STATUS_RIDER_PICKED_UP;
+				$order->booking_status_id = Orders::STATUS_RIDER_PICKED_UP;
+				$order->order_status_id = Orders::STATUS_RIDER_PICKED_UP;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
@@ -303,7 +310,9 @@ class OrderController extends Controller
 			else if ($action == "delivered") {
 
 				// Item Delivered 
-                $order->status_id = Orders::STATUS_DELIVERED;
+                $order->booking_status_id = Orders::STATUS_DELIVERED;
+				$order->order_status_id = Orders::STATUS_DELIVERED;
+				
 				$order->save();
 
 				PushNotification::sendPushOrder($order);

@@ -298,19 +298,20 @@ class CheckoutController extends Controller
                                 'user_id' => $cart->user_id,
                                 'cart_id' => $cart_id,
                                 'status_id' => 1,
+                                'order_status_id' => 1
                             ], 
                             array(
                                 'user_id' => $cart->user_id,
                                 'cart_id' => $cart_id,
                                 'submitted_at' => now(),
-                                'status_id' => 1,
+                                'order_status_id' => 1,
                                 'partner_id' => $cart->partner_id
                         ));
 
                         if ($order) {
 
                             OrderProcess::updateOrCreate([
-                                'status_id' => 1, // on progress 
+                                'order_status_id' => 1,
                                 'order_id' => $order->id
                             ]);
 

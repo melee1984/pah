@@ -80,7 +80,7 @@ class OrderController extends Controller
             
             if ($request->input('status') =="cancel") {
                 $status_id = 8;
-                $order->status_id = $status_id; // Cancelled 
+                $order->order_status_id = $status_id; // Cancelled 
             }
 
             $status = $order->save();
@@ -88,7 +88,7 @@ class OrderController extends Controller
             if ($status) {
                 
                 OrderProcess::create([
-                    'status_id' => $order->status_id,
+                    'order_status_id' => $order->status_id,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
