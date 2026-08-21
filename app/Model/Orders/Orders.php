@@ -112,11 +112,17 @@ class Orders extends Model
         }
         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP) {
             $action = [
-                'label' => 'Pickup Order',
-                'action' => 'pickup-order',
+                'label' => 'Picked Order',
+                'action' => 'picked-order',
             ];
         }
         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
+            $action = [
+                'label' => 'Confirm Arrival at Customer Location',
+                'action' => 'confirm-arrival',
+            ];
+        }
+         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
             $action = [
                 'label' => 'Delivered Order',
                 'action' => 'delivered-order',
