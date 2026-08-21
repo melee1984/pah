@@ -342,6 +342,12 @@ Route::group(['middleware' => 'isRequest'], function () {
 
             // This should display the information about the rider's dashboard, including earnings, deliveries, and other relevant metrics.
             Route::get('dashboard', [V1RiderOperationsController::class, 'dashboard']);
+            // this should display the list of new bookings that are available for the rider to accept or decline.
+            Route::get('new/bookings', [V1RiderOperationsController::class, 'newBookings']);
+            Route::get('bookings', [V1RiderOperationsController::class, 'bookings']);
+            // Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
+            // Route::get('bookings-orders', [V1RiderDeliveryController::class, 'orders']);
+
             Route::get('wallet/balance', [V1RiderController::class, 'walletBalance']);
 
             Route::get('devices', [V1RiderAuthController::class, 'devices']);
@@ -351,14 +357,11 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('status', [V1RiderController::class, 'status']);
             Route::get('availability', [V1RiderOperationsController::class, 'availability']);
             Route::get('activity-logs', [V1RiderController::class, 'activityLogs']);
-            Route::get('orders', [V1RiderDeliveryController::class, 'orders']);
-            Route::get('bookings-orders', [V1RiderDeliveryController::class, 'orders']);
             Route::post('orders/{order}/decline', [V1RiderDeliveryController::class, 'declineBooking']);
             Route::post('orders/{order}/accept', [V1RiderDeliveryController::class, 'acceptBooking']);
             Route::post('orders/{order}/action', [V1RiderDeliveryController::class, 'acceptAction']);
 
-            Route::get('orders/{order}', [V1RiderDeliveryController::class, 'order']);
-
+            // Route::get('orders/{order}', [V1RiderDeliveryController::class, 'order']);
             Route::get('overview/today', [V1RiderController::class, 'todayOverview']);
             
             Route::put('status', [V1RiderController::class, 'updateStatus']);

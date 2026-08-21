@@ -181,6 +181,7 @@ class RiderApiService
         return Orders::query()
             ->with(['cart', 'status'])
             ->whereNotNull('store_accepted_at')
+            ->whereRiderId($riderId)
             ->whereNotExists(function ($query) use ($riderId) {
                 $query->selectRaw('1')
                     ->from('rider_decline_order')
@@ -190,4 +191,22 @@ class RiderApiService
             ->orderByDesc('submitted_at')
             ->get();
     }
+
+    public function newBookings(int $riderId) 
+    {
+        return Orders::query()
+            ->with(['cart', 'status'])
+            ->whereNotNull('store_accepted_at')
+            ->whereNull('accepted_by_rider_at')
+            ->whereNull('accepted_by_rider_id')
+            ->whereNotExists(function ($query) use ($riderId) { // this hide the orders that are declined by the rider
+                $query->selectRaw('1')
+                    ->from('rider_decline_order')
+                    ->whereColumn('rider_decline_order.order_id', 'order.id')
+                    ->where('rider_decline_order.rider_id', $riderId);
+            })
+            ->orderByDesc('submitted_at')
+            ->get();
+    }
+
 }

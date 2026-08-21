@@ -21,6 +21,86 @@ class OperationsController extends Controller
         $rider = $this->rider->rider($request);
         $wallet = $this->rider->wallet($rider->id);
         $availability = $this->rider->availability($rider->id);
+        // $orders = $this->rider->bookings($rider->id); // check order available for rider
+
+        // foreach($orders as $order) {
+
+		// 	$order->summary = $order->cart->cartItemSummary();
+		// 	$order->cart->address;
+		// 	$order->cart->payment;
+		// 	$order->cart->partnerlocation;
+		// 	$product_items = $order->cart->cartItemList();    
+		// 	$order->cart_total = $order->cart->cartItemTotal();
+			
+		// 	foreach($product_items as $list) {
+		// 	    $list->variance_content = unserialize($list->variance_content);
+
+		// 	    if ($list->item) {
+		// 	        $list->price = number_format($list->item->getPrice() + number_format($list->variance_total,2),2);
+		// 	    }
+		// 	}
+
+		// 	$order->status;  
+		// 	$order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
+		// 	$order->formated_submitted_at_ = date("D, d M h:ia", strtotime($order->submitted_at));
+
+		// 	$order->logs = $order->getActionLogs(); // order logs 
+        //     $order->action = $order->getRiderAction();
+		// }
+		
+
+        return response()->json([
+            'wallet' => [
+                'credits' => $wallet->credit_amount,
+            ],
+            'availability' => $this->availabilityData($availability),
+            'rider' => $user->rider
+        ]);
+    }
+
+    public function newBookings(Request $request): JsonResponse
+    {   
+        $user = $request->user();
+
+        $rider = $this->rider->rider($request);
+        $orders = $this->rider->newBookings($rider->id); // check order available for rider
+
+        foreach($orders as $order) {
+
+			$order->summary = $order->cart->cartItemSummary();
+			$order->cart->address;
+			$order->cart->payment;
+			$order->cart->partnerlocation;
+			$product_items = $order->cart->cartItemList();    
+			$order->cart_total = $order->cart->cartItemTotal();
+			
+			foreach($product_items as $list) {
+			    $list->variance_content = unserialize($list->variance_content);
+
+			    if ($list->item) {
+			        $list->price = number_format($list->item->getPrice() + number_format($list->variance_total,2),2);
+			    }
+			}
+
+			$order->status;  
+			$order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
+			$order->formated_submitted_at_ = date("D, d M h:ia", strtotime($order->submitted_at));
+
+			$order->logs = $order->getActionLogs(); // order logs 
+            $order->action = $order->getRiderAction();
+		}
+
+        return response()->json([
+            'bookings' => $orders,
+        ]);
+
+    }   
+
+    public function bookings(Request $request): JsonResponse
+    {   
+        $user = $request->user();
+
+        $rider = $this->rider->rider($request);
         $orders = $this->rider->bookings($rider->id); // check order available for rider
 
         foreach($orders as $order) {
@@ -47,17 +127,15 @@ class OperationsController extends Controller
 			$order->logs = $order->getActionLogs(); // order logs 
             $order->action = $order->getRiderAction();
 		}
-		
 
         return response()->json([
-            'wallet' => [
-                'credits' => $wallet->credit_amount,
-            ],
-            'availability' => $this->availabilityData($availability),
             'bookings' => $orders,
-            'rider' => $user->rider
         ]);
+
     }
+
+
+    
 
     public function availability(Request $request): JsonResponse
     {
