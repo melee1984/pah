@@ -8,6 +8,7 @@ use DB;
 use App\Model\Orders\OrderProcess;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Rider\RiderDeclineOrder;
+use App\LibraryStatus;
 
 class Orders extends Model
 {
@@ -72,10 +73,10 @@ class Orders extends Model
             }, 'datecreated')
             ->orderBy('status.sorting', 'asc');
 
-         if ((int) $this->status_id === 7) {
-            $query->whereIn('status.id', [1, 7]);
+         if ((int) $this->status_id === LibraryStatus::STATUS_CANCELLED) {
+            $query->whereIn('status.id', [LibraryStatus::STATUS_ORDER_PLACED, LibraryStatus::STATUS_CANCELLED]);
          } else {
-            $query->where('status.id', '!=', 7);
+            $query->where('status.id', '!=', LibraryStatus::STATUS_CANCELLED);
          }
 
          $rs = $query->get();
@@ -93,24 +94,24 @@ class Orders extends Model
     {
         $action = null;
 
-        if ((int) $this->status_id === self::STATUS_ORDER_PLACED) {
+        if ((int) $this->status_id === LibraryStatus::STATUS_ORDER_PLACED) {
             $action = [
                 'label' => 'Accept Booking',
                 'action' => 'accept',
             ];
-        } elseif ((int) $this->status_id === self::STATUS_ORDER_ACCEPTED || (int) $this->status_id === self::STATUS_PROCESSING) {
+        } elseif ((int) $this->status_id === LibraryStatus::STATUS_ORDER_ACCEPTED || (int) $this->status_id === LibraryStatus::STATUS_PROCESSING) {
             $action = [
                 'label' => 'Ready For Pickup',
                 'action' => 'ready-for-pickup',
             ];
         }
-        elseif ((int) $this->status_id === self::STATUS_READY_FOR_PICKUP) {
+        elseif ((int) $this->status_id === LibraryStatus::STATUS_READY_FOR_PICKUP) {
             $action = [
                 'label' => 'Pickup Order',
                 'action' => 'pickup-order',
             ];
         }
-        elseif ((int) $this->status_id === self::STATUS_RIDER_PICKED_UP) {
+        elseif ((int) $this->status_id === LibraryStatus::STATUS_RIDER_PICKED_UP) {
             $action = [
                 'label' => 'Delivered Order',
                 'action' => 'delivered-order',
@@ -125,7 +126,7 @@ class Orders extends Model
     public function getAction()
     {
         return match ((int) $this->status_id) {
-            self::STATUS_ORDER_PLACED => [
+            LibraryStatus::STATUS_ORDER_PLACED => [
                 'label' => 'Pending',
                 'button' => [
                     'label' => 'Accept Order',
@@ -137,7 +138,7 @@ class Orders extends Model
                 ],
                 'send_to_rider' => false,
             ],
-            self::STATUS_ORDER_ACCEPTED, self::STATUS_PROCESSING => [
+            LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING => [
                 'label' => 'Order Processing',
                 'button' => [
                     'label' => 'Ready For Pickup',
@@ -149,7 +150,7 @@ class Orders extends Model
                 ],
                 'send_to_rider' => true,
             ],
-            self::STATUS_READY_FOR_PICKUP => [
+            LibraryStatus::STATUS_READY_FOR_PICKUP => [
                 'label' => 'Waiting for Rider to Pickup',
                 'button' => null,
                 'cancel' => [
@@ -158,13 +159,13 @@ class Orders extends Model
                 ],
                 'send_to_rider' => false,
             ],
-            self::STATUS_DELIVERED => [
+            LibraryStatus::STATUS_DELIVERED => [
                 'label' => 'Order Delivered',
                 'button' => null,
                 'cancel' => null,
                 'send_to_rider' => false,
             ],
-            self::STATUS_CANCELLED => [
+            LibraryStatus::STATUS_CANCELLED => [
                 'label' => 'Cancelled Order',
                 'button' => null,
                 'cancel' => null,
