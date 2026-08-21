@@ -666,7 +666,6 @@ class DeliveryController extends Controller
                 'id' => (string) $acceptedOrder->id,
                 'rider_id' => (string) $acceptedOrder->rider_id,
                 'accepted_by_rider_id' => (string) $acceptedOrder->accepted_by_rider_id,
-                'accepted_at' => $acceptedOrder->accepted_by_rider_at?->toISOString(),
             ],
         ]);
     }
