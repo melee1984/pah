@@ -704,7 +704,7 @@ class DeliveryController extends Controller
     public function acceptAction(Request $request, Orders $order): JsonResponse
     {
         $validated = $request->validate([
-            'action' => ['required', Rule::in(['accept', 'ready-for-pickup', 'pickup-order','picked-order','delivered-order', 'cancelled', 'failed'])],
+            'action' => ['required', Rule::in(['accept', 'ready-for-pickup', 'pickup-order','picked-order','delivered-order', 'confirm-arrival', 'cancelled', 'failed'])],
         ]);
 
         $riderId = $this->riders->rider($request)->id;
