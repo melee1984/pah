@@ -88,7 +88,7 @@ class OrderController extends Controller
             if ($status) {
                 
                 OrderProcess::create([
-                    'order_status_id' => $order->status_id,
+                    'status_id' => $order->status_id,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
