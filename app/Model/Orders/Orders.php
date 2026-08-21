@@ -26,12 +26,13 @@ class Orders extends Model
     public const STATUS_CANCELLED = 7;
 
     protected $table = 'order';
-	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id','status_id');
+	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id','status_id', 'rider_id', 'store_accepted_at', 'accepted_by_rider_at', 'accepted_at', 'delivered_at', 'updated_at', 'created_at');
 	public $timestamps = true;
 
     protected $dates = [
         'submitted_at',
         'store_accepted_at',
+        'accepted_by_rider_at',
         'accepted_at',
         'delivered_at',
         'updated_at',
