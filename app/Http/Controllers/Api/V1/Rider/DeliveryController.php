@@ -764,18 +764,29 @@ class DeliveryController extends Controller
                     default => abort(400, "Invalid delivery action: {$action}"),
                 };
 
+
+                 abort_if(
+                    ! in_array((int) $lockedOrder->booking_status_id, $transition['from'], true),
+                    409,
+                    'This action is not allowed for the current order status.',
+                );
+
                 if ($action === 'delivered-order') {
                     // this will identify that the order is delivered and what ever payment gateway, so we can set the delivered_at timestamp
                     $lockedOrder->delivered_at = now();
                     $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
                     $lockedOrder->order_status_id = LibraryStatus::STATUS_DELIVERED;
                 }
-
-                abort_if(
-                    ! in_array((int) $lockedOrder->booking_status_id, $transition['from'], true),
-                    409,
-                    'This action is not allowed for the current order status.',
-                );
+                else if ($action == 'ready-for-pickup') {
+                    $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP;
+                }
+                else if ($action == 'pickup-order') {
+                    $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP;
+                }
+                else if ($action == 'arrival-at-customer') {
+                    $lockedOrder->booking_status_id = BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER;
+                } 
+               
             }
 
             $lockedOrder->save();
