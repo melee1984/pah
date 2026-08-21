@@ -740,10 +740,28 @@ class DeliveryController extends Controller
                     'This order is assigned to another rider.',
                 );
 
-                $transition = match ($action) {
-                    'ready-for-pickup' => ['from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP], 'to' => BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
-                    'pickup-order' => ['from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP], 'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
-                    'delivered-order' => ['from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER], 'to' => BookingStatus::STATUS_BOOKING_DELIVERED],
+               $transition = match ($action) {
+                    'ready-for-pickup' => [
+                        'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
+                        'to' => BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP,
+                    ],
+
+                    'pickup-order' => [
+                        'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
+                        'to' => BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP,
+                    ],
+
+                    'arrival-at-customer' => [
+                        'from' => [BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP],
+                        'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
+                    ],
+
+                    'delivered-order' => [
+                        'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
+                        'to' => BookingStatus::STATUS_BOOKING_DELIVERED,
+                    ],
+
+                    default => abort(400, "Invalid delivery action: {$action}"),
                 };
 
                 if ($action === 'delivered-order') {
