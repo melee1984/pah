@@ -742,7 +742,7 @@ class DeliveryController extends Controller
 
                $transition = match ($action) {
                     'ready-for-pickup' => [
-                        'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
+                        'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP, BookingStatus::STATUS_BOOKING_ACCEPTED],
                         'to' => BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP,
                     ],
 
