@@ -741,8 +741,9 @@ class DeliveryController extends Controller
                 );
 
                 $transition = match ($action) {
-                    'pickup-order' => ['from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP], 'to' => BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP],
-                    'delivered-order' => ['from' => [BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP], 'to' => BookingStatus::STATUS_BOOKING_DELIVERED],
+                    'ready-for-pickup' => ['from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP], 'to' => BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
+                    'pickup-order' => ['from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP], 'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
+                    'delivered-order' => ['from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER], 'to' => BookingStatus::STATUS_BOOKING_DELIVERED],
                 };
 
                 if ($action === 'delivered-order') {
