@@ -180,7 +180,7 @@ class RiderApiService
     public function bookings(int $riderId): Collection
     {
         return Orders::query()
-            ->with(['cart', 'status'])
+            ->with(['cart', 'status', 'rider'])
             ->whereNotNull('store_accepted_at')
             ->whereRiderId($riderId)
             ->whereNotExists(function ($query) use ($riderId) {
@@ -196,7 +196,7 @@ class RiderApiService
     public function newBookings(int $riderId) 
     {
         return Orders::query()
-            ->with(['cart', 'status'])
+            ->with(['cart', 'status', 'rider'])
             ->whereNotNull('store_accepted_at')
             ->whereNull('accepted_by_rider_at')
             ->whereNull('accepted_by_rider_id')

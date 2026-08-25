@@ -88,6 +88,7 @@ class OperationsController extends Controller
 
 			$order->logs = $order->getActionLogs(); // order logs 
             $order->action = $order->getRiderAction();
+            $order->rider;
 		}
 
         return response()->json([
@@ -126,6 +127,7 @@ class OperationsController extends Controller
 
 			$order->logs = $order->getActionLogs(); // order logs 
             $order->action = $order->getRiderAction();
+            $order->rider;
 		}
 
         return response()->json([
