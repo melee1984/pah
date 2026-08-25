@@ -740,12 +740,11 @@ class DeliveryController extends Controller
                     'This order is assigned to another rider.',
                 );
 
-               $transition = match ($action) {
+                $transition = match ($action) {
                     'ready-for-pickup' => [
                         'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP, BookingStatus::STATUS_BOOKING_ACCEPTED],
                         'to' => BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP,
                     ],
-
                     'picked-order' => [
                         'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
                         'to' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
@@ -763,12 +762,10 @@ class DeliveryController extends Controller
                         'from' => [BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER],
                         'to' => BookingStatus::STATUS_BOOKING_DELIVERED,
                     ],
-
                     default => abort(400, "Invalid delivery action: {$action}"),
                 };
 
-
-                 abort_if(
+                abort_if(
                     ! in_array((int) $lockedOrder->booking_status_id, $transition['from'], true),
                     409,
                     'This action is not allowed for the current order status.',

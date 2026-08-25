@@ -255,6 +255,7 @@ class OrderController extends Controller
 
             $order->accepted_by_store_id = $order->cart->partner_location_address_id; // This should update the accepted_by_store_id to the partner location address id instead of the merchant id
             $order->store_accepted_at = now();
+            $order->booking_status_id = BookingStatus::STATUS_BOOKING_PLACED;
             $order->order_status_id = LibraryStatus::STATUS_PROCESSING;
             $order->save();
 
