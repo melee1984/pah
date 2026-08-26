@@ -12,16 +12,16 @@ use Illuminate\Validation\Rule;
 
 class OperationsController extends Controller
 {
-    public function __construct(private readonly RiderApiService $rider) {}
+    public function __construct(private readonly RiderApiService $riders) {}
 
     public function dashboard(Request $request): JsonResponse
     {   
         $user = $request->user();
 
-        $rider = $this->rider->rider($request);
-        $wallet = $this->rider->wallet($rider->id);
-        $availability = $this->rider->availability($rider->id);
-        // $orders = $this->rider->bookings($rider->id); // check order available for rider
+        $rider = $this->riders->rider($request);
+        $wallet = $this->riders->wallet($rider->id);
+        $availability = $this->riders->availability($rider->id);
+        // $orders = $this->riders->bookings($rider->id); // check order available for rider
 
         // foreach($orders as $order) {
 
@@ -62,8 +62,8 @@ class OperationsController extends Controller
     {   
         $user = $request->user();
 
-        $rider = $this->rider->rider($request);
-        $orders = $this->rider->newBookings($rider->id); // check order available for rider
+        $rider = $this->riders->rider($request);
+        $orders = $this->riders->newBookings($rider->id); // check order available for rider
 
         foreach($orders as $order) {
 
@@ -101,8 +101,8 @@ class OperationsController extends Controller
     {   
         $user = $request->user();
 
-        $rider = $this->rider->rider($request);
-        $orders = $this->rider->bookings($rider->id); // check order available for rider
+        $rider = $this->riders->rider($request);
+        $orders = $this->riders->bookings($rider->id); // check order available for rider
 
         foreach($orders as $order) {
 
@@ -132,11 +132,7 @@ class OperationsController extends Controller
         return response()->json([
             'bookings' => $orders,
         ]);
-
     }
-
-
-    
 
     public function availability(Request $request): JsonResponse
     {

@@ -86,6 +86,24 @@ class FullRiderApiTest extends TestCase
         $this->assertDatabaseCount('rider_api_locations', 1);
     }
 
+    public function test_an_authenticated_rider_can_read_availability_and_save_location(): void
+    {
+        $token = $this->loginApprovedRider();
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/availability')
+            ->assertOk()
+            ->assertJsonPath('availability.state', 'offline');
+
+        $this->authenticated($token)
+            ->postJson('/api/v1/rider/location', [
+                'latitude' => 10.3157,
+                'longitude' => 123.8854,
+                'recorded_at' => now()->toISOString(),
+            ])
+            ->assertAccepted();
+    }
+
     public function test_offer_acceptance_and_delivery_events_are_authorized_sequential_and_idempotent(): void
     {
         $token = $this->loginApprovedRider();
