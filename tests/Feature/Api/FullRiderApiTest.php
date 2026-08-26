@@ -160,6 +160,32 @@ class FullRiderApiTest extends TestCase
         $this->assertDatabaseCount('rider_api_delivery_events', 2);
     }
 
+    public function test_delivery_events_accept_a_numeric_delivery_id(): void
+    {
+        $token = $this->loginApprovedRider();
+        $riderId = DB::table('rider')->value('id');
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'current_state' => 'picked_up',
+            'earnings_centavos' => 0,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->authenticated($token)
+            ->postJson("/api/v1/rider/deliveries/{$deliveryId}/events", [
+                'event_id' => (string) Str::uuid(),
+                'type' => 'going_to_customer',
+                'occurred_at' => now()->toISOString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('current_state', 'going_to_customer');
+    }
+
     public function test_wallet_messaging_notifications_and_settings_endpoints_are_operational(): void
     {
         $token = $this->loginApprovedRider();

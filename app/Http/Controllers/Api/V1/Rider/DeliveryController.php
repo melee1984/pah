@@ -8,7 +8,6 @@ use App\Model\Bookings\Bookings;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
-use App\Model\Rider\RiderApiDelivery;
 use App\Model\Rider\RiderDeclineOrder;
 use App\Services\RiderApiService;
 use App\Services\RiderOfferDispatcher;
@@ -255,7 +254,7 @@ class DeliveryController extends Controller
         ]);
     }
 
-    public function event(Request $request, RiderApiDelivery $delivery): JsonResponse
+    public function event(Request $request, string $delivery): JsonResponse
     {
         $validated = $request->validate([
             'event_id' => ['required', 'uuid'],
@@ -265,7 +264,7 @@ class DeliveryController extends Controller
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'metadata' => ['nullable', 'array'],
         ]);
-        $record = $this->ownedDelivery($request, $delivery->reference);
+        $record = $this->ownedDelivery($request, $delivery);
         $existing = DB::table('rider_api_delivery_events')
             ->where('event_id', $validated['event_id'])
             ->first();
@@ -1138,12 +1137,14 @@ class DeliveryController extends Controller
         return $offer;
     }
 
-    private function ownedDelivery(Request $request, string $reference): object
+    private function ownedDelivery(Request $request, string $identifier): object
     {
-        $delivery = DB::table('rider_api_deliveries')
-            ->where('rider_id', $this->riders->rider($request)->id)
-            ->where('reference', $reference)
-            ->first();
+        $query = DB::table('rider_api_deliveries')
+            ->where('rider_id', $this->riders->rider($request)->id);
+
+        $delivery = ctype_digit($identifier)
+            ? $query->where('id', (int) $identifier)->first()
+            : $query->where('reference', $identifier)->first();
         abort_if(! $delivery, 404);
 
         return $delivery;
