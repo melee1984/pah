@@ -126,6 +126,31 @@ class RiderAcceptOrderTest extends TestCase
             ->assertJsonValidationErrors('status');
     }
 
+    public function test_delivery_event_normalizes_iso_timestamp_for_mysql(): void
+    {
+        [$user, $riderId] = $this->createRider('delivery-event-time@example.com');
+        $deliveryReference = $this->createDeliveryForOrder(
+            $this->createAvailableOrder(),
+            $riderId,
+            'picked_up',
+        );
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/deliveries/{$deliveryReference}/events", [
+                'event_id' => (string) \Illuminate\Support\Str::uuid(),
+                'type' => 'going_to_customer',
+                'occurred_at' => '2026-08-26T16:34:17.621396Z',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('current_state', 'going_to_customer');
+
+        $this->assertDatabaseHas('rider_api_delivery_events', [
+            'type' => 'going_to_customer',
+            'occurred_at' => '2026-08-27 00:34:17',
+        ]);
+    }
+
     public function test_rider_cannot_accept_an_order_assigned_to_another_rider(): void
     {
         [$user] = $this->createRider('conflict-test@example.com');

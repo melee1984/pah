@@ -6,6 +6,7 @@ use App\Model\Orders\Orders;
 use App\Model\Rider\Rider;
 use App\RiderApplication;
 use App\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -135,6 +136,11 @@ class RiderApiService
         $parts = array_values(array_filter(array_map('trim', explode(',', $address))));
 
         return count($parts) > 1 ? implode(', ', array_slice($parts, -2)) : $parts[0];
+    }
+
+    public function databaseDateTime(string $value): CarbonImmutable
+    {
+        return CarbonImmutable::parse($value)->setTimezone(config('app.timezone'));
     }
 
     public function validDeepLink(?string $deepLink): ?string

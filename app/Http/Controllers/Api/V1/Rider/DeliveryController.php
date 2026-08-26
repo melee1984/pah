@@ -340,7 +340,9 @@ class DeliveryController extends Controller
             ], 409);
         }
 
-        $event = DB::transaction(function () use ($record, $validated) {
+        $occurredAt = $this->riders->databaseDateTime($validated['occurred_at']);
+
+        $event = DB::transaction(function () use ($record, $validated, $occurredAt) {
             $eventId = DB::table('rider_api_delivery_events')->insertGetId([
                 'delivery_id' => $record->id,
                 'event_id' => $validated['event_id'],
@@ -350,7 +352,7 @@ class DeliveryController extends Controller
                 'metadata' => isset($validated['metadata'])
                     ? json_encode($validated['metadata'], JSON_THROW_ON_ERROR)
                     : null,
-                'occurred_at' => $validated['occurred_at'],
+                'occurred_at' => $occurredAt,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -360,13 +362,13 @@ class DeliveryController extends Controller
             ];
 
             if ($validated['type'] === 'delivered') {
-                $updates['completed_at'] = $validated['occurred_at'];
+                $updates['completed_at'] = $occurredAt;
                 $this->creditDeliveryEarnings($record);
                 DB::table('rider_api_availability')
                     ->where('rider_id', $record->rider_id)
                     ->update(['state' => 'available', 'updated_at' => now()]);
             } elseif (in_array($validated['type'], ['cancelled', 'failed'], true)) {
-                $updates['completed_at'] = $validated['occurred_at'];
+                $updates['completed_at'] = $occurredAt;
                 DB::table('rider_api_availability')
                     ->where('rider_id', $record->rider_id)
                     ->update(['state' => 'available', 'updated_at' => now()]);
@@ -414,7 +416,9 @@ class DeliveryController extends Controller
             return response()->json(['message' => 'COD cannot be confirmed in the current delivery state.'], 409);
         }
 
-        DB::transaction(function () use ($record, $validated) {
+        $collectedAt = $this->riders->databaseDateTime($validated['collected_at']);
+
+        DB::transaction(function () use ($record, $validated, $collectedAt) {
             $wallet = $this->riders->wallet($record->rider_id);
             DB::table('rider_api_wallets')->where('id', $wallet->id)->update([
                 'cash_collected_centavos' => $wallet->cash_collected_centavos + $validated['amount_centavos'],
@@ -430,7 +434,7 @@ class DeliveryController extends Controller
                 'event_id' => (string) Str::uuid(),
                 'type' => 'cod_collected',
                 'metadata' => json_encode(['amount_centavos' => $validated['amount_centavos']], JSON_THROW_ON_ERROR),
-                'occurred_at' => $validated['collected_at'],
+                'occurred_at' => $collectedAt,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

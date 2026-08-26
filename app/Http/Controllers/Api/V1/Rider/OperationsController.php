@@ -196,7 +196,7 @@ class OperationsController extends Controller
             'accuracy_meters' => $location['accuracy_meters'] ?? null,
             'heading' => $location['heading'] ?? null,
             'speed_mps' => $location['speed_mps'] ?? null,
-            'recorded_at' => $location['recorded_at'],
+            'recorded_at' => $this->riders->databaseDateTime($location['recorded_at']),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
