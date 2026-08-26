@@ -116,12 +116,20 @@ class Orders extends Model
                 'action' => 'picked-order',
             ];
         }
+       
         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
             $action = [
-                'label' => 'Confirm Arrival at Customer Location',
-                'action' => 'confirm-arrival',
+                'label' => 'Start Route to Customer',
+                'action' => 'start-customer-route',
             ];
         }
+        //  elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
+        //     $action = [
+        //         'label' => 'Confirm Arrival at Customer Location',
+        //         'action' => 'confirm-arrival',
+        //     ];
+        // }
+
          elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
             $action = [
                 'label' => 'Delivered Order',
