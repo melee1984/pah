@@ -214,6 +214,59 @@ class DeliveryController extends Controller
         ]);
     }
 
+    public function index(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'status' => ['nullable', Rule::in(['active', 'completed', 'cancelled', 'failed'])],
+            'state' => ['nullable', Rule::in(array_merge(['offered'], self::EVENT_TYPES))],
+            'date_from' => ['nullable', 'date_format:Y-m-d'],
+            'date_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:date_from'],
+            'search' => ['nullable', 'string', 'max:100'],
+            'limit' => ['nullable', 'integer', 'between:1,100'],
+        ]);
+
+        $query = DB::table('rider_api_deliveries')
+            ->where('rider_id', $this->riders->rider($request)->id)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+
+        if (isset($validated['status'])) {
+            match ($validated['status']) {
+                'active' => $query->whereNotIn('current_state', self::TERMINAL_STATES),
+                'completed' => $query->where('current_state', 'delivered'),
+                'cancelled' => $query->where('current_state', 'cancelled'),
+                'failed' => $query->where('current_state', 'failed'),
+            };
+        }
+        if (isset($validated['state'])) {
+            $query->where('current_state', $validated['state']);
+        }
+        if (isset($validated['date_from'])) {
+            $query->whereDate('created_at', '>=', $validated['date_from']);
+        }
+        if (isset($validated['date_to'])) {
+            $query->whereDate('created_at', '<=', $validated['date_to']);
+        }
+        if (isset($validated['search'])) {
+            $search = $validated['search'];
+            $query->where(function ($query) use ($search) {
+                $query->where('reference', 'like', "%{$search}%")
+                    ->orWhere('merchant_name', 'like', "%{$search}%")
+                    ->orWhere('pickup_area', 'like', "%{$search}%")
+                    ->orWhere('dropoff_area', 'like', "%{$search}%");
+            });
+        }
+
+        $paginator = $query->cursorPaginate($validated['limit'] ?? 20);
+
+        return response()->json([
+            'deliveries' => collect($paginator->items())
+                ->map(fn (object $delivery) => $this->deliverySummary($delivery))
+                ->values(),
+            'next_cursor' => $paginator->nextCursor()?->encode(),
+        ]);
+    }
+
     public function show(Request $request, string $delivery): JsonResponse
     {
         $record = $this->ownedDelivery($request, $delivery);

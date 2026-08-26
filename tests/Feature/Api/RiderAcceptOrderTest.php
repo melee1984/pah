@@ -89,6 +89,43 @@ class RiderAcceptOrderTest extends TestCase
             ->assertJsonPath('activity_logs.0.order_id', (string) $orderId);
     }
 
+    public function test_rider_can_list_and_filter_only_their_deliveries(): void
+    {
+        [$user, $riderId] = $this->createRider('delivery-list@example.com');
+        [, $otherRiderId] = $this->createRider('delivery-list-other@example.com');
+
+        $activeReference = $this->createDeliveryForOrder($this->createAvailableOrder(), $riderId, 'picked_up');
+        $completedReference = $this->createDeliveryForOrder($this->createAvailableOrder(), $riderId, 'delivered');
+        $this->createDeliveryForOrder($this->createAvailableOrder(), $otherRiderId, 'delivered');
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/deliveries')
+            ->assertOk()
+            ->assertJsonCount(2, 'deliveries')
+            ->assertJsonFragment(['id' => $activeReference, 'state' => 'picked_up'])
+            ->assertJsonFragment(['id' => $completedReference, 'state' => 'delivered'])
+            ->assertJsonPath('next_cursor', null);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/deliveries?status=completed')
+            ->assertOk()
+            ->assertJsonCount(1, 'deliveries')
+            ->assertJsonPath('deliveries.0.id', $completedReference);
+    }
+
+    public function test_delivery_list_validates_filters(): void
+    {
+        [$user] = $this->createRider('delivery-list-validation@example.com');
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/deliveries?status=unknown')
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('status');
+    }
+
     public function test_rider_cannot_accept_an_order_assigned_to_another_rider(): void
     {
         [$user] = $this->createRider('conflict-test@example.com');

@@ -383,6 +383,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             // Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);
             // Route::post('offers/{offer}/decline', [V1RiderDeliveryController::class, 'declineOffer']);
             
+            Route::get('deliveries', [V1RiderDeliveryController::class, 'index']);
             Route::get('deliveries/active', [V1RiderDeliveryController::class, 'active']);
             Route::get('deliveries/{delivery}', [V1RiderDeliveryController::class, 'show']);
             Route::get('deliveries/{delivery}/route', [V1RiderDeliveryController::class, 'route']);
