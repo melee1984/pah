@@ -254,7 +254,7 @@ class DeliveryController extends Controller
         ]);
     }
 
-    public function event(Request $request, string $delivery): JsonResponse
+    public function event(Request $request, RiderApiDelivery $delivery): JsonResponse
     {
         $validated = $request->validate([
             'event_id' => ['required', 'uuid'],
@@ -264,7 +264,7 @@ class DeliveryController extends Controller
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'metadata' => ['nullable', 'array'],
         ]);
-        $record = $this->ownedDelivery($request, $delivery);
+        $record = $this->ownedDelivery($request, $delivery->reference);
         $existing = DB::table('rider_api_delivery_events')
             ->where('event_id', $validated['event_id'])
             ->first();
