@@ -8,6 +8,7 @@ use App\Model\Bookings\Bookings;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
+use App\Model\Rider\RiderApiDelivery;
 use App\Model\Rider\RiderDeclineOrder;
 use App\Services\RiderApiService;
 use App\Services\RiderOfferDispatcher;
@@ -20,7 +21,6 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use App\Model\Rider\RiderApiDelivery;
 use RuntimeException;
 use Throwable;
 
