@@ -383,19 +383,19 @@ Route::group(['middleware' => 'isRequest'], function () {
             // Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);
             // Route::post('offers/{offer}/decline', [V1RiderDeliveryController::class, 'declineOffer']);
             
-            // Route::get('deliveries/active', [V1RiderDeliveryController::class, 'active']);
-            // Route::get('deliveries/{delivery}', [V1RiderDeliveryController::class, 'show']);
-            // Route::get('deliveries/{delivery}/route', [V1RiderDeliveryController::class, 'route']);
-            // Route::post('deliveries/{delivery}/events', [V1RiderDeliveryController::class, 'event']);
-            // Route::post('deliveries/{delivery}/pickup/verify', [V1RiderDeliveryController::class, 'verifyPickup']);
-            // Route::post('deliveries/{delivery}/customer/verify', [V1RiderDeliveryController::class, 'verifyCustomer']);
-            // Route::post('deliveries/{delivery}/cod/confirm', [V1RiderDeliveryController::class, 'confirmCod']);
-            // Route::post('deliveries/{delivery}/proof/uploads', [V1RiderDeliveryController::class, 'requestProofUpload']);
-            // Route::post('deliveries/{delivery}/proof', [V1RiderDeliveryController::class, 'attachProof']);
-            // Route::get('deliveries/{delivery}/proof/status', [V1RiderDeliveryController::class, 'proofStatus']);
-            // Route::post('deliveries/{delivery}/issues', [V1RiderDeliveryController::class, 'issue']);
-            // Route::post('deliveries/{delivery}/calls', [V1RiderDeliveryController::class, 'call']);
-            // Route::post('deliveries/{delivery}/share-trip', [V1RiderDeliveryController::class, 'shareTrip']);
+            Route::get('deliveries/active', [V1RiderDeliveryController::class, 'active']);
+            Route::get('deliveries/{delivery}', [V1RiderDeliveryController::class, 'show']);
+            Route::get('deliveries/{delivery}/route', [V1RiderDeliveryController::class, 'route']);
+            Route::post('deliveries/{delivery}/events', [V1RiderDeliveryController::class, 'event']);
+            Route::post('deliveries/{delivery}/pickup/verify', [V1RiderDeliveryController::class, 'verifyPickup']);
+            Route::post('deliveries/{delivery}/customer/verify', [V1RiderDeliveryController::class, 'verifyCustomer']);
+            Route::post('deliveries/{delivery}/cod/confirm', [V1RiderDeliveryController::class, 'confirmCod']);
+            Route::post('deliveries/{delivery}/proof/uploads', [V1RiderDeliveryController::class, 'requestProofUpload']);
+            Route::post('deliveries/{delivery}/proof', [V1RiderDeliveryController::class, 'attachProof']);
+            Route::get('deliveries/{delivery}/proof/status', [V1RiderDeliveryController::class, 'proofStatus']);
+            Route::post('deliveries/{delivery}/issues', [V1RiderDeliveryController::class, 'issue']);
+            Route::post('deliveries/{delivery}/calls', [V1RiderDeliveryController::class, 'call']);
+            Route::post('deliveries/{delivery}/share-trip', [V1RiderDeliveryController::class, 'shareTrip']);
         
             Route::get('wallet', [V1RiderWalletController::class, 'wallet']);
             Route::get('wallet/earnings', [V1RiderWalletController::class, 'earnings']);
