@@ -232,6 +232,7 @@ class DeliveryController extends Controller
             'accepted',
             'going_to_merchant',
             'arrived_at_merchant',
+            'going_to_customer',
             'order_not_ready',
             'waiting_started',
             'pickup_verified',
