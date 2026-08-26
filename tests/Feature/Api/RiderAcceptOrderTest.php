@@ -136,8 +136,10 @@ class RiderAcceptOrderTest extends TestCase
         );
         Sanctum::actingAs($user);
 
+        $eventUrl = "/api/v1/rider/deliveries/{$deliveryReference}/events";
+
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
-            ->postJson("/api/v1/rider/deliveries/{$deliveryReference}/events", [
+            ->postJson($eventUrl, [
                 'event_id' => (string) \Illuminate\Support\Str::uuid(),
                 'type' => 'going_to_customer',
                 'occurred_at' => '2026-08-26T16:34:17.621396Z',
@@ -149,6 +151,18 @@ class RiderAcceptOrderTest extends TestCase
             'type' => 'going_to_customer',
             'occurred_at' => '2026-08-27 00:34:17',
         ]);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson($eventUrl, [
+                'event_id' => (string) \Illuminate\Support\Str::uuid(),
+                'type' => 'going_to_customer',
+                'occurred_at' => '2026-08-26T16:34:18.621396Z',
+            ])
+            ->assertOk()
+            ->assertJsonPath('current_state', 'going_to_customer')
+            ->assertJsonPath('idempotent_replay', true);
+
+        $this->assertDatabaseCount('rider_api_delivery_events', 1);
     }
 
     public function test_rider_cannot_accept_an_order_assigned_to_another_rider(): void

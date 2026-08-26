@@ -332,6 +332,21 @@ class DeliveryController extends Controller
             ]);
         }
 
+        if ($record->current_state === $validated['type']) {
+            $recordedEvent = DB::table('rider_api_delivery_events')
+                ->where('delivery_id', $record->id)
+                ->where('type', $validated['type'])
+                ->latest('id')
+                ->first();
+
+            return response()->json([
+                'message' => 'Delivery event already recorded.',
+                'event' => $recordedEvent ? $this->eventData($recordedEvent) : null,
+                'current_state' => $record->current_state,
+                'idempotent_replay' => true,
+            ]);
+        }
+
         if (! $this->transitionAllowed($record->current_state, $validated['type'])) {
             return response()->json([
                 'message' => "The {$validated['type']} event is not allowed after {$record->current_state}.",
