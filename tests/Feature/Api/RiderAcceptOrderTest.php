@@ -23,10 +23,14 @@ class RiderAcceptOrderTest extends TestCase
                 $table->id();
                 $table->unsignedBigInteger('cart_id')->nullable();
                 $table->unsignedBigInteger('status_id')->nullable();
+                $table->unsignedBigInteger('order_status_id')->nullable();
+                $table->unsignedBigInteger('booking_status_id')->nullable();
                 $table->unsignedBigInteger('rider_id')->nullable();
                 $table->unsignedBigInteger('accepted_by_rider_id')->nullable();
                 $table->timestamp('store_accepted_at')->nullable();
+                $table->timestamp('accepted_by_rider_at')->nullable();
                 $table->timestamp('accepted_at')->nullable();
+                $table->timestamp('delivered_at')->nullable();
                 $table->timestamp('submitted_at')->nullable();
                 $table->timestamps();
             });
@@ -47,6 +51,7 @@ class RiderAcceptOrderTest extends TestCase
     {
         [$user, $riderId] = $this->createRider('accept-test@example.com');
         $orderId = $this->createAvailableOrder();
+        $deliveryReference = $this->createDeliveryForOrder($orderId);
 
         Sanctum::actingAs($user);
 
@@ -56,7 +61,9 @@ class RiderAcceptOrderTest extends TestCase
             ->assertJsonPath('message', 'Order accepted.')
             ->assertJsonPath('order.rider_id', (string) $riderId)
             ->assertJsonPath('order.accepted_by_rider_id', (string) $riderId)
-            ->assertJsonPath('order.accepted_at', fn ($value) => is_string($value) && $value !== '');
+            ->assertJsonPath('order.accepted_at', fn ($value) => is_string($value) && $value !== '')
+            ->assertJsonPath('delivery.id', $deliveryReference)
+            ->assertJsonPath('delivery.state', 'accepted');
 
         $this->assertDatabaseHas('order', [
             'id' => $orderId,
@@ -69,6 +76,11 @@ class RiderAcceptOrderTest extends TestCase
             'order_id' => $orderId,
             'type' => 'booking_accepted',
         ]);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/deliveries/active')
+            ->assertOk()
+            ->assertJsonPath('delivery.id', $deliveryReference);
 
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
             ->getJson('/api/v1/rider/activity-logs?type=booking_accepted')
@@ -98,11 +110,50 @@ class RiderAcceptOrderTest extends TestCase
         ]);
     }
 
+    public function test_declining_an_order_also_declines_the_rider_delivery_offer(): void
+    {
+        [$user, $riderId] = $this->createRider('decline-test@example.com');
+        $orderId = $this->createAvailableOrder();
+        $this->createDeliveryForOrder($orderId);
+        $deliveryId = DB::table('rider_api_deliveries')
+            ->where('legacy_order_id', $orderId)
+            ->value('id');
+
+        DB::table('rider_api_offers')->insert([
+            'reference' => (string) \Illuminate\Support\Str::uuid(),
+            'rider_id' => $riderId,
+            'delivery_id' => $deliveryId,
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/decline")
+            ->assertOk()
+            ->assertJsonPath('message', 'Order declined.');
+
+        $this->assertDatabaseHas('rider_decline_order', [
+            'rider_id' => $riderId,
+            'order_id' => $orderId,
+        ]);
+        $this->assertDatabaseHas('rider_api_offers', [
+            'rider_id' => $riderId,
+            'delivery_id' => $deliveryId,
+            'status' => 'declined',
+        ]);
+    }
+
     public function test_rider_action_updates_the_status_and_records_the_app_payload(): void
     {
         [$user, $riderId] = $this->createRider('action-test@example.com');
         $orderId = DB::table('order')->insertGetId([
             'status_id' => 4,
+            'order_status_id' => 4,
+            'booking_status_id' => 4,
             'rider_id' => $riderId,
             'accepted_by_rider_id' => $riderId,
             'store_accepted_at' => now(),
@@ -111,6 +162,7 @@ class RiderAcceptOrderTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        $deliveryReference = $this->createDeliveryForOrder($orderId, $riderId, 'arrived_at_merchant');
         $payload = [
             'action' => 'pickup-order',
             'latitude' => 14.5995,
@@ -128,8 +180,21 @@ class RiderAcceptOrderTest extends TestCase
 
         $this->assertDatabaseHas('order', [
             'id' => $orderId,
-            'status_id' => 5,
+            'order_status_id' => 5,
+            'booking_status_id' => 5,
         ]);
+        $this->assertDatabaseHas('rider_api_deliveries', [
+            'legacy_order_id' => $orderId,
+            'rider_id' => $riderId,
+            'current_state' => 'picked_up',
+        ]);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson("/api/v1/rider/deliveries/{$deliveryReference}/route")
+            ->assertOk()
+            ->assertJsonPath('leg', 'to_dropoff')
+            ->assertJsonPath('destination.latitude', 14.6)
+            ->assertJsonPath('destination.longitude', 120.99);
         $this->assertDatabaseHas('order_process', [
             'order_id' => $orderId,
             'status_id' => 5,
@@ -180,9 +245,38 @@ class RiderAcceptOrderTest extends TestCase
         return DB::table('order')->insertGetId([
             'rider_id' => $riderId,
             'store_accepted_at' => now(),
+            'booking_status_id' => 1,
+            'order_status_id' => 3,
             'submitted_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    private function createDeliveryForOrder(int $orderId, ?int $riderId = null, string $state = 'offered'): string
+    {
+        $reference = (string) \Illuminate\Support\Str::uuid();
+
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => $reference,
+            'rider_id' => $riderId,
+            'legacy_order_id' => $orderId,
+            'current_state' => $state,
+            'merchant_name' => 'Test Merchant',
+            'pickup_address' => 'Pickup address',
+            'pickup_latitude' => 14.5,
+            'pickup_longitude' => 120.9,
+            'dropoff_address' => 'Customer address',
+            'dropoff_latitude' => 14.6,
+            'dropoff_longitude' => 120.99,
+            'earnings_centavos' => 1000,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $reference;
     }
 }
