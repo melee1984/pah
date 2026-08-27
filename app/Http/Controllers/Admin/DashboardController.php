@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Agent;
+use App\AgentCommission;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use User;
@@ -61,7 +63,14 @@ class DashboardController extends Controller
      */
     public function index() 
     {
-    	return view('dashboard.pages.main');
+        $agentMetrics = [
+            'total' => Agent::query()->count(),
+            'active' => Agent::query()->where('active', true)->count(),
+            'setup_pending' => Agent::query()->where('must_change_password', true)->count(),
+            'commission' => (float) AgentCommission::query()->earned()->sum('commission_amount'),
+        ];
+
+        return view('dashboard.pages.main', compact('agentMetrics'));
     }
 
     public function reportOrder() {

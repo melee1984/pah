@@ -94,11 +94,19 @@ Route::middleware('guest:agent')->group(function () {
 });
 
 Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function () {
-    Route::get('/dashboard', \App\Http\Controllers\Agent\DashboardController::class)->name('dashboard');
-    Route::get('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'index'])->name('restaurants.index');
-    Route::get('/restaurants/enroll', [\App\Http\Controllers\Agent\RestaurantController::class, 'create'])->name('restaurants.create');
-    Route::post('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'store'])->name('restaurants.store');
-    Route::get('/reports', \App\Http\Controllers\Agent\ReportController::class)->name('reports.index');
+    Route::get('/password/change', [\App\Http\Controllers\Agent\PasswordController::class, 'edit'])->name('password.edit');
+    Route::post('/password/change', [\App\Http\Controllers\Agent\PasswordController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('password.update');
+
+    Route::middleware('agent.password.changed')->group(function () {
+        Route::get('/dashboard', \App\Http\Controllers\Agent\DashboardController::class)->name('dashboard');
+        Route::get('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'index'])->name('restaurants.index');
+        Route::get('/restaurants/enroll', [\App\Http\Controllers\Agent\RestaurantController::class, 'create'])->name('restaurants.create');
+        Route::post('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'store'])->name('restaurants.store');
+        Route::get('/reports', \App\Http\Controllers\Agent\ReportController::class)->name('reports.index');
+    });
+
     Route::post('/logout', [\App\Http\Controllers\Agent\AuthController::class, 'destroy'])->name('logout');
 });
 
@@ -152,6 +160,10 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/riders', [DashboardController::class, 'index'])->name('dashboard.rider');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'index'])->name('dashboard.agents.index');
+    Route::post('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.agents.store');
 
     Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
     Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');

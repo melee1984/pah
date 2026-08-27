@@ -21,6 +21,7 @@ import Member from './components/dashboard/pages/users/MemberComponent.vue';
 import Merchant from './components/dashboard/pages/users/MerchantComponents.vue';
 import BookingListing from './components/dashboard/pages/report/BookingComponent.vue';
 import bookingAdd from './components/dashboard/pages/booking/AddComponent.vue';
+import AdminPagination from './components/dashboard/AdminPagination.vue';
 
 
 // Vue.use(VueGeolocation);
@@ -48,6 +49,7 @@ Vue.component('member-view', Member);
 Vue.component('merchant-view', Merchant);
 Vue.component('booking-listing-view', BookingListing);
 Vue.component('booking-add-form', bookingAdd);
+Vue.component('admin-pagination', AdminPagination);
 
 
 /**
@@ -61,6 +63,5 @@ Vue.component('booking-add-form', bookingAdd);
 const app = new Vue({
     el: '#app',
 });
-
 
 

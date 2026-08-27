@@ -42,6 +42,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
+            'agent.password.changed' => \App\Http\Middleware\EnsureAgentPasswordChanged::class,
             'rider.application' => \App\Http\Middleware\AuthenticateRiderApplication::class,
             'rider.approved' => \App\Http\Middleware\EnsureApprovedRider::class,
         ]);
