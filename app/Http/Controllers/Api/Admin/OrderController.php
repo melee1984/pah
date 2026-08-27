@@ -200,6 +200,11 @@ class OrderController extends Controller
 
             if ($request->input('status_id')!=null) {
                 $order->status_id = $request->input('status_id');    
+                $order->order_status_id = $request->input('status_id');
+
+                if ((int) $request->input('status_id') === LibraryStatus::STATUS_DELIVERED) {
+                    $order->delivered_at = $order->delivered_at ?: now();
+                }
             }
             else {
                 $order->status_id = "";

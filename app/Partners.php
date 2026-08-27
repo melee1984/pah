@@ -24,7 +24,8 @@ class Partners extends Model
                                 'account_type_id',
                                 'percentage',
                                 'addup',
-                                'is_pre_order'
+                                'is_pre_order',
+                                'agent_id'
                             );
     
 	public $timestamps = true;
@@ -62,6 +63,21 @@ class Partners extends Model
     public function topPicks()
     {
         return $this->hasMany(PartnerTopPick::class, 'partner_id');
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(\App\Model\Orders\Orders::class, 'partner_id');
+    }
+
+    public function agentCommissions()
+    {
+        return $this->hasMany(AgentCommission::class, 'restaurant_id');
     }
 
     /**
