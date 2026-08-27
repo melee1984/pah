@@ -1,15 +1,18 @@
-/**
- * Load JavaScript dependencies for this project, including Vue.
- * This is a great starting point for building robust, powerful applications.
- */
 import 'bootstrap';
+import axios from 'axios'
 import Vue from 'vue';
-import * as VueGoogleMaps from 'vue2-google-maps';
-// import VueGeolocation from 'vue-browser-geolocation';
 import VueSimpleAlert from 'vue-simple-alert';
+import Swal from 'sweetalert2'
+
+import 'sweetalert2/themes/bootstrap-5.css'
+import '../scss/_pahatud.scss';
+
 
 // Global Event Bus
 window.Event = new Vue();
+window.axios = axios;
+
+// import VueGeolocation from 'vue-browser-geolocation';
 
 // Optional global base URL
 window.base_url = import.meta.env.VITE_APP_URL || ''; // Vite environment variable
@@ -20,16 +23,25 @@ Vue.config.productionTip = false;
 /**
  * Plugins
  */
-Vue.use(VueGeolocation);
-Vue.use(VueSimpleAlert);
+// Vue.use(VueGeolocation);
+
 // Vue.use(VueGoogleMaps, {
 //   load: {
-//     key: 'AIzaSyDbY3uYaRgP0cvJmW-wnalfqyUg2oK0ybk',
-//     libraries: 'places',
+//     key: 'AIzaSyDbY3uYaRgP0cvJmW-wnalfqyUg2oK0ybk', // 
+//     // key: 'AIzaSyCBU3bFyvWzW3R0g0kqQsZxTaay7ImkO14', //  - DEMO TESTINHG HERE 
+//     libraries: 'places', // This is required if you use the Autocomplete plugin
+//     // OR: libraries: 'places,drawing'
+//     // OR: libraries: 'places,drawing,visualization'
+//     // (as you require)
+
+//     //// If you want to set the version, you can do so:
+//      // v: '3.28',
+
 //   },
 //   autobindAllEvents: true,
-//   installComponents: true,
-// });
+// 	installComponents: true
+// })
+
 
 /**
  * Import Components
@@ -43,7 +55,7 @@ import restaurantSearch from '@/components/restaurant/SearchViewComponent.vue';
 import flowerView from '@/components/flowerstore/FlowerstoreComponent.vue';
 
 // Checkout
-import summaryBasket from '@/components/basket/SummarybasketComponent.vue';
+import summaryBasket from '@/components/basket/SummaryBasketComponent.vue';
 import summaryCheckout from '@/components/checkout/SummaryComponent.vue';
 import cartCheckout from '@/components/checkout/CheckoutComponent.vue';
 
@@ -62,6 +74,7 @@ import bookingForm from '@/components/booking/BookingComponent.vue';
 // Map
 import userCurrentLocation from '@/components/map/UserCurrentLocationComponent.vue';
 import userCurrentLocationDisplay from '@/components/map/UserCurrentLocationDisplayComponent.vue';
+import simpleGeoLocation from '@/components/map/SimpleGeoLocationComponent.vue';
 
 // Cart
 import cartBasket from '@/components/cart/BasketComponent.vue';
@@ -70,8 +83,11 @@ import cartBasket from '@/components/cart/BasketComponent.vue';
  * Register Global Components
  */
 // Pagination
-import LaravelPagination from 'laravel-vue-pagination';
-Vue.component('pagination-display', LaravelPagination);
+
+import dempMap from '@/components/map/demomap.vue';
+import demoMap2 from '@/components/map/demo.vue';
+
+// Vue.component('pagination-display', require('laravel-vue-pagination'));
 
 // Flowerstore
 Vue.component('front-flower-list', flowerView);
@@ -98,12 +114,24 @@ Vue.component('booking-form', bookingForm);
 Vue.component('user-current-location', userCurrentLocation);
 Vue.component('user-current-location-display', userCurrentLocationDisplay);
 Vue.component('cart-basket-summary', cartBasket);
+Vue.component('map-demo', dempMap);
+Vue.component('sample-map', demoMap2);
+Vue.component('get-current-location', simpleGeoLocation);
+
 
 /**
  * Mount Vue App
  */
-import App from '@/components/App.vue';
+// window.base_url = process.env.BASE_URL
 
-new Vue({
-  render: h => h(App),
-}).$mount('#app-layout');
+Vue.config.ignoredElements = [
+  'gmp-map',
+  'gmp-advanced-marker',
+  'gmp-zoomchange',
+  'gmp-internal-pinchange',
+];
+
+Vue.use(VueSimpleAlert);
+window.vm = new Vue({
+     el: '#app',
+});

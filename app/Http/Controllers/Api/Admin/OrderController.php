@@ -8,12 +8,13 @@ use Illuminate\Http\Request;
 use App\Model\Orders\Orders;
 use App\Model\Cart;
 use App\Model\Riders;
-use App\LibraryStatus;
+use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Partners;
 use Auth;
 use Validator;
 use App\User;
+use App\LibraryStatus;
 
 use App\PushNotification;
 class OrderController extends Controller
@@ -22,11 +23,9 @@ class OrderController extends Controller
     public function getList() 
     {	 
          $orders = Orders::with('cart')
-            ->whereNotNull('submitted_at') 
-            ->whereNull('delivered_at')
-            // ->whereRaw('status_id != 8')
-            ->with('partner')
-            ->orderBy('created_at', 'desc')->get();
+                ->whereNotNull('submitted_at') 
+                ->with('partner')
+                ->orderBy('created_at', 'desc')->get();
 
         foreach($orders as $order) {
 
@@ -40,7 +39,12 @@ class OrderController extends Controller
             $order->cart->cartItemVariance();
         }
 
-        $data['orders'] = $orders;
+        $data['orders'] = $orders->whereNotIn('status_id', [
+            Orders::STATUS_DELIVERED,
+            Orders::STATUS_CANCELLED,
+        ])->values();
+        $data['completedOrders'] = $orders->where('status_id', Orders::STATUS_DELIVERED)->values();
+        $data['cancelledOrders'] = $orders->where('status_id', Orders::STATUS_CANCELLED)->values();
         $data['riders'] = Riders::active()->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
@@ -196,6 +200,11 @@ class OrderController extends Controller
 
             if ($request->input('status_id')!=null) {
                 $order->status_id = $request->input('status_id');    
+                $order->order_status_id = $request->input('status_id');
+
+                if ((int) $request->input('status_id') === LibraryStatus::STATUS_DELIVERED) {
+                    $order->delivered_at = $order->delivered_at ?: now();
+                }
             }
             else {
                 $order->status_id = "";

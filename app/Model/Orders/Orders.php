@@ -6,15 +6,21 @@ use Illuminate\Database\Eloquent\Model;
 
 use DB;
 use App\Model\Orders\OrderProcess;
+use App\Model\Bookings\BookingStatus;
+use App\Model\Rider\RiderDeclineOrder;
+use App\LibraryStatus;
 
 class Orders extends Model
 {
     protected $table = 'order';
-	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id','status_id');
+	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id', 'rider_id', 'store_accepted_at', 'accepted_by_rider_at', 'accepted_at', 'delivered_at', 'updated_at', 'created_at', 'order_status_id', 'booking_status_id');
 	public $timestamps = true;
 
     protected $dates = [
         'submitted_at',
+        'store_accepted_at',
+        'accepted_by_rider_at',
+        'accepted_at',
         'delivered_at',
         'updated_at',
         'created_at'
@@ -44,145 +50,41 @@ class Orders extends Model
      */
     public function status() 
     {
-         return $this->hasOne('App\LibraryStatus','id', 'status_id');
+         return $this->hasOne(LibraryStatus::class, 'id', 'order_status_id');
     }
 
+    public function bookingstatus() 
+    {
+         return $this->hasOne(BookingStatus::class, 'id', 'booking_status_id');
+    }
+
+    // get should be the latest status of the order
     public function getActionLogs() {
+         $query = DB::table('library_status as status')
+            ->select('status.id', 'status.title', 'status.sorting', 'status.description')
+            ->selectSub(function ($query) {
+                $query->from('order_process as process')
+                    ->selectRaw('COUNT(process.id)')
+                    ->where('process.order_id', $this->id)
+                    ->whereColumn('process.status_id', 'status.id');
+            }, 'st')
+            ->selectSub(function ($query) {
+                $query->from('order_process as process')
+                    ->select('process.created_at')
+                    ->where('process.order_id', $this->id)
+                    ->whereColumn('process.status_id', 'status.id')
+                    ->orderBy('process.created_at', 'asc')
+                    ->limit(1);
+            }, 'datecreated')
+            ->orderBy('status.sorting', 'asc');
+        // if the order is cancelled, we will show the cancelled status as well
+         if ((int) $this->order_status_id === LibraryStatus::STATUS_CANCELLED) {
+            $query->whereIn('status.id', [LibraryStatus::STATUS_CANCELLED]);
+         } else {
+            $query->where('status.id', '!=', LibraryStatus::STATUS_CANCELLED);
+         }
 
-            if ($this->status->id == 8) {
-                 $sql = "select  pah_db.library_status.id, pah_db.library_status.title, pah_db.library_status.sorting, pah_db.library_status.description, 
-
-                        (select 
-                          count(pah_db.order_process.id)
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ? 
-                            and pah_db.order_process.status_id = pah_db.library_status.id limit 0,1) 
-                            as st,
-                        (select 
-                          pah_db.order_process.created_at
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ?
-                            and pah_db.order_process.status_id = pah_db.library_status.id
-                            limit 0,1) as datecreated
-                        from 
-                            pah_db.library_status 
-                        where 
-                             pah_db.library_status.id in (1, 8)
-                        order by 
-                            pah_db.library_status.sorting asc ";
-                $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-            }
-            else {
-                  $sql = "select  pah_db.library_status.id, pah_db.library_status.title, pah_db.library_status.sorting, pah_db.library_status.description, 
-                        (select 
-                          count(pah_db.order_process.id)
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ? 
-                            and pah_db.order_process.status_id = pah_db.library_status.id limit 0,1) 
-                            as st,
-                        (select 
-                          pah_db.order_process.created_at
-                        from 
-                            pah_db.order,
-                            pah_db.order_process
-                        where 
-                            pah_db.order.id = pah_db.order_process.order_id
-                            and pah_db.order.cart_id = ?
-                            and pah_db.order_process.status_id = pah_db.library_status.id
-                            limit 0,1) as datecreated
-                        from 
-                            pah_db.library_status 
-                        where 
-                             pah_db.library_status.id != 8
-                        order by 
-                            pah_db.library_status.sorting asc ";
-
-                 $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-
-            }
-                 
-            // if ($this->status->id == 8) {
-
-            //      $sql = "select  p1.library_status.id, p1.library_status.title, p1.library_status.sorting, p1.library_status.description, 
-
-            //             (select 
-            //               count(p1.order_process.id)
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ? 
-            //                 and p1.order_process.status_id = p1.library_status.id limit 0,1) 
-            //                 as st,
-
-            //             (select 
-            //               p1.order_process.created_at
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ?
-            //                 and p1.order_process.status_id = p1.library_status.id
-            //                 limit 0,1) as datecreated
-
-            //             from 
-            //                 p1.library_status 
-            //             where 
-            //                  p1.library_status.id in (1, 8)
-            //             order by 
-            //                 p1.library_status.sorting asc ";
-
-            //     $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-
-            // }
-            // else {
-
-            //      $sql = "select  p1.library_status.id, p1.library_status.title, p1.library_status.sorting, p1.library_status.description, 
-
-            //             (select 
-            //               count(p1.order_process.id)
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ? 
-            //                 and p1.order_process.status_id = p1.library_status.id limit 0,1) 
-            //                 as st,
-            //             (select 
-            //               p1.order_process.created_at
-            //             from 
-            //                 p1.order,
-            //                 p1.order_process
-            //             where 
-            //                 p1.order.id = p1.order_process.order_id
-            //                 and p1.order.cart_id = ?
-            //                 and p1.order_process.status_id = p1.library_status.id
-            //                 limit 0,1) as datecreated
-            //             from 
-            //                 p1.library_status 
-            //             where 
-            //                  p1.library_status.id != 8
-            //             order by 
-            //                 p1.library_status.sorting asc ";
-
-            //      $rs = DB::select($sql, array($this->cart_id, $this->cart_id));
-
-            // }
+         $rs = $query->get();
 
          foreach($rs as $list) {
             if ($list->datecreated !="") {
@@ -191,9 +93,104 @@ class Orders extends Model
          }
 
          return $rs;
-                
-
     }
+
+    public function getRiderAction()
+    {
+        $action = null;
+
+        if ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_PLACED) {
+            $action = [
+                'label' => 'Accept Booking',
+                'action' => 'accept',
+            ];
+        } elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ACCEPTED || (int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_PROCESSING) {
+            $action = [
+                'label' => 'Ready For Pickup',
+                'action' => 'ready-for-pickup',
+            ];
+        }
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP) {
+            $action = [
+                'label' => 'Picked Order',
+                'action' => 'picked-order',
+            ];
+        }
+       elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
+            $action = [
+                'label' => 'Confirm Arrival at Customer Location',
+                'action' => 'confirm-arrival',
+            ];
+        }
+         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
+            $action = [
+                'label' => 'Delivered Order',
+                'action' => 'delivered-order',
+            ];
+        }
+
+
+        return $action;
+    }
+
+    // order action for merchant 
+    public function getAction()
+    {
+        return match ((int) $this->order_status_id) {
+            LibraryStatus::STATUS_ORDER_PLACED => [
+                'label' => 'Pending',
+                'button' => [
+                    'label' => 'Accept Order',
+                    'action' => 'accept',
+                ],
+                'cancel' => [
+                    'label' => 'Cancel Order',
+                    'action' => 'cancel',
+                ],
+                'send_to_rider' => false,
+            ],
+            LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING => [
+                'label' => 'Order Processing',
+                'button' => [
+                    'label' => 'Ready For Pickup',
+                    'action' => 'ready-for-pickup',
+                ],
+                'cancel' => [
+                    'label' => 'Cancel Order',
+                    'action' => 'cancel',
+                ],
+                'send_to_rider' => true,
+            ],
+            LibraryStatus::STATUS_READY_FOR_PICKUP => [
+                'label' => 'Waiting for Rider to Pickup',
+                'button' => null,
+                'cancel' => [
+                    'label' => 'Cancel Order',
+                    'action' => 'cancel',
+                ],
+                'send_to_rider' => false,
+            ],
+            LibraryStatus::STATUS_DELIVERED => [
+                'label' => 'Order Delivered',
+                'button' => null,
+                'cancel' => null,
+                'send_to_rider' => false,
+            ],
+            LibraryStatus::STATUS_CANCELLED => [
+                'label' => 'Cancelled Order',
+                'button' => null,
+                'cancel' => null,
+                'send_to_rider' => false,
+            ],
+            default => [
+                'label' => $this->status?->title ?? $this->status?->description,
+                'button' => null,
+                'cancel' => null,
+                'send_to_rider' => false,
+            ],
+        };
+    }
+
     /**
      * [status description]
      * @return [type] [description]
@@ -203,9 +200,19 @@ class Orders extends Model
          return $this->hasOne('App\Model\Riders','id', 'rider_id');
     }
 
-     public function partner() {
+    public function riderDeclines()
+    {
+         return $this->hasMany(RiderDeclineOrder::class, 'order_id');
+    }
+
+    public function partner() {
          return $this->hasOne('App\Partners', 'id', 'partner_id');   
     }   
+
+    public function agentCommission()
+    {
+         return $this->hasOne('App\AgentCommission', 'order_id');
+    }
 
      public function user() 
     {

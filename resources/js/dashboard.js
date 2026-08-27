@@ -4,13 +4,15 @@
  * building robust, powerful web applications using Vue and Laravel.
  */
 
-require('./bootstrap');
+import 'bootstrap';
+import axios from 'axios';
 
-window.Vue = require('vue');
 window.Event = new Vue();
+import Vue from 'vue';
+window.axios = axios;
 
 // import * as VueGoogleMaps from 'vue2-google-maps';
-import VueGeolocation from 'vue-browser-geolocation';
+// import VueGeolocation from 'vue-browser-geolocation';
 // Reporting
 import OrderListing from './components/dashboard/pages/orders/OrdersComponents.vue';
 import OrderSummary from './components/dashboard/pages/orders/SummaryComponent.vue';
@@ -21,7 +23,7 @@ import BookingListing from './components/dashboard/pages/report/BookingComponent
 import bookingAdd from './components/dashboard/pages/booking/AddComponent.vue';
 
 
-Vue.use(VueGeolocation);
+// Vue.use(VueGeolocation);
 
 // Vue.use(VueGoogleMaps, {
 //   load: {
@@ -37,7 +39,7 @@ Vue.use(VueGeolocation);
 // 	installComponents: true
 // })
 
-Vue.component('pagination-display', require('laravel-vue-pagination'));
+// Vue.component('pagination-display', require('laravel-vue-pagination'));
 // Order 
 Vue.component('order-listing-view', OrderListing);
 Vue.component('order-summary-view', OrderSummary);
@@ -54,7 +56,7 @@ Vue.component('booking-add-form', bookingAdd);
  * or customize the JavaScript scaffolding to fit your unique needs.
 
  */
-window.base_url = process.env.BASE_URL
+// window.base_url = process.env.BASE_URL
 
 const app = new Vue({
     el: '#app',

@@ -6,7 +6,7 @@
           <div class="col-md-6">
           <h3 class="card-title">
             <i class="fas fa-chart-pie mr-1"></i>
-            Orders
+            Order Management
           </h3>
         </div> 
          <div class="col-md-6 text-right">
@@ -15,6 +15,38 @@
         </div> 
       </div><!-- /.card-header -->
       <div class="card-body">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'orders' }"
+              @click="activeList = 'orders'"
+            >
+              Orders <span class="badge badge-primary ml-1">{{ orders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'completed' }"
+              @click="activeList = 'completed'"
+            >
+              Completed <span class="badge badge-success ml-1">{{ completedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'cancelled' }"
+              @click="activeList = 'cancelled'"
+            >
+              Cancelled <span class="badge badge-danger ml-1">{{ cancelledOrders.length }}</span>
+            </button>
+          </li>
+        </ul>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
@@ -33,7 +65,7 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
+                  <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'orders' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
@@ -42,7 +74,11 @@
                         Estimated Date/Time: <br><b> {{ order.cart.delivery_date }} - {{ order.cart.delivery_time }}</b> <br>
                         Merchant: <br>
                         <strong>{{ order.partner.restaurant_name }} </strong> <br>
-                        {{ order.cart.partnerlocation.address_1 }}, {{ order.cart.partnerlocation.address_2 }}, <br>{{ order.cart.partnerlocation.mobile }} 
+                        <template v-if="order.cart && order.cart.partnerlocation">
+                          {{ order.cart.partnerlocation.address_1 }}, {{ order.cart.partnerlocation.address_2 }},
+                          <br>{{ order.cart.partnerlocation.mobile }}
+                        </template>
+                        <span v-else class="text-muted">Merchant location unavailable</span>
                         
                        
                         <br><br>
@@ -57,16 +93,24 @@
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger">{{ order.status.title }}</a>
                        </span>
                     </td>
-                    <td width="10%" v-if="order.status">
-                        <span v-if="order.status.id!=4">
-                          <select class="form-control" v-model="order.rider_id" style="font-size:12px;" id="optRider" @change="updateRider(order.id)">
+                    <td width="10%">
+                      <template v-if="order.status">
+                        <span v-if="activeList === 'orders' && order.status.id!=5">
+                          <select class="form-control" v-model="order.rider_id" style="font-size:12px;" @change="updateRider(order.id, order.rider_id)">
                             <option value="0">Select Rider</option>
                             <option v-for="rider in riders" :value="rider.id">{{ rider.name }}</option>
                           </select>
                         </span>
-                        <span v-if="order.status.id==4" >
+                        <span v-else>
                             <p v-if="order.rider">{{ order.rider.name }}</p>
+                            <span v-else class="text-muted">Not assigned</span>
                         </span>
+                      </template>
+                    </td>
+                  </tr>
+                  <tr v-if="displayedOrders.length === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
                 </tbody>
@@ -76,7 +120,7 @@
       </div><!-- /.card-body -->
     </div>
 
-     <div v-if="selectedOrder" class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+     <div class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -107,27 +151,32 @@
                                         <div class="invoice-from">
                                             <ul class="list-unstyled text-right"v-if="selectedOrder.partner">
                                                 <li>{{ selectedOrder.partner.restaurant_name }}</li>
-                                                <li v-if="selectedOrder.cart.partner_location_address_id">
+                                                <li v-if="selectedOrder.cart && selectedOrder.cart.partnerlocation">
                                                   <p >{{ selectedOrder.cart.partnerlocation.address_1 }} <br>
                                                   {{ selectedOrder.cart.partnerlocation.address_2 }} <br>
                                                   {{ selectedOrder.cart.partnerlocation.mobile }} <br>
                                                   {{ selectedOrder.cart.partnerlocation.telephone }}</p>
                                                 </li>
+                                                <li v-else class="text-muted">Merchant location unavailable</li>
                                             </ul>
                                         </div>
                                     </div>
                                     <!-- col-lg-6 end here -->
                                     <div class="col-lg-12">
-                                        Estimated Date/Time: <br><b> {{ selectedOrder.cart.delivery_date }} - {{ selectedOrder.cart.delivery_time }}</b> <br><br>
+                                        Estimated Date/Time: <br><b> {{ selectedOrder?.cart?.delivery_date }} - {{ selectedOrder?.cart?.delivery_time }}</b> <br><br>
 
                                         Merchant: <br>
-                                        <strong>{{ selectedOrder.partner.restaurant_name }} </strong> <br>
-                                        {{ selectedOrder.cart.partnerlocation.address_1 }}, {{ selectedOrder.cart.partnerlocation.address_2 }}, <br>{{ selectedOrder.cart.partnerlocation.mobile }} 
+                                        <strong>{{ selectedOrder?.partner?.restaurant_name }} </strong> <br>
+                                        <template v-if="selectedOrder?.cart?.partnerlocation">
+                                          {{ selectedOrder.cart.partnerlocation.address_1 }}, {{ selectedOrder.cart.partnerlocation.address_2 }},
+                                          <br>{{ selectedOrder.cart.partnerlocation.mobile }}
+                                        </template>
+                                        <span v-else class="text-muted">Merchant location unavailable</span>
                                         <br>
                                         <br>
                                         <p><b>Details</b></p>
                                         <table class="table">
-                                           <tr v-for="item in selectedOrder.cart.details">
+                                           <tr v-for="item in selectedOrder?.cart?.details">
                                             <td>
                                               {{ item.item.title }}
                                                <span v-for="it in item.variance_content">
@@ -147,20 +196,20 @@
 
                                           <p><b>Customer:</b> <br>
 
-                                          {{ selectedOrder.cart.fullname }} <br>
-                                          <span v-if="selectedOrder.cart.address">Address: {{ selectedOrder.cart.address.address_1 }}</span> <br>
-                                          <span v-if="selectedOrder.cart.mobile">Mobile: {{ selectedOrder.cart.mobile }}</span>
+                                          {{ selectedOrder?.cart?.fullname }} <br>
+                                          <span v-if="selectedOrder?.cart?.address">Address: {{ selectedOrder.cart.address.address_1 }}</span> <br>
+                                          <span v-if="selectedOrder?.cart?.mobile">Mobile: {{ selectedOrder?.cart?.mobile }}</span>
                                         </p>
 
                                         <p> 
                                             <b>Summary:</b> <br>
-                                            Sub Total: {{ selectedOrder.summary.sub_total }} <br>
-                                            Delivery Fee: {{ selectedOrder.summary.delivery_fee }} <br>
-                                            Discount: {{ selectedOrder.summary.discount }} <br>
-                                          Total: {{ selectedOrder.summary.total }} <br>
+                                            Sub Total: {{ selectedOrder?.summary?.sub_total }} <br>
+                                            Delivery Fee: {{ selectedOrder?.summary?.delivery_fee }} <br>
+                                            Discount: {{ selectedOrder?.summary?.discount }} <br>
+                                          Total: {{ selectedOrder?.summary?.total }} <br>
                                         </p>
 
-                                        <div class="invoice-footer mt25">
+                                        <div class="invoice-footer mt25" v-if="selectedOrderIsActive">
                                               <label for="">Delivery Status</label>
                                                <select class="form-control"  id="optStatus" v-if="statuses" v-model="selectedOrder.status_id" @change="updateStatus($event)">
                                                     <option value="0">Select Status</option>
@@ -179,7 +228,6 @@
                     <!-- col-lg-12 end here -->
                 </div>
                 </div>
-              </p>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn" data-dismiss="modal">Close</button>
@@ -196,12 +244,44 @@
                 field: {
                 },
                 errors: {},
-                orders: {},
+                orders: [],
+                completedOrders: [],
+                cancelledOrders: [],
+                activeList: 'orders',
                 timerInterval: 10,
-                riders: {},
+                riders: [],
                 selectedOrder: {},
-                statuses: {},
+                statuses: [],
             }
+        },
+        computed: {
+          displayedOrders: function() {
+            if (this.activeList === 'completed') {
+              return this.completedOrders;
+            }
+
+            if (this.activeList === 'cancelled') {
+              return this.cancelledOrders;
+            }
+
+            return this.orders;
+          },
+          activeListLabel: function() {
+            if (this.activeList === 'completed') {
+              return 'Completed';
+            }
+
+            if (this.activeList === 'cancelled') {
+              return 'Cancelled';
+            }
+
+            return 'Active';
+          },
+          selectedOrderIsActive: function() {
+            return this.selectedOrder
+              && Number(this.selectedOrder.status_id) !== 7
+              && Number(this.selectedOrder.status_id) !== 8;
+          }
         },
         mounted() {
             console.log('Mounted Order List View Component')
@@ -226,6 +306,8 @@
               var self = this;
               axios.get('/api/dashboard/order/list?api_token='+api_token).then(function (response) {
                 self.orders = response.data.orders;
+                self.completedOrders = response.data.completedOrders;
+                self.cancelledOrders = response.data.cancelledOrders;
                 self.riders = response.data.riders;
                 self.statuses = response.data.statuses;
                 
@@ -233,10 +315,10 @@
                   console.log(error);
               });
           },
-          updateRider:function(orderid) {
+          updateRider:function(orderid, riderId) {
 
              let formData = new FormData();
-                formData.append('rider_id', $('#optRider').val())
+                formData.append('rider_id', riderId)
 
                 axios.post('/api/data/dashboard/update/'+orderid+'/rider/submit?api_token='+api_token, formData).then((response) => {
                   if (response.data.status) {
@@ -271,11 +353,13 @@
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
+               // Show Bootstrap modal
+                const modalEl = document.getElementById('orderDetails');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+
           }
-          
         }
     }
 
 </script>
-

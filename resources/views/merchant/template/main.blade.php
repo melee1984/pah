@@ -19,8 +19,8 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
   <!-- Theme style -->
-  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-  
+    @vite(entrypoints: 'resources/js/merchant.js')
+
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
 <div class="wrapper" id="app">
@@ -119,7 +119,8 @@
 <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 <!-- <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
  -->
-<script src="{{ asset('js/merchant.js') }}" defer></script>
+
+@vite('resources/js/merchant.js')
 
 <script type="text/javascript">
  

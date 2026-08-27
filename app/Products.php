@@ -58,7 +58,6 @@ class Products extends Model
 
         if ($product->img !="") {
             if (!$size) {
-                // $product->img_large = asset('uploads/'.$product->id."/".$product->img) ;    
                 $product->imgname = URL::to('imager?name='.$product->id."/".$product->img);
             }
             else {
@@ -71,6 +70,16 @@ class Products extends Model
         return $product;
         
     }
+
+    public function getProductImage()
+    {
+        $image = !empty($this->img)
+            ? $this->id . '/' . $this->img
+            : 'no-img.png';
+
+        return URL::to('imager?name=' . $image);
+    }
+
     public static function amountConvertion($product) {
 
         $product->price = str_replace(",", "", $product->price);

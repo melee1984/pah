@@ -227,15 +227,21 @@
                 riders: {},
                 selectedOrder: {},
                 statuses: {},
+                modalInstance: null,
             }
         },
         mounted() {
             console.log('Mounted Order List View Component')
-              this.fetchData();
-              this.selectedOrder = this.orders[0];  
-             this.startTimer();
+            this.fetchData();
+            this.selectedOrder = this.orders[0];  
+            this.startTimer();
+            
+            const modalEl = document.getElementById("orderDetails");
+            this.modalInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
         },
-        
         methods: {
           startTimer: function () {
            setInterval(() => {
@@ -294,8 +300,20 @@
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          }
+              this.openModal();
+          },
+          openModal() {
+            if (!this.modalInstance) {
+              const modalEl = document.getElementById("orderDetails");
+              this.modalInstance = new bootstrap.Modal(modalEl);
+            }
+            this.modalInstance.show();
+          },
+          closeModal() {
+            if (this.modalInstance) {
+              this.modalInstance.hide();
+            }
+          },
           
         }
     }

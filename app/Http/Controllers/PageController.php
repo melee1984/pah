@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use App\Sector;
+use App\AccountType;
 use Cache;
 use App\Partners;
 
@@ -38,7 +39,11 @@ class PageController extends Controller
                 return $partners;
         }); 
 
-        return view('pages.home', compact('sectors', 'partners'));
+        $accountTypes = Cache::remember('home.account-types', 60, function () {
+            return AccountType::orderBy('title')->get();
+        });
+
+        return view('pages.home', compact('sectors', 'partners', 'accountTypes'));
 
     }
     public function aboutus() {
@@ -67,7 +72,7 @@ class PageController extends Controller
     }
     public function bepartner() {
 
-        return view('pages.bepartner');
+        return redirect()->to(route('home').'#become-a-partner');
     }
 
      /**
@@ -98,5 +103,19 @@ class PageController extends Controller
 
     }
 
+    /** 
+     * Demo Pages
+     * 
+     * 
+     */
+    public function demoMap() 
+    {
+        return view('pages.demo.map');  
+    }
+
+    public function restriction() 
+    {
+        return view('pages.location_restriction');  
+    }   
 
 }

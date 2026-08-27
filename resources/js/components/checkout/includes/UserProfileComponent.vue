@@ -2,21 +2,21 @@
 <div class="card mb-3 checkout-box">
   <div class="card-body">
     <div class="row">
-      <div class="col-md-10 col-10">
+      <div class="col-md-12 col-12">
         <h2>Personal Information </h2>
+        <p class="text-muted mb-3"><small>Details that identify you, such as your name, contact info, and other personal data.</small></p>
+        <hr>
         <p v-if="profileAction == 'view'">
           <strong>{{ customer.firstname }} {{ customer.lastname }}</strong><br>
           {{ customer.email }}<br>
           <abbr title="mobile">M:</abbr> {{ customer.mobile }}
-
-           <div class="text-danger" style="display: inline-flex;" v-if="!mobileNotEmpty"> <span class="material-icons">priority_high</span> The registered mobile no is missing. </div>
-
+          <div class="text-danger" style="display: inline-flex;" v-if="!mobileNotEmpty"> <span class="material-icons">priority_high</span> The registered mobile no is missing. </div>
+          <div class="">
+            <a href="javascript:void(0)" v-on:click="actionProfile('edit')" class="text-danger action-link" v-if="profileAction=='view'">Edit</a>
+          </div>
         </p>
       </div>
-      <div class="col-md-2 col-2 text-right">
-        <a href="javascript:void(0)" v-on:click="actionProfile('edit')" class="text-danger action-link" v-if="profileAction=='view'">Edit</a>
-        <a href="javascript:void(0)" v-on:click="actionProfile('view')" class="text-danger action-link" v-if="profileAction=='edit'">Cancel</a>
-      </div>
+     
     </div>
     <div class="row" v-if="profileAction =='edit'">
 
@@ -43,6 +43,8 @@
         </div>
 
         <button type="button" class="btn btn-pahatud btn-block btn-sm" v-on:click="submit" v-bind:class="{disabled: !validForm}">Update</button>
+                    <a href="javascript:void(0)" v-on:click="actionProfile('view')" class="text-danger action-link" v-if="profileAction=='edit'">Cancel</a>
+
       </div>
     </div>
   </div>

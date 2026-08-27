@@ -33,7 +33,9 @@
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/custom.css') }}">
   <!-- Google Font: Source Sans Pro -->
   <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-  <script src="{{ asset('js/merchant.js') }}" defer></script>
+  
+  @vite('resources/js/merchant.js')
+
 </head>
 <body class="hold-transition login-page">
 <div class="login-box" id="app">

@@ -1,5 +1,14 @@
+a.categoryLink {
+    color: #dc3545 !important;
+}
 .btn-pahatud {
-    color: #fff;
+  border: 2px solid #fb524f;
+  /* padding: 14px 30px; */
+  background-color: #f03b32;
+  color: #FFF;
+}
+.btn-pahatud {
+    color: #fff !important;
     background-color: #b31206 !important;
     border-color: #ffffff;
     box-shadow: none;

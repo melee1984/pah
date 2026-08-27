@@ -15,6 +15,38 @@
         </div> 
       </div><!-- /.card-header -->
       <div class="card-body">
+        <ul class="nav nav-tabs mb-3" role="tablist">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'pending' }"
+              @click="activeList = 'pending'"
+            >
+              Pending Orders <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'accepted' }"
+              @click="activeList = 'accepted'"
+            >
+              Accepted Orders <span class="badge badge-success ml-1">{{ acceptedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'cancelled' }"
+              @click="activeList = 'cancelled'"
+            >
+              Cancelled <span class="badge badge-secondary ml-1">{{ cancelledOrders.length }}</span>
+            </button>
+          </li>
+        </ul>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
@@ -33,16 +65,19 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-if="orders.length <=0">
-                    <td colspan="9">No record found...</td>
+                  <tr v-if="displayedOrders.length === 0">
+                    <td colspan="9" class="text-center text-muted py-4">
+                      No {{ activeListLabel.toLowerCase() }} orders found.
+                    </td>
                   </tr>
-                  <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
+                  <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'accepted' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
                     </td>
                     <td width="25%">
-                        Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
+                        Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br>
+                        <span><strong>Store Location:</strong> {{ storeAddress(order) }}</span><br>
                         Delivery Date/Time: {{ order.cart.delivery_time }}
                         <br>
                         Customer: {{ order.cart.fullname }} <br>
@@ -60,12 +95,7 @@
                     </td>
                     <td width="10%">
                       <span v-if="order.status">
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-if="order.status.id==1">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-success" v-if="order.status.id==2">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-warning" v-if="order.status.id==3">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-secondary" v-if="order.status.id==4">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-secondary" v-if="order.status.id==5">{{ order.status.title }}</a>
-
+                        <span class="badge" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
                        </span>
                     </td>
                    
@@ -77,7 +107,7 @@
       </div><!-- /.card-body -->
     </div>
 
-     <div v-if="selectedOrder" class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+     <div  class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
           <div class="modal-content modal-lg">
             <div class="modal-header">
@@ -98,21 +128,19 @@
                                     <!-- Start .row -->
                                     <div class="col-lg-6">
                                         <!-- col-lg-6 start here -->
-                                        <div class="invoice-logo" v-if="selectedOrder.partner.img">
+                                        <div class="invoice-logo" v-if="selectedOrder?.partner?.img">
                                           <img width="100" :src="'/uploads/user/'+selectedOrder.partner.id+'/'+selectedOrder.partner.img" alt="Invoice logo">
                                         </div>
                                     </div>
-                                    <!-- col-lg-6 end here -->
                                     <div class="col-lg-6">
-                                        <!-- col-lg-6 start here -->
                                         <div class="invoice-from">
                                             <ul class="list-unstyled text-right">
-                                                <li>{{ selectedOrder.partner.restaurant_name }}</li>
-                                                <li v-if="selectedOrder.cart.partner_location_address_id">
-                                                  {{ selectedOrder.cart.partnerlocation.address_1 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.address_2 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.mobile }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.telephone }} <br>
+                                                <li><strong>{{ selectedOrder?.partner?.restaurant_name }}</strong></li>
+                                                <li><strong>Store Location</strong></li>
+                                                <li>{{ storeAddress(selectedOrder) }}</li>
+                                                <li v-if="storeContact(selectedOrder)">{{ storeContact(selectedOrder) }}</li>
+                                                <li v-if="storeCoordinates(selectedOrder)">
+                                                  Coordinates: {{ storeCoordinates(selectedOrder) }}
                                                 </li>
                                             </ul>
                                         </div>
@@ -123,12 +151,12 @@
                                         <div class="invoice-details mt25">
                                             <div class="well">
                                                 <ul class="list-unstyled mb0">
-                                                    <li><strong>Order #</strong> #{{ selectedOrder.cart.order_no }}</li>
-                                                    <li><strong>Processed at:</strong>{{ selectedOrder.cart.processed_at }}</li>
+                                                    <li><strong>Order #</strong> #{{ selectedOrder?.cart?.order_no }}</li>
+                                                    <li><strong>Processed at:</strong>{{ selectedOrder?.cart?.processed_at }}</li>
 
-                                                    <li><strong>Date/Time:</strong> {{ selectedOrder.cart.delivery_date }} @ {{ selectedOrder.cart.delivery_time }}</li>
+                                                    <li><strong>Date/Time:</strong> {{ selectedOrder?.cart?.delivery_date }} @ {{ selectedOrder?.cart?.delivery_time }}</li>
                                                     <li><strong>Status:</strong> 
-                                                        <span class="label label-danger">{{ selectedOrder.status.title }}</span>
+                                                        <span class="label label-danger">{{ selectedOrder?.status?.title }}</span>
                                                     </li>
                                                 </ul>
                                             </div>
@@ -136,9 +164,9 @@
                                         <div class="invoice-to mt25">
                                             <ul class="list-unstyled">
                                                  <li><strong>Invoiced To</strong></li>
-                                                <li>Fullname: {{ selectedOrder.cart.fullname }}</li>
-                                                <li>Address: {{ selectedOrder.cart.address.address_1 }}</li>
-                                                <li>Mobile: {{ selectedOrder.cart.mobile }}</li>
+                                                <li>Fullname: {{ selectedOrder?.cart?.fullname }}</li>
+                                                <li>Address: {{ selectedOrder?.cart?.address?.address_1 }}</li>
+                                                <li>Mobile: {{ selectedOrder?.cart?.mobile }}</li>
                                             </ul>
                                         </div>
                                         <div class="invoice-items">
@@ -152,7 +180,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr v-for="item in selectedOrder.cart.details">
+                                                        <tr v-for="item in selectedOrder?.cart?.details">
                                                             <td>
                                                               {{ item.item.title }}
                                                               <br>
@@ -173,19 +201,19 @@
                                                     <tfoot>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Sub Total:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.sub_total }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.sub_total }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Delivery Fee:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.delivery_fee }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.delivery_fee }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Discount:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.discount }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.discount }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Total:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.total }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.total }} PHP</th>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
@@ -222,21 +250,115 @@
                 field: {
                 },
                 errors: {},
-                orders: {},
+                orders: [],
+                activeList: 'pending',
                 timerInterval: 60,
-                riders: {},
+                riders: [],
                 selectedOrder: {},
-                statuses: {},
+                statuses: [],
+                modalInstance: null,
             }
+        },
+        computed: {
+          pendingOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 1);
+          },
+          acceptedOrders: function() {
+            return this.orders.filter(order => {
+              const statusId = Number(order.status_id);
+
+              return statusId >= 2 && statusId <= 6;
+            });
+          },
+          cancelledOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 8);
+          },
+          displayedOrders: function() {
+            if (this.activeList === 'accepted') {
+              return this.acceptedOrders;
+            }
+
+            if (this.activeList === 'cancelled') {
+              return this.cancelledOrders;
+            }
+
+            return this.pendingOrders;
+          },
+          activeListLabel: function() {
+            if (this.activeList === 'accepted') {
+              return 'Accepted';
+            }
+
+            if (this.activeList === 'cancelled') {
+              return 'Cancelled';
+            }
+
+            return 'Pending';
+          },
         },
         mounted() {
             console.log('Mounted Order List View Component')
-              this.fetchData();
-              this.selectedOrder = this.orders[0];  
-             this.startTimer();
+            this.fetchData();
+            this.selectedOrder = this.orders[0];  
+            this.startTimer();
+            this.initModal();
+
         },
         
         methods: {
+          storeLocation: function(order) {
+            return order && order.cart ? order.cart.partnerlocation : null;
+          },
+          storeAddress: function(order) {
+            const location = this.storeLocation(order);
+
+            if (location) {
+              return [location.address_1, location.address_2, location.city, location.zip_code]
+                .filter(Boolean)
+                .join(', ') || 'Not available';
+            }
+
+            const partner = order ? order.partner : null;
+
+            return partner
+              ? [partner.address, partner.city].filter(Boolean).join(', ') || 'Not available'
+              : 'Not available';
+          },
+          storeContact: function(order) {
+            const location = this.storeLocation(order);
+
+            if (!location) {
+              return '';
+            }
+
+            return [location.mobile, location.telephone].filter(Boolean).join(' / ');
+          },
+          storeCoordinates: function(order) {
+            const location = this.storeLocation(order);
+
+            if (!location || !location.latitude || !location.longtitude) {
+              return '';
+            }
+
+            return location.latitude + ', ' + location.longtitude;
+          },
+          statusBadgeClass: function(statusId) {
+            statusId = Number(statusId);
+
+            if (statusId === 1) {
+              return 'badge-danger';
+            }
+
+            if (statusId === 2) {
+              return 'badge-success';
+            }
+
+            if (statusId === 8) {
+              return 'badge-secondary';
+            }
+
+            return 'badge-warning';
+          },
           startTimer: function () {
            setInterval(() => {
                 this.timerInterval--;
@@ -294,12 +416,29 @@
                 }); 
           },
           displayOrderDetails: function(order) {
-              this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          }
-          
+            this.selectedOrder = order;
+            this.openOrderDetails();
+          },
+          openOrderDetails() {
+            if (!this.modalInstance) {
+              const modalEl = document.getElementById("orderDetails");
+              this.modalInstance = new bootstrap.Modal(modalEl);
+            }
+            this.modalInstance.show();
+          },
+          closeOrderDetails() {
+            if (this.modalInstance) {
+              this.modalInstance.hide();
+            }
+          },
+          initModal() {
+            const modalEl = document.getElementById("orderDetails");
+            this.modalInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
+          },
+
         }
     }
-
 </script>
-

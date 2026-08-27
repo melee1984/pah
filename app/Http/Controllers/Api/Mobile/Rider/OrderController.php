@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api\Mobile\Rider;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use Session;
 use Validator;
 
 use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
+use App\Model\Rider\RiderDeclineOrder;
 use Carbon\Carbon;
 use App\Model\Bookings\BookingOrderProcess;
 
@@ -25,7 +27,10 @@ class OrderController extends Controller
      	$data = array();
      	$dataContainer = array();
 
-     	$orders = Orders::whereRiderId($request->user()->rider->id)
+        $orders = Orders::whereRiderId($request->user()->rider->id)
+                        ->whereDoesntHave('riderDeclines', function ($query) use ($request) {
+                            $query->where('rider_id', $request->user()->rider->id);
+                        })
     					->whereNull('accepted_at')
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
@@ -252,18 +257,47 @@ class OrderController extends Controller
 			if ($action == "accept") {
 
 				$order->accepted_by_rider_id = $user->rider->id;
+
+				$order->booking_status_id = Orders::STATUS_ORDER_ACCEPTED;
+				$order->order_status_id = Orders::STATUS_ORDER_ACCEPTED;
+
 				$order->accepted_at = now();
+
 				$status = $order->save();
+
 				$data['status'] = 1;
 
 
+			} else if ($action == "decline") {
+
+				DB::transaction(function () use ($user, $order) {
+					$decline = RiderDeclineOrder::query()->firstOrCreate([
+						'rider_id' => $user->rider->id,
+						'order_id' => $order->id,
+					]);
+
+					if ($decline->wasRecentlyCreated) {
+						DB::table('rider_api_activity_logs')->insert([
+							'rider_id' => $user->rider->id,
+							'order_id' => $order->id,
+							'type' => 'booking_declined',
+							'recorded_at' => now(),
+							'created_at' => now(),
+							'updated_at' => now(),
+						]);
+					}
+				});
+				$data['status'] = 1;
+				$data['message'] = 'Order declined.';
+
 			} else if ($action == "pickup") {
 
-				$order->status_id = 5;
+				$order->booking_status_id = Orders::STATUS_RIDER_PICKED_UP;
+				$order->order_status_id = Orders::STATUS_RIDER_PICKED_UP;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 5, // item pickup  
+                    'status_id' => Orders::STATUS_RIDER_PICKED_UP,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
@@ -275,24 +309,16 @@ class OrderController extends Controller
 			}
 			else if ($action == "delivered") {
 
-				// Item Pickup 
-				$order->status_id = 6;
-				$order->save();
-
-				OrderProcess::updateOrCreate([
-                    'status_id' => 6, // item pickup  
-                    'order_id' => $order->id,
-                    'user_id' => $user->id,
-                ]);
-
 				// Item Delivered 
-                $order->status_id = 7;
+                $order->booking_status_id = Orders::STATUS_DELIVERED;
+				$order->order_status_id = Orders::STATUS_DELIVERED;
+				
 				$order->save();
 
 				PushNotification::sendPushOrder($order);
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 7, // item pickup  
+                    'status_id' => Orders::STATUS_DELIVERED,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
