@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/merchant.js',
                 'resources/js/dashboard.js',
                 'resources/scss/_pahatud.scss',
+                'resources/css/agent.css',
             ],
             refresh: true,
         }),

@@ -76,6 +76,32 @@ Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::clas
 Route::post('login/submit', [\App\Http\Controllers\Api\User\AccessController::class, 'loginAccess'])->name('login.submit');
 Route::post('contact/submit', [PageController::class, 'storeContact'])->name('contact.submit');
 
+Route::get('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantInvitationController::class, 'show'])
+    ->name('restaurant.invitation.show');
+Route::post('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantInvitationController::class, 'update'])
+    ->middleware('throttle:10,1')
+    ->name('restaurant.invitation.update');
+
+// -------------------------------------------------------
+// AGENT PORTAL
+// -------------------------------------------------------
+
+Route::middleware('guest:agent')->group(function () {
+    Route::get('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'create'])->name('agent.login');
+    Route::post('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('agent.login.store');
+});
+
+Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function () {
+    Route::get('/dashboard', \App\Http\Controllers\Agent\DashboardController::class)->name('dashboard');
+    Route::get('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'index'])->name('restaurants.index');
+    Route::get('/restaurants/enroll', [\App\Http\Controllers\Agent\RestaurantController::class, 'create'])->name('restaurants.create');
+    Route::post('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'store'])->name('restaurants.store');
+    Route::get('/reports', \App\Http\Controllers\Agent\ReportController::class)->name('reports.index');
+    Route::post('/logout', [\App\Http\Controllers\Agent\AuthController::class, 'destroy'])->name('logout');
+});
+
 
 // -------------------------------------------------------
 // LOGGED IN USER ROUTES

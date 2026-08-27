@@ -205,9 +205,14 @@ class Orders extends Model
          return $this->hasMany(RiderDeclineOrder::class, 'order_id');
     }
 
-     public function partner() {
+    public function partner() {
          return $this->hasOne('App\Partners', 'id', 'partner_id');   
     }   
+
+    public function agentCommission()
+    {
+         return $this->hasOne('App\AgentCommission', 'order_id');
+    }
 
      public function user() 
     {

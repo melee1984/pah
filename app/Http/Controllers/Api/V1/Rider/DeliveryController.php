@@ -9,6 +9,7 @@ use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\Model\Rider\RiderDeclineOrder;
+use App\Services\AgentCommissionService;
 use App\Services\RiderApiService;
 use App\Services\RiderOfferDispatcher;
 use Carbon\Carbon;
@@ -1449,10 +1450,24 @@ class DeliveryController extends Controller
                 ],
                 'picked_up' => ['status_id' => 5],
                 'delivered' => ['status_id' => 7, 'delivered_at' => now()],
+                'cancelled', 'failed' => ['status_id' => 7],
                 default => [],
             };
+
+            if (Schema::hasColumn('order', 'order_status_id')) {
+                if ($event === 'delivered') {
+                    $updates['order_status_id'] = LibraryStatus::STATUS_DELIVERED;
+                } elseif (in_array($event, ['cancelled', 'failed'], true)) {
+                    $updates['order_status_id'] = LibraryStatus::STATUS_CANCELLED;
+                }
+            }
+
             if ($updates !== []) {
                 DB::table('order')->where('id', $delivery->legacy_order_id)->update($updates);
+
+                if ($order = Orders::query()->find($delivery->legacy_order_id)) {
+                    app(AgentCommissionService::class)->sync($order);
+                }
             }
         }
 
