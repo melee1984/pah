@@ -109,6 +109,12 @@ For a production asset build:
 npm run build
 ```
 
+Deploy the generated `public/build/manifest.json` and `public/build/assets/` directory together
+with the application. If an older production manifest does not yet contain the Agent Portal CSS
+entry, the Agent Portal views safely inline `resources/css/agent.css` as a temporary fallback
+instead of returning a Vite manifest exception. A fresh production build is still recommended for
+cacheable, fingerprinted assets.
+
 ## Agent Portal
 
 ### Overview

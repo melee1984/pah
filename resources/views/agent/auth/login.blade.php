@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" type="image/ico">
     <title>Agent Login | Pahatud</title>
-    @vite('resources/css/agent.css')
+    @include('agent.partials.styles')
 </head>
 <body class="agent-login-body">
 <main class="agent-login-shell">
