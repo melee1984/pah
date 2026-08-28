@@ -50,7 +50,7 @@
         @else
             <div class="agent-table-wrap">
                 <table class="agent-table">
-                    <thead><tr><th>Restaurant</th><th>Order</th><th>Order value</th><th>Rate</th><th>Commission</th><th>Status</th><th>Date</th></tr></thead>
+                    <thead><tr><th>Restaurant</th><th>Order</th><th>Order value</th><th>Agent share</th><th>Commission</th><th>Status</th><th>Date</th></tr></thead>
                     <tbody>
                     @foreach ($recentCommissions as $commission)
                         <tr>

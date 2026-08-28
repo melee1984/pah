@@ -86,6 +86,13 @@ Route::post('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantI
 // AGENT PORTAL
 // -------------------------------------------------------
 
+Route::get('/agent/register', [\App\Http\Controllers\Agent\RegistrationController::class, 'create'])->name('agent.register');
+Route::post('/agent/register', [\App\Http\Controllers\Agent\RegistrationController::class, 'store'])
+    ->middleware('throttle:5,1')
+    ->name('agent.register.store');
+Route::get('/agent/register/thank-you', [\App\Http\Controllers\Agent\RegistrationController::class, 'success'])
+    ->name('agent.register.success');
+
 Route::middleware('guest:agent')->group(function () {
     Route::get('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'create'])->name('agent.login');
     Route::post('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'store'])
@@ -151,8 +158,8 @@ Route::get('/data/dashboard/logout', [DashboardController::class, 'logout'])->na
 Route::middleware('admin')->group(function () {
 
     Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
-    Route::get('data/dashboard/orders', [DashboardController::class, 'index'])->name('dashboard.orders');
-    Route::get('data/dashboard/bookings', [DashboardController::class, 'index'])->name('dashboard.bookings');
+    Route::get('data/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
+    Route::get('data/dashboard/bookings', [DashboardController::class, 'bookings'])->name('dashboard.bookings');
 
     Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
 
@@ -164,6 +171,9 @@ Route::middleware('admin')->group(function () {
     Route::post('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('dashboard.agents.store');
+    Route::post('data/dashboard/agents/{agent}/approve', [\App\Http\Controllers\Admin\AgentController::class, 'approve'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.agents.approve');
 
     Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
     Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');

@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap');
+
+body.pahatud-login-page {
+    --login-red: #ef3b35;
+    --login-red-dark: #d92722;
+    --login-ink: #171b1d;
+    --login-muted: #6d7579;
+    --login-line: #e8e3de;
+    background: radial-gradient(circle at 78% 18%, rgba(239,59,53,.1), transparent 28%), #f7f5f2;
+    color: var(--login-ink);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 18px;
+}
+
+.pahatud-login-page::before {
+    background: var(--login-red);
+    content: '';
+    height: 5px;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+}
+
+.pahatud-login-page .login-box { margin: auto; width: min(430px, 100%); }
+.pahatud-login-page .login-logo { margin-bottom: 18px; }
+.pahatud-login-page .login-logo a { align-items: center; color: var(--login-ink); display: inline-flex; gap: 12px; text-align: left; }
+.pahatud-login-page .login-logo img { border-radius: 11px; height: 48px; object-fit: cover; width: 48px; }
+.pahatud-login-page .login-logo span { line-height: 1.15; }
+.pahatud-login-page .login-logo strong { display: block; font-family: 'Manrope', sans-serif; font-size: 20px; font-weight: 800; }
+.pahatud-login-page .login-logo small { color: var(--login-red); display: block; font-size: 9px; font-weight: 800; letter-spacing: 1.35px; margin-top: 4px; text-transform: uppercase; }
+
+.pahatud-login-card { border: 1px solid var(--login-line); border-radius: 17px; box-shadow: 0 18px 55px rgba(23,27,29,.09); overflow: hidden; }
+.pahatud-login-card .login-card-body { background: #fff; padding: 34px 35px 31px; }
+.pahatud-login-role { align-items: center; background: #fff0ee; border-radius: 100px; color: var(--login-red); display: inline-flex; font-size: 9px; font-weight: 800; gap: 7px; letter-spacing: .8px; margin-bottom: 17px; padding: 7px 10px; text-transform: uppercase; }
+.pahatud-login-card h1 { font-family: 'Manrope', sans-serif; font-size: 27px; font-weight: 800; letter-spacing: -.5px; margin: 0 0 6px; }
+.pahatud-login-card .login-box-msg { color: var(--login-muted); font-size: 12px; padding: 0 0 24px; text-align: left; }
+.pahatud-login-card form > label { color: var(--login-ink); display: block; font-size: 10px; font-weight: 800; margin-bottom: 6px; }
+.pahatud-login-card .input-group { flex-wrap: nowrap; }
+.pahatud-login-card .form-control { border: 1px solid #dcd7d2; border-right: 0; border-radius: 9px 0 0 9px; font-size: 12px; height: 45px; padding: 11px 13px; }
+.pahatud-login-card .input-group-text { background: #faf9f7; border-color: #dcd7d2; border-radius: 0 9px 9px 0; color: #9ba1a4; min-width: 44px; justify-content: center; }
+.pahatud-login-card .form-control:focus { border-color: var(--login-red); box-shadow: -2px 0 0 2px rgba(239,59,53,.09); }
+.pahatud-login-card .form-control:focus + .input-group-append .input-group-text { border-color: var(--login-red); color: var(--login-red); }
+.pahatud-login-options { align-items: center; display: flex; justify-content: space-between; margin: 2px 0 20px; min-height: 25px; }
+.pahatud-login-options label { color: var(--login-muted); font-size: 10px; font-weight: 600 !important; }
+.pahatud-login-options a, .pahatud-login-register a { color: var(--login-red); font-size: 10px; font-weight: 800; }
+.pahatud-login-page .icheck-primary > input:first-child:checked + label::before { background-color: var(--login-red); border-color: var(--login-red); }
+.pahatud-login-submit { align-items: center; background: var(--login-red); border: 1px solid var(--login-red); border-radius: 9px; box-shadow: 0 10px 24px rgba(239,59,53,.19); color: #fff; display: flex; font-size: 12px; font-weight: 800; justify-content: center; min-height: 46px; }
+.pahatud-login-submit i { font-size: 9px; margin-left: 9px; }
+.pahatud-login-submit:hover, .pahatud-login-submit:focus { background: var(--login-red-dark); border-color: var(--login-red-dark); color: #fff; }
+.pahatud-login-register { border-top: 1px solid #f0ece8; color: var(--login-muted); font-size: 10px; margin: 25px 0 0; padding-top: 20px; text-align: center; }
+.pahatud-login-card .alert { border-radius: 9px; font-size: 11px; }
+
+@media (max-width: 480px) {
+    body.pahatud-login-page { padding: 22px 12px; }
+    .pahatud-login-card .login-card-body { padding: 27px 22px 24px; }
+    .pahatud-login-page .login-logo strong { font-size: 18px; }
+}

@@ -310,16 +310,17 @@ export default {
 
 <style scoped>
 .product-manager {
-  color: #253041;
+  color: var(--admin-ink);
   padding-bottom: 2rem;
 }
 
 .product-hero {
   align-items: center;
-  background: linear-gradient(120deg, #8f1d3f 0%, #c43f62 100%);
-  border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(143, 29, 63, 0.18);
-  color: #fff;
+  background: linear-gradient(125deg, #fff 42%, #fff1ee);
+  border: 1px solid #f0ddd9;
+  border-radius: 16px;
+  box-shadow: none;
+  color: var(--admin-ink);
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
@@ -329,7 +330,7 @@ export default {
 }
 
 .product-hero::after {
-  background: rgba(255, 255, 255, 0.08);
+  border: 45px solid rgba(239, 59, 53, 0.07);
   border-radius: 50%;
   content: '';
   height: 210px;
@@ -340,12 +341,12 @@ export default {
 }
 
 .eyebrow {
+  color: var(--admin-red);
   display: block;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   margin-bottom: 0.35rem;
-  opacity: 0.78;
   text-transform: uppercase;
 }
 
@@ -356,16 +357,17 @@ export default {
 }
 
 .product-hero p {
+  color: var(--admin-muted);
   margin: 0;
-  opacity: 0.8;
 }
 
 .add-product-button {
   align-items: center;
-  background: #fff;
-  border: 0;
-  border-radius: 10px;
-  color: #8f1d3f;
+  background: var(--admin-red);
+  border: 1px solid var(--admin-red);
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(239, 59, 53, 0.19);
+  color: #fff;
   display: inline-flex;
   font-weight: 700;
   gap: 0.55rem;
@@ -377,8 +379,8 @@ export default {
 
 .add-product-button:hover,
 .add-product-button:focus {
-  box-shadow: 0 5px 16px rgba(48, 18, 28, 0.18);
-  color: #68142d;
+  background: var(--admin-red-dark);
+  color: #fff;
   transform: translateY(-1px);
 }
 
@@ -392,7 +394,7 @@ export default {
 .stat-card {
   align-items: center;
   background: #fff;
-  border: 1px solid #e7eaf0;
+  border: 1px solid var(--admin-line);
   border-radius: 14px;
   display: flex;
   gap: 0.8rem;
@@ -408,7 +410,7 @@ export default {
   width: 42px;
 }
 
-.stat-icon-all { background: #f4e9ee; color: #9c2949; }
+.stat-icon-all { background: #fff0ee; color: var(--admin-red); }
 .stat-icon-active { background: #e7f7ef; color: #218657; }
 .stat-icon-hidden { background: #f1f2f5; color: #667085; }
 
@@ -420,7 +422,7 @@ export default {
 }
 
 .stat-card strong {
-  color: #202a38;
+  color: var(--admin-ink);
   font-size: 1.25rem;
 }
 
@@ -434,7 +436,7 @@ export default {
 .category-panel,
 .product-panel {
   background: #fff;
-  border: 1px solid #e7eaf0;
+  border: 1px solid var(--admin-line);
   border-radius: 14px;
   box-shadow: 0 4px 16px rgba(26, 35, 50, 0.04);
   overflow: hidden;
@@ -469,8 +471,8 @@ export default {
   width: 100%;
 }
 
-.category-button:hover { background: #f8f3f5; color: #8f1d3f; }
-.category-button.active { background: #f7eaf0; color: #8f1d3f; font-weight: 700; }
+.category-button:hover { background: #fff7f5; color: var(--admin-red); }
+.category-button.active { background: #fff0ee; color: var(--admin-red); font-weight: 700; }
 .category-button i { font-size: 0.65rem; opacity: 0; }
 .category-button.active i { opacity: 1; }
 
@@ -481,7 +483,7 @@ export default {
   width: 7px;
 }
 
-.category-button.active .category-dot { background: #af3153; }
+.category-button.active .category-dot { background: var(--admin-red); }
 
 .product-toolbar {
   align-items: center;
@@ -531,8 +533,8 @@ export default {
 
 .product-search .form-control:focus {
   background: #fff;
-  border-color: #bd5673;
-  box-shadow: 0 0 0 3px rgba(189, 86, 115, 0.12);
+  border-color: var(--admin-red);
+  box-shadow: 0 0 0 3px rgba(239, 59, 53, 0.1);
 }
 
 .clear-search {
@@ -558,7 +560,7 @@ export default {
 }
 
 .product-row:last-child { border-bottom: 0; }
-.product-row:hover .product-title { color: #9a2446; }
+.product-row:hover .product-title { color: var(--admin-red); }
 
 .product-image-link {
   align-items: center;
@@ -590,7 +592,7 @@ export default {
 }
 
 .product-title {
-  color: #253041;
+  color: var(--admin-ink);
   font-size: 0.92rem;
   font-weight: 700;
   overflow: hidden;
@@ -680,16 +682,16 @@ export default {
 
 .edit-button {
   align-items: center;
-  background: #f7eef1;
+  background: #fff0ee;
   border-radius: 8px;
-  color: #9a2446;
+  color: var(--admin-red);
   display: inline-flex;
   height: 34px;
   justify-content: center;
   width: 34px;
 }
 
-.edit-button:hover { background: #9a2446; color: #fff; }
+.edit-button:hover { background: var(--admin-red); color: #fff; }
 
 .catalog-state {
   align-items: center;
@@ -704,13 +706,13 @@ export default {
 
 .catalog-state h4 { color: #2b3544; font-size: 1rem; font-weight: 700; margin: 0.8rem 0 0.25rem; }
 .catalog-state p { font-size: 0.82rem; margin: 0 0 1rem; }
-.catalog-state .add-product-button { background: #9a2446; color: #fff; }
+.catalog-state .add-product-button { background: var(--admin-red); color: #fff; }
 
 .empty-icon {
   align-items: center;
-  background: #f7eef1;
+  background: #fff0ee;
   border-radius: 50%;
-  color: #a33151;
+  color: var(--admin-red);
   display: inline-flex;
   height: 50px;
   justify-content: center;
@@ -719,9 +721,9 @@ export default {
 
 .loading-spinner {
   animation: spin 0.75s linear infinite;
-  border: 3px solid #ead9df;
+  border: 3px solid #f3d8d4;
   border-radius: 50%;
-  border-top-color: #a33151;
+  border-top-color: var(--admin-red);
   height: 34px;
   width: 34px;
 }

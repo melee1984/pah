@@ -1,21 +1,12 @@
 <template>
   <div>
-     <div class="card">
-      <div class="card-header">
-        <div class="row">
-          <div class="col-md-6">
-          <h3 class="card-title">
-            <i class="fas fa-chart-pie mr-1"></i>
-            Orders Dashboard
-          </h3>
-        </div> 
-         <div class="col-md-6 text-right">
-            Reload {{ timerInterval }}
-         </div>  
-        </div> 
-      </div><!-- /.card-header -->
+     <div class="card admin-card dashboard-data-card merchant-order-card">
+      <div class="admin-card-header">
+        <div><h2>Order management</h2><p>Review orders that need action and monitor active fulfilment.</p></div>
+        <span class="dashboard-reload-chip"><i class="fas fa-sync-alt"></i> Refresh in {{ timerInterval }}s</span>
+      </div>
       <div class="card-body">
-        <ul class="nav nav-tabs mb-3" role="tablist">
+        <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
           <li class="nav-item">
             <button
               type="button"
@@ -23,7 +14,7 @@
               :class="{ active: activeList === 'pending' }"
               @click="activeList = 'pending'"
             >
-              Pending Orders <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
+              Pending <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
             </button>
           </li>
           <li class="nav-item">
@@ -33,7 +24,7 @@
               :class="{ active: activeList === 'accepted' }"
               @click="activeList = 'accepted'"
             >
-              Accepted Orders <span class="badge badge-success ml-1">{{ acceptedOrders.length }}</span>
+              In progress <span class="badge badge-success ml-1">{{ acceptedOrders.length }}</span>
             </button>
           </li>
           <li class="nav-item">
@@ -46,11 +37,12 @@
               Cancelled <span class="badge badge-secondary ml-1">{{ cancelledOrders.length }}</span>
             </button>
           </li>
-        </ul>
+        </ul></div>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
-              <table class="table table-border">
+            <div class="table-responsive">
+              <table class="table dashboard-data-table merchant-orders-table">
                 <thead>
                   <tr>
                     <th>Date/Time</th>
@@ -66,14 +58,14 @@
                 </thead>
                 <tbody>
                   <tr v-if="displayedOrders.length === 0">
-                    <td colspan="9" class="text-center text-muted py-4">
+                    <td colspan="9" class="dashboard-table-empty">
                       No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
                   <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'accepted' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
+                        <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</button>
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br>
@@ -86,22 +78,23 @@
                         
                     </td>
                     <td width="5%">{{ order.summary.qty }}</td>
-                    <td width="5%">{{ order.summary.sub_total }}</td>
-                    <td width="5%">{{ order.summary.discount }} PHP</td>
-                    <td width="8%">{{ order.summary.delivery_fee }} PHP</td>
-                    <td width="10%">{{ order.summary.total }} PHP</td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
+                    <td width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
+                    <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
                      <td width="10%" v-if="order.status">
                       <p v-if="order.rider">{{ order.rider.name }}</p>
                     </td>
                     <td width="10%">
                       <span v-if="order.status">
-                        <span class="badge" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
+                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
                        </span>
                     </td>
                    
                   </tr>
                 </tbody>
-              </table> 
+              </table>
+            </div>
            </div>
         </div>
       </div><!-- /.card-body -->
@@ -109,9 +102,9 @@
 
      <div  class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content modal-lg">
+          <div class="modal-content modal-lg admin-modal">
             <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLongTitle">Booking Information</h5>
+              <div><span class="admin-eyebrow">Order details</span><h2 class="modal-title" id="exampleModalLongTitle">Customer order</h2></div>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -236,7 +229,7 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn" data-dismiss="modal">Close</button>
+              <button type="button" class="btn admin-btn-secondary" data-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
@@ -346,18 +339,18 @@
             statusId = Number(statusId);
 
             if (statusId === 1) {
-              return 'badge-danger';
+              return 'is-warning';
             }
 
             if (statusId === 2) {
-              return 'badge-success';
+              return 'is-success';
             }
 
             if (statusId === 8) {
-              return 'badge-secondary';
+              return 'is-danger';
             }
 
-            return 'badge-warning';
+            return 'is-info';
           },
           startTimer: function () {
            setInterval(() => {

@@ -6,6 +6,7 @@ use App\Agent;
 use App\AgentCommission;
 use App\Http\Controllers\Controller;
 use App\Mail\AgentTemporaryPasswordMail;
+use App\Mail\AgentApprovedMail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -85,5 +86,28 @@ class AgentController extends Controller
         return redirect()
             ->route('dashboard.agents.index')
             ->with('success', 'Agent account created. A temporary password was emailed to '.$validated['email'].'.');
+    }
+
+    public function approve(Agent $agent): RedirectResponse
+    {
+        if ($agent->active) {
+            return back()->with('success', $agent->name.' already has an active Agent Portal account.');
+        }
+
+        $agent->update(['active' => true]);
+
+        try {
+            Mail::to($agent->email)->send(new AgentApprovedMail($agent));
+        } catch (Throwable $exception) {
+            Log::error('Agent was approved but the approval email could not be delivered.', [
+                'agent_id' => $agent->id,
+                'email' => $agent->email,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return back()->withErrors(['email' => 'The account was approved, but the approval email could not be delivered.']);
+        }
+
+        return back()->with('success', $agent->name.' was approved and notified by email.');
     }
 }

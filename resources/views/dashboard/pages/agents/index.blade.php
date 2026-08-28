@@ -8,7 +8,7 @@
                 <div>
                     <span class="admin-eyebrow">Agent management</span>
                     <h1>Agents</h1>
-                    <p>Manage Agent Portal access, restaurant networks, and commission rates.</p>
+                    <p>Manage Agent Portal access, restaurant networks, and each agent's share of Pahatud commission.</p>
                 </div>
                 <button class="btn admin-btn-primary" type="button" data-toggle="modal" data-target="#addAgentModal">
                     <i class="fas fa-plus mr-2"></i>Add new agent
@@ -48,7 +48,7 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
-                            <thead><tr><th>Agent</th><th>Contact</th><th>Restaurants</th><th>Commission rate</th><th>Commission earned</th><th>Account</th><th>Last login</th></tr></thead>
+                            <thead><tr><th>Agent</th><th>Contact</th><th>Restaurants</th><th>Agent share</th><th>Commission earned</th><th>Account</th><th>Last login</th><th>Action</th></tr></thead>
                             <tbody>
                             @foreach ($agents as $agent)
                                 <tr>
@@ -67,6 +67,13 @@
                                         @endif
                                     </td>
                                     <td>{{ $agent->last_login_at?->format('M d, Y') ?? 'Never' }}<small>{{ $agent->last_login_at?->format('g:i A') }}</small></td>
+                                    <td>
+                                        @if (! $agent->active)
+                                            <form method="POST" action="{{ route('dashboard.agents.approve', $agent) }}">@csrf<button class="btn admin-btn-primary btn-sm" type="submit"><i class="fas fa-check mr-1"></i>Approve</button></form>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                             </tbody>
@@ -94,7 +101,7 @@
                     <div class="form-group"><label for="agent_email">Email address</label><input class="form-control" id="agent_email" name="email" type="email" value="{{ old('email') }}" required></div>
                     <div class="form-row">
                         <div class="form-group col-md-7"><label for="agent_mobile">Mobile number <small>(optional)</small></label><input class="form-control" id="agent_mobile" name="mobile" value="{{ old('mobile') }}" maxlength="30"></div>
-                        <div class="form-group col-md-5"><label for="agent_rate">Commission rate</label><div class="input-group"><input class="form-control" id="agent_rate" name="commission_percentage" type="number" min="0" max="100" step="0.01" value="{{ old('commission_percentage', config('agent.default_commission_percentage')) }}" required><div class="input-group-append"><span class="input-group-text">%</span></div></div></div>
+                        <div class="form-group col-md-5"><label for="agent_rate">Share of Pahatud commission</label><div class="input-group"><input class="form-control" id="agent_rate" name="commission_percentage" type="number" min="0" max="100" step="0.01" value="{{ old('commission_percentage', config('agent.default_commission_percentage')) }}" required><div class="input-group-append"><span class="input-group-text">%</span></div></div></div>
                     </div>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn admin-btn-secondary" data-dismiss="modal">Cancel</button><button type="submit" class="btn admin-btn-primary"><i class="fas fa-paper-plane mr-2"></i>Create and email password</button></div>

@@ -353,7 +353,7 @@ class AgentPortalTest extends TestCase
             'agent_id' => $agent->id,
             'order_amount' => 100,
             'commission_percentage' => 30,
-            'commission_amount' => 30,
+            'commission_amount' => 4.5,
             'status' => AgentCommission::STATUS_PENDING,
         ]);
 

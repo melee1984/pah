@@ -1,23 +1,12 @@
 @extends('templates.inside')
+@section('title', 'Contact us')
 @section('content')
 
-      <!-- Page Header Section Start Here -->
-        <section class="page-header style-2">
-            <div class="container">
-                <div class="page-title text-center">
-                    <h3>Contact Information</h3>
-                    <ul class="breadcrumb">
-                        <li><a href="#">Home</a></li>
-                        <li>Contact</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-        <!-- Page Header Section Ending Here -->
+        @include('pages.partials.public-page-header', ['title' => 'Contact us', 'kicker' => 'We are here to help', 'description' => 'Questions about an order, partnership, or account? Send us a message and our local team will assist you.'])
 
 
         <!-- Contact Us Section Start Here -->
-        <section class="contact-information padding-tb pb-xl-0">
+        <section class="contact-information public-contact-page">
             <div class="container">
 
                 @include('includes.error')
@@ -25,13 +14,14 @@
                 <div class="section-wrapper">
                     <div class="row">
                         <div class="col-lg-6 col-12">
-                            <h5>Contact Information</h5>
+                            <span class="public-section-kicker">Contact information</span>
+                            <h2>Talk to the Pahatud team</h2>
                             <div class="post-item">
                                 <div class="post-thumb">
                                     <img src="images/icon/home.png" alt="contact">
                                 </div>
                                 <div class="post-content">
-                                    <h6>Office Address</h6>
+                                    <h6>Office address</h6>
                                     <p>Deca Homes, Mintal, Block 10, Phase 9a, Lot 43</p>
                                     <p>Davao City, Philippines</p>
                                 </div>
@@ -41,9 +31,9 @@
                                     <img src="images/icon/contact.png" alt="contact">
                                 </div>
                                 <div class="post-content">
-                                    <h6>Contact No. : </h6>
-                                    <p>+639162986547</p>
-                                    <p>82 2243919</p>
+                                    <h6>Phone</h6>
+                                    <p><a href="tel:+639162986547">+63 916 298 6547</a></p>
+                                    <p><a href="tel:+63822243919">(082) 224 3919</a></p>
                                 </div>
                             </div>
                             <div class="post-item">
@@ -51,8 +41,8 @@
                                     <img src="images/icon/email.png" alt="contact">
                                 </div>
                                 <div class="post-content">
-                                    <h6>email adress : </h6>
-                                    <p>info@pahatud.com</p>
+                                    <h6>Email address</h6>
+                                    <p><a href="mailto:info@pahatud.com">info@pahatud.com</a></p>
                                 </div>
                             </div>
                             <div class="post-item">
@@ -60,22 +50,25 @@
                                     <img src="images/icon/website.png" alt="contact">
                                 </div>
                                 <div class="post-content">
-                                    <h6>Website Address</h6>
-                                    <p>http://www.pahatud.com</p>
+                                    <h6>Website</h6>
+                                    <p><a href="{{ route('home') }}">www.pahatud.com</a></p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-6 col-12">
-                            <h5>Send Us A Message</h5>
+                            <div class="public-contact-form">
+                            <span class="public-section-kicker">Send a message</span>
+                            <h2>How can we help?</h2>
+                            <p>Include any useful order or account details so we can assist you faster.</p>
                             
                             <form action="{{ route('contact.submit') }}" method="post" class="d-flex flex-wrap justify-content-between">
                                 @csrf
-                                <input type="text" placeholder="Your Name" name="name">
-                                <input type="text" placeholder="Your Email" name="email">
-                                <input class="w-100" type="text" placeholder="Subject" name="subject">
-                                <textarea rows="8" placeholder="Your Message" name="message"></textarea>
+                                <label><span>Your name</span><input type="text" placeholder="Juan Dela Cruz" name="name" value="{{ old('name') }}" required></label>
+                                <label><span>Email address</span><input type="email" placeholder="juan@example.com" name="email" value="{{ old('email') }}" required></label>
+                                <label class="w-100"><span>Subject</span><input class="w-100" type="text" placeholder="How can we help?" name="subject" value="{{ old('subject') }}" required></label>
+                                <label class="w-100"><span>Message</span><textarea rows="6" placeholder="Tell us what you need help with..." name="message" required>{{ old('message') }}</textarea></label>
                                 <button type="submit" class="food-btn style-2"><span>Submit Message</span></button>
-                            </form>
+                            </form></div>
                         </div>
                     </div>
                 </div>

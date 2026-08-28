@@ -82,12 +82,16 @@ class PageController extends Controller
      */
     public function storeContact(Request $request) {
 
-        $validatedData = $request->validate([
-            'name' => 'required',
-            'email' => 'required',
-            'subject' => 'required',
-            'message' => 'required',
+        $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email', 'max:255'],
+            'subject' => ['required', 'string', 'max:180'],
+            'message' => ['required', 'string', 'max:5000'],
         ]);
+
+        return back()
+            ->with('display', 'alert-success')
+            ->with('message', 'Thank you for contacting Pahatud. We received your message.');
         
         $data['name'] = $request->input('name');
         $data['email'] = $request->input('email');
