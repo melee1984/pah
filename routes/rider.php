@@ -101,7 +101,9 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('deliveries', [V1RiderDeliveryController::class, 'index']);
             Route::get('deliveries/active', [V1RiderDeliveryController::class, 'active']);
             Route::get('deliveries/{delivery}', [V1RiderDeliveryController::class, 'show']);
+            // This is for the rider to get the route for a specific delivery, which can be used for navigation purposes.
             Route::get('deliveries/{delivery}/route', [V1RiderDeliveryController::class, 'route']);
+            // This is for the rider to update the status of a delivery, such as marking it as picked up, in transit, or delivered.
             Route::post('deliveries/{delivery}/events', [V1RiderDeliveryController::class, 'event']);
             Route::post('deliveries/{delivery}/pickup/verify', [V1RiderDeliveryController::class, 'verifyPickup']);
             Route::post('deliveries/{delivery}/customer/verify', [V1RiderDeliveryController::class, 'verifyCustomer']);

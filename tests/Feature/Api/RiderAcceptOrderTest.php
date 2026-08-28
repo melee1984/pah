@@ -293,6 +293,59 @@ class RiderAcceptOrderTest extends TestCase
             ->assertJsonPath('activity_logs.0.payload.device_timestamp', $payload['device_timestamp']);
     }
 
+    public function test_arrival_event_updates_the_order_process_and_activity_log(): void
+    {
+        [$user, $riderId] = $this->createRider('arrival-event@example.com');
+        $orderId = DB::table('order')->insertGetId([
+            'status_id' => 5,
+            'order_status_id' => 5,
+            'booking_status_id' => 5,
+            'rider_id' => $riderId,
+            'accepted_by_rider_id' => $riderId,
+            'store_accepted_at' => now(),
+            'accepted_at' => now(),
+            'submitted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $deliveryReference = $this->createDeliveryForOrder($orderId, $riderId, 'going_to_customer');
+        $payload = [
+            'event_id' => (string) \Illuminate\Support\Str::uuid(),
+            'type' => 'arrived_at_customer',
+            'occurred_at' => now()->toISOString(),
+            'latitude' => 14.5995,
+            'longitude' => 120.9842,
+        ];
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/deliveries/{$deliveryReference}/events", $payload)
+            ->assertCreated()
+            ->assertJsonPath('current_state', 'arrived_at_customer');
+
+        $this->assertDatabaseHas('order', [
+            'id' => $orderId,
+            'order_status_id' => 5,
+            'booking_status_id' => 6,
+        ]);
+        $this->assertNotNull(DB::table('order')->where('id', $orderId)->value('delivered_at'));
+        $this->assertDatabaseHas('order_process', [
+            'order_id' => $orderId,
+            'status_id' => 5,
+            'user_id' => $user->id,
+        ]);
+
+        $activity = DB::table('rider_api_activity_logs')
+            ->where('rider_id', $riderId)
+            ->where('order_id', $orderId)
+            ->where('type', 'booking_action')
+            ->first();
+
+        $this->assertNotNull($activity);
+        $this->assertSame($payload, json_decode($activity->payload, true, 512, JSON_THROW_ON_ERROR));
+    }
+
     /**
      * @return array{User, int}
      */

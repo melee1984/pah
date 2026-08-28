@@ -357,8 +357,10 @@ class DeliveryController extends Controller
         }
 
         $occurredAt = $this->riders->databaseDateTime($validated['occurred_at']);
+        $payload = $request->all();
+        $userId = $request->user()->id;
 
-        $event = DB::transaction(function () use ($record, $validated, $occurredAt) {
+        $event = DB::transaction(function () use ($record, $validated, $occurredAt, $payload, $userId) {
             $eventId = DB::table('rider_api_delivery_events')->insertGetId([
                 'delivery_id' => $record->id,
                 'event_id' => $validated['event_id'],
@@ -392,6 +394,36 @@ class DeliveryController extends Controller
 
             DB::table('rider_api_deliveries')->where('id', $record->id)->update($updates);
             $this->syncLegacyDelivery($record, $validated['type']);
+
+            if ($validated['type'] === 'arrived_at_customer' && $record->legacy_order_id) {
+                $lockedOrder = Orders::query()
+                    ->whereKey($record->legacy_order_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                DB::table('order')->where('id', $lockedOrder->id)->update([
+                    'booking_status_id' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
+                    'order_status_id' => LibraryStatus::STATUS_RIDER_PICKED_UP,
+                    'delivered_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                OrderProcess::query()->firstOrCreate([
+                    'status_id' => LibraryStatus::STATUS_RIDER_PICKED_UP,
+                    'order_id' => $lockedOrder->id,
+                    'user_id' => $userId,
+                ]);
+
+                DB::table('rider_api_activity_logs')->insert([
+                    'rider_id' => $record->rider_id,
+                    'order_id' => $lockedOrder->id,
+                    'type' => 'booking_action',
+                    'payload' => json_encode($payload, JSON_THROW_ON_ERROR),
+                    'recorded_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             return DB::table('rider_api_delivery_events')->where('id', $eventId)->first();
         });
