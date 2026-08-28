@@ -2,11 +2,17 @@
 @section('title', 'Contact us')
 @section('content')
 
-        @include('pages.partials.public-page-header', ['title' => 'Contact us', 'kicker' => 'We are here to help', 'description' => 'Questions about an order, partnership, or account? Send us a message and our local team will assist you.'])
+        @include('pages.partials.public-page-header', [
+            'title' => 'Let’s get you the help you need.',
+            'pageName' => 'Contact us',
+            'kicker' => 'We are here to help',
+            'description' => 'Questions about an order, partnership, or account? Send us a message and our Davao-based team will point you in the right direction.',
+            'variant' => 'contact',
+        ])
 
 
         <!-- Contact Us Section Start Here -->
-        <section class="contact-information public-contact-page">
+        <section class="contact-information public-contact-page" id="contact-form">
             <div class="container">
 
                 @include('includes.error')
