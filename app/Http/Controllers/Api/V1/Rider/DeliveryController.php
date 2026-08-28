@@ -401,10 +401,11 @@ class DeliveryController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
 
+                // Arrival advances the rider to the delivery confirmation step.
+                // The order is only marked delivered by the later delivered action.
                 DB::table('order')->where('id', $lockedOrder->id)->update([
                     'booking_status_id' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
                     'order_status_id' => LibraryStatus::STATUS_RIDER_PICKED_UP,
-                    'delivered_at' => now(),
                     'updated_at' => now(),
                 ]);
 

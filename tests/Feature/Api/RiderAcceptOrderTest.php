@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Model\Orders\Orders;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -328,8 +329,12 @@ class RiderAcceptOrderTest extends TestCase
             'id' => $orderId,
             'order_status_id' => 5,
             'booking_status_id' => 6,
+            'delivered_at' => null,
         ]);
-        $this->assertNotNull(DB::table('order')->where('id', $orderId)->value('delivered_at'));
+        $this->assertSame([
+            'label' => 'Delivered Order',
+            'action' => 'delivered-order',
+        ], Orders::query()->findOrFail($orderId)->getRiderAction());
         $this->assertDatabaseHas('order_process', [
             'order_id' => $orderId,
             'status_id' => 5,
