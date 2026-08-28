@@ -39,7 +39,9 @@ class AgentCommissionService
             $order->loadMissing('cart');
             $orderAmount = $this->orderAmount($order);
             $percentage = round((float) $agent->commission_percentage, 2);
-            $commissionAmount = round($orderAmount * ($percentage / 100), 2);
+            $pahatudCommissionPercentage = round((float) config('agent.pahatud_commission_percentage'), 2);
+            $pahatudCommissionAmount = round($orderAmount * ($pahatudCommissionPercentage / 100), 2);
+            $commissionAmount = round($pahatudCommissionAmount * ($percentage / 100), 2);
 
             return AgentCommission::query()->create([
                 'order_id' => $order->getKey(),

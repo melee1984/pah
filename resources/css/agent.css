@@ -169,9 +169,111 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 .agent-login-flow span { color: #ffd4d1; display: block; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 8px; }
 .agent-login-flow strong { font-size: 14px; }
 
+/* Public Agent Program */
+.agent-program-body { background: #fff; color: var(--agent-ink); font-family: 'DM Sans', sans-serif; }
+.agent-program-body h1,
+.agent-program-body h2,
+.agent-program-body h3,
+.agent-program-body strong,
+.agent-program-body summary,
+.agent-program-body button,
+.agent-program-body input { font-family: 'DM Sans', sans-serif; }
+.agent-program-nav { align-items: center; background: rgba(255,255,255,.96); border-bottom: 1px solid var(--agent-line); display: flex; height: 82px; justify-content: space-between; padding: 0 max(28px, calc((100vw - 1280px) / 2)); position: sticky; top: 0; z-index: 40; backdrop-filter: blur(12px); }
+.agent-program-nav .agent-brand { padding: 0; }
+.agent-program-nav nav { align-items: center; display: flex; gap: 26px; }
+.agent-program-nav nav > a:not(.agent-button) { color: var(--agent-muted); font-size: 13px; font-weight: 700; }
+.agent-program-nav nav > a:not(.agent-button):hover { color: var(--agent-red); }
+.agent-program-nav .agent-button { min-height: 40px; padding: 0 15px; }
+.agent-program-hero { background: linear-gradient(130deg, #fff 35%, #fff4f1); display: grid; gap: 70px; grid-template-columns: minmax(0, 1.2fr) minmax(360px, .8fr); margin: 0 auto; max-width: 1440px; min-height: 670px; overflow: hidden; padding: 95px 80px; position: relative; }
+.agent-program-hero::after { border: 90px solid rgba(239,59,53,.055); border-radius: 50%; content: ''; height: 420px; position: absolute; right: -190px; top: -190px; width: 420px; }
+.agent-program-hero-copy { align-self: center; max-width: 750px; position: relative; z-index: 1; }
+.agent-program-hero h1 { font-family: 'Manrope', sans-serif; font-size: clamp(45px, 5.4vw, 76px); letter-spacing: -3.2px; line-height: 1.03; margin: 12px 0 24px; }
+.agent-program-lead { color: var(--agent-muted); font-size: 18px; line-height: 1.7; max-width: 690px; }
+.agent-program-actions { display: flex; gap: 11px; margin-top: 31px; }
+.agent-program-trust { color: var(--agent-muted); display: flex; flex-wrap: wrap; font-size: 11px; font-weight: 700; gap: 18px; margin-top: 27px; }
+.agent-program-trust span::before { color: var(--agent-red); content: '✓'; font-weight: 800; margin-right: 7px; }
+.agent-earning-preview { align-self: center; background: var(--agent-ink); border-radius: 22px; box-shadow: 0 26px 70px rgba(23,27,29,.18); color: #fff; padding: 36px; position: relative; z-index: 1; }
+.agent-earning-label { color: #ffb9b5; display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.3px; text-transform: uppercase; }
+.agent-earning-preview > strong { display: block; font-family: 'Manrope', sans-serif; font-size: 74px; letter-spacing: -3px; line-height: 1; margin: 18px 0 9px; }
+.agent-earning-preview > p { color: #c6cbcd; line-height: 1.6; }
+.agent-earning-equation { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.11); border-radius: 13px; display: grid; gap: 9px; margin: 28px 0 20px; padding: 18px; }
+.agent-earning-equation span, .agent-earning-equation b { color: #c6cbcd; font-size: 12px; }
+.agent-earning-equation strong { color: #fff; font-family: 'Manrope', sans-serif; font-size: 25px; }
+.agent-earning-preview > small { color: #949b9e; display: block; font-size: 10px; line-height: 1.6; }
+.agent-program-section { margin: 0 auto; max-width: 1280px; padding: 94px 32px; }
+.agent-program-heading { margin-bottom: 40px; max-width: 760px; }
+.agent-program-heading h2, .agent-program-apply h2 { font-family: 'Manrope', sans-serif; font-size: clamp(31px, 4vw, 48px); letter-spacing: -1.8px; line-height: 1.1; margin: 7px 0 12px; }
+.agent-program-heading > p:not(.agent-eyebrow), .agent-apply-copy > p:not(.agent-eyebrow) { color: var(--agent-muted); font-size: 16px; line-height: 1.7; }
+.agent-benefit-section { border-top: 1px solid var(--agent-line); }
+.agent-benefit-grid { display: grid; gap: 16px; grid-template-columns: repeat(4, 1fr); }
+.agent-benefit-grid article { background: #fff; border: 1px solid var(--agent-line); border-radius: 16px; min-height: 230px; padding: 25px; }
+.agent-benefit-grid article > span { align-items: center; background: #fff0ee; border-radius: 10px; color: var(--agent-red); display: flex; font-size: 11px; font-weight: 800; height: 38px; justify-content: center; width: 38px; }
+.agent-benefit-grid h3, .agent-step-grid h3 { font-family: 'Manrope', sans-serif; font-size: 17px; margin: 25px 0 9px; }
+.agent-benefit-grid p, .agent-step-grid p { color: var(--agent-muted); font-size: 13px; line-height: 1.65; margin: 0; }
+.agent-program-steps { background: var(--agent-bg); max-width: none; padding-left: max(32px, calc((100vw - 1216px) / 2)); padding-right: max(32px, calc((100vw - 1216px) / 2)); }
+.agent-step-grid { display: grid; gap: 15px; grid-template-columns: repeat(5, 1fr); }
+.agent-step-grid article { background: #fff; border: 1px solid var(--agent-line); border-radius: 15px; padding: 22px; }
+.agent-step-grid article > span { color: var(--agent-red); font-family: 'Manrope', sans-serif; font-size: 25px; font-weight: 800; }
+.agent-step-grid h3 { margin-top: 20px; }
+.agent-commission-layout { display: grid; gap: 18px; grid-template-columns: .9fr 1.1fr; }
+.agent-formula-card { background: linear-gradient(145deg, var(--agent-red), var(--agent-red-dark)); border-radius: 17px; color: #fff; padding: 30px; }
+.agent-formula-card > span { color: #ffd5d2; font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.agent-formula-card > strong { display: block; font-family: 'Manrope', sans-serif; font-size: 25px; line-height: 1.35; margin: 16px 0; }
+.agent-formula-card p { color: #ffe0de; font-size: 12px; line-height: 1.7; }
+.agent-example-table { border: 1px solid var(--agent-line); border-radius: 17px; overflow: hidden; }
+.agent-example-row { align-items: center; border-top: 1px solid var(--agent-line); display: grid; font-size: 14px; grid-template-columns: 1fr 1fr .8fr 1fr; min-height: 64px; padding: 0 24px; }
+.agent-example-row:first-child { border-top: 0; }
+.agent-example-head { background: #fbfaf9; color: var(--agent-muted); font-size: 10px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+.agent-example-row strong { color: var(--agent-green); font-family: 'Manrope', sans-serif; font-size: 17px; }
+.agent-program-disclaimer { color: var(--agent-muted); font-size: 11px; line-height: 1.6; margin: 18px 2px 0; }
+.agent-payout-section { padding-top: 30px; }
+.agent-payout-track { counter-reset: payout; display: grid; gap: 15px; grid-template-columns: repeat(3, 1fr); }
+.agent-payout-track > div { background: #fff; border: 1px solid var(--agent-line); border-radius: 14px; padding: 23px; position: relative; }
+.agent-payout-track span { color: var(--agent-ink); font-family: 'Manrope', sans-serif; font-size: 17px; font-weight: 800; }
+.agent-payout-track p { color: var(--agent-muted); font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+.agent-program-note { background: #fff7f5; border-left: 3px solid var(--agent-red); border-radius: 9px; color: #675e5c; font-size: 12px; line-height: 1.65; margin-top: 17px; padding: 14px 16px; }
+.agent-faq-section { border-top: 1px solid var(--agent-line); }
+.agent-faq-list { border-bottom: 1px solid var(--agent-line); }
+.agent-faq-list details { border-top: 1px solid var(--agent-line); padding: 21px 4px; }
+.agent-faq-list summary { cursor: pointer; font-family: 'Manrope', sans-serif; font-size: 16px; font-weight: 800; list-style-position: inside; }
+.agent-faq-list details p { color: var(--agent-muted); font-size: 13px; line-height: 1.7; margin: 15px 0 0 20px; max-width: 880px; }
+.agent-program-apply { background: var(--agent-ink); color: #fff; display: grid; gap: 80px; grid-template-columns: .8fr 1.2fr; padding: 95px max(32px, calc((100vw - 1216px) / 2)); }
+.agent-apply-copy { align-self: start; padding-top: 25px; }
+.agent-apply-copy > p:not(.agent-eyebrow) { color: #b8bec0; }
+.agent-apply-copy ol { color: #d8dcdd; display: grid; font-size: 13px; gap: 14px; line-height: 1.5; margin: 30px 0 0; padding-left: 20px; }
+.agent-application-card { background: #fff; border-radius: 18px; color: var(--agent-ink); padding: 32px; }
+.agent-registration-passwords { gap: 14px; }
+.agent-terms { align-items: flex-start; color: var(--agent-muted); font-size: 11px; line-height: 1.55; }
+.agent-terms input { margin-top: 3px; }
+.agent-application-login { color: var(--agent-muted); font-size: 11px; margin: 3px 0 0; text-align: center; }
+.agent-program-footer { align-items: center; background: #fff; display: grid; gap: 30px; grid-template-columns: 1fr 1fr 1fr; margin: 0 auto; max-width: 1280px; min-height: 150px; padding: 30px 32px; }
+.agent-program-footer .agent-brand { padding: 0; }
+.agent-program-footer p, .agent-program-footer > span { color: var(--agent-muted); font-size: 11px; }
+.agent-program-footer > span { text-align: right; }
+.agent-registration-success-body { background: radial-gradient(circle at 75% 20%, rgba(239,59,53,.1), transparent 30%), var(--agent-bg); min-height: 100vh; }
+.agent-registration-success-shell { align-items: center; display: flex; justify-content: center; min-height: 100vh; padding: 45px 20px; }
+.agent-registration-success-card { background: #fff; border: 1px solid var(--agent-line); border-radius: 22px; box-shadow: 0 24px 70px rgba(23,27,29,.1); max-width: 720px; padding: 42px 48px; text-align: center; width: 100%; }
+.agent-registration-success-card .agent-brand { justify-content: center; margin-bottom: 30px; padding: 0; }
+.agent-success-mark { align-items: center; background: #eaf8ef; border-radius: 50%; color: var(--agent-green); display: flex; font-size: 27px; font-weight: 800; height: 68px; justify-content: center; margin: 0 auto 22px; width: 68px; }
+.agent-registration-success-card h1 { font-size: clamp(32px, 5vw, 46px); letter-spacing: -1.7px; margin: 6px 0 13px; }
+.agent-success-lead { color: var(--agent-muted); line-height: 1.7; margin: 0 auto 30px; max-width: 570px; }
+.agent-success-lead strong { color: var(--agent-ink); }
+.agent-success-next { background: #fbfaf9; border: 1px solid var(--agent-line); border-radius: 15px; padding: 23px; text-align: left; }
+.agent-success-next h2 { font-size: 17px; margin: 0 0 13px; }
+.agent-success-next > div { align-items: flex-start; border-top: 1px solid var(--agent-line); display: grid; gap: 12px; grid-template-columns: 31px 1fr; padding: 13px 0; }
+.agent-success-next > div:first-of-type { border-top: 0; }
+.agent-success-next > div > span { align-items: center; background: #fff0ee; border-radius: 8px; color: var(--agent-red); display: flex; font-size: 10px; font-weight: 800; height: 30px; justify-content: center; width: 30px; }
+.agent-success-next p { color: var(--agent-muted); font-size: 12px; line-height: 1.55; margin: 0; }
+.agent-success-next p strong { color: var(--agent-ink); display: block; font-size: 12px; margin-bottom: 2px; }
+.agent-success-actions { display: flex; gap: 10px; justify-content: center; margin-top: 28px; }
+.agent-success-help { color: var(--agent-muted); font-size: 11px; margin: 19px 0 0; }
+
 @media (max-width: 1200px) {
     .agent-metrics { grid-template-columns: repeat(3, 1fr); }
     .agent-login-shell { grid-template-columns: 1fr 1fr; }
+    .agent-program-hero { gap: 40px; padding-left: 45px; padding-right: 45px; }
+    .agent-benefit-grid { grid-template-columns: repeat(2, 1fr); }
+    .agent-step-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 900px) {
@@ -187,6 +289,13 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
     .agent-login-shell { display: block; }
     .agent-login-panel { min-height: 100vh; padding: 36px 24px; }
     .agent-login-visual { display: none; }
+    .agent-program-nav nav > a:not(.agent-button), .agent-program-nav nav .agent-button-secondary { display: none; }
+    .agent-program-hero { grid-template-columns: 1fr; padding: 70px 28px; }
+    .agent-program-hero-copy { max-width: none; }
+    .agent-earning-preview { max-width: 520px; }
+    .agent-step-grid { grid-template-columns: repeat(2, 1fr); }
+    .agent-commission-layout, .agent-program-apply { grid-template-columns: 1fr; }
+    .agent-program-apply { gap: 35px; }
 }
 
 @media (max-width: 680px) {
@@ -200,10 +309,33 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
     .agent-card-header { align-items: flex-start; flex-direction: column; }
     .agent-filter .agent-button { width: 100%; }
     .agent-profile div:last-child { display: none; }
+    .agent-program-nav { height: 70px; padding: 0 18px; }
+    .agent-program-nav .agent-brand img { height: 39px; width: 39px; }
+    .agent-program-nav .agent-button-primary { min-height: 38px; }
+    .agent-program-hero h1 { letter-spacing: -2px; }
+    .agent-benefit-grid, .agent-step-grid, .agent-payout-track { grid-template-columns: 1fr; }
+    .agent-program-section { padding: 70px 20px; }
+    .agent-program-steps { padding-left: 20px; padding-right: 20px; }
+    .agent-program-apply { padding: 70px 20px; }
+    .agent-program-footer { grid-template-columns: 1fr; text-align: center; }
+    .agent-program-footer .agent-brand { justify-content: center; }
+    .agent-program-footer > span { text-align: center; }
 }
 
 @media (max-width: 420px) {
     .agent-content { padding-left: 15px; padding-right: 15px; }
     .agent-metrics { grid-template-columns: 1fr; }
     .agent-login-card h1 { font-size: 29px; }
+    .agent-program-nav .agent-brand-copy span { display: none; }
+    .agent-program-nav .agent-brand-copy strong { font-size: 15px; }
+    .agent-program-actions { align-items: stretch; flex-direction: column; }
+    .agent-program-actions .agent-button { width: 100%; }
+    .agent-program-trust { align-items: flex-start; flex-direction: column; }
+    .agent-earning-preview { padding: 27px; }
+    .agent-earning-preview > strong { font-size: 59px; }
+    .agent-example-row { padding: 0 14px; }
+    .agent-application-card { padding: 24px 19px; }
+    .agent-registration-passwords { grid-template-columns: 1fr; }
+    .agent-registration-success-card { padding: 32px 20px; }
+    .agent-success-actions { align-items: stretch; flex-direction: column; }
 }

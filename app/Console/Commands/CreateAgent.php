@@ -12,7 +12,7 @@ class CreateAgent extends Command
         {name : Agent full name}
         {email : Agent email address}
         {--mobile= : Mobile number}
-        {--commission= : Commission percentage for future qualifying orders}';
+        {--commission= : Agent share of Pahatud commission for future qualifying orders}';
 
     protected $description = 'Create an active Pahatud Agent Portal account';
 
@@ -44,7 +44,7 @@ class CreateAgent extends Command
 
         $agent = Agent::query()->create([...$validator->validated(), 'active' => true]);
 
-        $this->info("Agent {$agent->email} created with a {$agent->commission_percentage}% commission rate.");
+        $this->info("Agent {$agent->email} created with a {$agent->commission_percentage}% share of Pahatud commission.");
 
         return self::SUCCESS;
     }

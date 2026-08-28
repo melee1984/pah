@@ -13,7 +13,9 @@ class AuthController extends Controller
     public function create(): View|RedirectResponse
     {
         if (Auth::guard('agent')->check()) {
-            return redirect()->route('agent.dashboard');
+            return redirect()->route(Auth::guard('agent')->user()->must_change_password
+                ? 'agent.password.edit'
+                : 'agent.dashboard');
         }
 
         return view('agent.auth.login');
@@ -36,6 +38,10 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
         $request->user('agent')->forceFill(['last_login_at' => now()])->save();
+
+        if ($request->user('agent')->must_change_password) {
+            return redirect()->route('agent.password.edit');
+        }
 
         return redirect()->intended(route('agent.dashboard'));
     }

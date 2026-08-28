@@ -1,26 +1,17 @@
 <template>
   <div>
-     <div class="card">
-      <div class="card-header">
-        <div class="row">
-          <div class="col-md-6">
-          <h3 class="card-title">
-            <i class="fas fa-chart-pie mr-1"></i>
-            Job Order 
-          </h3>
-        </div> 
-         <div class="col-md-6 text-right">
-            Reload {{ timerInterval }}
-         </div>  
-        </div> 
-      </div><!-- /.card-header -->
+     <div class="card admin-card dashboard-data-card">
+      <div class="admin-card-header">
+        <div><h2>Job orders</h2><p>Review bookings, delivery fees, status, and rider assignments.</p></div>
+        <span class="dashboard-reload-chip"><i class="fas fa-sync-alt"></i> Refresh in {{ timerInterval }}s</span>
+      </div>
 
-     <div class="col-md-12">
         <div class="card-body">
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
-              <table class="table table-border">
+            <div class="table-responsive">
+              <table class="table dashboard-data-table dashboard-bookings-table">
                 <thead>
                   <tr>
                     <th>Date/Time</th>
@@ -33,23 +24,23 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-if="bookings.length <= 0">
-                    <td>No record found</td>
+                  <tr v-if="paginatedBookings.length <= 0">
+                    <td colspan="7" class="dashboard-table-empty">No job orders found.</td>
                   </tr>
-                  <tr v-for="booking in bookings"  v-bind:class="{ inactive: !booking.rider_id}"> 
+                  <tr v-for="booking in paginatedBookings" :key="booking.id" v-bind:class="{ inactive: !booking.rider_id}">
                     <td width="10%"> 
                        
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(booking)"><strong>{{ booking.job_order_format }}  </strong></a>
+                        <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(booking)"><i class="fas fa-route"></i>{{ booking.job_order_format }}</button>
                     </td>
                     <td width="25%">
                         <p>Pickup Date/Time:<br><b>{{ booking.booking_date_and_time_format }}</b></p>
                     </td>
                     <td width="5%">{{ booking.cod }}</td>
                     <td width="5%">{{ booking.duration }}</td>
-                    <td width="5%">{{ booking.delivery_rate_format }} PHP</td>
+                    <td width="5%"><span class="dashboard-money">₱{{ booking.delivery_rate_format }}</span></td>
                     <td width="8%">
                       <span v-if="booking.status">
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger">{{ booking.status.title }}</a>
+                        <span class="dashboard-status-pill">{{ booking.status.title }}</span>
                        </span>
                     </td>
                     <td width="10%" v-if="booking.status">
@@ -65,12 +56,12 @@
                     </td>
                   </tr>
                 </tbody>
-              </table> 
+              </table>
+            </div>
            </div>
         </div>
+        <admin-pagination :pagination="paginationMeta" @pagination-change-page="setPage" />
       </div><!-- /.card-body -->
-
-     </div>
     </div>
 
      <div v-if="selectedOrder" class="modal fade" id="bookingDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
@@ -155,12 +146,30 @@
                 field: {
                 },
                 errors: {},
-                bookings: {},
+                bookings: [],
                 timerInterval: 20,
-                riders: {},
+                riders: [],
                 selectedOrder: {},
-                statuses: {},
+                statuses: [],
+                currentPage: 1,
+                pageSize: 10,
             }
+        },
+        computed: {
+          paginatedBookings: function() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.bookings.slice(start, start + this.pageSize);
+          },
+          paginationMeta: function() {
+            const total = this.bookings.length;
+            return {
+              current_page: this.currentPage,
+              last_page: Math.max(1, Math.ceil(total / this.pageSize)),
+              from: total ? ((this.currentPage - 1) * this.pageSize) + 1 : 0,
+              to: Math.min(this.currentPage * this.pageSize, total),
+              total,
+            };
+          },
         },
         mounted() {
             this.fetchData();
@@ -169,6 +178,9 @@
         },
         
         methods: {
+          setPage: function(page) {
+            this.currentPage = page;
+          },
           startTimer: function () {
            setInterval(() => {
                 this.timerInterval--;
@@ -238,4 +250,3 @@
     }
 
 </script>
-

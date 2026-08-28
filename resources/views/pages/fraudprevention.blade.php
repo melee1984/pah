@@ -1,30 +1,19 @@
 @extends('templates.inside')
+@section('title', 'Fraud prevention')
 @section('content')
 
- <!-- Page Header Section Start Here -->
-        <section class="page-header style-2">
-            <div class="container">
-                <div class="page-title text-center">
-                    <h3>Fraud Prevention</h3>
-                    <ul class="breadcrumb">
-                        <li><a href="{{ URL::to('/') }}">Home</a></li>
-                        <li>Fraud Prevention</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-        <!-- Page Header Section Ending Here -->
+        @include('pages.partials.public-page-header', ['title' => 'Fraud prevention', 'kicker' => 'Stay safe with Pahatud', 'description' => 'Know the warning signs, protect your account, and learn how to report suspicious messages or activity.'])
 
         
         <!-- About Section Start here -->
-		<section class="about about-page padding-tb">
+		<section class="about about-page public-policy-page">
             <div class="container">
                 <div class="row align-items-center">
                     
                     <div class="col-lg-12 col-12">
                         <div class="about-content">
                             
-                            <div class="section-wrapper">
+                            <div class="section-wrapper public-policy-card">
 
                                 <h6>Our Commitment to Protection</h6>
                                 <p>At Pahatud we take protecting our customers' sensitive information seriously and are constantly monitoring our information and data to prevent fraudulent or suspicious behavior.</p>

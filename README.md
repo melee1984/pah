@@ -43,6 +43,9 @@ restaurant acquisition agents, enrollment attribution, and order-based commissio
 ### Admin back office
 
 - Manage orders, bookings, riders, customers, and merchants from a single dashboard.
+- View all Agent Portal accounts and add agents from `/data/dashboard/agents`.
+- Generate and email a temporary password automatically when an administrator creates an agent;
+  agents must replace it on first sign-in.
 - Verify merchants, toggle merchant online status, set commission rate, configure pre-order
   settings, and trigger merchant password resets.
 - Create and assign new bookings, assign riders to orders/bookings.
@@ -110,10 +113,15 @@ npm run build
 ```
 
 Deploy the generated `public/build/manifest.json` and `public/build/assets/` directory together
-with the application. If an older production manifest does not yet contain the Agent Portal CSS
-entry, the Agent Portal views safely inline `resources/css/agent.css` as a temporary fallback
-instead of returning a Vite manifest exception. A fresh production build is still recommended for
-cacheable, fingerprinted assets.
+with the application. This repository intentionally tracks `public/build` because the production
+host deploys from Git without compiling frontend assets. Run `npm run build` and commit the updated
+manifest and hashed assets whenever frontend code or styles change. Never deploy a new manifest
+without its matching `assets/` directory.
+
+If an older production manifest does not yet contain the Agent Portal CSS entry, the Agent Portal
+views safely inline `resources/css/agent.css` as a temporary fallback instead of returning a Vite
+manifest exception. A fresh production build is still recommended for cacheable, fingerprinted
+assets.
 
 ## Agent Portal
 
@@ -129,6 +137,7 @@ Portal URLs:
 | Page | URL | Access |
 |---|---|---|
 | Login | `/agent/login` | Guest agents |
+| Required password change | `/agent/password/change` | Agent using a temporary password |
 | Dashboard | `/agent/dashboard` | Authenticated agent |
 | Restaurant list | `/agent/restaurants` | Authenticated agent |
 | Enroll restaurant | `/agent/restaurants/enroll` | Authenticated agent |
@@ -151,17 +160,19 @@ php artisan migrate
 npm run build
 ```
 
-The Agent Portal migration is
-`database/migrations/2026_08_27_000000_create_agent_portal_tables.php`. It creates the two new
-portal-owned tables and adds `agent_id` to `partners`. The migration checks that the legacy
+The Agent Portal migrations begin with
+`database/migrations/2026_08_27_000000_create_agent_portal_tables.php`. They create the
+portal-owned tables, add `agent_id` to `partners`, and add the first-login password-control
+columns to `agents`. The migrations check that the legacy
 `partners` table exists before altering it, which is important because the full marketplace
 schema is not reproduced by this repository's migrations. On an existing Pahatud environment,
 confirm that the real marketplace schema has been imported before running this migration.
 
 If migrations cannot be run on the hosting environment, the equivalent paste-ready MySQL script
 is available at `database/sql/agent_portal.sql`. Select the live Pahatud database in phpMyAdmin or
-your database client, paste the complete script, and execute it once. The script safely skips
-tables and the `partners.agent_id` column when they already exist.
+your database client, paste the complete script, and execute it. The script safely skips existing
+tables and columns, so it can also upgrade an earlier Agent Portal installation with the password-
+change fields.
 
 For local development:
 
@@ -193,6 +204,23 @@ The `agent` session guard in `config/auth.php` uses the `App\Agent` model and th
 provider. Login is protected by CSRF validation, session regeneration, a five-attempt-per-minute
 rate limit, active-account enforcement, and Laravel's password hashing. Logout is POST-only and
 invalidates the session.
+
+Administrators manage accounts from `/data/dashboard/agents`. The page contains the complete,
+searchable agent list, restaurant counts, commission rates, earned commission, setup state, and
+last login. Selecting **Add new agent** asks for the agent's identity, contact details, and
+commission rate. The server generates a random 12-character temporary password, stores only its
+Laravel hash, and sends the plain temporary password to the agent through the configured mail
+transport. If delivery fails, the database transaction is rolled back and the account is not
+created, avoiding an account whose initial credentials were never delivered.
+
+An account created this way has `must_change_password = 1`. After the first successful login,
+middleware blocks the dashboard, restaurants, enrollment, and reports until the agent submits the
+temporary password and chooses a different password of at least eight characters. The update
+clears the flag, records `password_changed_at`, and invalidates the emailed password.
+
+Production email must be configured before creating an agent. For SMTP, set `MAIL_MAILER=smtp`,
+`MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_ENCRYPTION`, `MAIL_FROM_ADDRESS`,
+and `MAIL_FROM_NAME` in `.env`, then run `php artisan config:clear`.
 
 Create an agent interactively so the password is not written into source code or a shell command:
 
@@ -363,6 +391,9 @@ Totals are calculated over the complete filtered result, not only the visible pa
 | `password`, `remember_token` | Laravel session authentication |
 | `commission_percentage` | Rate used by the next qualifying order |
 | `active` | Login eligibility |
+| `must_change_password` | Blocks portal pages until an emailed temporary password is replaced |
+| `temporary_password_created_at` | When the administrator generated the temporary credential |
+| `password_changed_at` | When the agent completed the required first-login password change |
 | `last_login_at` | Last successful portal login |
 | `created_at`, `updated_at` | Audit timestamps |
 

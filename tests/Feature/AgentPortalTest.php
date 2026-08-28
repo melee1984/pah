@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Agent;
 use App\AgentCommission;
+use App\Http\Middleware\isAdmin;
 use App\LibraryStatus;
+use App\Mail\AgentTemporaryPasswordMail;
 use App\Mail\RestaurantInvitationMail;
 use App\Model\Cart;
 use App\Model\CartItem;
@@ -106,6 +108,84 @@ class AgentPortalTest extends TestCase
             'email' => 'inactive@example.com',
             'password' => 'password123',
         ])->assertSessionHasErrors('email');
+    }
+
+    public function test_temporary_password_must_be_replaced_before_portal_access(): void
+    {
+        $agent = Agent::query()->create([
+            'name' => 'Invited Agent',
+            'email' => 'invited-agent@example.com',
+            'password' => 'Temporary123',
+            'commission_percentage' => 10,
+            'active' => true,
+            'must_change_password' => true,
+            'temporary_password_created_at' => now(),
+        ]);
+
+        $this->post(route('agent.login.store'), [
+            'email' => $agent->email,
+            'password' => 'Temporary123',
+        ])->assertRedirect(route('agent.password.edit'));
+
+        $this->get(route('agent.dashboard'))
+            ->assertRedirect(route('agent.password.edit'));
+
+        $this->post(route('agent.password.update'), [
+            'current_password' => 'Temporary123',
+            'password' => 'PrivatePassword456',
+            'password_confirmation' => 'PrivatePassword456',
+        ])->assertRedirect(route('agent.dashboard'));
+
+        $agent->refresh();
+        $this->assertFalse($agent->must_change_password);
+        $this->assertNotNull($agent->password_changed_at);
+        $this->assertTrue(Hash::check('PrivatePassword456', $agent->password));
+        $this->assertFalse(Hash::check('Temporary123', $agent->password));
+    }
+
+    public function test_admin_can_create_an_agent_and_email_a_temporary_password(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+
+        $this->post(route('dashboard.agents.store'), [
+            'name' => 'New Agent',
+            'email' => 'new-agent@example.com',
+            'mobile' => '09171234567',
+            'commission_percentage' => 10,
+        ])->assertRedirect(route('dashboard.agents.index'));
+
+        $agent = Agent::query()->where('email', 'new-agent@example.com')->firstOrFail();
+        $this->assertTrue($agent->active);
+        $this->assertTrue($agent->must_change_password);
+        $this->assertNotNull($agent->temporary_password_created_at);
+        $this->assertSame('10.00', $agent->commission_percentage);
+
+        Mail::assertSent(AgentTemporaryPasswordMail::class, function ($mail) use ($agent) {
+            $this->assertTrue(Hash::check($mail->temporaryPassword, $agent->password));
+
+            return $mail->hasTo('new-agent@example.com');
+        });
+    }
+
+    public function test_admin_agent_page_lists_registered_agents(): void
+    {
+        $this->agent('first-listing@example.com')->update(['name' => 'First Listed Agent']);
+        $this->agent('second-listing@example.com')->update(['name' => 'Second Listed Agent']);
+        $admin = User::query()->forceCreate([
+            'name' => 'Admin User',
+            'email' => 'admin-listing@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.agents.index'))
+            ->assertOk()
+            ->assertSee('First Listed Agent')
+            ->assertSee('Second Listed Agent')
+            ->assertSee('Add new agent');
     }
 
     public function test_restaurant_pages_are_scoped_to_the_logged_in_agent(): void
@@ -273,7 +353,7 @@ class AgentPortalTest extends TestCase
             'agent_id' => $agent->id,
             'order_amount' => 100,
             'commission_percentage' => 30,
-            'commission_amount' => 30,
+            'commission_amount' => 4.5,
             'status' => AgentCommission::STATUS_PENDING,
         ]);
 

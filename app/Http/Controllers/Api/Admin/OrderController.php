@@ -40,11 +40,11 @@ class OrderController extends Controller
         }
 
         $data['orders'] = $orders->whereNotIn('status_id', [
-            Orders::STATUS_DELIVERED,
-            Orders::STATUS_CANCELLED,
+            LibraryStatus::STATUS_DELIVERED,
+            LibraryStatus::STATUS_CANCELLED,
         ])->values();
-        $data['completedOrders'] = $orders->where('status_id', Orders::STATUS_DELIVERED)->values();
-        $data['cancelledOrders'] = $orders->where('status_id', Orders::STATUS_CANCELLED)->values();
+        $data['completedOrders'] = $orders->where('status_id', LibraryStatus::STATUS_DELIVERED)->values();
+        $data['cancelledOrders'] = $orders->where('status_id', LibraryStatus::STATUS_CANCELLED)->values();
         $data['riders'] = Riders::active()->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
@@ -151,39 +151,56 @@ class OrderController extends Controller
 
     }
 
-    public function getListMemberwithFilter() {
+    public function getListMemberwithFilter(Request $request)
+    {
+        $data = [];
+        $search = trim((string) $request->query('search', ''));
 
-        $data = array();
+        $users = User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('firstname', 'like', "%{$search}%")
+                        ->orWhere('lastname', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
 
-        $users =  User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email')
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(100);
-
-        foreach($users as $user) {
-
+        foreach ($users as $user) {
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
         }
 
         $data['members'] = $users;
+
         return response()->json($data, 200);
-
     }
-    public function getListMerchantwithFilter() {
 
-        $data = array();
+    public function getListMerchantwithFilter(Request $request)
+    {
+        $data = [];
+        $search = trim((string) $request->query('search', ''));
 
-        $users =  Partners::orderBy('created_at', 'desc')
-                    ->paginate(100);
+        $users = Partners::with('accoutType')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('restaurant_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('telephone', 'like', "%{$search}%")
+                        ->orWhere('city', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
 
-        foreach($users as $user) {
-
+        foreach ($users as $user) {
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
-            $user->isverified = $user->verified_at?1:0;
-            $user->istoreopen = $user->store_open?1:0;
-            $user->accoutType;
+            $user->isverified = $user->verified_at ? 1 : 0;
+            $user->istoreopen = $user->store_open ? 1 : 0;
         }
 
-        
         $data['members'] = $users;
 
         return response()->json($data, 200);

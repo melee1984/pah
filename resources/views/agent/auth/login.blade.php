@@ -40,7 +40,7 @@
                 <button class="agent-button agent-button-primary agent-login-submit" type="submit">Sign in to Agent Portal</button>
             </form>
 
-            <p class="agent-login-help">Agent accounts are issued by Pahatud. If you cannot access your account, contact the Pahatud operations team.</p>
+            <p class="agent-login-help">Want to become an agent? <a class="agent-text-link" href="{{ route('agent.register') }}">Learn about the program and apply</a>.</p>
         </div>
     </section>
 
