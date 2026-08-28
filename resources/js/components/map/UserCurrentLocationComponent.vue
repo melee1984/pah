@@ -371,33 +371,9 @@ export default {
 
         this.updateAddress(lat, lng);
       } catch (err) {
-        console.error("Failed to get location after retries:", err);
-        alert("Unable to retrieve your location.");
-        // should be redirect to the page doesn't have location
-
-        if (err.code === 1) {
-          const modalHtml = `
-            <div class="modal fade" id="locationDeniedModal" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                  <div class="modal-header">
-                    <h5 class="modal-title">Location Access Required</h5>
-                  </div>
-                  <div class="modal-body">
-                    <p>Location access was denied. Please enable it in your browser settings to continue.</p>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" onclick="window.location.replace('/location-restriction')">OK</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-          document.body.insertAdjacentHTML("beforeend", modalHtml);
-          const modal = new bootstrap.Modal(document.getElementById("locationDeniedModal"));
-          modal.show();
-        }
-        // window.location.replace('/location-restriction');
+        // Location is optional. If it cannot be detected, leave the page usable
+        // and let the customer choose a location manually when they need to.
+        console.warn("Unable to detect the user's location:", err);
       }
     },
 

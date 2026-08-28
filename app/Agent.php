@@ -15,6 +15,9 @@ class Agent extends Authenticatable
         'commission_percentage',
         'active',
         'last_login_at',
+        'must_change_password',
+        'temporary_password_created_at',
+        'password_changed_at',
     ];
 
     protected $hidden = [
@@ -26,8 +29,11 @@ class Agent extends Authenticatable
     {
         return [
             'active' => 'boolean',
+            'must_change_password' => 'boolean',
             'commission_percentage' => 'decimal:2',
             'last_login_at' => 'datetime',
+            'temporary_password_created_at' => 'datetime',
+            'password_changed_at' => 'datetime',
             'password' => 'hashed',
         ];
     }

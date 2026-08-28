@@ -1,10 +1,10 @@
 <template>
-    <section>
+    <section class="public-menu-list">
         <ul>
-            <li><a href="/be-partner">Be our Partner</a></li>
-            <li><a href="/restaurants">Restaurants</a></li>
-            <li><a href="/flowerstore">Flowerstore</a></li>
-            <li><a href="/request/booking">Delivery Rates</a></li>
+            <li><a href="/be-partner" :class="{ active: isActive('/be-partner') }">Be our partner</a></li>
+            <li><a href="/restaurants" :class="{ active: isActive('/restaurants') }">Restaurants</a></li>
+            <li><a href="/flowerstore" :class="{ active: isActive('/flowerstore') }">Flower store</a></li>
+            <li><a href="/request/booking" :class="{ active: isActive('/request/booking') }">Delivery rates</a></li>
         </ul>
     </section>
 </template>
@@ -24,11 +24,13 @@
 
             console.log("Register Form Mouted");
         },
-        methods: { 
+        methods: {
+            isActive: function(path) {
+                return window.location.pathname.indexOf(path) === 0;
+            },
             popRegister: function() {
                 $('#myModalRegister').modal();
             }
         }
     }
 </script>
-

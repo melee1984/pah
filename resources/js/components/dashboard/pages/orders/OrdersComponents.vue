@@ -1,27 +1,18 @@
 <template>
   <div>
-     <div class="card">
-      <div class="card-header">
-        <div class="row">
-          <div class="col-md-6">
-          <h3 class="card-title">
-            <i class="fas fa-chart-pie mr-1"></i>
-            Order Management
-          </h3>
-        </div> 
-         <div class="col-md-6 text-right">
-            Reload {{ timerInterval }}
-         </div>  
-        </div> 
-      </div><!-- /.card-header -->
+     <div class="card admin-card dashboard-data-card">
+      <div class="admin-card-header">
+        <div><h2>Order management</h2><p>Review active, completed, and cancelled marketplace orders.</p></div>
+        <span class="dashboard-reload-chip"><i class="fas fa-sync-alt"></i> Refresh in {{ timerInterval }}s</span>
+      </div>
       <div class="card-body">
-        <ul class="nav nav-tabs mb-3" role="tablist">
+        <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
           <li class="nav-item">
             <button
               type="button"
               class="nav-link"
               :class="{ active: activeList === 'orders' }"
-              @click="activeList = 'orders'"
+              @click="selectActiveList('orders')"
             >
               Orders <span class="badge badge-primary ml-1">{{ orders.length }}</span>
             </button>
@@ -31,7 +22,7 @@
               type="button"
               class="nav-link"
               :class="{ active: activeList === 'completed' }"
-              @click="activeList = 'completed'"
+              @click="selectActiveList('completed')"
             >
               Completed <span class="badge badge-success ml-1">{{ completedOrders.length }}</span>
             </button>
@@ -41,23 +32,24 @@
               type="button"
               class="nav-link"
               :class="{ active: activeList === 'cancelled' }"
-              @click="activeList = 'cancelled'"
+              @click="selectActiveList('cancelled')"
             >
               Cancelled <span class="badge badge-danger ml-1">{{ cancelledOrders.length }}</span>
             </button>
           </li>
-        </ul>
+        </ul></div>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
-              <table class="table table-border">
+            <div class="table-responsive">
+              <table class="table dashboard-data-table dashboard-orders-table">
                 <thead>
                   <tr>
                     <th>Date/Time</th>
                     <th>Order Information</th>
                     <th>Qty</th>
                     <th nowrap="">Sub Total</th>
-                    <th n>Discount</th>
+                    <th nowrap="">Discount</th>
                     <th nowrap="">Delivery Fee</th>
                     <th>Total</th>
                     <th>Status</th>
@@ -68,7 +60,7 @@
                   <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'orders' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
+                        <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</button>
                     </td>
                     <td width="25%" v-if="order.partner">
                         Estimated Date/Time: <br><b> {{ order.cart.delivery_date }} - {{ order.cart.delivery_time }}</b> <br>
@@ -84,13 +76,13 @@
                         <br><br>
                     </td>
                     <td width="5%">{{ order.summary.qty }}</td>
-                    <td width="5%">{{ order.summary.sub_total }}</td>
-                    <td width="5%">{{ order.summary.discount }} PHP</td>
-                    <td width="8%">{{ order.summary.delivery_fee }} PHP</td>
-                    <td width="10%">{{ order.summary.total }} PHP</td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
+                    <td width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
+                    <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
                     <td width="10%">
                       <span v-if="order.status">
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger">{{ order.status.title }}</a>
+                        <span class="dashboard-status-pill" :class="statusClass(order.status)">{{ order.status.title }}</span>
                        </span>
                     </td>
                     <td width="10%">
@@ -109,14 +101,16 @@
                     </td>
                   </tr>
                   <tr v-if="displayedOrders.length === 0">
-                    <td colspan="9" class="text-center text-muted py-4">
+                    <td colspan="9" class="dashboard-table-empty">
                       No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
                 </tbody>
-              </table> 
+              </table>
+            </div>
            </div>
         </div>
+        <admin-pagination :pagination="paginationMeta" @pagination-change-page="setPage" />
       </div><!-- /.card-body -->
     </div>
 
@@ -252,10 +246,12 @@
                 riders: [],
                 selectedOrder: {},
                 statuses: [],
+                currentPage: 1,
+                pageSize: 10,
             }
         },
         computed: {
-          displayedOrders: function() {
+          allDisplayedOrders: function() {
             if (this.activeList === 'completed') {
               return this.completedOrders;
             }
@@ -265,6 +261,21 @@
             }
 
             return this.orders;
+          },
+          displayedOrders: function() {
+            const start = (this.currentPage - 1) * this.pageSize;
+            return this.allDisplayedOrders.slice(start, start + this.pageSize);
+          },
+          paginationMeta: function() {
+            const total = this.allDisplayedOrders.length;
+
+            return {
+              current_page: this.currentPage,
+              last_page: Math.max(1, Math.ceil(total / this.pageSize)),
+              from: total ? ((this.currentPage - 1) * this.pageSize) + 1 : 0,
+              to: Math.min(this.currentPage * this.pageSize, total),
+              total,
+            };
           },
           activeListLabel: function() {
             if (this.activeList === 'completed') {
@@ -291,6 +302,18 @@
         },
         
         methods: {
+          selectActiveList: function(list) {
+            this.activeList = list;
+            this.currentPage = 1;
+          },
+          setPage: function(page) {
+            this.currentPage = page;
+          },
+          statusClass: function(status) {
+            if (this.activeList === 'completed') return 'is-success';
+            if (this.activeList === 'cancelled') return 'is-danger';
+            return status && Number(status.id) >= 5 ? 'is-warning' : '';
+          },
           startTimer: function () {
            setInterval(() => {
                 this.timerInterval--;

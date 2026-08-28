@@ -1,48 +1,46 @@
-@extends('merchant.template.empty')
+@extends('dashboard.template.empty')
 
 @section('content')
 
-<div class="card">
+<div class="card pahatud-login-card">
   <div class="card-body login-card-body">
-    <p class="login-box-msg">Sign in to start your session</p>
+    <span class="pahatud-login-role"><i class="fas fa-shield-alt"></i> Administration</span>
+    <h1>Welcome back</h1>
+    <p class="login-box-msg">Sign in to monitor marketplace operations.</p>
     @include('includes.error')
     <form action="{{ route('dashboard.login.submit') }}" method="post">
       @csrf()
+      <label for="admin-email">Email address</label>
       <div class="input-group mb-3">
-        <input type="email" class="form-control" placeholder="Email" name="email" value="{{ old('email') }}">
+        <input id="admin-email" type="email" class="form-control" placeholder="you@example.com" name="email" value="{{ old('email') }}" autocomplete="email" required autofocus>
         <div class="input-group-append">
           <div class="input-group-text">
             <span class="fas fa-envelope"></span>
           </div>
         </div>
       </div>
+      <label for="admin-password">Password</label>
       <div class="input-group mb-3">
-        <input type="password" class="form-control" placeholder="Password" name="password">
+        <input id="admin-password" type="password" class="form-control" placeholder="Enter your password" name="password" autocomplete="current-password" required>
         <div class="input-group-append">
           <div class="input-group-text">
             <span class="fas fa-lock"></span>
           </div>
         </div>
       </div>
-      <div class="row">
-        <div class="col-8">
+      <div class="pahatud-login-options">
+        <div>
           <div class="icheck-primary">
             <input type="checkbox" id="remember" name="remember">
             <label for="remember">
-              Remember Me
+              Remember me
             </label>
           </div>
         </div>
         <!-- /.col -->
-        <div class="col-4">
-          <button type="submit" class="btn btn-pahatud btn-block">Sign In</button>
-        </div>
-        <!-- /.col -->
       </div>
+      <button type="submit" class="btn pahatud-login-submit btn-block">Sign in to dashboard <i class="fas fa-arrow-right"></i></button>
     </form>
-
-    <br/><br/>
-    
   </div>
   <!-- /.login-card-body -->
 </div>

@@ -24,46 +24,30 @@
   <!-- Theme style -->
   @vite('resources/js/dashboard.js')
   <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
 
 </head>
 
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm pahatud-admin">
   <div class="wrapper" id="app">
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light navbar-white">
-      <!-- Left navbar links -->
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-        </li>
-        <li class="nav-item d-none d-sm-inline-block">
-
-        </li>
-      </ul>
-      <!-- Right navbar links -->
-      <ul class="navbar-nav ml-auto">
-        <!-- Notifications Dropdown Menu -->
-        <li class="nav-item dropdown">
-        </li>
-      </ul>
-    </nav>
+    @include('dashboard.includes.header')
     <!-- /.navbar -->
     <!-- Main Sidebar Container -->
-    <aside class="main-sidebar elevation-4 sidebar-dark-primary">
+    <aside class="main-sidebar elevation-4 sidebar-light-danger">
       <!-- Brand Logo -->
-      <a href="{{ route('merchant.dashboard.index') }}" class="brand-link">
-        <span class="brand-text font-weight-light">Admin Dashboard v.1.0</span>
+      <a href="{{ route('dashboard.data') }}" class="brand-link">
+        <img src="{{ asset('images/logo.jpg') }}" alt="Pahatud" class="brand-image">
+        <span class="brand-copy"><strong>Pahatud</strong><small>Administration</small></span>
       </a>
       <!-- Sidebar -->
       <div class="sidebar">
         <!-- Sidebar user panel (optional) -->
         <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-          <div class="text-success" style="font-size: 20px;margin-left: 18px;">
-            <img src="{{ asset('adminlte/dist/img/user2-160x160.jpg') }}" class="img-circle elevation-2" alt="User Image">
-
-          </div>
+          <div class="admin-user-avatar">{{ mb_strtoupper(mb_substr(Auth::User()->fullname, 0, 1)) }}</div>
           <div class="info">
             <a href="#" class="d-block">{{ Auth::User()->fullname }}</a>
+            <small>Administrator</small>
           </div>
         </div>
 
@@ -86,7 +70,7 @@
 
     <!-- Main Footer -->
     <footer class="main-footer">
-      <strong>Copyright &copy; 2020 <a href="http://pahatud.com\">Pahatud.com</a>.</strong>
+      <strong>Copyright &copy; {{ date('Y') }} <a href="https://pahatud.com">Pahatud.com</a>.</strong>
       All rights reserved.
       <div class="float-right d-none d-sm-inline-block">
         <b>Version</b> 1.0.0
@@ -118,13 +102,7 @@
   <script src="{{ asset('adminlte/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
   <!-- AdminLTE App -->
   <script src="{{ asset('adminlte/dist/js/adminlte.js') }}"></script>
-  <!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-  <script src="{{ asset('adminlte/dist/js/pages/dashboard.js') }}"></script>
-  <!-- AdminLTE for demo purposes -->
   <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
-  <!-- <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
- -->
-  <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
 
   <script type="text/javascript">
     var page_url = "{{ Request::path() }}";

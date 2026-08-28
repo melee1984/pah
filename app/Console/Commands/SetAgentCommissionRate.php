@@ -7,9 +7,9 @@ use Illuminate\Console\Command;
 
 class SetAgentCommissionRate extends Command
 {
-    protected $signature = 'agent:set-rate {email : Agent email address} {percentage : Rate from 0 to 100}';
+    protected $signature = 'agent:set-rate {email : Agent email address} {percentage : Agent share of Pahatud commission, from 0 to 100}';
 
-    protected $description = 'Change an agent commission rate for future qualifying orders';
+    protected $description = 'Change an agent share of Pahatud commission for future qualifying orders';
 
     public function handle(): int
     {
@@ -30,7 +30,7 @@ class SetAgentCommissionRate extends Command
         }
 
         $agent->update(['commission_percentage' => round($percentage, 2)]);
-        $this->info("Future qualifying orders for {$agent->email} will use {$agent->commission_percentage}%.");
+        $this->info("Future qualifying orders for {$agent->email} will use a {$agent->commission_percentage}% share of Pahatud commission.");
         $this->line('Existing commission transactions were not changed.');
 
         return self::SUCCESS;
