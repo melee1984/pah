@@ -113,10 +113,15 @@ npm run build
 ```
 
 Deploy the generated `public/build/manifest.json` and `public/build/assets/` directory together
-with the application. If an older production manifest does not yet contain the Agent Portal CSS
-entry, the Agent Portal views safely inline `resources/css/agent.css` as a temporary fallback
-instead of returning a Vite manifest exception. A fresh production build is still recommended for
-cacheable, fingerprinted assets.
+with the application. This repository intentionally tracks `public/build` because the production
+host deploys from Git without compiling frontend assets. Run `npm run build` and commit the updated
+manifest and hashed assets whenever frontend code or styles change. Never deploy a new manifest
+without its matching `assets/` directory.
+
+If an older production manifest does not yet contain the Agent Portal CSS entry, the Agent Portal
+views safely inline `resources/css/agent.css` as a temporary fallback instead of returning a Vite
+manifest exception. A fresh production build is still recommended for cacheable, fingerprinted
+assets.
 
 ## Agent Portal
 
