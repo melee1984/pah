@@ -471,7 +471,7 @@ class DeliveryController extends Controller
         DB::transaction(function () use ($record, $validated, $collectedAt) {
             $wallet = $this->riders->wallet($record->rider_id);
             DB::table('rider_api_wallets')->where('id', $wallet->id)->update([
-                'cash_collected_centavos' => $wallet->cash_collected_centavos + $validated['amount_centavos'],
+                'cash_collected_centavos' => 1, //$wallet->cash_collected_centavos + $validated['amount_centavos'],
                 'amount_owed_centavos' => $wallet->amount_owed_centavos + $validated['amount_centavos'],
                 'updated_at' => now(),
             ]);
