@@ -93,10 +93,10 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('location/batch', [V1RiderOperationsController::class, 'saveLocationBatch']);
             Route::get('location/config', [V1RiderOperationsController::class, 'locationConfig']);
 
-            // Route::get('offers/current', [V1RiderDeliveryController::class, 'currentOffer']);
-            // Route::get('offers/{offer}', [V1RiderDeliveryController::class, 'offer']);
-            // Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);
-            // Route::post('offers/{offer}/decline', [V1RiderDeliveryController::class, 'declineOffer']);
+            Route::get('offers/current', [V1RiderDeliveryController::class, 'currentOffer']);
+            Route::get('offers/{offer}', [V1RiderDeliveryController::class, 'offer']);
+            Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);
+            Route::post('offers/{offer}/decline', [V1RiderDeliveryController::class, 'declineOffer']);
             
             Route::get('deliveries', [V1RiderDeliveryController::class, 'index']);
             Route::get('deliveries/active', [V1RiderDeliveryController::class, 'active']);

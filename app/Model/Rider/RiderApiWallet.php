@@ -13,6 +13,10 @@ class RiderApiWallet extends Model
         'rider_id',
         'credit_amount',
         'credit_points',
+        'available_centavos',
+        'pending_centavos',
+        'amount_owed_centavos',
+        'daily_cod_limit_centavos'
     ];
 
     protected function casts(): array
