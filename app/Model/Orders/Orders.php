@@ -106,27 +106,27 @@ class Orders extends Model
             ];
         } elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ACCEPTED || (int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_PROCESSING) {
             $action = [
-                'label' => 'Ready For Pickup',
-                'action' => 'ready-for-pickup',
-            ];
-        }
-        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP) {
-            $action = [
                 'label' => 'Picked Order',
                 'action' => 'picked-order',
             ];
         }
-        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP) {
             $action = [
                 'label' => 'Start Route to Customer',
                 'action' => 'start-customer-route',
+            ];
+        }
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
+            $action = [
+                'label' => 'Confirm Arrival at Customer Location',
+                'action' => 'confirm-arrival',
             ];
             // $action = [
             //     'label' => 'Confirm Arrival at Customer Location',
             //     'action' => 'confirm-arrival',
             // ];
         }
-         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
             $action = [
                 'label' => 'Delivered Order',
                 'action' => 'delivered-order',
