@@ -7,6 +7,7 @@ use App\Services\RiderOfferDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -202,6 +203,48 @@ class FullRiderApiTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('current_state', 'going_to_customer');
+    }
+
+    public function test_an_owned_delivery_proof_can_be_viewed_inline(): void
+    {
+        Storage::fake('local');
+
+        $token = $this->loginApprovedRider();
+        $riderId = DB::table('rider')->value('id');
+        $deliveryReference = (string) Str::uuid();
+        $proofReference = (string) Str::uuid();
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => $deliveryReference,
+            'rider_id' => $riderId,
+            'current_state' => 'proof_captured',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $path = "rider-delivery-proofs/{$deliveryReference}/proof.png";
+        Storage::disk('local')->put($path, 'proof-image-content');
+        DB::table('rider_api_delivery_proofs')->insert([
+            'reference' => $proofReference,
+            'delivery_id' => $deliveryId,
+            'method' => 'photo',
+            'path' => $path,
+            'processing_status' => 'complete',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->authenticated($token)
+            ->getJson("/api/v1/rider/deliveries/{$deliveryReference}/proof/status")
+            ->assertOk()
+            ->assertJsonPath(
+                'proofs.0.file_url',
+                url("/api/v1/rider/deliveries/{$deliveryReference}/proof/{$proofReference}/file"),
+            );
+
+        $this->authenticated($token)
+            ->get("/api/v1/rider/deliveries/{$deliveryReference}/proof/{$proofReference}/file")
+            ->assertOk()
+            ->assertHeader('content-disposition', 'inline; filename=proof.png')
+            ->assertStreamedContent('proof-image-content');
     }
 
     public function test_wallet_messaging_notifications_and_settings_endpoints_are_operational(): void

@@ -111,6 +111,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('deliveries/{delivery}/proof/uploads', [V1RiderDeliveryController::class, 'requestProofUpload']);
             Route::post('deliveries/{delivery}/proof', [V1RiderDeliveryController::class, 'attachProof']);
             Route::get('deliveries/{delivery}/proof/status', [V1RiderDeliveryController::class, 'proofStatus']);
+            Route::get('deliveries/{delivery}/proof/{proof}/file', [V1RiderDeliveryController::class, 'viewProof']);
             Route::post('deliveries/{delivery}/issues', [V1RiderDeliveryController::class, 'issue']);
             Route::post('deliveries/{delivery}/calls', [V1RiderDeliveryController::class, 'call']);
             Route::post('deliveries/{delivery}/share-trip', [V1RiderDeliveryController::class, 'shareTrip']);

@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 class DeliveryController extends Controller
@@ -275,7 +276,7 @@ class DeliveryController extends Controller
         return response()->json([
             'delivery' => $this->deliveryData($record),
             'timeline' => $this->timeline($record->id),
-            'proofs' => $this->proofs($record->id),
+            'proofs' => $this->proofs($record->id, $record->reference),
         ]);
     }
 
@@ -592,6 +593,9 @@ class DeliveryController extends Controller
                 'id' => $reference,
                 'method' => $validated['method'],
                 'processing_status' => 'complete',
+                'file_url' => $path
+                    ? url("/api/v1/rider/deliveries/{$record->reference}/proof/{$reference}/file")
+                    : null,
             ],
         ], 201);
     }
@@ -600,7 +604,21 @@ class DeliveryController extends Controller
     {
         $record = $this->ownedDelivery($request, $delivery);
 
-        return response()->json(['proofs' => $this->proofs($record->id)]);
+        return response()->json(['proofs' => $this->proofs($record->id, $record->reference)]);
+    }
+
+    public function viewProof(Request $request, string $delivery, string $proof): StreamedResponse
+    {
+        $record = $this->ownedDelivery($request, $delivery);
+        $attachedProof = DB::table('rider_api_delivery_proofs')
+            ->where('reference', $proof)
+            ->where('delivery_id', $record->id)
+            ->first();
+
+        abort_if(! $attachedProof || ! $attachedProof->path, 404);
+        abort_unless(Storage::disk('local')->exists($attachedProof->path), 404);
+
+        return Storage::disk('local')->response($attachedProof->path);
     }
 
     public function issue(Request $request, string $delivery): JsonResponse
@@ -1443,7 +1461,7 @@ class DeliveryController extends Controller
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function proofs(int $deliveryId): array
+    private function proofs(int $deliveryId, ?string $deliveryReference = null): array
     {
         return DB::table('rider_api_delivery_proofs')
             ->where('delivery_id', $deliveryId)
@@ -1454,6 +1472,9 @@ class DeliveryController extends Controller
                 'method' => $proof->method,
                 'processing_status' => $proof->processing_status,
                 'created_at' => $proof->created_at,
+                'file_url' => $proof->path && $deliveryReference
+                    ? url("/api/v1/rider/deliveries/{$deliveryReference}/proof/{$proof->reference}/file")
+                    : null,
             ])
             ->all();
     }
