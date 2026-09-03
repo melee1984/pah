@@ -348,6 +348,8 @@ class DeliveryController extends Controller
             ]);
         }
 
+        \Log::info(['delivery_event' => $validated, 'delivery' => $record]);
+        
         if (! $this->transitionAllowed($record->current_state, $validated['type'])) {
             return response()->json([
                 'message' => "The {$validated['type']} event is not allowed after {$record->current_state}.",
@@ -379,23 +381,18 @@ class DeliveryController extends Controller
                 'updated_at' => now(),
             ];
 
-            if ($validated['type'] === 'delivered') {
+            // completed delivered
+            if ($validated['type'] === 'delivered' && $record->legacy_order_id) {
+                
                 $updates['completed_at'] = $occurredAt;
+                
                 $this->creditDeliveryEarnings($record);
+                
                 DB::table('rider_api_availability')
                     ->where('rider_id', $record->rider_id)
                     ->update(['state' => 'available', 'updated_at' => now()]);
-            } elseif (in_array($validated['type'], ['cancelled', 'failed'], true)) {
-                $updates['completed_at'] = $occurredAt;
-                DB::table('rider_api_availability')
-                    ->where('rider_id', $record->rider_id)
-                    ->update(['state' => 'available', 'updated_at' => now()]);
-            }
 
-            DB::table('rider_api_deliveries')->where('id', $record->id)->update($updates);
-            $this->syncLegacyDelivery($record, $validated['type']);
 
-            if ($validated['type'] === 'arrived_at_customer' && $record->legacy_order_id) {
                 $lockedOrder = Orders::query()
                     ->whereKey($record->legacy_order_id)
                     ->lockForUpdate()
@@ -424,9 +421,21 @@ class DeliveryController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+
+            } elseif (in_array($validated['type'], ['cancelled', 'failed'], true)) {
+                $updates['completed_at'] = $occurredAt;
+                DB::table('rider_api_availability')
+                    ->where('rider_id', $record->rider_id)
+                    ->update(['state' => 'available', 'updated_at' => now()]);
             }
 
+            DB::table('rider_api_deliveries')->where('id', $record->id)->update($updates);
+
+            $this->syncLegacyDelivery($record, $validated['type']);
+    
             return DB::table('rider_api_delivery_events')->where('id', $eventId)->first();
+
         });
 
         return response()->json([
