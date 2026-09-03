@@ -349,7 +349,7 @@ class DeliveryController extends Controller
         }
 
         \Log::info(['delivery_event' => $validated, 'delivery' => $record]);
-        
+
         if (! $this->transitionAllowed($record->current_state, $validated['type'])) {
             return response()->json([
                 'message' => "The {$validated['type']} event is not allowed after {$record->current_state}.",
@@ -381,33 +381,20 @@ class DeliveryController extends Controller
                 'updated_at' => now(),
             ];
 
-            // completed delivered
-            if ($validated['type'] === 'delivered' && $record->legacy_order_id) {
-                
-                $updates['completed_at'] = $occurredAt;
-                
-                $this->creditDeliveryEarnings($record);
-                
-                DB::table('rider_api_availability')
-                    ->where('rider_id', $record->rider_id)
-                    ->update(['state' => 'available', 'updated_at' => now()]);
-
-
+            if ($validated['type'] === 'arrived_at_customer' && $record->legacy_order_id) {
                 $lockedOrder = Orders::query()
                     ->whereKey($record->legacy_order_id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                // Arrival advances the rider to the delivery confirmation step.
-                // The order is only marked delivered by the later delivered action.
                 DB::table('order')->where('id', $lockedOrder->id)->update([
                     'booking_status_id' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
-                    'order_status_id' => LibraryStatus::STATUS_RIDER_PICKED_UP,
+                    'order_status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
                     'updated_at' => now(),
                 ]);
 
                 OrderProcess::query()->firstOrCreate([
-                    'status_id' => LibraryStatus::STATUS_RIDER_PICKED_UP,
+                    'status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
                     'order_id' => $lockedOrder->id,
                     'user_id' => $userId,
                 ]);
@@ -421,8 +408,13 @@ class DeliveryController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+            } elseif ($validated['type'] === 'delivered') {
+                $updates['completed_at'] = $occurredAt;
+                $this->creditDeliveryEarnings($record);
 
-
+                DB::table('rider_api_availability')
+                    ->where('rider_id', $record->rider_id)
+                    ->update(['state' => 'available', 'updated_at' => now()]);
             } elseif (in_array($validated['type'], ['cancelled', 'failed'], true)) {
                 $updates['completed_at'] = $occurredAt;
                 DB::table('rider_api_availability')
@@ -893,7 +885,7 @@ class DeliveryController extends Controller
                 'pickup-order', 'picked-order' => [
                     'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP],
                     'booking_status' => BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP,
-                    'order_status' => LibraryStatus::STATUS_RIDER_PICKED_UP,
+                    'order_status' => LibraryStatus::STATUS_RIDER_ON_THE_WAY_TO_CUSTOMER,
                     'delivery_state' => 'picked_up',
                 ],
                 'arrival-at-customer', 'confirm-arrival' => [
@@ -902,7 +894,7 @@ class DeliveryController extends Controller
                         BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
                     ],
                     'booking_status' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
-                    'order_status' => LibraryStatus::STATUS_RIDER_PICKED_UP,
+                    'order_status' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
                     'delivery_state' => 'arrived_at_customer',
                 ],
                 'delivered-order' => [
@@ -930,6 +922,18 @@ class DeliveryController extends Controller
                 409,
                 'This action is not allowed for the current order status.',
             );
+
+            if ($action === 'delivered-order') {
+                $deliveryState = DB::table('rider_api_deliveries')
+                    ->where('legacy_order_id', $lockedOrder->id)
+                    ->value('current_state');
+
+                abort_if(
+                    $deliveryState !== 'proof_captured',
+                    409,
+                    'Delivery proof is required before completing the order.',
+                );
+            }
 
             $lockedOrder->booking_status_id = $transition['booking_status'];
             $lockedOrder->order_status_id = $transition['order_status'];
@@ -1366,7 +1370,7 @@ class DeliveryController extends Controller
             'customer_unreachable_started' => ['customer_unreachable_resolved'],
             'customer_unreachable_resolved' => ['cod_collected', 'customer_verified'],
             'cod_collected' => ['customer_verified', 'proof_captured'],
-            'customer_verified' => ['proof_captured', 'delivered'],
+            'customer_verified' => ['proof_captured'],
             'proof_captured' => ['delivered'],
             default => [],
         };

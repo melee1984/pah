@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\LibraryStatus;
 use App\Model\Orders\Orders;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -327,7 +328,7 @@ class RiderAcceptOrderTest extends TestCase
 
         $this->assertDatabaseHas('order', [
             'id' => $orderId,
-            'order_status_id' => 5,
+            'order_status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
             'booking_status_id' => 6,
             'delivered_at' => null,
         ]);
@@ -337,7 +338,7 @@ class RiderAcceptOrderTest extends TestCase
         ], Orders::query()->findOrFail($orderId)->getRiderAction());
         $this->assertDatabaseHas('order_process', [
             'order_id' => $orderId,
-            'status_id' => 5,
+            'status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
             'user_id' => $user->id,
         ]);
 
@@ -349,6 +350,38 @@ class RiderAcceptOrderTest extends TestCase
 
         $this->assertNotNull($activity);
         $this->assertSame($payload, json_decode($activity->payload, true, 512, JSON_THROW_ON_ERROR));
+    }
+
+    public function test_delivery_rejects_completion_before_proof(): void
+    {
+        [$user, $riderId] = $this->createRider('delivery-proof@example.com');
+        $orderId = DB::table('order')->insertGetId([
+            'status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
+            'order_status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
+            'booking_status_id' => 6,
+            'rider_id' => $riderId,
+            'accepted_by_rider_id' => $riderId,
+            'store_accepted_at' => now(),
+            'accepted_at' => now(),
+            'submitted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $deliveryReference = $this->createDeliveryForOrder($orderId, $riderId, 'arrived_at_customer');
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/action", [
+                'action' => 'delivered-order',
+            ])
+            ->assertConflict()
+            ->assertJsonPath('message', 'Delivery proof is required before completing the order.');
+
+        $this->assertDatabaseHas('rider_api_deliveries', [
+            'reference' => $deliveryReference,
+            'current_state' => 'arrived_at_customer',
+        ]);
     }
 
     /**
