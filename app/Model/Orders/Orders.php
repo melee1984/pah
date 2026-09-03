@@ -128,11 +128,20 @@ class Orders extends Model
         }
         elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
             $action = [
+                'label' => 'Add delivery proof',
+                'action' => 'add-delivery-proof',
+            ];
+            // $action = [
+            //     'label' => 'Confirm Arrival at Customer Location',
+            //     'action' => 'confirm-arrival',
+            // ];
+        }
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
+            $action = [
                 'label' => 'Delivered Order',
                 'action' => 'delivered-order',
             ];
         }
-
 
         return $action;
     }
