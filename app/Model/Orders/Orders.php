@@ -48,12 +48,12 @@ class Orders extends Model
      * [status description]
      * @return [type] [description]
      */
-    public function status() 
+    public function orderStatus() 
     {
          return $this->hasOne(LibraryStatus::class, 'id', 'order_status_id');
     }
 
-    public function bookingstatus() 
+    public function status() 
     {
          return $this->hasOne(BookingStatus::class, 'id', 'booking_status_id');
     }
@@ -116,11 +116,15 @@ class Orders extends Model
                 'action' => 'picked-order',
             ];
         }
-       elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
+        elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP) {
             $action = [
-                'label' => 'Confirm Arrival at Customer Location',
-                'action' => 'confirm-arrival',
+                'label' => 'Start Route to Customer',
+                'action' => 'start-customer-route',
             ];
+            // $action = [
+            //     'label' => 'Confirm Arrival at Customer Location',
+            //     'action' => 'confirm-arrival',
+            // ];
         }
          elseif ((int) $this->booking_status_id === BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER) {
             $action = [
