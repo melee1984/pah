@@ -324,6 +324,12 @@ class DeliveryController extends Controller
             ->where('event_id', $validated['event_id'])
             ->first();
 
+        $lockedOrder = Orders::query()
+            ->whereKey($record->legacy_order_id)
+            ->lockForUpdate()
+            ->firstOrFail();
+            
+
         if ($existing) {
             abort_if((int) $existing->delivery_id !== (int) $record->id, 409, 'The event ID belongs to another delivery.');
 
@@ -363,7 +369,7 @@ class DeliveryController extends Controller
         $payload = $request->all();
         $userId = $request->user()->id;
 
-        $event = DB::transaction(function () use ($record, $validated, $occurredAt, $payload, $userId) {
+        $event = DB::transaction(function () use ($record, $validated, $occurredAt, $payload, $userId, $lockedOrder) {
             $eventId = DB::table('rider_api_delivery_events')->insertGetId([
                 'delivery_id' => $record->id,
                 'event_id' => $validated['event_id'],
@@ -383,10 +389,6 @@ class DeliveryController extends Controller
             ];
 
             if ($validated['type'] === 'arrived_at_customer' && $record->legacy_order_id) {
-                $lockedOrder = Orders::query()
-                    ->whereKey($record->legacy_order_id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
 
                 DB::table('order')->where('id', $lockedOrder->id)->update([
                     'booking_status_id' => BookingStatus::STATUS_BOOKING_ARRIVAL_AT_CUSTOMER,
@@ -410,14 +412,37 @@ class DeliveryController extends Controller
                     'updated_at' => now(),
                 ]);
             } elseif ($validated['type'] === 'delivered') {
+
                 $updates['completed_at'] = $occurredAt;
+
+                 DB::table('order')->where('id', $lockedOrder->id)->update([
+                    'booking_status_id' => BookingStatus::STATUS_BOOKING_DELIVERED,
+                    'order_status_id' => LibraryStatus::STATUS_DELIVERED,
+                    'updated_at' => now(),
+                    'deliver_at' => now(),
+                ]);
+
+                OrderProcess::query()->firstOrCreate([
+                    'status_id' => LibraryStatus::STATUS_DELIVERED,
+                    'order_id' => $lockedOrder->id,
+                    'user_id' => $userId,
+                ]);
+
                 $this->creditDeliveryEarnings($record);
 
                 DB::table('rider_api_availability')
                     ->where('rider_id', $record->rider_id)
                     ->update(['state' => 'available', 'updated_at' => now()]);
+
             } elseif (in_array($validated['type'], ['cancelled', 'failed'], true)) {
                 $updates['completed_at'] = $occurredAt;
+
+                OrderProcess::query()->firstOrCreate([
+                    'status_id' => LibraryStatus::STATUS_CANCELLED,
+                    'order_id' => $lockedOrder->id,
+                    'user_id' => $userId,
+                ]);
+
                 DB::table('rider_api_availability')
                     ->where('rider_id', $record->rider_id)
                     ->update(['state' => 'available', 'updated_at' => now()]);
@@ -1552,5 +1577,6 @@ class DeliveryController extends Controller
                 DB::table('bookings')->where('id', $delivery->legacy_booking_id)->update($updates);
             }
         }
+        
     }
 }
