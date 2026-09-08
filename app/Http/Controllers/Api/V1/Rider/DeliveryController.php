@@ -419,7 +419,7 @@ class DeliveryController extends Controller
                     'booking_status_id' => BookingStatus::STATUS_BOOKING_DELIVERED,
                     'order_status_id' => LibraryStatus::STATUS_DELIVERED,
                     'updated_at' => now(),
-                    'deliver_at' => now(),
+                    'delivered_at' => now(),
                 ]);
 
                 OrderProcess::query()->firstOrCreate([
