@@ -126,6 +126,10 @@ class FullRiderApiTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        DB::table('rider_api_wallets')->updateOrInsert(
+            ['rider_id' => $riderId],
+            ['credit_amount' => 100, 'created_at' => now(), 'updated_at' => now()],
+        );
         DB::table('rider_api_offers')->insert([
             'reference' => $offerReference,
             'rider_id' => $riderId,
@@ -331,6 +335,10 @@ class FullRiderApiTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        DB::table('rider_api_wallets')->updateOrInsert(
+            ['rider_id' => $firstRiderId],
+            ['credit_amount' => 100, 'created_at' => now(), 'updated_at' => now()],
+        );
 
         $this->authenticated($firstToken)
             ->putJson('/api/v1/rider/availability', ['state' => 'available'])

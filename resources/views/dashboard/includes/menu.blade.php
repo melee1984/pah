@@ -34,7 +34,7 @@
         <a href="{{ route('dashboard.report.bookings') }}" class="nav-link {{ Request::is('data/dashboard/report/bookings') ? 'active' : '' }}"><i class="nav-icon fas fa-clipboard-list"></i><p>Booking reports</p></a>
     </li>
     <li class="nav-item">
-        <a href="{{ route('dashboard.report.riders') }}" class="nav-link {{ Request::is('data/dashboard/report/riders') ? 'active' : '' }}"><i class="nav-icon fas fa-chart-line"></i><p>Rider reports</p></a>
+        <a href="{{ route('dashboard.report.riders') }}" class="nav-link {{ Request::is('data/dashboard/report/riders') ? 'active' : '' }}"><i class="nav-icon fas fa-coins"></i><p>Rider commissions</p></a>
     </li>
 
     <li class="nav-header">System</li>

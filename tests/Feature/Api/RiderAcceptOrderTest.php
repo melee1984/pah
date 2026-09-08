@@ -47,6 +47,14 @@ class RiderAcceptOrderTest extends TestCase
                 $table->timestamps();
             });
         }
+
+        if (! Schema::hasTable('partners')) {
+            Schema::create('partners', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('agent_id')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     public function test_rider_can_accept_an_available_order(): void
@@ -89,6 +97,30 @@ class RiderAcceptOrderTest extends TestCase
             ->assertOk()
             ->assertJsonPath('activity_logs.0.type', 'booking_accepted')
             ->assertJsonPath('activity_logs.0.order_id', (string) $orderId);
+    }
+
+    public function test_rider_cannot_accept_when_wallet_cannot_cover_commission(): void
+    {
+        [$user, $riderId] = $this->createRider('insufficient-wallet@example.com');
+        DB::table('rider_api_wallets')->where('rider_id', $riderId)->update(['credit_amount' => 1]);
+        $orderId = $this->createAvailableOrder();
+        $this->createDeliveryForOrder($orderId);
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/accept")
+            ->assertConflict()
+            ->assertJsonPath(
+                'message',
+                'Insufficient wallet balance. At least ₱2.00 is required to accept this booking.',
+            );
+
+        $this->assertDatabaseHas('order', [
+            'id' => $orderId,
+            'accepted_by_rider_id' => null,
+            'accepted_at' => null,
+        ]);
     }
 
     public function test_rider_can_list_and_filter_only_their_deliveries(): void
@@ -384,6 +416,49 @@ class RiderAcceptOrderTest extends TestCase
         ]);
     }
 
+    public function test_completed_delivery_deducts_pahatud_commission_once(): void
+    {
+        [$user, $riderId] = $this->createRider('delivery-commission@example.com');
+        $orderId = DB::table('order')->insertGetId([
+            'status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
+            'order_status_id' => LibraryStatus::STATUS_ARRIVAL_AT_CUSTOMER,
+            'booking_status_id' => 6,
+            'rider_id' => $riderId,
+            'accepted_by_rider_id' => $riderId,
+            'store_accepted_at' => now(),
+            'accepted_at' => now(),
+            'submitted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $deliveryReference = $this->createDeliveryForOrder($orderId, $riderId, 'proof_captured');
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/action", [
+                'action' => 'delivered-order',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('rider_api_wallets', [
+            'rider_id' => $riderId,
+            'credit_amount' => 98,
+        ]);
+        $this->assertDatabaseHas('rider_api_wallet_transactions', [
+            'rider_id' => $riderId,
+            'type' => 'pahatud_commission',
+            'amount_centavos' => -200,
+            'balance_after_centavos' => 9800,
+            'related_type' => 'delivery',
+            'related_reference' => $deliveryReference,
+        ]);
+        $this->assertSame(1, DB::table('rider_api_wallet_transactions')
+            ->where('related_reference', $deliveryReference)
+            ->where('type', 'pahatud_commission')
+            ->count());
+    }
+
     /**
      * @return array{User, int}
      */
@@ -400,6 +475,12 @@ class RiderAcceptOrderTest extends TestCase
             'name' => 'Test Rider',
             'active' => true,
             'user_id' => $userId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('rider_api_wallets')->insert([
+            'rider_id' => $riderId,
+            'credit_amount' => 100,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

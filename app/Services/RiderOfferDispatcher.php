@@ -53,6 +53,12 @@ class RiderOfferDispatcher
                 ),
                 'eta_seconds' => $this->etaSeconds($cart?->duration),
                 'earnings_centavos' => max(0, (int) round(((float) ($cart?->delivery_fee ?? 0)) * 100)),
+                'commission_percentage' => config('rider.pahatud_commission_percentage', 20),
+                'commission_centavos' => max(0, (int) round(
+                    ((float) ($cart?->delivery_fee ?? 0))
+                    * 100
+                    * ((float) config('rider.pahatud_commission_percentage', 20) / 100)
+                )),
                 'cod_centavos' => (int) ($cart?->payment_id) === PaymentMethod::CHECKOUT_COD ? $totalCentavos : 0,
                 'order_count' => 1,
                 'is_batched' => false,

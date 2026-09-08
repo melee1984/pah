@@ -177,6 +177,10 @@ body.pahatud-admin {
 .dashboard-filter-bar .form-control { border-color: #ddd8d3; border-radius: 8px; font-size: 11px; min-height: 40px; }
 .dashboard-filter-actions { display: flex; gap: 7px; }
 .dashboard-filter-actions .btn { min-height: 40px; }
+.rider-report-filter-card { margin-bottom: 18px; }
+.rider-commission-filters { grid-template-columns: minmax(210px, 1fr) minmax(150px, .55fr) minmax(150px, .55fr) auto; }
+.rider-report-stats .admin-stat-card:last-child strong { font-size: 17px; }
+.rider-commission-table { min-width: 980px; }
 
 .admin-dashboard-hero { align-items: center; background: linear-gradient(135deg, #fff, #fff4f1); border: 1px solid #f0ddd9; border-radius: 16px; display: flex; justify-content: space-between; margin-bottom: 20px; overflow: hidden; padding: 24px 27px; position: relative; }
 .admin-dashboard-hero::after { border: 45px solid rgba(239,59,53,.07); border-radius: 50%; content: ''; height: 180px; position: absolute; right: -70px; top: -80px; width: 180px; }

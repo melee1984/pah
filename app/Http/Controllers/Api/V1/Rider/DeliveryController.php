@@ -11,6 +11,7 @@ use App\Model\Orders\Orders;
 use App\Model\Rider\RiderDeclineOrder;
 use App\Services\AgentCommissionService;
 use App\Services\RiderApiService;
+use App\Services\RiderCommissionService;
 use App\Services\RiderOfferDispatcher;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -52,6 +53,7 @@ class DeliveryController extends Controller
     public function __construct(
         private readonly RiderApiService $riders,
         private readonly RiderOfferDispatcher $offerDispatcher,
+        private readonly RiderCommissionService $riderCommissions,
     ) {}
 
     public function currentOffer(Request $request): JsonResponse
@@ -104,14 +106,7 @@ class DeliveryController extends Controller
                 409,
                 'This delivery was accepted by another rider.',
             );
-            $wallet = $this->riders->wallet($rider->id);
-            if (
-                $delivery->cod_centavos > 0
-                && $wallet->daily_cod_limit_centavos > 0
-                && ($wallet->amount_owed_centavos + $delivery->cod_centavos) > $wallet->daily_cod_limit_centavos
-            ) {
-                abort(409, 'The COD cash limit must be remitted before accepting this offer.');
-            }
+            $this->riderCommissions->ensureSufficientWallet($rider->id, $delivery);
 
             DB::table('rider_api_offers')->where('id', $record->id)->update([
                 'status' => 'accepted',
@@ -328,7 +323,6 @@ class DeliveryController extends Controller
             ->whereKey($record->legacy_order_id)
             ->lockForUpdate()
             ->firstOrFail();
-            
 
         if ($existing) {
             abort_if((int) $existing->delivery_id !== (int) $record->id, 409, 'The event ID belongs to another delivery.');
@@ -415,7 +409,7 @@ class DeliveryController extends Controller
 
                 $updates['completed_at'] = $occurredAt;
 
-                 DB::table('order')->where('id', $lockedOrder->id)->update([
+                DB::table('order')->where('id', $lockedOrder->id)->update([
                     'booking_status_id' => BookingStatus::STATUS_BOOKING_DELIVERED,
                     'order_status_id' => LibraryStatus::STATUS_DELIVERED,
                     'updated_at' => now(),
@@ -428,7 +422,7 @@ class DeliveryController extends Controller
                     'user_id' => $userId,
                 ]);
 
-                $this->creditDeliveryEarnings($record);
+                $this->riderCommissions->deductForCompletedDelivery($record);
 
                 DB::table('rider_api_availability')
                     ->where('rider_id', $record->rider_id)
@@ -451,7 +445,7 @@ class DeliveryController extends Controller
             DB::table('rider_api_deliveries')->where('id', $record->id)->update($updates);
 
             $this->syncLegacyDelivery($record, $validated['type']);
-    
+
             return DB::table('rider_api_delivery_events')->where('id', $eventId)->first();
 
         });
@@ -497,7 +491,7 @@ class DeliveryController extends Controller
         DB::transaction(function () use ($record, $validated, $collectedAt) {
             $wallet = $this->riders->wallet($record->rider_id);
             DB::table('rider_api_wallets')->where('id', $wallet->id)->update([
-                'cash_collected_centavos' => 1, //$wallet->cash_collected_centavos + $validated['amount_centavos'],
+                'cash_collected_centavos' => 1, // $wallet->cash_collected_centavos + $validated['amount_centavos'],
                 'amount_owed_centavos' => $wallet->amount_owed_centavos + $validated['amount_centavos'],
                 'updated_at' => now(),
             ]);
@@ -804,6 +798,8 @@ class DeliveryController extends Controller
             $lockedOrder->save();
 
             $delivery = $this->claimOrderDelivery($lockedOrder, $riderId);
+            abort_if(! $delivery, 409, 'The rider delivery could not be prepared.');
+            $this->riderCommissions->ensureSufficientWallet($riderId, $delivery);
 
             DB::table('rider_api_activity_logs')->insert([
                 'rider_id' => $riderId,
@@ -998,6 +994,10 @@ class DeliveryController extends Controller
                 $riderId,
                 $transition['delivery_state'],
             );
+
+            if ($action === 'delivered-order' && $delivery) {
+                $this->riderCommissions->deductForCompletedDelivery($delivery);
+            }
 
             DB::table('rider_api_activity_logs')->insert([
                 'rider_id' => $riderId,
@@ -1328,6 +1328,8 @@ class DeliveryController extends Controller
             'distance_meters' => $delivery->distance_meters,
             'eta_seconds' => $delivery->eta_seconds,
             'earnings_centavos' => (int) $delivery->earnings_centavos,
+            'commission_percentage' => (float) $delivery->commission_percentage,
+            'commission_centavos' => $this->riderCommissions->commissionCentavos($delivery),
             'cod_centavos' => (int) $delivery->cod_centavos,
             'order_count' => (int) $delivery->order_count,
             'is_batched' => (bool) $delivery->is_batched,
@@ -1377,6 +1379,8 @@ class DeliveryController extends Controller
             'pickup_area' => $delivery->pickup_area,
             'dropoff_area' => $delivery->dropoff_area,
             'earnings_centavos' => (int) $delivery->earnings_centavos,
+            'commission_percentage' => (float) $delivery->commission_percentage,
+            'commission_centavos' => $this->riderCommissions->commissionCentavos($delivery),
             'cod_centavos' => (int) $delivery->cod_centavos,
             'accepted_at' => $delivery->accepted_at,
             'completed_at' => $delivery->completed_at,
@@ -1421,38 +1425,6 @@ class DeliveryController extends Controller
         return in_array($state, self::TERMINAL_STATES, true)
             ? []
             : [...$normal, 'cancelled', 'failed'];
-    }
-
-    private function creditDeliveryEarnings(object $delivery): void
-    {
-        $alreadyCredited = DB::table('rider_api_wallet_transactions')
-            ->where('related_type', 'delivery')
-            ->where('related_reference', $delivery->reference)
-            ->where('type', 'earning')
-            ->exists();
-        if ($alreadyCredited) {
-            return;
-        }
-
-        $wallet = $this->riders->wallet($delivery->rider_id);
-        $newBalance = $wallet->available_centavos + $delivery->earnings_centavos;
-        DB::table('rider_api_wallets')->where('id', $wallet->id)->update([
-            'available_centavos' => $newBalance,
-            'updated_at' => now(),
-        ]);
-        DB::table('rider_api_wallet_transactions')->insert([
-            'reference' => (string) Str::uuid(),
-            'rider_id' => $delivery->rider_id,
-            'type' => 'earning',
-            'amount_centavos' => $delivery->earnings_centavos,
-            'balance_after_centavos' => $newBalance,
-            'description' => 'Delivery earnings',
-            'related_type' => 'delivery',
-            'related_reference' => $delivery->reference,
-            'occurred_at' => now(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
     }
 
     /**
@@ -1577,6 +1549,6 @@ class DeliveryController extends Controller
                 DB::table('bookings')->where('id', $delivery->legacy_booking_id)->update($updates);
             }
         }
-        
+
     }
 }

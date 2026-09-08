@@ -128,6 +128,14 @@ current state and allowed events.
 Offer responses contain only approximate drop-off information. Full customer
 and address information is returned only after the offer is accepted.
 
+The delivery fee and its snapshotted Pahatud commission are returned as
+`earnings_centavos`, `commission_percentage`, and `commission_centavos`. A
+rider can accept only when their prepaid wallet can cover that commission. An
+insufficient balance returns `409 Conflict` with the amount required. When the
+delivery is completed, the commission is deducted once and recorded as a
+`pahatud_commission` wallet transaction. The default rate is configured with
+`RIDER_PAHATUD_COMMISSION_PERCENTAGE` and is 20%.
+
 Proof and issue attachments use the private filesystem disk.
 
 ## Wallet and COD
