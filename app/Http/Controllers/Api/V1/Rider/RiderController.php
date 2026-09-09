@@ -66,7 +66,7 @@ class RiderController extends Controller
             ->where('rider_id', $riderId)
             ->where('current_state', 'delivered')
             ->whereBetween('completed_at', [$start, $end])
-            ->sum(DB::raw('earnings_centavos - COALESCE(commission_centavos, 0)'));
+            ->sum(DB::raw('earnings_centavos'));
 
         return response()->json([
             'overview' => [
