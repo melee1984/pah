@@ -203,6 +203,37 @@
                                           Total: {{ selectedOrder?.summary?.total }} <br>
                                         </p>
 
+                                        <div class="dashboard-delivery-card">
+                                          <p class="dashboard-delivery-card__title"><i class="fas fa-motorcycle"></i> Assigned rider</p>
+                                          <strong v-if="selectedOrder.rider">{{ selectedOrder.rider.name }}</strong>
+                                          <span v-else class="text-muted">No rider was assigned to this order.</span>
+                                          <small v-if="selectedOrder.rider && selectedOrder.rider.mobile" class="d-block text-muted">
+                                            {{ selectedOrder.rider.mobile }}
+                                          </small>
+                                        </div>
+
+                                        <div v-if="selectedOrderIsCompleted" class="dashboard-delivery-card">
+                                          <p class="dashboard-delivery-card__title"><i class="fas fa-camera"></i> Proof of delivery</p>
+                                          <div v-if="selectedOrder.delivery_proofs && selectedOrder.delivery_proofs.length" class="dashboard-proof-grid">
+                                            <a
+                                              v-for="proof in selectedOrder.delivery_proofs"
+                                              :key="proof.id"
+                                              :href="proof.file_url || undefined"
+                                              :target="proof.file_url ? '_blank' : undefined"
+                                              :class="['dashboard-proof-item', { 'dashboard-proof-item--static': !proof.file_url }]"
+                                              rel="noopener"
+                                            >
+                                              <img v-if="proof.file_url" :src="proof.file_url" alt="Proof of delivery">
+                                              <span v-else class="dashboard-proof-placeholder"><i class="fas fa-check-circle"></i></span>
+                                              <span>
+                                                <strong>{{ proofMethodLabel(proof.method) }}</strong>
+                                                <small>{{ formatProofDate(proof.created_at) }}</small>
+                                              </span>
+                                            </a>
+                                          </div>
+                                          <span v-else class="text-muted">No proof of delivery was submitted.</span>
+                                        </div>
+
                                         <div class="invoice-footer mt25" v-if="selectedOrderIsActive">
                                               <label for="">Delivery Status</label>
                                                <select class="form-control"  id="optStatus" v-if="statuses" v-model="selectedOrder.status_id" @change="updateStatus($event)">
@@ -292,6 +323,9 @@
             return this.selectedOrder
               && Number(this.selectedOrder.status_id) !== 7
               && Number(this.selectedOrder.status_id) !== 8;
+          },
+          selectedOrderIsCompleted: function() {
+            return this.selectedOrder && Number(this.selectedOrder.status_id) === 7;
           }
         },
         mounted() {
@@ -313,6 +347,22 @@
             if (this.activeList === 'completed') return 'is-success';
             if (this.activeList === 'cancelled') return 'is-danger';
             return status && Number(status.id) >= 5 ? 'is-warning' : '';
+          },
+          proofMethodLabel: function(method) {
+            const labels = {
+              photo: 'Delivery photo',
+              pin: 'PIN verification',
+              qr: 'QR verification',
+              signature: 'Customer signature',
+            };
+
+            return labels[method] || 'Delivery proof';
+          },
+          formatProofDate: function(value) {
+            if (!value) return '';
+
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
           },
           startTimer: function () {
            setInterval(() => {
@@ -386,3 +436,76 @@
     }
 
 </script>
+
+<style scoped>
+.dashboard-delivery-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e7e9ee;
+  border-radius: 0.65rem;
+  background: #f8f9fb;
+}
+
+.dashboard-delivery-card__title {
+  margin-bottom: 0.65rem;
+  font-weight: 700;
+}
+
+.dashboard-delivery-card__title i {
+  margin-right: 0.35rem;
+  color: #dc3545;
+}
+
+.dashboard-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-proof-item {
+  overflow: hidden;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: #343a40;
+  text-decoration: none;
+}
+
+.dashboard-proof-item:hover {
+  border-color: #dc3545;
+  color: #343a40;
+  text-decoration: none;
+}
+
+.dashboard-proof-item img,
+.dashboard-proof-placeholder {
+  display: flex;
+  width: 100%;
+  height: 120px;
+  align-items: center;
+  justify-content: center;
+  object-fit: cover;
+  background: #eef0f3;
+  color: #28a745;
+  font-size: 2rem;
+}
+
+.dashboard-proof-item > span:last-child {
+  display: block;
+  padding: 0.65rem;
+}
+
+.dashboard-proof-item strong,
+.dashboard-proof-item small {
+  display: block;
+}
+
+.dashboard-proof-item small {
+  margin-top: 0.2rem;
+  color: #6c757d;
+}
+
+.dashboard-proof-item--static {
+  cursor: default;
+}
+</style>

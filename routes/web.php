@@ -159,6 +159,10 @@ Route::middleware('admin')->group(function () {
 
     Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
     Route::get('data/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
+    Route::get(
+        'data/dashboard/orders/deliveries/{delivery}/proofs/{proof}',
+        [\App\Http\Controllers\Api\Admin\OrderController::class, 'viewDeliveryProof']
+    )->name('dashboard.orders.delivery-proof');
     Route::get('data/dashboard/bookings', [DashboardController::class, 'bookings'])->name('dashboard.bookings');
 
     Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');

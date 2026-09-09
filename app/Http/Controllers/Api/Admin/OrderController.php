@@ -17,6 +17,10 @@ use App\User;
 use App\LibraryStatus;
 
 use App\PushNotification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 class OrderController extends Controller
 {
    
@@ -24,19 +28,49 @@ class OrderController extends Controller
     {	 
          $orders = Orders::with('cart')
                 ->whereNotNull('submitted_at') 
-                ->with('partner')
+                ->with(['partner', 'rider', 'status'])
                 ->orderBy('created_at', 'desc')->get();
+
+        $deliveries = DB::table('rider_api_deliveries')
+            ->whereIn('legacy_order_id', $orders->pluck('id'))
+            ->get(['id', 'reference', 'legacy_order_id']);
+
+        $proofsByDelivery = DB::table('rider_api_delivery_proofs')
+            ->whereIn('delivery_id', $deliveries->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('delivery_id');
+
+        $proofsByOrder = $deliveries
+            ->groupBy('legacy_order_id')
+            ->map(function ($orderDeliveries) use ($proofsByDelivery) {
+                return $orderDeliveries->flatMap(function ($delivery) use ($proofsByDelivery) {
+                    return $proofsByDelivery->get($delivery->id, collect())->map(function ($proof) use ($delivery) {
+                        return [
+                            'id' => $proof->reference,
+                            'method' => $proof->method,
+                            'processing_status' => $proof->processing_status,
+                            'created_at' => $proof->created_at,
+                            'file_url' => $proof->path
+                                ? route('dashboard.orders.delivery-proof', [
+                                    'delivery' => $delivery->reference,
+                                    'proof' => $proof->reference,
+                                ])
+                                : null,
+                        ];
+                    });
+                })->values();
+            });
 
         foreach($orders as $order) {
 
-            $order->rider;
-        	$order->status;
             $order->cart->address;
             $order->cart->partnerlocation;
 
             $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
+            $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
         }
 
         $data['orders'] = $orders->whereNotIn('status_id', [
@@ -50,6 +84,21 @@ class OrderController extends Controller
 
     	return response()->json($data, 200);
     }   
+
+    public function viewDeliveryProof(string $delivery, string $proof): StreamedResponse
+    {
+        $attachedProof = DB::table('rider_api_delivery_proofs as proofs')
+            ->join('rider_api_deliveries as deliveries', 'deliveries.id', '=', 'proofs.delivery_id')
+            ->where('deliveries.reference', $delivery)
+            ->where('proofs.reference', $proof)
+            ->select('proofs.path')
+            ->first();
+
+        abort_if(! $attachedProof || ! $attachedProof->path, 404);
+        abort_unless(Storage::disk('local')->exists($attachedProof->path), 404);
+
+        return Storage::disk('local')->response($attachedProof->path);
+    }
 
      public function getListwithFilter(Request $request) {
 
