@@ -263,7 +263,7 @@ class DeliveryController extends Controller
             'next_cursor' => $paginator->nextCursor()?->encode(),
         ]);
     }
-
+    
     public function show(Request $request, string $delivery): JsonResponse
     {
         $record = $this->ownedDelivery($request, $delivery);
@@ -1413,7 +1413,7 @@ class DeliveryController extends Controller
                 'cod_collected',
                 'customer_verified',
                 'proof_captured',
-            ],
+            ], // if mag error specially naa na ka didto sa cod_collected, dapat mabalik sya arrived_at_customer
             'customer_unreachable_started' => ['customer_unreachable_resolved'],
             'customer_unreachable_resolved' => ['cod_collected', 'customer_verified'],
             'cod_collected' => ['customer_verified', 'proof_captured'],
