@@ -105,6 +105,36 @@ class FullRiderApiTest extends TestCase
             ->assertAccepted();
     }
 
+    public function test_wallet_earnings_returns_delivery_fee_less_pahatud_commission(): void
+    {
+        $token = $this->loginApprovedRider();
+        $riderId = DB::table('rider')->value('id');
+
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'current_state' => 'delivered',
+            'merchant_name' => 'Pahatud Test Store',
+            'earnings_centavos' => 10000,
+            'commission_percentage' => 12,
+            'commission_centavos' => 1200,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'accepted_at' => now()->subHour(),
+            'completed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/wallet/earnings')
+            ->assertOk()
+            ->assertJsonPath('earnings.today_centavos', 8800)
+            ->assertJsonPath('earnings.week_centavos', 8800)
+            ->assertJsonPath('earnings.month_centavos', 8800);
+    }
+
     public function test_offer_acceptance_and_delivery_events_are_authorized_sequential_and_idempotent(): void
     {
         $token = $this->loginApprovedRider();

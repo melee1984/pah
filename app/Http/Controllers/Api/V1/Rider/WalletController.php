@@ -27,21 +27,23 @@ class WalletController extends Controller
     public function earnings(Request $request): JsonResponse
     {
         $riderId = $this->riders->rider($request)->id;
-        $query = fn () => DB::table('rider_api_wallet_transactions')
+        $query = fn () => DB::table('rider_api_deliveries')
             ->where('rider_id', $riderId)
-            ->where('type', 'earning');
+            ->where('current_state', 'delivered');
+        $netEarnings = fn ($period) => (int) $period
+            ->sum(DB::raw('earnings_centavos - commission_centavos'));
 
         return response()->json([
             'earnings' => [
-                'today_centavos' => (int) $query()->whereDate('occurred_at', today())->sum('amount_centavos'),
-                'week_centavos' => (int) $query()->whereBetween('occurred_at', [
+                'today_centavos' => $netEarnings($query()->whereDate('completed_at', today())),
+                'week_centavos' => $netEarnings($query()->whereBetween('completed_at', [
                     now()->startOfWeek(),
                     now()->endOfWeek(),
-                ])->sum('amount_centavos'),
-                'month_centavos' => (int) $query()->whereBetween('occurred_at', [
+                ])),
+                'month_centavos' => $netEarnings($query()->whereBetween('completed_at', [
                     now()->startOfMonth(),
                     now()->endOfMonth(),
-                ])->sum('amount_centavos'),
+                ])),
             ],
         ]);
     }
