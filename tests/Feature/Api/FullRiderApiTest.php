@@ -135,6 +135,38 @@ class FullRiderApiTest extends TestCase
             ->assertJsonPath('earnings.month_centavos', 8800);
     }
 
+    public function test_today_overview_returns_earnings_from_completed_deliveries(): void
+    {
+        $token = $this->loginApprovedRider();
+        $riderId = DB::table('rider')->value('id');
+
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'current_state' => 'delivered',
+            'merchant_name' => 'Pahatud Test Store',
+            'earnings_centavos' => 10000,
+            'commission_percentage' => 12,
+            'commission_centavos' => 1200,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'accepted_at' => now()->subHour(),
+            'completed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/overview/today')
+            ->assertOk()
+            ->assertJsonPath('overview.total_deliveries', 1)
+            ->assertJsonPath('overview.completed_deliveries', 1)
+            ->assertJsonPath('overview.total_earnings_centavos', 8800)
+            ->assertJsonPath('overview.total_earnings', 88)
+            ->assertJsonPath('overview.formatted_total_earnings', '₱88.00');
+    }
+
     public function test_offer_acceptance_and_delivery_events_are_authorized_sequential_and_idempotent(): void
     {
         $token = $this->loginApprovedRider();

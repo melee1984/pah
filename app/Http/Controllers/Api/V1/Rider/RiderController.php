@@ -62,11 +62,11 @@ class RiderController extends Controller
             ->where('current_state', 'delivered')
             ->whereBetween('completed_at', [$start, $end])
             ->count();
-        $earnings = (int) DB::table('rider_api_wallet_transactions')
+        $earnings = (int) DB::table('rider_api_deliveries')
             ->where('rider_id', $riderId)
-            ->where('type', 'earning')
-            ->whereBetween('occurred_at', [$start, $end])
-            ->sum('amount_centavos');
+            ->where('current_state', 'delivered')
+            ->whereBetween('completed_at', [$start, $end])
+            ->sum(DB::raw('earnings_centavos - COALESCE(commission_centavos, 0)'));
 
         return response()->json([
             'overview' => [

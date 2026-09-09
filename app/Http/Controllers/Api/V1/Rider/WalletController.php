@@ -31,7 +31,7 @@ class WalletController extends Controller
             ->where('rider_id', $riderId)
             ->where('current_state', 'delivered');
         $netEarnings = fn ($period) => (int) $period
-            ->sum(DB::raw('earnings_centavos'));
+            ->sum(DB::raw('earnings_centavos - COALESCE(commission_centavos, 0)'));
 
         return response()->json([
             'earnings' => [
