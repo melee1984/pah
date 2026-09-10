@@ -204,7 +204,7 @@ class HomeController extends Controller
                     ->where('account_type_id','<>',4)
                     ->orderBy('store_open', 'desc')
                     ->orderBy('meter', 'asc')
-                    ->paginate(10);
+                    ->paginate(20);
                 
         }
         else {
@@ -215,7 +215,7 @@ class HomeController extends Controller
                     ->activeRestaurants()
                      ->where('account_type_id','<>',4)
                     ->orderBy('store_open', 'desc')
-                     ->paginate(10);
+                     ->paginate(20);
 
         }
 
