@@ -372,6 +372,26 @@ body.pahatud-admin {
 .merchant-proof-item strong { display: block; font-size: 10px; }
 .merchant-proof-item small { color: var(--admin-muted); display: block; font-size: 8px; margin-top: 2px; }
 .merchant-proof-item.is-static { cursor: default; }
+.merchant-sales-report { margin-bottom: 24px; }
+.merchant-sales-stats { margin-bottom: 18px; }
+.merchant-sales-stats .admin-stat-card em { color: #9a9fa2; display: block; font-size: 10px; font-style: normal; margin-top: 5px; }
+.merchant-sales-stats .admin-stat-card-red em { color: #ffd8d5; }
+.merchant-sales-filter-card { margin-bottom: 18px; }
+.merchant-sales-filter { align-items: flex-end; display: grid; gap: 14px; grid-template-columns: minmax(300px, 1fr) auto; padding: 18px 21px 21px; }
+.merchant-sales-filter .form-group { margin: 0; }
+.merchant-sales-filter label { color: var(--admin-ink); display: block; font-size: 10px; font-weight: 800; margin-bottom: 6px; }
+.merchant-date-input { position: relative; }
+.merchant-date-input > i { color: var(--admin-red); left: 13px; position: absolute; top: 50%; transform: translateY(-50%); z-index: 1; }
+.merchant-date-input .form-control { border: 1px solid #dcd7d2; border-radius: 8px; font-size: 12px; min-height: 43px; padding-left: 39px; }
+.merchant-date-input .form-control:focus { border-color: var(--admin-red); box-shadow: 0 0 0 3px rgba(239,59,53,.1); }
+.merchant-sales-filter-actions { display: flex; gap: 8px; }
+.merchant-sales-filter-actions .btn { white-space: nowrap; }
+.merchant-sales-filter-actions .btn:disabled { cursor: wait; opacity: .65; }
+.merchant-sales-table-card { margin-bottom: 0; }
+.merchant-sales-table { min-width: 1300px; }
+.merchant-sales-commission { color: #8b5914; font-weight: 700; white-space: nowrap; }
+.merchant-sales-net { color: #1c6b3a; white-space: nowrap; }
+.merchant-sales-discount { color: var(--admin-muted); white-space: nowrap; }
 .admin-section-heading { align-items: flex-end; display: flex; justify-content: space-between; margin: 25px 3px 13px; }
 .admin-section-heading h2 { font-size: 19px; font-weight: 800; margin: 3px 0 0; }
 .admin-section-heading p { color: var(--admin-muted); font-size: 11px; margin: 0; }
@@ -392,6 +412,7 @@ body.pahatud-admin {
     .merchant-dashboard-grid { grid-template-columns: 1fr; }
     .merchant-profile-layout { grid-template-columns: 1fr; }
     .merchant-delivery-details { grid-template-columns: 1fr; }
+    .merchant-sales-filter { grid-template-columns: 1fr; }
 }
 @media (max-width: 575px) {
     .admin-page-heading, .admin-dashboard-hero { align-items: stretch; flex-direction: column; }
@@ -423,4 +444,6 @@ body.pahatud-admin {
     .merchant-form-span { grid-column: auto; }
     .merchant-toggle-panel { align-items: flex-start; flex-direction: column; }
     .merchant-upload-control { flex-direction: column; }
+    .merchant-sales-filter-actions { flex-direction: column; }
+    .merchant-sales-filter-actions .btn { width: 100%; }
 }

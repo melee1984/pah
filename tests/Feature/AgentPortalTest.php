@@ -49,6 +49,7 @@ class AgentPortalTest extends TestCase
         Schema::create('cart', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('partner_id');
+            $table->string('order_no')->nullable();
             $table->decimal('delivery_fee', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->timestamps();
@@ -68,7 +69,6 @@ class AgentPortalTest extends TestCase
 
         Schema::create('order', function (Blueprint $table) {
             $table->id();
-            $table->string('order_no');
             $table->unsignedBigInteger('cart_id');
             $table->unsignedBigInteger('partner_id');
             $table->timestamp('submitted_at')->nullable();
@@ -324,6 +324,37 @@ class AgentPortalTest extends TestCase
             ->assertDontSee('₱60.00');
     }
 
+    public function test_recent_commission_activity_displays_the_cart_order_number(): void
+    {
+        $agent = $this->agent('activity@example.com');
+        $restaurant = $this->restaurant($agent, 'Activity Restaurant', 'activity-restaurant@example.com');
+        $cart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-2026-0042',
+        ]);
+        $order = Orders::query()->create([
+            'cart_id' => $cart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+        ]);
+
+        AgentCommission::query()->create([
+            'order_id' => $order->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 100,
+            'commission_percentage' => 30,
+            'commission_amount' => 30,
+            'status' => AgentCommission::STATUS_PENDING,
+            'qualified_at' => now(),
+        ]);
+
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.dashboard'))
+            ->assertOk()
+            ->assertSeeText('#PAH-2026-0042');
+    }
+
     public function test_delivered_order_snapshots_commission_and_cancellation_reverses_it(): void
     {
         $agent = $this->agent();
@@ -339,7 +370,6 @@ class AgentPortalTest extends TestCase
             'discount_amount' => 0,
         ]);
         $order = Orders::query()->create([
-            'order_no' => 'A-100',
             'cart_id' => $cart->id,
             'partner_id' => $restaurant->id,
             'submitted_at' => now(),

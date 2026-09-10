@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 use App\Model\Orders\Orders;
 use App\Model\Cart;
+use App\LibraryStatus;
 use Carbon\Carbon;
 use Auth;
 use Illuminate\Support\Facades\DB;
@@ -122,6 +123,10 @@ class OrderController extends Controller
 
     public function getListwithFilter(Request $request) {
 
+        $request->validate([
+            'dateFilter' => ['sometimes', 'string', 'max:100'],
+        ]);
+
         $totalSummary = array();
         $qty =0;
         $fee =0;
@@ -130,56 +135,56 @@ class OrderController extends Controller
         $discount =0;
         $total_comm = 0;
         $total_net = 0;
-        $orders = array();
+        $completedAt = DB::raw('COALESCE(delivered_at, submitted_at)');
+        $query = Orders::with(['cart', 'cart.address', 'partner', 'rider', 'status'])
+            ->wherePartnerId(Auth::User()->merchant->id)
+            ->whereNotNull('submitted_at')
+            ->where('status_id', LibraryStatus::STATUS_DELIVERED);
 
-        if ($request->has('dateFilter')) {
-            $dataFilterArray = explode('-', $request->input('dateFilter'));    
-            $orders = Orders::with('cart')
-                ->with('partner')
-                ->wherePartnerId(Auth::User()->merchant->id)
-                ->whereNotNull('submitted_at') 
-                ->whereNull('delivered_at')
-                ->where('submitted_at','>=', date('Y-m-d G:i', strtotime($dataFilterArray[0]) ))
-                ->where('submitted_at','<=', date('Y-m-d G:i', strtotime($dataFilterArray[1]) ))
-                ->orderBy('created_at', 'asc')
-                ->get();
+        if ($request->filled('dateFilter')) {
+            $dateFilter = explode(' - ', $request->input('dateFilter'), 2);
+
+            if (count($dateFilter) !== 2) {
+                return response()->json(['message' => 'Please select a valid date and time range.'], 422);
+            }
+
+            try {
+                $start = Carbon::parse(trim($dateFilter[0]));
+                $end = Carbon::parse(trim($dateFilter[1]));
+            } catch (\Throwable $exception) {
+                return response()->json(['message' => 'Please select a valid date and time range.'], 422);
+            }
+
+            if ($start->greaterThan($end)) {
+                return response()->json(['message' => 'The report start must be before its end.'], 422);
+            }
+
+            $query->whereBetween($completedAt, [$start, $end]);
+        } else {
+            $query->whereBetween($completedAt, [now()->startOfDay(), now()->endOfDay()]);
         }
-        else {
 
-            $orders = Orders::with('cart')
-                ->with('partner')
-                ->wherePartnerId(Auth::User()->merchant->id)
-                ->whereNotNull('submitted_at') 
-                ->whereNull('delivered_at')
-                ->whereDay('submitted_at', '=', date('d'))
-                // ->whereMonth('submitted_at', '=', date('m'))
-                ->orderBy('created_at', 'asc')
-                ->get();
-        }
-
-        
-        if (!$orders) return response()->json($data, 200);
+        $orders = $query->orderByDesc($completedAt)->get();
+        $number = fn ($value) => (float) str_replace(',', '', (string) $value);
 
 
         foreach($orders as $order) {
 
-            $order->rider;
-            $order->status;
-            $order->cart->address;
-
-            $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
+            $completedDate = $order->delivered_at ?: $order->submitted_at;
+            $order->completed_date = Carbon::parse($completedDate)->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
             $order->cart->cartItemVariance();
 
             $qty+= (int)$summary['qty'];
-            $fee+= number_format((float)$summary['delivery_fee'],2);
-            $sub_total+= number_format((float)$summary['sub_total'],2);
-            $total+= number_format((float)$summary['total'],2);
-            $discount+= number_format((float)$summary['discount'],2);
-            $total_comm += number_format((float)$summary['total_comm'],2);
-            $total_net += number_format((float)$summary['total'] - (float)$summary['total_comm'],2);
+            $fee += $number($summary['delivery_fee']);
+            $sub_total += $number($summary['sub_total']);
+            $total += $number($summary['total']);
+            $discount += $number($summary['discount']);
+            $total_comm += $number($summary['total_comm']);
+            $total_net += $number($summary['total']) - $number($summary['total_comm']);
 
+            $summary['net'] = number_format($number($summary['total']) - $number($summary['total_comm']), 2);
             $order->summary = $summary;
         }
 

@@ -13,7 +13,7 @@ use App\LibraryStatus;
 class Orders extends Model
 {
     protected $table = 'order';
-	protected $fillable = array('user_id', 'order_no', 'cart_id', 'submitted_at', 'partner_id', 'rider_id', 'store_accepted_at', 'accepted_by_rider_at', 'accepted_at', 'delivered_at', 'updated_at', 'created_at', 'order_status_id', 'booking_status_id');
+	protected $fillable = array('user_id', 'cart_id', 'submitted_at', 'partner_id', 'rider_id', 'store_accepted_at', 'accepted_by_rider_at', 'accepted_at', 'delivered_at', 'updated_at', 'created_at', 'order_status_id', 'booking_status_id');
 	public $timestamps = true;
 
     protected $dates = [

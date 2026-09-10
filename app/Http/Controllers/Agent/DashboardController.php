@@ -28,7 +28,11 @@ class DashboardController extends Controller
         ];
 
         $recentCommissions = $agent->commissions()
-            ->with(['restaurant:id,restaurant_name', 'order:id,order_no'])
+            ->with([
+                'restaurant:id,restaurant_name',
+                'order:id,cart_id',
+                'order.cart:id,order_no',
+            ])
             ->latest('qualified_at')
             ->limit(8)
             ->get();

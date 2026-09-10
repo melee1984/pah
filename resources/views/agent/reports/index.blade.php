@@ -37,7 +37,7 @@
                     <tbody>
                     @foreach ($commissions as $commission)
                         <tr>
-                            <td class="agent-table-primary">{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}<span class="agent-table-secondary">Order #{{ $commission->order?->order_no ?? $commission->order_id }}</span></td>
+                            <td class="agent-table-primary">{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}<span class="agent-table-secondary">{{ $commission->order?->cart?->order_no ? 'Order #'.$commission->order->cart->order_no : 'Order number unavailable' }}</span></td>
                             <td>1</td>
                             <td class="agent-money">₱{{ number_format($commission->order_amount, 2) }}</td>
                             <td>{{ number_format($commission->commission_percentage, 2) }}%</td>

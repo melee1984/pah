@@ -1,230 +1,121 @@
 <template>
-  <div>
-     <div class="card">
-      <div class="card-header">
-        <div class="row">
-          <div class="col-md-6">
-          <h3 class="card-title">
-            <i class="fas fa-chart-pie mr-1"></i>
-            Sales Report
-          </h3>
-        </div> 
-         <div class="col-md-6 text-right">
-            
-         </div>  
-        </div> 
-      </div><!-- /.card-header -->
-      <div class="card-body">
-        <div class="tab-content p-0">
-
-           <!-- Date and time range -->
-          <div class="form-group">
-           <div class="row">
-              <div class="col-md-12">
-                <label>Date and time range:</label>
-                <div class="input-group">
-                  <div class="input-group-prepend">
-                    <span class="input-group-text"><i class="far fa-clock"></i></span>
-                  </div>
-                  <input type="text" class="form-control float-right" id="reservationtime">
-
-                  <div class="input-group-prepend">
-                    <span class="input-group-text">
-                      <a href="javascript:void(0)" v-on:click="searchSubmit">Submit</a>
-                    </span>
-                  </div>
-
-                   <div class="input-group-prepend">
-                    <span class="input-group-text">
-                      <a href="javascript:void(0)" v-on:click="searchToday">Today</a>
-                    </span>
-                  </div>
-
-                </div>
-              </div>
-           </div>
-          </div>
-          <!-- Morris chart - Sales -->
-          <div class="chart tab-pane active" id="revenue-chart">
-            <div class="table-responsive">
-              <table class="table table-bordered table-hover table-lg">
-                <thead>
-                  <tr>
-                    <th>Date/Time</th>
-                    <th>Order Info</th>
-                    <th nowrap="">Qty</th>
-                    <th nowrap="" class="bg-light">Sub Total</th>
-                    <th nowrap="">Delivery Fee</th>
-                    <th>Discount</th>
-                    <th class="bg-light">Total</th>
-
-                    <th class="bg-light">Comm</th>
-                    <th class="bg-light">Net</th>
-                    <th>Rider</th>
-                    <th>Status</th>
-                  </tr> 
-                </thead>
-                <tbody>
-                  <tr v-if="orders.length <=0">
-                    <td colspan="11">No record found...</td>
-                  </tr>
-
-                  <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
-                    <td width="160px;">{{ order.submitted_date }}</td>
-                    <td><a href="javascript:void(0)" class="" v-on:click="displayOrderDetails(order)"><strong>Order # {{  order.cart.order_no }}  </strong></a><br>
-                      Customer: {{ order.cart.fullname }}
-                    </td>
-                    
-                    <td width="50px;">{{ order.summary.qty }}</td>
-                    <td width="100px;" nowrap="" class="bg-light">{{ order.summary.sub_total }}</td>
-                    <td width="100px;" nowrap="">{{ order.summary.delivery_fee }}</td>
-
-                    <td width="100px;" nowrap="">
-                      <span v-if="order.summary.discount_amount>0">
-                        {{ order.summary.discount_amount }}
-                      </span>
-                       <span v-else>
-                        -
-                      </span>
-                    </td>
-                    <td width="100px;" nowrap="" class="bg-light">{{ order.summary.total }}</td>
-                    <td width="100px;" nowrap="" class="bg-light">{{ order.summary.total_comm }}</td>
-                    <td width="100px;" nowrap="">{{ order.summary.total - order.summary.total_comm }} </td>
-
-                     <td width="10%">
-                      <p v-if="order.rider">{{ order.rider.name }}</p>
-                      <p v-else>-</p>
-                    </td>
-                    <td width="10%">
-                       <span v-if="order.status">
-                          {{order.status.title}}                        
-                       </span>
-                    </td>
-                  </tr>
-                </tbody>
-
-                <tfoot>
-                  <tr>
-                    <td colspan="2"></td>
-                    <td>{{ summary.qty }}</td>
-                    <td>{{ summary.sub_total }}</td>
-                    <td>{{ summary.fee }}</td>
-                    <td>{{ summary.discount }}</td>
-                    <td class="bg-light">{{ summary.total }}</td>
-                    <td class="bg-light"> {{ summary.total_comm }}</td>
-                    <td class="bg-light"> {{ summary.total_net }} </td>
-                    
-
-                    <td colspan="2"></td>
-                  </tr>
-                </tfoot>
-              </table> 
-            </div>
-           </div>
-        </div>
-      </div><!-- /.card-body -->
+  <div class="merchant-sales-report">
+    <div class="admin-stat-grid merchant-sales-stats">
+      <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-coins"></i></span><div><small>Gross completed sales</small><strong>{{ money(summary.total) }}</strong><em>{{ orderCountLabel }}</em></div></article>
+      <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-receipt"></i></span><div><small>Completed orders</small><strong>{{ orders.length }}</strong><em>{{ integer(summary.qty) }} items sold</em></div></article>
+      <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-percentage"></i></span><div><small>Commission</small><strong>{{ money(summary.total_comm) }}</strong><em>Platform commission</em></div></article>
+      <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-wallet"></i></span><div><small>Net earnings</small><strong>{{ money(summary.total_net) }}</strong><em>After commission</em></div></article>
     </div>
 
+    <div class="card admin-card merchant-sales-filter-card">
+      <div class="admin-card-header">
+        <div><span class="admin-eyebrow">Report period</span><h2>Choose a date range</h2><p>Sales are grouped by the date and time each order was completed.</p></div>
+      </div>
+      <div class="merchant-sales-filter">
+        <div class="form-group">
+          <label for="reservationtime">Date and time range</label>
+          <div class="merchant-date-input"><i class="far fa-calendar-alt"></i><input id="reservationtime" type="text" class="form-control" aria-label="Sales report date and time range"></div>
+        </div>
+        <div class="merchant-sales-filter-actions">
+          <button type="button" class="btn admin-btn-secondary" :disabled="isLoading" @click="searchToday"><i class="fas fa-calendar-day mr-2"></i>Today</button>
+          <button type="button" class="btn admin-btn-primary" :disabled="isLoading" @click="searchSubmit"><i class="fas fa-search mr-2"></i>{{ isLoading ? 'Loading…' : 'Run report' }}</button>
+        </div>
+      </div>
+    </div>
 
+    <div class="card admin-card dashboard-data-card merchant-sales-table-card">
+      <div class="admin-card-header">
+        <div><h2>{{ reportTitle }}</h2><p>Only completed orders are included in sales totals.</p></div>
+        <span class="dashboard-soft-badge">{{ orders.length }} {{ orders.length === 1 ? 'order' : 'orders' }}</span>
+      </div>
+      <div v-if="isLoading" class="dashboard-loading"><i class="fas fa-circle-notch fa-spin"></i>Loading completed sales…</div>
+      <div v-else class="card-body table-responsive p-0">
+        <table class="table dashboard-data-table merchant-sales-table">
+          <thead><tr><th>Completed</th><th>Order</th><th>Items</th><th>Subtotal</th><th>Delivery fee</th><th>Discount</th><th>Gross total</th><th>Commission</th><th>Net earnings</th><th>Rider</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr v-if="orders.length === 0"><td colspan="11" class="dashboard-table-empty">No completed sales were found for this period.</td></tr>
+            <tr v-for="order in orders" :key="order.id">
+              <td><strong>{{ order.completed_date }}</strong><small>Completion time</small></td>
+              <td><strong>#{{ order.cart.order_no }}</strong><small>{{ order.cart.fullname || 'Customer not available' }}</small></td>
+              <td><span class="admin-number-pill">{{ order.summary.qty }}</span></td>
+              <td><span class="dashboard-money">{{ money(order.summary.sub_total) }}</span></td>
+              <td><span class="dashboard-money">{{ money(order.summary.delivery_fee) }}</span></td>
+              <td><span class="merchant-sales-discount">{{ number(order.summary.discount) > 0 ? money(order.summary.discount) : '—' }}</span></td>
+              <td><span class="dashboard-money">{{ money(order.summary.total) }}</span></td>
+              <td><span class="merchant-sales-commission">{{ money(order.summary.total_comm) }}</span></td>
+              <td><strong class="merchant-sales-net">{{ money(order.summary.net) }}</strong></td>
+              <td><strong v-if="order.rider">{{ order.rider.name }}</strong><span v-else class="text-muted">Not assigned</span></td>
+              <td><span v-if="order.status" class="dashboard-status-pill is-success"><i class="fas fa-check mr-1"></i>{{ order.status.title }}</span></td>
+            </tr>
+          </tbody>
+          <tfoot v-if="orders.length">
+            <tr><td colspan="2">Report totals</td><td>{{ integer(summary.qty) }}</td><td>{{ money(summary.sub_total) }}</td><td>{{ money(summary.fee) }}</td><td>{{ money(summary.discount) }}</td><td>{{ money(summary.total) }}</td><td>{{ money(summary.total_comm) }}</td><td>{{ money(summary.total_net) }}</td><td colspan="2"></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
+
 <script>
-     export default {
-       data() {
-            return {
-                field: {
-                },
-                errors: {},
-                orders: {},
-                riders: {},
-                selectedOrder: {},
-                statuses: {},
-                summary: {
-                  qty:0,
-                  subTotal: 0,
-                  discount: 0,
-                  fee: 0,
-                  total:0,
+export default {
+  data() {
+    return {
+      orders: [],
+      summary: this.emptySummary(),
+      isLoading: false,
+      reportTitle: "Today's completed sales",
+    };
+  },
+  computed: {
+    orderCountLabel() {
+      return `${this.orders.length} completed ${this.orders.length === 1 ? 'order' : 'orders'}`;
+    },
+  },
+  mounted() {
+    this.searchToday();
+  },
+  methods: {
+    emptySummary() {
+      return { qty: 0, sub_total: 0, discount: 0, fee: 0, total: 0, total_comm: 0, total_net: 0 };
+    },
+    loadReport(dateFilter) {
+      this.isLoading = true;
+      const payload = dateFilter ? { dateFilter } : {};
 
-                },
-            }
-        },
-        mounted() {
-              this.searchToday();
-        },
-        methods: {
-          fetchData: function() {
-              var self = this;
-              axios.get('/api/merchant/order/list?api_token='+api_token).then(function (response) {
-                self.orders = response.data.orders;
-                self.summary = response.data.totalSummary;
-              
-              }).catch(function (error) {
-                  console.log(error);
-              });
-          },
-          updateRider:function(orderid) {
-
-             let formData = new FormData();
-                formData.append('rider_id', $('#optRider').val())
-
-                axios.post('/api/data/merchant/update/'+orderid+'/rider/submit?api_token='+api_token, formData).then((response) => {
-                  if (response.data.status) {
-                      toastr.success(response.data.message);
-                      this.fetchData();
-                  }
-                  else {
-                    toastr.error(response.data.message);
-                  }
-                }).catch((errors) => {
-                    toastr.error(errors);
-                }); 
-          },
-          updateStatus:function(event) {
-
-             let formData = new FormData();
-                formData.append('cart_id', this.selectedOrder.cart_id);
-                formData.append('status_id', event.target.value);
-                axios.post('/api/data/merchant/update/'+this.selectedOrder.id+'/status/submit?api_token='+api_token, formData).then((response) => {
-                  if (response.data.status) {
-                      toastr.success(response.data.message);
-                      this.fetchData();
-                  }
-                  else {
-                    toastr.error(response.data.message);
-                  }
-                }).catch((errors) => {
-                    toastr.error(errors);
-                }); 
-          },
-          displayOrderDetails: function(order) {
-              this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          },
-          searchSubmit: function() {
-            var self = this;
-              axios.post('/api/merchant/order/search/list?api_token='+api_token, {
-                dateFilter: $('#reservationtime').val(),
-              }).then(function (response) {
-                self.orders = response.data.orders;
-                self.summary = response.data.totalSummary;
-              
-              }).catch(function (error) {
-                  console.log(error);
-              });
-          },
-          searchToday: function() {
-            var self = this;
-              axios.post('/api/merchant/order/search/list?api_token='+api_token).then(function (response) {
-                self.orders = response.data.orders;
-                self.summary = response.data.totalSummary;
-              
-              }).catch(function (error) {
-                  console.log(error);
-              });
-          },
-        }
-    }
-
+      axios.post(`/api/merchant/order/search/list?api_token=${api_token}`, payload)
+        .then((response) => {
+          this.orders = response.data.orders || [];
+          this.summary = response.data.totalSummary || this.emptySummary();
+        })
+        .catch((error) => {
+          this.orders = [];
+          this.summary = this.emptySummary();
+          toastr.error(error.response?.data?.message || 'Unable to load the sales report.');
+        })
+        .finally(() => {
+          this.isLoading = false;
+        });
+    },
+    searchSubmit() {
+      const dateFilter = $('#reservationtime').val();
+      this.reportTitle = dateFilter || 'Completed sales';
+      this.loadReport(dateFilter);
+    },
+    searchToday() {
+      this.reportTitle = "Today's completed sales";
+      this.loadReport();
+    },
+    number(value) {
+      const parsed = Number(String(value ?? 0).replace(/,/g, ''));
+      return Number.isFinite(parsed) ? parsed : 0;
+    },
+    money(value) {
+      return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP', minimumFractionDigits: 2 }).format(this.number(value));
+    },
+    integer(value) {
+      return new Intl.NumberFormat('en-PH', { maximumFractionDigits: 0 }).format(this.number(value));
+    },
+  },
+};
 </script>
-

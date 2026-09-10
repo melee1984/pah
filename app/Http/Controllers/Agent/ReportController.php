@@ -29,7 +29,11 @@ class ReportController extends Controller
 
         $query = $request->user('agent')
             ->commissions()
-            ->with(['restaurant:id,restaurant_name', 'order:id,order_no'])
+            ->with([
+                'restaurant:id,restaurant_name',
+                'order:id,cart_id',
+                'order.cart:id,order_no',
+            ])
             ->whereBetween('qualified_at', [$from, $to])
             ->when($validated['status'] ?? null, fn ($query, $status) => $query->where('status', $status));
 
