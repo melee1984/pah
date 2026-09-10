@@ -38,6 +38,9 @@ class RestaurantEnrollmentService
                 'slug' => $this->uniqueSlug($validated['restaurant_name']),
                 'search_string' => Str::lower(trim($validated['restaurant_name'].' '.$validated['city'])),
                 'active' => false,
+                'account_type_id' => 1, // restaurant 
+                'percentage' => config('agent.default_commission_percentage', 20),
+                'addup' => config('agent.default_commission_addup',  true),
             ]);
 
             $this->assignPartnerRole($user);
