@@ -1,234 +1,70 @@
 <template>
-  <div class="col-md-12">
-    <div class="row">
-      <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-        <div class="card">
-         <div class="card-header">
-              <h3 class="card-title">
-                Information   
-              </h3>
-
-              <div class="card-tools">
-                
-              </div>
-            </div>
-          <!-- /.card-header -->
-          <div class="card-body table-responsive">
-              <div class="row"> 
-                    <div class="col-12">
-                        <form role="form" v-on:submit.prevent="onSubmit" method="post">
-
-                         <div class="form-group">
-                          <div class="col-6">
-                              <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="active" checked="" v-model="field.active">
-                                <label class="custom-control-label" for="active">Active</label>
-                              </div>
-                          </div>
-                          <div class="col-6">
-                               <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="store_open" checked="" v-model="field.store_open">
-                                <label class="custom-control-label" for="store_open">Store Open</label>
-                              </div>
-                          </div>
-                        </div>
-
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Restaurant Name</label>
-                              <input type="text" class="form-control" placeholder="Restaurant Name" id="restaurant_name" v-model="field.restaurant_name">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Email Address</label>
-                              <input type="text" class="form-control" placeholder="Email Address" id="email" v-model="field.email">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Telephone</label>
-                              <input type="text" class="form-control" placeholder="Telephone" id="telephone" v-model="field.telephone">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Mobile</label>
-                              <input type="text" class="form-control" placeholder="Mobile" id="mobile" v-model="field.mobile">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Office Address</label>
-                              <input type="text" class="form-control" placeholder="Office Address" id="address" v-model="field.address">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>City</label>
-                              <input type="text" class="form-control" placeholder="City" id="city" v-model="field.city">
-                            </div>
-                          </div>
-                        </div>
-                         <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Verified Date</label>
-                              <input type="text" class="form-control" placeholder="Verified Date" id="verified_at" v-model="field.verified_at" disabled="">
-                            </div>
-                          </div>
-                        </div>
-                        <br>
-                        <br>
-                        <div class="card-footer">
-                          <button type="submit" class="btn btn-pahatud float-left">Submit</button>
-                        </div>
-
-                        </form>
-                      </div>
-                  </div> 
-          </div>
-          <!-- /.card-body -->
-        </div>
-        <!-- /.card -->
+  <div class="merchant-settings-page merchant-profile-layout">
+    <div class="card admin-card merchant-profile-card">
+      <div class="admin-card-header">
+        <div><span class="admin-eyebrow">Business information</span><h2>Store details</h2><p>These details identify your business across Pahatud.</p></div>
       </div>
-       <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-
-        <div class="card card-outline">
-                <div class="card-header">
-                  <h3 class="card-title">
-                    Store Properties
-                  </h3>
-                  <div class="card-tools">
-                  </div>
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body table-responsive">
-                  <div class="row"> 
-                    <div class="col-12">
-                          <div class="row">
-                            <div class="col-12">
-                              <!-- Custom Tabs -->
-                              <div class="card pull-right">
-                                <div class="card-header d-flex p-0">
-                                  <h3 class="card-title p-3"></h3>
-                                  <ul class="nav nav-pills ml-auto p-2 pull-left">
-                                    <li class="nav-item"><a class="nav-link active" href="#img" data-toggle="tab">Image</a></li>
-                                    <li class="nav-item"><a class="nav-link" href="#banner" data-toggle="tab">Banner</a></li>
-                                    <li class="nav-item"><a class="nav-link " href="#desc" data-toggle="tab">Description</a></li>
-                                    <li class="nav-item"><a class="nav-link " href="#tags" data-toggle="tab">Tags</a></li>
-                                  </ul>
-                                </div><!-- /.card-header -->
-                                <div class="card-body">
-                                  <div class="tab-content">
-                                    
-                                <!-- /.tab-pane -->
-                                    <div class="tab-pane active" id="img">
-                                        <div class="form-group">
-                                          <div class="col-md-12">
-                                        <img :src="field.img" class="img-thumbnail">  
-
-                                          </div>
-                                          <br>
-                                           <p class="text-success">Note: Please upload only 500x500 image dimension. <br>Only accept jpg, jpeg, png extension</p>
-                                          <div class="input-group">
-                                            <div class="custom-file">
-                                              <input type="file" class="custom-file-input" id="file" @change="onFileSelected">
-                                              <label class="custom-file-label" for="img">Choose file</label>
-                                            </div>
-                                             <div class="input-group-append">
-                                              <span class="input-group-text" >
-                                                <a href="javascript:void(0)" v-on:click="onUploadImage">{{ uploadStatus }}</a>
-                                              </span>
-                                            </div>
-                                          </div>
-
-                                        </div>
-                                    </div>
-                                    <div class="tab-pane" id="tags">
-                                        <div class="form-group">
-                                          <div class="col-md-12">
-                                            <ul class="sector">
-                                              <li v-for="sector in sectors">
-
-                                                 <div class="custom-control custom-switch">
-                                                  <input type="checkbox" class="custom-control-input" :id="'sector'+sector.id" v-model="sector.selected" v-on:click="updateSector(sector.id, sector.selected)">
-                                                  <label class="custom-control-label" :for="'sector'+sector.id">{{ sector.name }}</label>
-                                                </div>
-
-                                              </li>
-                                              
-                                            </ul>
-                                          </div>
-                                        </div>
-                                    </div>
-                                    <div class="tab-pane" id="banner">
-                                        <div class="form-group">
-                                          <div class="col-md-12">
-                                        <img :src="field.banner" class="img-fluid">  
-
-                                          </div>
-                                          <br>
-                                           <p class="text-success">Note: Please upload only 1920x600 image dimension. <br>Only accept jpg, jpeg, png extension</p>
-                                          <div class="input-group">
-                                            <div class="custom-file">
-                                              <input type="file" class="custom-file-input" id="file" @change="onFileSelectedBanner">
-                                              <label class="custom-file-label" for="img">Choose file</label>
-                                            </div>
-                                             <div class="input-group-append">
-                                              <span class="input-group-text" >
-                                                <a href="javascript:void(0)" v-on:click="onUploadImageBanner">{{ uploadStatusBanner }}</a>
-                                              </span>
-                                            </div>
-                                          </div>
-
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- /.tab-pane -->
-                                    <div class="tab-pane" id="desc">
-                                        <div class="row">
-                                          <div class="col-sm-12">
-                                            <div class="form-group">
-                                              <label>Description</label>
-                                              <textarea v-model="field.description" class="form-control" placeholder="Enter Description" rows="15">{{ field.description }}</textarea>
-                                            </div>
-                                          </div>
-                                        </div>
-                                    </div>
-                                    <!-- /.tab-pane -->
-                                  </div>
-                                  <!-- /.tab-content -->
-                                </div><!-- /.card-body -->
-                              </div>
-                              <!-- ./card -->
-                            </div>
-                            <!-- /.col -->
-                          </div>
-
-
-                      
-                      </div>
-                  </div> 
-                </div>
-                <!-- /.card-body -->
-              </div>
-
-                <!-- End of the other side --> 
+      <form class="merchant-settings-form" @submit.prevent="onSubmit">
+        <div class="merchant-profile-statuses">
+          <div class="merchant-toggle-panel">
+            <div><strong>Profile active</strong><small>Controls whether this merchant profile is active.</small></div>
+            <label class="merchant-toggle" for="active"><input id="active" v-model="field.active" type="checkbox"><span><i></i></span><strong>{{ field.active ? 'Active' : 'Inactive' }}</strong></label>
+          </div>
+          <div class="merchant-toggle-panel">
+            <div><strong>Store availability</strong><small>Let customers know whether you are accepting orders.</small></div>
+            <label class="merchant-toggle" for="store_open"><input id="store_open" v-model="field.store_open" type="checkbox"><span><i></i></span><strong>{{ field.store_open ? 'Open' : 'Closed' }}</strong></label>
+          </div>
         </div>
+        <div class="merchant-form-grid">
+          <div class="form-group merchant-form-span"><label for="restaurant_name">Restaurant name</label><input id="restaurant_name" v-model.trim="field.restaurant_name" type="text" class="form-control" placeholder="Restaurant name"></div>
+          <div class="form-group merchant-form-span"><label for="email">Email address</label><input id="email" v-model.trim="field.email" type="text" class="form-control" placeholder="Email address"></div>
+          <div class="form-group"><label for="telephone">Telephone</label><input id="telephone" v-model.trim="field.telephone" type="text" class="form-control" placeholder="Telephone"></div>
+          <div class="form-group"><label for="mobile">Mobile</label><input id="mobile" v-model.trim="field.mobile" type="text" class="form-control" placeholder="Mobile"></div>
+          <div class="form-group merchant-form-span"><label for="address">Office address</label><input id="address" v-model.trim="field.address" type="text" class="form-control" placeholder="Office address"></div>
+          <div class="form-group"><label for="city">City</label><input id="city" v-model.trim="field.city" type="text" class="form-control" placeholder="City"></div>
+          <div class="form-group"><label for="verified_at">Verified date</label><input id="verified_at" v-model="field.verified_at" type="text" class="form-control" placeholder="Not yet verified" disabled></div>
+          <div class="form-group merchant-form-span"><label for="description">Store description</label><textarea id="description" v-model="field.description" class="form-control" rows="5" placeholder="Tell customers about your store"></textarea></div>
+        </div>
+        <div class="merchant-form-actions"><button type="submit" class="btn admin-btn-primary"><i class="fas fa-save mr-2"></i>Save profile</button></div>
+      </form>
     </div>
-</div>
+
+    <div class="card admin-card merchant-profile-card">
+      <div class="admin-card-header">
+        <div><span class="admin-eyebrow">Storefront</span><h2>Branding &amp; discovery</h2><p>Manage the visuals and tags customers use to recognize your store.</p></div>
+      </div>
+      <div class="merchant-profile-tabs">
+        <ul class="nav dashboard-table-tabs" role="tablist">
+          <li class="nav-item"><a class="nav-link active" href="#profile-image" data-toggle="tab"><i class="fas fa-store mr-1"></i>Logo</a></li>
+          <li class="nav-item"><a class="nav-link" href="#profile-banner" data-toggle="tab"><i class="fas fa-image mr-1"></i>Banner</a></li>
+          <li class="nav-item"><a class="nav-link" href="#profile-tags" data-toggle="tab"><i class="fas fa-tags mr-1"></i>Tags</a></li>
+        </ul>
+      </div>
+      <div class="card-body merchant-media-body">
+        <div class="tab-content">
+          <div id="profile-image" class="tab-pane active">
+            <div class="merchant-media-preview merchant-logo-preview"><img v-if="field.img" :src="field.img" alt="Current store logo"><span v-else><i class="fas fa-store"></i>No logo uploaded</span></div>
+            <div class="admin-form-note"><i class="fas fa-info-circle"></i><span>Use a square 500 × 500 JPG, JPEG, or PNG image for the clearest result.</span></div>
+            <div class="merchant-upload-control"><div class="custom-file"><input id="profile-logo-file" type="file" class="custom-file-input" accept="image/jpeg,image/png" @change="onFileSelected"><label class="custom-file-label" for="profile-logo-file">Choose logo</label></div><button type="button" class="btn admin-btn-primary" @click="onUploadImage">{{ uploadStatus }}</button></div>
+          </div>
+          <div id="profile-banner" class="tab-pane">
+            <div class="merchant-media-preview merchant-banner-preview"><img v-if="field.banner" :src="field.banner" alt="Current store banner"><span v-else><i class="fas fa-image"></i>No banner uploaded</span></div>
+            <div class="admin-form-note"><i class="fas fa-info-circle"></i><span>Use a 1920 × 600 JPG, JPEG, or PNG image so the banner stays sharp on wide screens.</span></div>
+            <div class="merchant-upload-control"><div class="custom-file"><input id="profile-banner-file" type="file" class="custom-file-input" accept="image/jpeg,image/png" @change="onFileSelectedBanner"><label class="custom-file-label" for="profile-banner-file">Choose banner</label></div><button type="button" class="btn admin-btn-primary" @click="onUploadImageBanner">{{ uploadStatusBanner }}</button></div>
+          </div>
+          <div id="profile-tags" class="tab-pane">
+            <div class="merchant-sector-heading"><strong>Catalog tags</strong><p>Select every category that helps customers discover your store.</p></div>
+            <div class="merchant-sector-grid">
+              <label v-for="sector in sectors" :key="sector.id" class="merchant-sector-option" :for="'sector' + sector.id">
+                <span><strong>{{ sector.name }}</strong><small>{{ sector.selected ? 'Included in your profile' : 'Not currently included' }}</small></span>
+                <span class="merchant-toggle"><input :id="'sector' + sector.id" v-model="sector.selected" type="checkbox" @change="updateSector(sector.id, sector.selected)"><span><i></i></span></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -436,4 +272,3 @@
     }
 
 </script>
-

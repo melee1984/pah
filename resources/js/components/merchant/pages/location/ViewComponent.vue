@@ -1,167 +1,63 @@
 <template>
-  <div class="col-md-12">
-    <div class="row">
-      <div class="col-12" v-if="actionStatus=='view'">
-        <div class="card">
-         <div class="card-header">
-                  <h3 class="card-title">
-                 <div class="input-group input-group-sm" style="width: 150px;">
-                  <input type="text" name="table_search" class="form-control float-right" placeholder="Address" v-model="search" @keyup.enter="searchFilter">
-                  <div class="input-group-append">
-                    <button type="submit" class="btn btn-default" v-on:click="searchFilter"><i class="fas fa-search"></i></button>
-                  </div>
-                </div>
-              </h3>
-
-              <div class="card-tools">
-                <a href="javascript:void(0)" class="btn btn-pahatud" v-on:click="action('add')"><i class="fas fa-plus"></i> ADD</a>
-              </div>
-            </div>
-          <!-- /.card-header -->
-          <div class="card-body table-responsive p-0">
-            <table class="table table-hover text-nowrap">
-              <thead>
-                <tr>
-                 <tr>
-                  <th>Location</th>
-                  <th>Telephone</th>
-                  <th>Mobile</th>
-                  <th>Latitude</th>
-                  <th>Longtitude</th>
-                  <th class="text-right">Active</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="location in searchFilter" v-on:click="editAction(location)">
-                  <td width="50%">
-                      {{ location.address_1 }} <br/>
-                      <div v-if="location.address_2 !=''">
-                        {{ location.address_2 }} <br/>
-                      </div>
-                      {{ location.city }} <br/>
-                      {{ location.zip_code }}  <br/>
-                  </td>
-                  <td>{{ location.telephone }}</td>
-                  <td>{{ location.mobile }}</td>
-                  <td>{{ location.longtitude }}</td>
-                  <td>{{ location.latitude }}</td>
-                  <td width="50%" align="right">
-                    <div class="custom-control custom-switch">
-                    <input type="checkbox" class="custom-control-input" :id="'is_active'+location.id" v-model="location.active" v-on:click="updateStatus(location.id, location.active)">
-                    <label class="custom-control-label" :for="'is_active'+location.id"></label>
-                  </div>
-                  </td>
-                 
-                </tr>
-              </tbody>
-              <tfoot v-if="categories.last_page > 1">
-                <tr>
-                  <td colspan="4">
-                    <pagination-display :data="categories" @pagination-change-page="fetchData"></pagination-display>
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-          <!-- /.card-body -->
+  <div class="merchant-settings-page">
+    <div v-if="actionStatus === 'view'" class="card admin-card dashboard-data-card">
+      <div class="admin-card-header merchant-settings-card-header">
+        <div><h2>Store locations</h2><p>{{ searchFilter.length }} locations shown. Select a row to edit its details.</p></div>
+        <div class="merchant-settings-toolbar">
+          <label class="admin-search" for="location-search">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input id="location-search" v-model.trim="search" type="search" placeholder="Search addresses">
+          </label>
+          <button type="button" class="btn admin-btn-primary" @click="action('add')"><i class="fas fa-plus mr-2"></i>Add location</button>
         </div>
-        <!-- /.card -->
+      </div>
+      <div class="card-body table-responsive p-0">
+        <table class="table dashboard-data-table merchant-settings-table merchant-location-table">
+          <thead><tr><th>Location</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
+          <tbody>
+            <tr v-if="searchFilter.length === 0"><td colspan="5" class="dashboard-table-empty">{{ search ? 'No locations match your search.' : 'No store locations have been added yet.' }}</td></tr>
+            <tr v-for="location in searchFilter" :key="location.id" class="merchant-settings-row" @click="editAction(location)">
+              <td><strong>{{ location.address_1 }}</strong><small>{{ [location.address_2, location.city, location.zip_code].filter(Boolean).join(', ') || 'No additional address details' }}</small></td>
+              <td>{{ location.telephone || '—' }}</td>
+              <td>{{ location.mobile || '—' }}</td>
+              <td><strong>{{ location.latitude || '—' }}</strong><small>Lat · {{ location.longtitude || '—' }} Long</small></td>
+              <td class="text-right" @click.stop>
+                <label class="merchant-toggle" :for="'is_active' + location.id">
+                  <input :id="'is_active' + location.id" v-model="location.active" type="checkbox" @change="updateStatus(location.id, location.active)">
+                  <span><i></i></span><strong>{{ location.active ? 'Active' : 'Hidden' }}</strong>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="locations.last_page > 1" class="merchant-settings-pagination"><pagination-display :data="locations" @pagination-change-page="fetchData"></pagination-display></div>
+    </div>
+
+    <div v-else class="merchant-form-shell merchant-form-shell-wide">
+      <div class="card admin-card merchant-form-card">
+        <div class="admin-card-header">
+          <div><span class="admin-eyebrow">Location details</span><h2>{{ actionStatus === 'add' ? 'Add a store location' : 'Edit store location' }}</h2><p>Provide an address and reliable contact details for this branch.</p></div>
+          <button v-if="actionStatus === 'edit'" type="button" class="btn merchant-danger-button" @click="onDelete"><i class="fas fa-trash-alt mr-2"></i>Delete</button>
+        </div>
+        <form class="merchant-settings-form" @submit.prevent="onSubmit">
+          <div class="merchant-toggle-panel">
+            <div><strong>Location availability</strong><small>Active locations can receive customer orders.</small></div>
+            <label class="merchant-toggle" for="active"><input id="active" v-model="field.active" type="checkbox"><span><i></i></span><strong>{{ field.active ? 'Active' : 'Hidden' }}</strong></label>
+          </div>
+          <div class="merchant-form-grid">
+            <div class="form-group merchant-form-span"><label for="address_1">Address line 1</label><input id="address_1" v-model.trim="field.address_1" type="text" class="form-control" placeholder="Street, building, or unit"></div>
+            <div class="form-group merchant-form-span"><label for="address_2">Address line 2 <small>(optional)</small></label><input id="address_2" v-model.trim="field.address_2" type="text" class="form-control" placeholder="Barangay or landmark"></div>
+            <div class="form-group"><label for="city">City</label><input id="city" v-model.trim="field.city" type="text" class="form-control" placeholder="City"></div>
+            <div class="form-group"><label for="zip">ZIP code</label><input id="zip" v-model.trim="field.zip_code" type="text" class="form-control" placeholder="ZIP code"></div>
+            <div class="form-group"><label for="mobile">Mobile</label><input id="mobile" v-model.trim="field.mobile" type="text" class="form-control" placeholder="Mobile number"></div>
+            <div class="form-group"><label for="telephone">Telephone</label><input id="telephone" v-model.trim="field.telephone" type="text" class="form-control" placeholder="Telephone number"></div>
+          </div>
+          <div class="merchant-form-actions"><button type="button" class="btn admin-btn-secondary" @click="cancel">Cancel</button><button type="submit" class="btn admin-btn-primary">{{ actionStatus === 'add' ? 'Add location' : 'Save changes' }}</button></div>
+        </form>
       </div>
     </div>
-    <div class="col-12" v-if="actionStatus!='view'">
-          <div class="row">
-            <div class="col-md-6 col-lg-6 col-xs-12 col-sm-12">
-              <div class="card card-primary card-outline">
-                <div class="card-header">
-                  <h3 class="card-title" v-if="actionStatus=='add'">
-                    Adding Location
-                  </h3>
-                  <h3 class="card-title" v-if="actionStatus=='edit'">
-                    Edit Location
-                  </h3>
-                  <div class="card-tools">
-                    <a href="javascript:void(0)" v-if="actionStatus=='edit'" class="btn btn-danger btn-sm" v-on:click="onDelete()"><i class="fas fa-close"></i> DELETE</a>
-                  </div>
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body table-responsive">
-                  <div class="row"> 
-                    <div class="col-12">
-                        <form role="form" v-on:submit.prevent="onSubmit" method="post">
-                         <div class="form-group">
-                          <div class="custom-control custom-switch">
-                            <input type="checkbox" class="custom-control-input" id="active" checked="" v-model="field.active">
-                            <label class="custom-control-label" for="active">Active</label>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Address 1</label>
-                              <input type="text" class="form-control" placeholder="Enter Address line 1" id="address_1" v-model="field.address_1">
-                            </div>
-                          </div>
-                        </div>
-                         <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Address 2</label>
-                              <input type="text" class="form-control" placeholder="Enter Address line 2" id="address_2" v-model="field.address_2">
-                            </div>
-                          </div>
-                        </div>
-                         <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>City</label>
-                              <input type="text" class="form-control" placeholder="Enter City" id="city" v-model="field.city">
-                            </div>
-                          </div>
-                        </div>
-                         <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Zip Code</label>
-                              <input type="text" class="form-control" placeholder="Enter Zip code" id="zip" v-model="field.zip_code">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Mobile</label>
-                              <input type="text" class="form-control" placeholder="Enter Mobile" id="mobile" v-model="field.mobile">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Telephone</label>
-                              <input type="text" class="form-control" placeholder="Enter Telephone" id="telephone" v-model="field.telephone">
-                            </div>
-                          </div>
-                        </div>
-                        
-                        
-                        <br>
-                        <br>
-                        <div class="card-footer">
-                          <button type="submit" class="btn btn-pahatud float-left">Submit</button>
-                          <a href="javascript:void(0)" class="btn btn-default float-right" v-on:click="cancel"><i class="fas window-close"></i> Cancel</a>
-                        </div>
-
-                        </form>
-                      </div>
-                  </div> 
-                </div>
-                <!-- /.card-body -->
-              </div>
-            </div>
-         </div>
-    </div>
-
-</div>
+  </div>
 </template>
 
 <script>
@@ -184,8 +80,7 @@
                 display: {},
                 actionStatus: 'view',
                 search: '',
-                categories:[],
-                parent_category: {},
+                locations: {},
             }
         },
         mounted() {
@@ -195,7 +90,7 @@
         computed: {
           searchFilter() {
             return this.Temp.filter(location => {
-              return location.address_1.toLowerCase().includes(this.search.toLowerCase())
+              return (location.address_1 || '').toLowerCase().includes(this.search.toLowerCase())
             })
           }
         },
@@ -231,8 +126,8 @@
           fetchData: function(page = 1) {
               var self = this;
               axios.get('/api/merchant/location/list?page='+page).then(function (response) {
-                  self.location = response.data.location;
-                  self.Temp = self.location.data;
+                  self.locations = response.data.location;
+                  self.Temp = self.locations.data;
                   
               })
               .catch(function (error) {

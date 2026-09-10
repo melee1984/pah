@@ -1,133 +1,85 @@
 <template>
-	<div class="col-md-12">
-		<div class="row">
-		  <div class="col-12" v-if="actionStatus=='view'">
-		    <div class="card">
-		     <div class="card-header">
-                  <h3 class="card-title">
-                 <div class="input-group input-group-sm" style="width: 150px;">
-                  <input type="text" name="table_search" class="form-control float-right" placeholder="Category Name" v-model="search" @keyup.enter="searchFilter">
-                  <div class="input-group-append">
-                    <button type="submit" class="btn btn-default" v-on:click="searchFilter"><i class="fas fa-search"></i></button>
-                  </div>
-                </div>
-              </h3>
+  <div class="merchant-settings-page">
+    <div v-if="actionStatus === 'view'" class="card admin-card dashboard-data-card">
+      <div class="admin-card-header merchant-settings-card-header">
+        <div>
+          <h2>Product categories</h2>
+          <p>{{ searchFilter.length }} categories shown. Select a row to edit it.</p>
+        </div>
+        <div class="merchant-settings-toolbar">
+          <label class="admin-search" for="category-search">
+            <i class="fas fa-search" aria-hidden="true"></i>
+            <input id="category-search" v-model.trim="search" type="search" placeholder="Search categories">
+          </label>
+          <button type="button" class="btn admin-btn-primary" @click="action('add')">
+            <i class="fas fa-plus mr-2" aria-hidden="true"></i>Add category
+          </button>
+        </div>
+      </div>
 
-              <div class="card-tools">
-                <a href="javascript:void(0)" class="btn btn-pahatud" v-on:click="action('add')"><i class="fas fa-plus"></i> ADD</a>
-              </div>
-            </div>
-		      <!-- /.card-header -->
-		      <div class="card-body table-responsive p-0">
-		        <table class="table table-hover text-nowrap">
-		          <thead>
-		            <tr>
-		              <th>Parent Category</th>
-		              <th>Name</th>
-		              <th class="text-right">Active</th>
-		            </tr>
-		          </thead>
-		          <tbody>
-		            <tr v-for="category in searchFilter" v-on:click="editAction(category)">
-		             <!--  <td>{{ category.id }}</td> -->
-                  <td width="25%">
-                    <div v-if="category.parent">
-                      {{ category.parent.name }}
-                    </div>
-                    <div v-else>
-                        -
-                    </div>
-                  </td>
-		              <td width="25%">{{ category.name }}</td>
-		              <td width="50%">
-		              	<div class="custom-control custom-switch">
-		                <input type="checkbox" class="custom-control-input" :id="'is_active'+category.id" v-model="category.active" v-on:click="updateStatus(category.id, category.active)">
-		                <label class="custom-control-label" :for="'is_active'+category.id"></label>
-		              </div>
-		              </td>
-                 
-		            </tr>
-		          </tbody>
-              <tfoot v-if="categories.last_page > 1">
-                <tr>
-                  <td colspan="4">
-                    <pagination-display :data="categories" @pagination-change-page="fetchData"></pagination-display>
-                  </td>
-                </tr>
-              </tfoot>
-		        </table>
-		      </div>
-		      <!-- /.card-body -->
-		    </div>
-		    <!-- /.card -->
-		  </div>
-		</div>
-    <div class="col-12" v-if="actionStatus!='view'">
-          <div class="row">
-            <div class="col-md-6 col-lg-6 col-xs-12 col-sm-12">
-              <div class="card card-primary card-outline">
-                <div class="card-header">
-                  <h3 class="card-title" v-if="actionStatus=='add'">
-                    ADDING Category
-                  </h3>
-                  <h3 class="card-title" v-if="actionStatus=='edit'">
-                    Edit Category
-                  </h3>
-                  <div class="card-tools">
-                    <a href="javascript:void(0)" v-if="actionStatus=='edit'" class="btn btn-danger btn-sm" v-on:click="onDelete()"><i class="fas fa-close"></i> DELETE</a>
-                  </div>
-                </div>
-                <!-- /.card-header -->
-                <div class="card-body table-responsive">
-                  <div class="row"> 
-                    <div class="col-12">
-                        <form role="form" v-on:submit.prevent="onSubmit" method="post">
-                         <div class="form-group">
-                          <div class="custom-control custom-switch">
-                            <input type="checkbox" class="custom-control-input" id="active" v-model="field.active">
-                            <label class="custom-control-label" for="active">Active</label>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <!-- text input -->
-                            <div class="form-group">
-                              <label>Category Title</label>
-                              <input type="text" class="form-control" placeholder="Enter name" id="name" v-model="field.name">
-                            </div>
-                          </div>
-                        </div>
-                        <div class="row">
-                          <div class="col-sm-12">
-                            <div class="form-group">
-                              <label>Parent Category</label>
-                              <select class="form-control" id="category" v-model="field.parent_category">
-                                <option value="">Parent Category</option>
-                                <option v-for="category in parent_category" :value=category.id>
-                                   {{ category.name }}
-                                 </option>
-                            </select>
-                            </div>
-                          </div>
-                        </div>
-                        <br>
-                        <br>
-                        <div class="card-footer">
-                          <button type="submit" class="btn btn-pahatud float-left">Submit</button>
-                          <a href="/merchant/category" class="btn btn-default float-right"><i class="fas window-close"></i> Cancel</a>
-                        </div>
-
-                        </form>
-                      </div>
-                  </div> 
-                </div>
-                <!-- /.card-body -->
-              </div>
-            </div>
-         </div>
+      <div class="card-body table-responsive p-0">
+        <table class="table dashboard-data-table merchant-settings-table">
+          <thead><tr><th>Category</th><th>Parent category</th><th class="text-right">Availability</th></tr></thead>
+          <tbody>
+            <tr v-if="searchFilter.length === 0">
+              <td colspan="3" class="dashboard-table-empty">{{ search ? 'No categories match your search.' : 'No categories have been added yet.' }}</td>
+            </tr>
+            <tr v-for="category in searchFilter" :key="category.id" class="merchant-settings-row" @click="editAction(category)">
+              <td><strong>{{ category.name }}</strong><small>Click to edit category details</small></td>
+              <td>{{ category.parent ? category.parent.name : 'Top-level category' }}</td>
+              <td class="text-right" @click.stop>
+                <label class="merchant-toggle" :for="'is_active' + category.id">
+                  <input :id="'is_active' + category.id" v-model="category.active" type="checkbox" @change="updateStatus(category.id, category.active)">
+                  <span><i></i></span><strong>{{ category.active ? 'Active' : 'Hidden' }}</strong>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div v-if="categories.last_page > 1" class="merchant-settings-pagination">
+        <pagination-display :data="categories" @pagination-change-page="fetchData"></pagination-display>
+      </div>
     </div>
 
-</div>
+    <div v-else class="merchant-form-shell">
+      <div class="card admin-card merchant-form-card">
+        <div class="admin-card-header">
+          <div>
+            <span class="admin-eyebrow">Category details</span>
+            <h2>{{ actionStatus === 'add' ? 'Add a category' : 'Edit category' }}</h2>
+            <p>Use a parent category only when this belongs inside another group.</p>
+          </div>
+          <button v-if="actionStatus === 'edit'" type="button" class="btn merchant-danger-button" @click="onDelete">
+            <i class="fas fa-trash-alt mr-2"></i>Delete
+          </button>
+        </div>
+        <form class="merchant-settings-form" @submit.prevent="onSubmit">
+          <div class="merchant-toggle-panel">
+            <div><strong>Category availability</strong><small>Active categories can be used throughout your catalog.</small></div>
+            <label class="merchant-toggle" for="active">
+              <input id="active" v-model="field.active" type="checkbox"><span><i></i></span><strong>{{ field.active ? 'Active' : 'Hidden' }}</strong>
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="name">Category name</label>
+            <input id="name" v-model.trim="field.name" type="text" class="form-control" placeholder="e.g. Main dishes">
+          </div>
+          <div class="form-group">
+            <label for="category">Parent category <small>(optional)</small></label>
+            <select id="category" v-model="field.parent_category" class="form-control">
+              <option value="">No parent category</option>
+              <option v-for="category in parent_category" :key="category.id" :value="category.id">{{ category.name }}</option>
+            </select>
+          </div>
+          <div class="merchant-form-actions">
+            <button type="button" class="btn admin-btn-secondary" @click="cancel">Cancel</button>
+            <button type="submit" class="btn admin-btn-primary">{{ actionStatus === 'add' ? 'Add category' : 'Save changes' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script>

@@ -31,6 +31,16 @@
             <button
               type="button"
               class="nav-link"
+              :class="{ active: activeList === 'completed' }"
+              @click="activeList = 'completed'"
+            >
+              Completed <span class="badge badge-success ml-1">{{ completedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
               :class="{ active: activeList === 'cancelled' }"
               @click="activeList = 'cancelled'"
             >
@@ -263,12 +273,19 @@
               return statusId >= 2 && statusId <= 6;
             });
           },
+          completedOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 7);
+          },
           cancelledOrders: function() {
             return this.orders.filter(order => Number(order.status_id) === 8);
           },
           displayedOrders: function() {
             if (this.activeList === 'accepted') {
               return this.acceptedOrders;
+            }
+
+            if (this.activeList === 'completed') {
+              return this.completedOrders;
             }
 
             if (this.activeList === 'cancelled') {
@@ -279,7 +296,11 @@
           },
           activeListLabel: function() {
             if (this.activeList === 'accepted') {
-              return 'Accepted';
+              return 'In progress';
+            }
+
+            if (this.activeList === 'completed') {
+              return 'Completed';
             }
 
             if (this.activeList === 'cancelled') {
@@ -343,6 +364,10 @@
             }
 
             if (statusId === 2) {
+              return 'is-success';
+            }
+
+            if (statusId === 7) {
               return 'is-success';
             }
 

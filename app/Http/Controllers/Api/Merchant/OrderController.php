@@ -32,7 +32,6 @@ class OrderController extends Controller
             ])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at') 
-            ->whereNull('delivered_at')
             ->orderBy('created_at', 'desc')->get();
 
          foreach($orders as $order) {
