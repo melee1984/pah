@@ -49,22 +49,7 @@
             <div class="agent-empty"><strong>No commission activity yet</strong>Completed orders from your enrolled restaurants will appear here.</div>
         @else
             <div class="agent-table-wrap">
-                <table class="agent-table">
-                    <thead><tr><th>Restaurant</th><th>Order</th><th>Order value</th><th>Agent share</th><th>Commission</th><th>Status</th><th>Date</th></tr></thead>
-                    <tbody>
-                    @foreach ($recentCommissions as $commission)
-                        <tr>
-                            <td class="agent-table-primary">{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}</td>
-                            <td>{{ $commission->order?->cart?->order_no ? '#'.$commission->order->cart->order_no : 'Order number unavailable' }}</td>
-                            <td class="agent-money">₱{{ number_format($commission->order_amount, 2) }}</td>
-                            <td>{{ number_format($commission->commission_percentage, 2) }}%</td>
-                            <td class="agent-money agent-money-positive">₱{{ number_format($commission->commission_amount, 2) }}</td>
-                            <td><span class="agent-badge agent-badge-{{ $commission->status }}">{{ $commission->status }}</span></td>
-                            <td>{{ $commission->qualified_at->format('M d, Y') }}<span class="agent-table-secondary">{{ $commission->qualified_at->format('g:i A') }}</span></td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
+                @include('agent.partials.commission-table', ['commissions' => $recentCommissions])
             </div>
         @endif
     </section>

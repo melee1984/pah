@@ -6,6 +6,7 @@ use App\AgentCommission;
 use App\Http\Controllers\Controller;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -30,7 +31,7 @@ class ReportController extends Controller
         $query = $request->user('agent')
             ->commissions()
             ->with([
-                'restaurant:id,restaurant_name',
+                'restaurant:id,restaurant_name,percentage',
                 'order:id,cart_id',
                 'order.cart:id,order_no',
             ])
@@ -39,7 +40,7 @@ class ReportController extends Controller
 
         $totals = [
             'orders' => (clone $query)->count(),
-            'order_value' => (float) (clone $query)->sum('order_amount'),
+            'subtotal' => (float) (clone $query)->sum(DB::raw('COALESCE(subtotal_amount, order_amount)')),
             'commission' => (float) (clone $query)->where('status', '!=', AgentCommission::STATUS_REVERSED)->sum('commission_amount'),
         ];
 

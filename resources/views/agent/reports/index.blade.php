@@ -22,7 +22,7 @@
 
     <section class="agent-report-totals" aria-label="Report totals">
         <article class="agent-report-total"><span>Total orders</span><strong>{{ number_format($totals['orders']) }}</strong></article>
-        <article class="agent-report-total"><span>Total order value</span><strong>₱{{ number_format($totals['order_value'], 2) }}</strong></article>
+        <article class="agent-report-total"><span>Total qualifying subtotal</span><strong>₱{{ number_format($totals['subtotal'], 2) }}</strong></article>
         <article class="agent-report-total"><span>Total agent commission</span><strong>₱{{ number_format($totals['commission'], 2) }}</strong></article>
     </section>
 
@@ -32,22 +32,7 @@
             <div class="agent-empty"><strong>No transactions in this period</strong>Try a wider date range or a different commission status.</div>
         @else
             <div class="agent-table-wrap">
-                <table class="agent-table">
-                    <thead><tr><th>Restaurant</th><th>Orders</th><th>Order amount</th><th>Agent share</th><th>Agent commission</th><th>Date</th><th>Status</th></tr></thead>
-                    <tbody>
-                    @foreach ($commissions as $commission)
-                        <tr>
-                            <td class="agent-table-primary">{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}<span class="agent-table-secondary">{{ $commission->order?->cart?->order_no ? 'Order #'.$commission->order->cart->order_no : 'Order number unavailable' }}</span></td>
-                            <td>1</td>
-                            <td class="agent-money">₱{{ number_format($commission->order_amount, 2) }}</td>
-                            <td>{{ number_format($commission->commission_percentage, 2) }}%</td>
-                            <td class="agent-money {{ $commission->status !== 'reversed' ? 'agent-money-positive' : '' }}">₱{{ number_format($commission->commission_amount, 2) }}</td>
-                            <td>{{ $commission->qualified_at->format('M d, Y') }}<span class="agent-table-secondary">{{ $commission->qualified_at->format('g:i A') }}</span></td>
-                            <td><span class="agent-badge agent-badge-{{ $commission->status }}">{{ $commission->status }}</span>@if($commission->reversal_reason)<span class="agent-table-secondary">{{ $commission->reversal_reason }}</span>@endif</td>
-                        </tr>
-                    @endforeach
-                    </tbody>
-                </table>
+                @include('agent.partials.commission-table', ['commissions' => $commissions])
             </div>
             <div class="agent-pagination">{{ $commissions->links('pagination::bootstrap-4') }}</div>
         @endif

@@ -100,6 +100,23 @@ button, input, select, textarea { font: inherit; }
 .agent-table-secondary { color: var(--agent-muted); display: block; font-size: 12px; margin-top: 3px; }
 .agent-money { font-weight: 700; white-space: nowrap; }
 .agent-money-positive { color: var(--agent-green); }
+.agent-commission-table { min-width: 1180px; }
+.agent-order-number { color: var(--agent-red); display: block; font-size: 12px; font-weight: 700; margin-top: 5px; }
+.agent-order-breakdown { display: grid; gap: 5px; min-width: 160px; }
+.agent-order-breakdown > span { align-items: center; color: var(--agent-muted); display: flex; gap: 18px; justify-content: space-between; }
+.agent-order-breakdown small { font-size: 11px; }
+.agent-order-breakdown strong { color: var(--agent-ink); font-size: 12px; white-space: nowrap; }
+.agent-order-breakdown .agent-order-total { border-top: 1px solid var(--agent-line); margin-top: 2px; padding-top: 6px; }
+.agent-order-breakdown .agent-order-total small,
+.agent-order-breakdown .agent-order-total strong { color: var(--agent-ink); font-weight: 800; }
+.agent-rate-stack { display: grid; gap: 4px; min-width: 105px; }
+.agent-rate-stack strong { font-family: 'Manrope', sans-serif; font-size: 15px; }
+.agent-rate-stack span { color: var(--agent-muted); font-size: 11px; line-height: 1.35; }
+.agent-commission-result { display: grid; gap: 4px; min-width: 155px; }
+.agent-commission-result strong { font-family: 'Manrope', sans-serif; font-size: 16px; white-space: nowrap; }
+.agent-commission-result.is-earned strong { color: var(--agent-green); }
+.agent-commission-result span { color: var(--agent-muted); font-size: 10px; white-space: nowrap; }
+.agent-date { font-size: 13px; white-space: nowrap; }
 .agent-badge { border-radius: 100px; display: inline-block; font-size: 11px; font-weight: 800; padding: 6px 9px; text-transform: capitalize; }
 .agent-badge-pending { background: #fff5dc; color: var(--agent-amber); }
 .agent-badge-approved { background: #eaf8ef; color: var(--agent-green); }

@@ -41,6 +41,7 @@ class AgentPortalTest extends TestCase
             $table->string('city')->nullable();
             $table->string('slug')->nullable();
             $table->text('search_string')->nullable();
+            $table->decimal('percentage', 5, 2)->nullable();
             $table->boolean('active')->default(false);
             $table->timestamp('verified_at')->nullable();
             $table->timestamps();
@@ -188,6 +189,55 @@ class AgentPortalTest extends TestCase
             ->assertSee('Add new agent');
     }
 
+    public function test_admin_can_view_the_agent_commission_report_with_cart_order_numbers(): void
+    {
+        $agent = $this->agent('commission-report@example.com');
+        $restaurant = $this->restaurant($agent, 'Commission Report Restaurant', 'commission-restaurant@example.com');
+        $cart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-AGENT-0042',
+        ]);
+        $order = Orders::query()->create([
+            'cart_id' => $cart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+        ]);
+        AgentCommission::query()->create([
+            'order_id' => $order->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 125,
+            'subtotal_amount' => 100,
+            'delivery_fee_amount' => 25,
+            'discount_amount' => 0,
+            'total_amount' => 125,
+            'pahatud_commission_percentage' => 20,
+            'pahatud_commission_amount' => 20,
+            'commission_percentage' => 30,
+            'commission_amount' => 6,
+            'status' => AgentCommission::STATUS_APPROVED,
+            'qualified_at' => now(),
+        ]);
+        $admin = User::query()->forceCreate([
+            'name' => 'Report Admin',
+            'email' => 'report-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.report.agents'))
+            ->assertOk()
+            ->assertSeeText('Agent Commission Report')
+            ->assertSeeText('Commission Report Restaurant')
+            ->assertSeeText('Order #PAH-AGENT-0042')
+            ->assertSeeText('Subtotal')
+            ->assertSeeText('Delivery fee')
+            ->assertSeeText('₱125.00')
+            ->assertSeeText('₱6.00');
+    }
+
     public function test_restaurant_pages_are_scoped_to_the_logged_in_agent(): void
     {
         $agent = $this->agent('one@example.com');
@@ -318,6 +368,8 @@ class AgentPortalTest extends TestCase
         $this->actingAs($agent, 'agent')
             ->get(route('agent.reports.index'))
             ->assertOk()
+            ->assertSee('agent-commission-table', false)
+            ->assertSee('agent-order-breakdown', false)
             ->assertSee('Own Restaurant')
             ->assertDontSee('Hidden Restaurant')
             ->assertSee('₱30.00')
@@ -352,14 +404,19 @@ class AgentPortalTest extends TestCase
         $this->actingAs($agent, 'agent')
             ->get(route('agent.dashboard'))
             ->assertOk()
+            ->assertSee('agent-commission-table', false)
+            ->assertSee('agent-order-breakdown', false)
             ->assertSeeText('#PAH-2026-0042');
     }
 
     public function test_delivered_order_snapshots_commission_and_cancellation_reverses_it(): void
     {
+        config()->set('agent.pahatud_commission_percentage', 15);
+
         $agent = $this->agent();
         $restaurant = $this->restaurant($agent);
-        $cart = Cart::query()->create(['partner_id' => $restaurant->id, 'delivery_fee' => 0, 'discount_amount' => 0]);
+        $restaurant->update(['percentage' => 20]);
+        $cart = Cart::query()->create(['partner_id' => $restaurant->id, 'delivery_fee' => 25, 'discount_amount' => 10]);
         CartItem::query()->create([
             'cart_id' => $cart->id,
             'qty' => 1,
@@ -381,9 +438,15 @@ class AgentPortalTest extends TestCase
         $this->assertDatabaseHas('agent_commissions', [
             'order_id' => $order->id,
             'agent_id' => $agent->id,
-            'order_amount' => 100,
+            'order_amount' => 115,
+            'subtotal_amount' => 100,
+            'delivery_fee_amount' => 25,
+            'discount_amount' => 10,
+            'total_amount' => 115,
+            'pahatud_commission_percentage' => 20,
+            'pahatud_commission_amount' => 20,
             'commission_percentage' => 30,
-            'commission_amount' => 4.5,
+            'commission_amount' => 6,
             'status' => AgentCommission::STATUS_PENDING,
         ]);
 
@@ -419,6 +482,7 @@ class AgentPortalTest extends TestCase
             'city' => 'Davao City',
             'slug' => str($name)->slug(),
             'search_string' => $name,
+            'percentage' => config('agent.pahatud_commission_percentage'),
             'active' => true,
             'verified_at' => now(),
         ]);

@@ -25,3 +25,4 @@ Thumbs.db
 yarn-error.log
 /public/uploads/*
 public/uploads/user
+public/build/assets

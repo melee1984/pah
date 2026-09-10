@@ -37,17 +37,23 @@ class AgentCommissionService
             }
 
             $order->loadMissing('cart');
-            $orderAmount = $this->orderAmount($order);
+            $breakdown = $this->orderBreakdown($order);
             $percentage = round((float) $agent->commission_percentage, 2);
-            $pahatudCommissionPercentage = round((float) config('agent.pahatud_commission_percentage'), 2);
-            $pahatudCommissionAmount = round($orderAmount * ($pahatudCommissionPercentage / 100), 2);
+            $pahatudCommissionPercentage = round((float) ($restaurant->percentage ?? config('agent.pahatud_commission_percentage')), 2);
+            $pahatudCommissionAmount = round($breakdown['subtotal'] * ($pahatudCommissionPercentage / 100), 2);
             $commissionAmount = round($pahatudCommissionAmount * ($percentage / 100), 2);
 
             return AgentCommission::query()->create([
                 'order_id' => $order->getKey(),
                 'restaurant_id' => $restaurant->getKey(),
                 'agent_id' => $agent->getKey(),
-                'order_amount' => $orderAmount,
+                'order_amount' => $breakdown['total'],
+                'subtotal_amount' => $breakdown['subtotal'],
+                'delivery_fee_amount' => $breakdown['delivery_fee'],
+                'discount_amount' => $breakdown['discount'],
+                'total_amount' => $breakdown['total'],
+                'pahatud_commission_percentage' => $pahatudCommissionPercentage,
+                'pahatud_commission_amount' => $pahatudCommissionAmount,
                 'commission_percentage' => $percentage,
                 'commission_amount' => $commissionAmount,
                 'status' => AgentCommission::STATUS_PENDING,
@@ -79,10 +85,18 @@ class AgentCommissionService
             || $order->delivered_at !== null;
     }
 
-    private function orderAmount(Orders $order): float
+    /**
+     * @return array{subtotal: float, delivery_fee: float, discount: float, total: float}
+     */
+    private function orderBreakdown(Orders $order): array
     {
         if (! $order->cart) {
-            return 0;
+            return [
+                'subtotal' => 0,
+                'delivery_fee' => 0,
+                'discount' => 0,
+                'total' => 0,
+            ];
         }
 
         $items = DB::table('cart_details')
@@ -91,13 +105,16 @@ class AgentCommissionService
             ->selectRaw('COALESCE(SUM(qty * discount_amount), 0) as item_discount')
             ->first();
 
-        return round(
-            (float) $items->subtotal
-            + (float) $order->cart->delivery_fee
-            - (float) $order->cart->discount_amount
-            - (float) $items->item_discount,
-            2,
-        );
+        $subtotal = round((float) $items->subtotal, 2);
+        $deliveryFee = round((float) $order->cart->delivery_fee, 2);
+        $discount = round((float) $order->cart->discount_amount + (float) $items->item_discount, 2);
+
+        return [
+            'subtotal' => $subtotal,
+            'delivery_fee' => $deliveryFee,
+            'discount' => $discount,
+            'total' => round($subtotal + $deliveryFee - $discount, 2),
+        ];
     }
 
     private function isCancelled(Orders $order): bool

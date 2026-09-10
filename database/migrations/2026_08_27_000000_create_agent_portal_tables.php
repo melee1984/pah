@@ -36,6 +36,12 @@ return new class extends Migration
                 $table->unsignedBigInteger('restaurant_id')->index();
                 $table->unsignedBigInteger('agent_id')->index();
                 $table->decimal('order_amount', 12, 2);
+                $table->decimal('subtotal_amount', 12, 2)->nullable();
+                $table->decimal('delivery_fee_amount', 12, 2)->nullable();
+                $table->decimal('discount_amount', 12, 2)->nullable();
+                $table->decimal('total_amount', 12, 2)->nullable();
+                $table->decimal('pahatud_commission_percentage', 5, 2)->nullable();
+                $table->decimal('pahatud_commission_amount', 12, 2)->nullable();
                 $table->decimal('commission_percentage', 5, 2);
                 $table->decimal('commission_amount', 12, 2);
                 $table->string('status', 20)->default('pending')->index();

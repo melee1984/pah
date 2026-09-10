@@ -29,7 +29,7 @@ class DashboardController extends Controller
 
         $recentCommissions = $agent->commissions()
             ->with([
-                'restaurant:id,restaurant_name',
+                'restaurant:id,restaurant_name,percentage',
                 'order:id,cart_id',
                 'order.cart:id,order_no',
             ])

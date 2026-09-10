@@ -181,6 +181,12 @@ body.pahatud-admin {
 .rider-commission-filters { grid-template-columns: minmax(210px, 1fr) minmax(150px, .55fr) minmax(150px, .55fr) auto; }
 .rider-report-stats .admin-stat-card:last-child strong { font-size: 17px; }
 .rider-commission-table { min-width: 980px; }
+.agent-commission-filters { grid-template-columns: minmax(170px, .8fr) minmax(190px, 1fr) minmax(130px, .55fr) minmax(135px, .55fr) minmax(135px, .55fr) auto; }
+.agent-commission-table { min-width: 1240px; }
+.agent-order-breakdown { display: grid; gap: 4px; min-width: 145px; }
+.agent-order-breakdown span { color: var(--admin-muted); display: flex; font-size: 10px; justify-content: space-between; gap: 14px; }
+.agent-order-breakdown strong { color: var(--admin-ink); white-space: nowrap; }
+.agent-order-breakdown .is-total { border-top: 1px solid var(--admin-line); color: var(--admin-ink); font-weight: 800; margin-top: 2px; padding-top: 5px; }
 
 .admin-dashboard-hero { align-items: center; background: linear-gradient(135deg, #fff, #fff4f1); border: 1px solid #f0ddd9; border-radius: 16px; display: flex; justify-content: space-between; margin-bottom: 20px; overflow: hidden; padding: 24px 27px; position: relative; }
 .admin-dashboard-hero::after { border: 45px solid rgba(239,59,53,.07); border-radius: 50%; content: ''; height: 180px; position: absolute; right: -70px; top: -80px; width: 180px; }

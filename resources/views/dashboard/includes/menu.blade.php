@@ -36,6 +36,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.report.riders') }}" class="nav-link {{ Request::is('data/dashboard/report/riders') ? 'active' : '' }}"><i class="nav-icon fas fa-coins"></i><p>Rider commissions</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.agents') }}" class="nav-link {{ Request::is('data/dashboard/report/agent') ? 'active' : '' }}"><i class="nav-icon fas fa-hand-holding-usd"></i><p>Agent commissions</p></a>
+    </li>
 
     <li class="nav-header">System</li>
     <li class="nav-item">
