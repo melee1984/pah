@@ -231,6 +231,10 @@ Route::middleware('merchant')->group(function () {
     Route::get('merchant/products-addons', [\App\Http\Controllers\Merchant\ItemsController::class, 'productaddons'])->name('merchant.dashboard.product-addons');
 
     Route::get('merchant/orders', [\App\Http\Controllers\Merchant\OrderController::class, 'index'])->name('merchant.dashboard.orders');
+    Route::get(
+        'merchant/orders/deliveries/{delivery}/proofs/{proof}',
+        [\App\Http\Controllers\Api\Merchant\OrderController::class, 'viewDeliveryProof']
+    )->name('merchant.orders.delivery-proof');
     Route::get('merchant/previous-orders', [\App\Http\Controllers\Merchant\OrderController::class, 'previous'])->name('merchant.dashboard.previous-order');
 
     // Settings

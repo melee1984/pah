@@ -52,6 +52,8 @@
             <div class="form-group"><label for="zip">ZIP code</label><input id="zip" v-model.trim="field.zip_code" type="text" class="form-control" placeholder="ZIP code"></div>
             <div class="form-group"><label for="mobile">Mobile</label><input id="mobile" v-model.trim="field.mobile" type="text" class="form-control" placeholder="Mobile number"></div>
             <div class="form-group"><label for="telephone">Telephone</label><input id="telephone" v-model.trim="field.telephone" type="text" class="form-control" placeholder="Telephone number"></div>
+            <div class="form-group"><label for="latitude">Latitude</label><input id="latitude" v-model.trim="field.latitude" type="number" step="any" min="-90" max="90" class="form-control" placeholder="e.g. 10.3157"><small class="merchant-field-help">A value from -90 to 90.</small></div>
+            <div class="form-group"><label for="longtitude">Longitude</label><input id="longtitude" v-model.trim="field.longtitude" type="number" step="any" min="-180" max="180" class="form-control" placeholder="e.g. 123.8854"><small class="merchant-field-help">A value from -180 to 180.</small></div>
           </div>
           <div class="merchant-form-actions"><button type="button" class="btn admin-btn-secondary" @click="cancel">Cancel</button><button type="submit" class="btn admin-btn-primary">{{ actionStatus === 'add' ? 'Add location' : 'Save changes' }}</button></div>
         </form>
@@ -73,6 +75,8 @@
                   zip_code: '',
                   mobile: '',
                   telephone: '',
+                  latitude: '',
+                  longtitude: '',
                 },
                 Temp: [],
                 errors: {},
@@ -170,6 +174,8 @@
                         city: this.field.city,
                         mobile: this.field.mobile,
                         telephone: this.field.telephone,
+                        latitude: this.field.latitude,
+                        longtitude: this.field.longtitude,
                         active: this.field.active,
 
                       }).then((response) => {
@@ -195,6 +201,8 @@
                         city: this.field.city,
                         mobile: this.field.mobile,
                         telephone: this.field.telephone,
+                        latitude: this.field.latitude,
+                        longtitude: this.field.longtitude,
                         active: this.field.active,
 
                     }).then((response) => {
@@ -225,6 +233,8 @@
                 $('#city').removeClass('is-invalid ding');
                 $('#mobile').removeClass('is-invalid ding');
                 $('#telephone').removeClass('is-invalid ding');
+                $('#latitude').removeClass('is-invalid ding');
+                $('#longtitude').removeClass('is-invalid ding');
                 
                 if (!this.field.address_1) {
                     this.errors.push("Address line 1 is required.");
@@ -250,6 +260,16 @@
                   this.errors.push("Telephone is required.");
                   $('#telephone').addClass('is-invalid ding');
                 }
+                const latitude = Number(this.field.latitude);
+                const longitude = Number(this.field.longtitude);
+                if (this.field.latitude === '' || this.field.latitude === null || !Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+                  this.errors.push("A valid latitude is required.");
+                  $('#latitude').addClass('is-invalid ding');
+                }
+                if (this.field.longtitude === '' || this.field.longtitude === null || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+                  this.errors.push("A valid longitude is required.");
+                  $('#longtitude').addClass('is-invalid ding');
+                }
               
                 if (!this.errors.length) {
                   return true;
@@ -267,6 +287,8 @@
                 this.field.city = "";
                 this.field.mobile = "";
                 this.field.telephone = "";
+                this.field.latitude = "";
+                this.field.longtitude = "";
                 this.field.active = false;
                 this.errors = {};
                 this.isSubmit = false;

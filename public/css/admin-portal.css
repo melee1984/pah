@@ -309,6 +309,7 @@ body.pahatud-admin {
 .merchant-settings-form .form-group { margin-bottom: 17px; }
 .merchant-settings-form .form-control { border: 1px solid #dcd7d2; border-radius: 8px; font-size: 13px; min-height: 43px; }
 .merchant-settings-form textarea.form-control { min-height: 118px; padding-top: 11px; resize: vertical; }
+.merchant-field-help { color: var(--admin-muted); display: block; font-size: 9px; margin-top: 5px; }
 .merchant-settings-form .form-control:focus { border-color: var(--admin-red); box-shadow: 0 0 0 3px rgba(239,59,53,.1); }
 .merchant-settings-form .form-control:disabled { background: #f5f3f1; color: #858b8e; }
 .merchant-form-grid { display: grid; gap: 0 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -352,6 +353,25 @@ body.pahatud-admin {
 .merchant-sector-option:hover { background: #fff7f5; border-color: #f0d7d2; }
 .merchant-sector-option > span:first-child > strong { color: var(--admin-ink); display: block; font-size: 11px; }
 .merchant-sector-option > span:first-child > small { color: var(--admin-muted); display: block; font-size: 9px; margin-top: 2px; }
+.merchant-delivery-details { display: grid; gap: 12px; grid-template-columns: minmax(0, .75fr) minmax(0, 1.25fr); margin-top: 18px; }
+.merchant-delivery-card { background: #fbfaf9; border: 1px solid var(--admin-line); border-radius: 12px; padding: 15px; }
+.merchant-delivery-card-title { align-items: center; display: flex; gap: 10px; margin-bottom: 13px; }
+.merchant-delivery-card-title > span { align-items: center; background: #fff0ee; border-radius: 9px; color: var(--admin-red); display: flex; height: 37px; justify-content: center; min-width: 37px; }
+.merchant-delivery-card-title small { color: var(--admin-red); display: block; font-size: 8px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+.merchant-delivery-card-title h3 { font-size: 13px; margin: 2px 0 0; }
+.merchant-rider-details strong { color: var(--admin-ink); display: block; font-size: 13px; }
+.merchant-rider-details span { color: var(--admin-muted); display: block; font-size: 10px; margin-top: 5px; }
+.merchant-rider-details span i { color: var(--admin-red); margin-right: 6px; }
+.merchant-delivery-empty { color: var(--admin-muted); font-size: 10px; margin: 0; }
+.merchant-proof-grid { display: grid; gap: 9px; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); }
+.merchant-proof-item { background: #fff; border: 1px solid var(--admin-line); border-radius: 9px; color: var(--admin-ink); overflow: hidden; text-decoration: none; }
+.merchant-proof-item:hover { border-color: #efaaa5; color: var(--admin-ink); text-decoration: none; }
+.merchant-proof-item img, .merchant-proof-placeholder { align-items: center; background: #f1efec; display: flex; height: 105px; justify-content: center; object-fit: cover; width: 100%; }
+.merchant-proof-placeholder { color: #2fa46b; font-size: 25px; }
+.merchant-proof-item > span:last-child { display: block; padding: 9px; }
+.merchant-proof-item strong { display: block; font-size: 10px; }
+.merchant-proof-item small { color: var(--admin-muted); display: block; font-size: 8px; margin-top: 2px; }
+.merchant-proof-item.is-static { cursor: default; }
 .admin-section-heading { align-items: flex-end; display: flex; justify-content: space-between; margin: 25px 3px 13px; }
 .admin-section-heading h2 { font-size: 19px; font-weight: 800; margin: 3px 0 0; }
 .admin-section-heading p { color: var(--admin-muted); font-size: 11px; margin: 0; }
@@ -371,6 +391,7 @@ body.pahatud-admin {
     .dashboard-destination-grid { grid-template-columns: 1fr; }
     .merchant-dashboard-grid { grid-template-columns: 1fr; }
     .merchant-profile-layout { grid-template-columns: 1fr; }
+    .merchant-delivery-details { grid-template-columns: 1fr; }
 }
 @media (max-width: 575px) {
     .admin-page-heading, .admin-dashboard-hero { align-items: stretch; flex-direction: column; }

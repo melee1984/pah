@@ -222,6 +222,34 @@
                                                 </table>
                                             </div>
                                         </div>
+                                        <div v-if="selectedOrderIsCompleted" class="merchant-delivery-details">
+                                          <article class="merchant-delivery-card">
+                                            <div class="merchant-delivery-card-title"><span><i class="fas fa-motorcycle"></i></span><div><small>Delivery partner</small><h3>Assigned rider</h3></div></div>
+                                            <div v-if="selectedOrder.rider" class="merchant-rider-details">
+                                              <strong>{{ selectedOrder.rider.name }}</strong>
+                                              <span v-if="selectedOrder.rider.mobile"><i class="fas fa-phone-alt"></i>{{ selectedOrder.rider.mobile }}</span>
+                                            </div>
+                                            <p v-else class="merchant-delivery-empty">No rider was assigned to this order.</p>
+                                          </article>
+                                          <article class="merchant-delivery-card merchant-proof-card">
+                                            <div class="merchant-delivery-card-title"><span><i class="fas fa-camera"></i></span><div><small>Delivery confirmation</small><h3>Proof of delivery</h3></div></div>
+                                            <div v-if="selectedOrder.delivery_proofs && selectedOrder.delivery_proofs.length" class="merchant-proof-grid">
+                                              <a
+                                                v-for="proof in selectedOrder.delivery_proofs"
+                                                :key="proof.id"
+                                                :href="proof.file_url || undefined"
+                                                :target="proof.file_url ? '_blank' : undefined"
+                                                :class="['merchant-proof-item', { 'is-static': !proof.file_url }]"
+                                                rel="noopener"
+                                              >
+                                                <img v-if="proof.file_url" :src="proof.file_url" alt="Proof of delivery">
+                                                <span v-else class="merchant-proof-placeholder"><i class="fas fa-check-circle"></i></span>
+                                                <span><strong>{{ proofMethodLabel(proof.method) }}</strong><small>{{ formatProofDate(proof.created_at) }}</small></span>
+                                              </a>
+                                            </div>
+                                            <p v-else class="merchant-delivery-empty">No proof of delivery was submitted.</p>
+                                          </article>
+                                        </div>
                                         <div class="invoice-footer mt25">
                                            
                                         </div>
@@ -309,6 +337,9 @@
 
             return 'Pending';
           },
+          selectedOrderIsCompleted: function() {
+            return this.selectedOrder && Number(this.selectedOrder.status_id) === 7;
+          },
         },
         mounted() {
             console.log('Mounted Order List View Component')
@@ -376,6 +407,25 @@
             }
 
             return 'is-info';
+          },
+          proofMethodLabel: function(method) {
+            const labels = {
+              photo: 'Delivery photo',
+              pin: 'PIN verification',
+              qr: 'QR verification',
+              signature: 'Customer signature',
+            };
+
+            return labels[method] || 'Delivery proof';
+          },
+          formatProofDate: function(value) {
+            if (!value) {
+              return '';
+            }
+
+            const date = new Date(value);
+
+            return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
           },
           startTimer: function () {
            setInterval(() => {

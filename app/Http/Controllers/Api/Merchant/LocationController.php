@@ -53,6 +53,8 @@ class LocationController extends Controller
 			'city' => 'required|max:75',
 			'mobile' => 'required|max:75',
 			'telephone' => 'required|max:75',
+			'latitude' => ['required', 'numeric', 'between:-90,90'],
+			'longtitude' => ['required', 'numeric', 'between:-180,180'],
 	    ]);
 
 		$status = PartnerLocation::create([
@@ -63,6 +65,8 @@ class LocationController extends Controller
 			'city' => $request->input('city'),
 			'mobile' => $request->input('mobile'),
 			'telephone' => $request->input('telephone'),
+			'latitude' => $request->input('latitude'),
+			'longtitude' => $request->input('longtitude'),
 			'active' => $request->input('active'),
 		]);
 	   
@@ -86,6 +90,8 @@ class LocationController extends Controller
 			'city' => 'required|max:15',
 			'mobile' => 'required|max:25',
 			'telephone' => 'required|max:25',
+			'latitude' => ['required', 'numeric', 'between:-90,90'],
+			'longtitude' => ['required', 'numeric', 'between:-180,180'],
 	    ]);
     		
 		$location->partner_id = Auth::User()->merchant->id;
@@ -95,6 +101,8 @@ class LocationController extends Controller
 		$location->city = $request->input('city');
     	$location->mobile = $request->input('mobile');
     	$location->telephone = $request->input('telephone');
+		$location->latitude = $request->input('latitude');
+		$location->longtitude = $request->input('longtitude');
     	$location->active = $request->input('active');
 
     	$status = $location->save();

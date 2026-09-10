@@ -9,6 +9,9 @@ use App\Model\Orders\Orders;
 use App\Model\Cart;
 use Carbon\Carbon;
 use Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
@@ -34,6 +37,37 @@ class OrderController extends Controller
             ->whereNotNull('submitted_at') 
             ->orderBy('created_at', 'desc')->get();
 
+        $deliveries = DB::table('rider_api_deliveries')
+            ->whereIn('legacy_order_id', $orders->pluck('id'))
+            ->get(['id', 'reference', 'legacy_order_id']);
+
+        $proofsByDelivery = DB::table('rider_api_delivery_proofs')
+            ->whereIn('delivery_id', $deliveries->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('delivery_id');
+
+        $proofsByOrder = $deliveries
+            ->groupBy('legacy_order_id')
+            ->map(function ($orderDeliveries) use ($proofsByDelivery) {
+                return $orderDeliveries->flatMap(function ($delivery) use ($proofsByDelivery) {
+                    return $proofsByDelivery->get($delivery->id, collect())->map(function ($proof) use ($delivery) {
+                        return [
+                            'id' => $proof->reference,
+                            'method' => $proof->method,
+                            'processing_status' => $proof->processing_status,
+                            'created_at' => $proof->created_at,
+                            'file_url' => $proof->path
+                                ? route('merchant.orders.delivery-proof', [
+                                    'delivery' => $delivery->reference,
+                                    'proof' => $proof->reference,
+                                ])
+                                : null,
+                        ];
+                    });
+                })->values();
+            });
+
          foreach($orders as $order) {
 
             $order->rider;
@@ -52,6 +86,7 @@ class OrderController extends Controller
             $total_net += number_format((float)$summary['total'] - (float)$summary['total_comm'],2);
 
             $order->summary = $summary;
+            $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
         }
 
         $totalSummary['qty'] = $qty;
@@ -66,6 +101,23 @@ class OrderController extends Controller
         $data['orders'] = $orders;
 
         return response()->json($data, 200);
+    }
+
+    public function viewDeliveryProof(string $delivery, string $proof): StreamedResponse
+    {
+        $attachedProof = DB::table('rider_api_delivery_proofs as proofs')
+            ->join('rider_api_deliveries as deliveries', 'deliveries.id', '=', 'proofs.delivery_id')
+            ->join('order as orders', 'orders.id', '=', 'deliveries.legacy_order_id')
+            ->where('orders.partner_id', Auth::User()->merchant->id)
+            ->where('deliveries.reference', $delivery)
+            ->where('proofs.reference', $proof)
+            ->select('proofs.path')
+            ->first();
+
+        abort_if(! $attachedProof || ! $attachedProof->path, 404);
+        abort_unless(Storage::disk('local')->exists($attachedProof->path), 404);
+
+        return Storage::disk('local')->response($attachedProof->path);
     }
 
     public function getListwithFilter(Request $request) {
