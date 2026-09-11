@@ -1300,7 +1300,7 @@ class DeliveryController extends Controller
 
     private function ownedDelivery(Request $request, string $identifier): object
     {
-        \Log::info('Owned Delivery Identifier:  rider_api_deliveries'.$identifier);
+        \Log::info('Owned Delivery Identifier:  rider_api_deliveries' => $identifier);
 
         $query = DB::table('rider_api_deliveries')
             ->where('rider_id', $this->riders->rider($request)->id);
