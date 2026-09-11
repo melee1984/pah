@@ -305,7 +305,10 @@ class DeliveryController extends Controller
     }
 
     public function event(Request $request, string $delivery): JsonResponse
-    {
+    {   
+
+        die("SULOD BA DIRIAH");
+
         $validated = $request->validate([
             'event_id' => ['required', 'uuid'],
             'type' => ['required', Rule::in(self::EVENT_TYPES)],
