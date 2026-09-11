@@ -1305,32 +1305,11 @@ class DeliveryController extends Controller
 
         $query = DB::table('rider_api_deliveries')
             ->where('rider_id', (int)$riderId);
-
-        $x = $query->get();
-        \Log::info(['x' => $x]);
-
-        \Log::info('Finding delivery', [
-            'identifier' => $identifier,
-            'identifier_type' => gettype($identifier),
-            'is_digit' => ctype_digit((string) $identifier),
-            'rider_id' => $riderId,
-        ]);
-
+      
         $delivery = ctype_digit((string) $identifier)
-            ? $query->where('legacy_booking_id', (int) $identifier)->first()
+            ? $query->where('legacy_order_id', (int) $identifier)->first()
             : $query->where('reference', $identifier)->first();
-
-        \Log::info('Delivery result', [
-            'delivery' => $delivery,
-        ]);
         abort_if(! $delivery, 404);
-
-        \Log::info([
-            'message' => 'Owned Delivery Found',
-            'delivery_id' => $delivery->id,
-            'legacy_booking_id' => $delivery->legacy_booking_id,
-            'reference' => $delivery->reference,
-        ]);
 
         return $delivery;
     }
