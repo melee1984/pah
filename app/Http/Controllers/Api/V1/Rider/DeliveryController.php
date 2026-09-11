@@ -1304,7 +1304,10 @@ class DeliveryController extends Controller
         $riderId = $this->riders->rider($request)->id;
 
         $query = DB::table('rider_api_deliveries')
-            ->where('rider_id', $riderId);
+            ->where('rider_id', (int)$riderId);
+
+        $x = $query->get();
+        \Log::info(['x' => $x]);
 
         \Log::info('Finding delivery', [
             'identifier' => $identifier,
