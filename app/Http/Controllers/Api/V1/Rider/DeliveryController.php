@@ -1301,13 +1301,6 @@ class DeliveryController extends Controller
     private function ownedDelivery(Request $request, string $identifier): object
     {   
 
-        $rider_id = $this->riders->rider($request)->id;
-
-            \Log::info([
-                'message' => 'Owned Delivery Check',
-                'rider_id' => $rider_id,
-                'identifier' => $identifier,
-            ]);
         $query = DB::table('rider_api_deliveries')
             ->where('rider_id', $this->riders->rider($request)->id);
 
@@ -1315,6 +1308,13 @@ class DeliveryController extends Controller
             ? $query->where('legacy_booking_id', (int) $identifier)->first()
             : $query->where('reference', $identifier)->first();
         abort_if(! $delivery, 404);
+
+        \Log::info([
+            'message' => 'Owned Delivery Found',
+            'delivery_id' => $delivery->id,
+            'legacy_booking_id' => $delivery->legacy_booking_id,
+            'reference' => $delivery->reference,
+        ]);
 
         return $delivery;
     }
