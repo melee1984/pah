@@ -1304,6 +1304,8 @@ class DeliveryController extends Controller
         $query = DB::table('rider_api_deliveries')
             ->where('rider_id', $this->riders->rider($request)->id);
 
+        \Log::info(['query' => $query->toSql(), 'bindings' => $query->getBindings()]);
+
         $delivery = ctype_digit($identifier)
             ? $query->where('legacy_booking_id', (int) $identifier)->first()
             : $query->where('reference', $identifier)->first();
