@@ -1307,6 +1307,13 @@ class DeliveryController extends Controller
         $delivery = ctype_digit($identifier)
             ? $query->where('legacy_booking_id', (int) $identifier)->first()
             : $query->where('reference', $identifier)->first();
+
+    \Log::info([
+            'message' => 'Owned Delivery Lookup',
+            'identifier' => $identifier,
+            'delivery_found' => $delivery ? true : false,
+        ]); 
+
         abort_if(! $delivery, 404);
 
         \Log::info([
