@@ -306,9 +306,6 @@ class DeliveryController extends Controller
 
     public function event(Request $request, string $delivery): JsonResponse
     {   
-
-        die("SULOD BA DIRIAH");
-
         $validated = $request->validate([
             'event_id' => ['required', 'uuid'],
             'type' => ['required', Rule::in(self::EVENT_TYPES)],
@@ -318,6 +315,7 @@ class DeliveryController extends Controller
             'metadata' => ['nullable', 'array'],
         ]);
         $record = $this->ownedDelivery($request, $delivery);
+
         $existing = DB::table('rider_api_delivery_events')
             ->where('event_id', $validated['event_id'])
             ->first();
@@ -351,8 +349,6 @@ class DeliveryController extends Controller
                 'idempotent_replay' => true,
             ]);
         }
-
-        \Log::info(['delivery_event' => $validated, 'delivery' => $record]);
 
         if (! $this->transitionAllowed($record->current_state, $validated['type'])) {
             return response()->json([
@@ -1304,11 +1300,13 @@ class DeliveryController extends Controller
 
     private function ownedDelivery(Request $request, string $identifier): object
     {
+        \Log::info('Owned Delivery Identifier:  rider_api_deliveries'.$identifier);
+
         $query = DB::table('rider_api_deliveries')
             ->where('rider_id', $this->riders->rider($request)->id);
 
         $delivery = ctype_digit($identifier)
-            ? $query->where('id', (int) $identifier)->first()
+            ? $query->where('legacy_booking_id', (int) $identifier)->first()
             : $query->where('reference', $identifier)->first();
         abort_if(! $delivery, 404);
 
