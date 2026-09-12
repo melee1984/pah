@@ -14,7 +14,10 @@
 	  Delivery Date: {{ $cart->delivery_date }} @ {{ $cart->delivery_time }} <br>
 	  Amount: {{ $cart->cartItemSummary()['total'] }} <br>
 	  Payment: {{ $cart->payment->title }} <br>
-	  Duration: {{ round($cart->duration) }}mins <br>
+	  @if ($cart->duration)
+		Duration: {{ round($cart->duration ?? 0) }} mins <br>
+	  @endif 
+	  
 
 	  @foreach($cart->order->orderprocess as $order)
 	  	Status: <strong>{{ $order->status->title }}</strong> <br>

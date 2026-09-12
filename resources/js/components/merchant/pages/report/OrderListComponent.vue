@@ -1,24 +1,58 @@
 <template>
   <div>
-     <div class="card">
-      <div class="card-header">
-        <div class="row">
-          <div class="col-md-6">
-          <h3 class="card-title">
-            <i class="fas fa-chart-pie mr-1"></i>
-            Orders Dashboard
-          </h3>
-        </div> 
-         <div class="col-md-6 text-right">
-            Reload {{ timerInterval }}
-         </div>  
-        </div> 
-      </div><!-- /.card-header -->
+     <div class="card admin-card dashboard-data-card merchant-order-card">
+      <div class="admin-card-header">
+        <div><h2>Order management</h2><p>Review orders that need action and monitor active fulfilment.</p></div>
+        <span class="dashboard-reload-chip"><i class="fas fa-sync-alt"></i> Refresh in {{ timerInterval }}s</span>
+      </div>
       <div class="card-body">
+        <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'pending' }"
+              @click="activeList = 'pending'"
+            >
+              Pending <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'accepted' }"
+              @click="activeList = 'accepted'"
+            >
+              In progress <span class="badge badge-success ml-1">{{ acceptedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'completed' }"
+              @click="activeList = 'completed'"
+            >
+              Completed <span class="badge badge-success ml-1">{{ completedOrders.length }}</span>
+            </button>
+          </li>
+          <li class="nav-item">
+            <button
+              type="button"
+              class="nav-link"
+              :class="{ active: activeList === 'cancelled' }"
+              @click="activeList = 'cancelled'"
+            >
+              Cancelled <span class="badge badge-secondary ml-1">{{ cancelledOrders.length }}</span>
+            </button>
+          </li>
+        </ul></div>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
-              <table class="table table-border">
+            <div class="table-responsive">
+              <table class="table dashboard-data-table merchant-orders-table">
                 <thead>
                   <tr>
                     <th>Date/Time</th>
@@ -33,16 +67,19 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-if="orders.length <=0">
-                    <td colspan="9">No record found...</td>
+                  <tr v-if="displayedOrders.length === 0">
+                    <td colspan="9" class="dashboard-table-empty">
+                      No {{ activeListLabel.toLowerCase() }} orders found.
+                    </td>
                   </tr>
-                  <tr v-for="order in orders"  v-bind:class="{ inactive: !order.rider_id}"> 
+                  <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'accepted' && !order.rider_id}">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
+                        <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</button>
                     </td>
                     <td width="25%">
-                        Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
+                        Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br>
+                        <span><strong>Store Location:</strong> {{ storeAddress(order) }}</span><br>
                         Delivery Date/Time: {{ order.cart.delivery_time }}
                         <br>
                         Customer: {{ order.cart.fullname }} <br>
@@ -51,37 +88,33 @@
                         
                     </td>
                     <td width="5%">{{ order.summary.qty }}</td>
-                    <td width="5%">{{ order.summary.sub_total }}</td>
-                    <td width="5%">{{ order.summary.discount }} PHP</td>
-                    <td width="8%">{{ order.summary.delivery_fee }} PHP</td>
-                    <td width="10%">{{ order.summary.total }} PHP</td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
+                    <td width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
+                    <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
                      <td width="10%" v-if="order.status">
                       <p v-if="order.rider">{{ order.rider.name }}</p>
                     </td>
                     <td width="10%">
                       <span v-if="order.status">
-                        <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-if="order.status.id==1">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-success" v-if="order.status.id==2">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-warning" v-if="order.status.id==3">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-secondary" v-if="order.status.id==4">{{ order.status.title }}</a>
-                        <a href="javascript:void(0)" class="btn btn-xs btn-secondary" v-if="order.status.id==5">{{ order.status.title }}</a>
-
+                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
                        </span>
                     </td>
                    
                   </tr>
                 </tbody>
-              </table> 
+              </table>
+            </div>
            </div>
         </div>
       </div><!-- /.card-body -->
     </div>
 
-     <div v-if="selectedOrder" class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+     <div  class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content modal-lg">
+          <div class="modal-content modal-lg admin-modal">
             <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLongTitle">Booking Information</h5>
+              <div><span class="admin-eyebrow">Order details</span><h2 class="modal-title" id="exampleModalLongTitle">Customer order</h2></div>
               <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -98,21 +131,19 @@
                                     <!-- Start .row -->
                                     <div class="col-lg-6">
                                         <!-- col-lg-6 start here -->
-                                        <div class="invoice-logo" v-if="selectedOrder.partner.img">
+                                        <div class="invoice-logo" v-if="selectedOrder?.partner?.img">
                                           <img width="100" :src="'/uploads/user/'+selectedOrder.partner.id+'/'+selectedOrder.partner.img" alt="Invoice logo">
                                         </div>
                                     </div>
-                                    <!-- col-lg-6 end here -->
                                     <div class="col-lg-6">
-                                        <!-- col-lg-6 start here -->
                                         <div class="invoice-from">
                                             <ul class="list-unstyled text-right">
-                                                <li>{{ selectedOrder.partner.restaurant_name }}</li>
-                                                <li v-if="selectedOrder.cart.partner_location_address_id">
-                                                  {{ selectedOrder.cart.partnerlocation.address_1 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.address_2 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.mobile }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.telephone }} <br>
+                                                <li><strong>{{ selectedOrder?.partner?.restaurant_name }}</strong></li>
+                                                <li><strong>Store Location</strong></li>
+                                                <li>{{ storeAddress(selectedOrder) }}</li>
+                                                <li v-if="storeContact(selectedOrder)">{{ storeContact(selectedOrder) }}</li>
+                                                <li v-if="storeCoordinates(selectedOrder)">
+                                                  Coordinates: {{ storeCoordinates(selectedOrder) }}
                                                 </li>
                                             </ul>
                                         </div>
@@ -123,12 +154,12 @@
                                         <div class="invoice-details mt25">
                                             <div class="well">
                                                 <ul class="list-unstyled mb0">
-                                                    <li><strong>Order #</strong> #{{ selectedOrder.cart.order_no }}</li>
-                                                    <li><strong>Processed at:</strong>{{ selectedOrder.cart.processed_at }}</li>
+                                                    <li><strong>Order #</strong> #{{ selectedOrder?.cart?.order_no }}</li>
+                                                    <li><strong>Processed at:</strong>{{ selectedOrder?.cart?.processed_at }}</li>
 
-                                                    <li><strong>Date/Time:</strong> {{ selectedOrder.cart.delivery_date }} @ {{ selectedOrder.cart.delivery_time }}</li>
+                                                    <li><strong>Date/Time:</strong> {{ selectedOrder?.cart?.delivery_date }} @ {{ selectedOrder?.cart?.delivery_time }}</li>
                                                     <li><strong>Status:</strong> 
-                                                        <span class="label label-danger">{{ selectedOrder.status.title }}</span>
+                                                        <span class="label label-danger">{{ selectedOrder?.status?.title }}</span>
                                                     </li>
                                                 </ul>
                                             </div>
@@ -136,9 +167,9 @@
                                         <div class="invoice-to mt25">
                                             <ul class="list-unstyled">
                                                  <li><strong>Invoiced To</strong></li>
-                                                <li>Fullname: {{ selectedOrder.cart.fullname }}</li>
-                                                <li>Address: {{ selectedOrder.cart.address.address_1 }}</li>
-                                                <li>Mobile: {{ selectedOrder.cart.mobile }}</li>
+                                                <li>Fullname: {{ selectedOrder?.cart?.fullname }}</li>
+                                                <li>Address: {{ selectedOrder?.cart?.address?.address_1 }}</li>
+                                                <li>Mobile: {{ selectedOrder?.cart?.mobile }}</li>
                                             </ul>
                                         </div>
                                         <div class="invoice-items">
@@ -152,7 +183,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr v-for="item in selectedOrder.cart.details">
+                                                        <tr v-for="item in selectedOrder?.cart?.details">
                                                             <td>
                                                               {{ item.item.title }}
                                                               <br>
@@ -173,23 +204,51 @@
                                                     <tfoot>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Sub Total:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.sub_total }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.sub_total }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Delivery Fee:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.delivery_fee }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.delivery_fee }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Discount:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.discount }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.discount }} PHP</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Total:</th>
-                                                            <th class="text-center">{{ selectedOrder.summary.total }} PHP</th>
+                                                            <th class="text-center">{{ selectedOrder?.summary?.total }} PHP</th>
                                                         </tr>
                                                     </tfoot>
                                                 </table>
                                             </div>
+                                        </div>
+                                        <div v-if="selectedOrderIsCompleted" class="merchant-delivery-details">
+                                          <article class="merchant-delivery-card">
+                                            <div class="merchant-delivery-card-title"><span><i class="fas fa-motorcycle"></i></span><div><small>Delivery partner</small><h3>Assigned rider</h3></div></div>
+                                            <div v-if="selectedOrder.rider" class="merchant-rider-details">
+                                              <strong>{{ selectedOrder.rider.name }}</strong>
+                                              <span v-if="selectedOrder.rider.mobile"><i class="fas fa-phone-alt"></i>{{ selectedOrder.rider.mobile }}</span>
+                                            </div>
+                                            <p v-else class="merchant-delivery-empty">No rider was assigned to this order.</p>
+                                          </article>
+                                          <article class="merchant-delivery-card merchant-proof-card">
+                                            <div class="merchant-delivery-card-title"><span><i class="fas fa-camera"></i></span><div><small>Delivery confirmation</small><h3>Proof of delivery</h3></div></div>
+                                            <div v-if="selectedOrder.delivery_proofs && selectedOrder.delivery_proofs.length" class="merchant-proof-grid">
+                                              <a
+                                                v-for="proof in selectedOrder.delivery_proofs"
+                                                :key="proof.id"
+                                                :href="proof.file_url || undefined"
+                                                :target="proof.file_url ? '_blank' : undefined"
+                                                :class="['merchant-proof-item', { 'is-static': !proof.file_url }]"
+                                                rel="noopener"
+                                              >
+                                                <img v-if="proof.file_url" :src="proof.file_url" alt="Proof of delivery">
+                                                <span v-else class="merchant-proof-placeholder"><i class="fas fa-check-circle"></i></span>
+                                                <span><strong>{{ proofMethodLabel(proof.method) }}</strong><small>{{ formatProofDate(proof.created_at) }}</small></span>
+                                              </a>
+                                            </div>
+                                            <p v-else class="merchant-delivery-empty">No proof of delivery was submitted.</p>
+                                          </article>
                                         </div>
                                         <div class="invoice-footer mt25">
                                            
@@ -208,7 +267,7 @@
               </p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn" data-dismiss="modal">Close</button>
+              <button type="button" class="btn admin-btn-secondary" data-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
@@ -222,27 +281,161 @@
                 field: {
                 },
                 errors: {},
-                orders: {},
-                timerInterval: 60,
-                riders: {},
+                orders: [],
+                activeList: 'pending',
+                timerInterval: 15,
+                refreshTimer: null,
+                riders: [],
                 selectedOrder: {},
-                statuses: {},
+                statuses: [],
+                modalInstance: null,
             }
+        },
+        computed: {
+          pendingOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 1);
+          },
+          acceptedOrders: function() {
+            return this.orders.filter(order => {
+              const statusId = Number(order.status_id);
+
+              return statusId >= 2 && statusId <= 6;
+            });
+          },
+          completedOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 7);
+          },
+          cancelledOrders: function() {
+            return this.orders.filter(order => Number(order.status_id) === 8);
+          },
+          displayedOrders: function() {
+            if (this.activeList === 'accepted') {
+              return this.acceptedOrders;
+            }
+
+            if (this.activeList === 'completed') {
+              return this.completedOrders;
+            }
+
+            if (this.activeList === 'cancelled') {
+              return this.cancelledOrders;
+            }
+
+            return this.pendingOrders;
+          },
+          activeListLabel: function() {
+            if (this.activeList === 'accepted') {
+              return 'In progress';
+            }
+
+            if (this.activeList === 'completed') {
+              return 'Completed';
+            }
+
+            if (this.activeList === 'cancelled') {
+              return 'Cancelled';
+            }
+
+            return 'Pending';
+          },
+          selectedOrderIsCompleted: function() {
+            return this.selectedOrder && Number(this.selectedOrder.status_id) === 7;
+          },
         },
         mounted() {
             console.log('Mounted Order List View Component')
-              this.fetchData();
-              this.selectedOrder = this.orders[0];  
-             this.startTimer();
+            this.fetchData();
+            this.selectedOrder = this.orders[0];  
+            this.startTimer();
+            this.initModal();
+
+        },
+        beforeDestroy() {
+            window.clearInterval(this.refreshTimer);
         },
         
         methods: {
+          storeLocation: function(order) {
+            return order && order.cart ? order.cart.partnerlocation : null;
+          },
+          storeAddress: function(order) {
+            const location = this.storeLocation(order);
+
+            if (location) {
+              return [location.address_1, location.address_2, location.city, location.zip_code]
+                .filter(Boolean)
+                .join(', ') || 'Not available';
+            }
+
+            const partner = order ? order.partner : null;
+
+            return partner
+              ? [partner.address, partner.city].filter(Boolean).join(', ') || 'Not available'
+              : 'Not available';
+          },
+          storeContact: function(order) {
+            const location = this.storeLocation(order);
+
+            if (!location) {
+              return '';
+            }
+
+            return [location.mobile, location.telephone].filter(Boolean).join(' / ');
+          },
+          storeCoordinates: function(order) {
+            const location = this.storeLocation(order);
+
+            if (!location || !location.latitude || !location.longtitude) {
+              return '';
+            }
+
+            return location.latitude + ', ' + location.longtitude;
+          },
+          statusBadgeClass: function(statusId) {
+            statusId = Number(statusId);
+
+            if (statusId === 1) {
+              return 'is-warning';
+            }
+
+            if (statusId === 2) {
+              return 'is-success';
+            }
+
+            if (statusId === 7) {
+              return 'is-success';
+            }
+
+            if (statusId === 8) {
+              return 'is-danger';
+            }
+
+            return 'is-info';
+          },
+          proofMethodLabel: function(method) {
+            const labels = {
+              photo: 'Delivery photo',
+              pin: 'PIN verification',
+              qr: 'QR verification',
+              signature: 'Customer signature',
+            };
+
+            return labels[method] || 'Delivery proof';
+          },
+          formatProofDate: function(value) {
+            if (!value) {
+              return '';
+            }
+
+            const date = new Date(value);
+
+            return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+          },
           startTimer: function () {
-           setInterval(() => {
+           this.refreshTimer = window.setInterval(() => {
                 this.timerInterval--;
-                if (this.timerInterval ==0) {
-                  this.timerInterval = 60;
-                  toastr.info("Refreshing...");
+                if (this.timerInterval === 0) {
+                  this.timerInterval = 15;
                   this.fetchData();
                   Event.$emit('reloadMerchantOrderSummary');
                 }
@@ -294,12 +487,29 @@
                 }); 
           },
           displayOrderDetails: function(order) {
-              this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          }
-          
+            this.selectedOrder = order;
+            this.openOrderDetails();
+          },
+          openOrderDetails() {
+            if (!this.modalInstance) {
+              const modalEl = document.getElementById("orderDetails");
+              this.modalInstance = new bootstrap.Modal(modalEl);
+            }
+            this.modalInstance.show();
+          },
+          closeOrderDetails() {
+            if (this.modalInstance) {
+              this.modalInstance.hide();
+            }
+          },
+          initModal() {
+            const modalEl = document.getElementById("orderDetails");
+            this.modalInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
+          },
+
         }
     }
-
 </script>
-

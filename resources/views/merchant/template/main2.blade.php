@@ -19,7 +19,8 @@
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/custom.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
 
-  
+  @vite('resources/js/merchant.js')
+
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
 <div class="wrapper" id="app">

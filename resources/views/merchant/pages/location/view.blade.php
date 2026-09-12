@@ -2,29 +2,20 @@
 
 @section('content')
   	
-  	<div class="content-wrapper" style="min-height: 1416.81px;">
+	<div class="content-wrapper admin-content-wrapper">
 
-  	<section class="content-header">
+	<section class="content-header">
       <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1>Location</h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{{ URL::to('merchant/dashboard') }}">Home</a></li>
-              <li class="breadcrumb-item active">Location</li>
-            </ol>
-          </div>
+        <div class="admin-page-heading">
+          <div><span class="admin-eyebrow">Store settings</span><h1>Locations</h1><p>Manage the addresses and contact details customers see for your store.</p></div>
+          <ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ route('merchant.dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Locations</li></ol>
         </div>
-      </div><!-- /.container-fluid -->
+      </div>
     </section>
 
   	<section class="content">
       	<div class="container-fluid">
-			<div class="row">
-				<merchant-location-view></merchant-location-view>
-			</div>
+			<merchant-location-view></merchant-location-view>
 		</div>
 	</section>
 </div>

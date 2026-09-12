@@ -1,7 +1,7 @@
 <template>
   <section>
   	<a href="/checkout">
-      <i class="icofont-basket"></i> {{ item_count }} 
+      <i class="icofont-basket"></i> <span class="count-item" v-if="item_count >0">{{ item_count }} </span>
     </a>
   </section>
 </template>

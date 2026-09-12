@@ -34,7 +34,7 @@ class SocialLoginController extends Controller
 
     	try {
            
-           $socialUser = Socialite::with( $account )->user();
+           $socialUser = Socialite::with($account)->user();
 
         } catch (\Exception $e) {
             return redirect('/login');

@@ -1,23 +1,12 @@
 @extends('templates.inside')
 
+@section('title', 'Privacy policy')
 @section('content')
 
- <!-- Page Header Section Start Here -->
-    <section class="page-header style-2">
-        <div class="container">
-            <div class="page-title text-center">
-                <h3>Privacy Policy</h3>
-                <ul class="breadcrumb">
-                    <li><a href="{{ URL::to('/') }}">Home</a></li>
-                    <li>Privacy Policy</li>
-                </ul>
-            </div>
-        </div>
-    </section>
-    <!-- Page Header Section Ending Here -->
+    @include('pages.partials.public-page-header', ['title' => 'Privacy policy', 'kicker' => 'Your data, handled responsibly', 'description' => 'Learn what information Pahatud collects, why we use it, and the choices available to you.'])
     
     <!-- About Section Start here -->
-	<section class="about about-page padding-tb">
+	<section class="about about-page public-policy-page">
         <div class="container">
             
             @include('includes.error')
@@ -25,7 +14,7 @@
             <div class="row align-items-center">
                 <div class="col-lg-12 col-12">
                      <div class="col-lg-12 col-12">
-                        <div class="section-wrapper">
+                        <div class="section-wrapper public-policy-card">
                             
                             <h6>Who we are</h6>
                             <p>Pahatud.("us", "we", or "our") operates <a href="http://www.pahatud.com">www.pahatud.com</a> (the "Site"). </p>

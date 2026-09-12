@@ -1,4 +1,6 @@
-@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700);.btn-pahatud {
+@import url(https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700);
+
+.btn-pahatud {
   border: 2px solid #fb524f;
   /* padding: 14px 30px; */
   background-color: #f03b32;
@@ -443,7 +445,7 @@
 }
 
 #delivery_address .active {
-  background-color: #ffe6e6;
+  background-color: #e2ffd1;
 }
 
 #delivery_address .card-text {

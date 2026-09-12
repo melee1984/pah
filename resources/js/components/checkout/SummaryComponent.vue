@@ -46,7 +46,7 @@
         </div>
 
          <div v-if="refresh" class="text-center m-b-4">
-          <!-- <img src="/images/ajax-loader.gif" alt=""> -->
+          <img src="/images/ajax-loader.gif" alt="">
         </div>
 
         <div class="total-summary" v-if="!refresh">
@@ -87,7 +87,6 @@
                 <button type="button" class="btn btn-block btn-pahatud" v-on:click="checkout"v-if="store_open"><span>CHECKOUT</span></button>
                 <button type="button" class="btn btn-block btn-pahatud" v-if="!store_open" disabled><span>CHECKOUT</span> </button>
             </div>
-
 
         </div>
     </div>
@@ -249,6 +248,7 @@
               });
             },
             checkout: function() {
+              // diriah nako Dece 10 2025 
                 if (isLogged) {
                     window.location = "/checkout";
                 }

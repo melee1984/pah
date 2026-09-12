@@ -49,6 +49,7 @@ class OrderController extends Controller
                 $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
                 $order->cart->address;
                 $order->status;  
+                $order->rider;
                 $order->logs = $order->getActionLogs();
             }
             else {
@@ -79,7 +80,7 @@ class OrderController extends Controller
             
             if ($request->input('status') =="cancel") {
                 $status_id = 8;
-                $order->status_id = $status_id; // Cancelled 
+                $order->order_status_id = $status_id; // Cancelled 
             }
 
             $status = $order->save();

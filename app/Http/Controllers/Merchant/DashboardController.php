@@ -9,9 +9,8 @@ use DB;
 use App\User;
 use Hash;
 
-use App\AccountType;
-use Cache;
-
+use Session;
+use Str;
 class DashboardController extends Controller
 {
     
@@ -23,12 +22,7 @@ class DashboardController extends Controller
 		  return view('merchant.pages.login');
     }
     public function register() {
-
-        $accountType = Cache::remember('sector', 60 , function () {
-            return AccountType::get();
-        });
-
-        return view('merchant.pages.register', compact('accountType'));
+        return redirect()->to(route('home').'#become-a-partner');
 
     }
     public function forgot(Request $request) {
@@ -45,18 +39,25 @@ class DashboardController extends Controller
 
     public function validateLogin(Request $request) {
 
-    	$this->validate($request, [
-	        'email' => 'required|email',
-	        'password' => 'required',
-	    ]);
+		$session_id = Session::getId();
+
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required',
+		]);
 
 	    $remember_me = $request->has('remember') ? true : false; 
 
-	    if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
+		if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
 	    {
-	         $user = auth()->user();
+	        $user = auth()->user();
+			$user->api_token = Str::random(60);
+			$user->save();
+
+			Session::setId($session_id);
+
 	         if ($user->isMerchant()) {
-				      return redirect()->intended('merchant/dashboard');	
+				return redirect()->intended('merchant/dashboard');	
 	         }
 	         else {
   	        	return back()

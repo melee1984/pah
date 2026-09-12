@@ -7,6 +7,8 @@
         "dev": "vite"
     },
     "devDependencies": {
+        "@rollup/plugin-commonjs": "^29.0.0",
+        "@types/google.maps": "^3.58.1",
         "autoprefixer": "^10.4.12",
         "axios": "^1.8.2",
         "concurrently": "^9.0.1",
@@ -21,17 +23,20 @@
     },
     "dependencies": {
         "@alpinejs/sort": "^3.14.8",
+        "@googlemaps/js-api-loader": "^2.0.2",
         "@popperjs/core": "^2.11.8",
         "@vitejs/plugin-vue2": "^2.3.1",
         "bootstrap": "^5.3.8",
+        "google-maps": "^4.3.3",
         "laravel-vue-pagination": "^2.3.1",
         "lodash": "^4.17.21",
         "mitt": "^3.0.1",
         "sass": "^1.69.5",
+        "sweetalert2": "^11.26.4",
         "vue": "^2.7.16",
         "vue-browser-geolocation": "^1.8.0",
+        "vue-google-maps-community-fork": "^0.3.1",
         "vue-simple-alert": "^1.1.1",
-        "vue-slider-component": "^2.8.16",
-        "vue2-google-maps": "^0.10.7"
+        "vue-slider-component": "^2.8.16"
     }
 }

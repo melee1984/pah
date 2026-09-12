@@ -147,7 +147,7 @@ class PushNotification extends Model
 	        // $body = "You got a new Job Order: " . $jobOrder;
 	        $body = "We have a new order for you Job Order " . $order->cart->order_no;
 
-	        $SERVER_API_KEY = 'AAAAz9NPayk:APA91bEvqth-OJzcdM3_FJx7Kk_zG57CBXuyAy8BpM5AE6qtxSHwoux9LO5iQNfN1g9U_0fcv_yak17TgIH2XVKZFrdxKnEB4rpUGIufBlIK7WiXSYsSWJJqUei9PIRzubqjXlnRnWNG';
+	        $SERVER_API_KEY = config('app.firebase_server_key');
 
 	        $firebaseToken = array($order->partner->partner_user->device_token_store);
 

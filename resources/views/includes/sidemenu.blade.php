@@ -8,7 +8,8 @@
         @if (Auth::check()) 
         <ul class="nav nav-pills">
               <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><i class="icofont-ui-user"></i>
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">
+                  <i class="icofont-ui-user"></i>
  Hi {{ Auth::User()->firstname }}</a>
                 <div class="dropdown-menu">
                   <a class="dropdown-item" href="{{ route('profile.dashboard') }}">Profile</a>

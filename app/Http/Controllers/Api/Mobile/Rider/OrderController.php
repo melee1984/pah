@@ -4,28 +4,41 @@ namespace App\Http\Controllers\Api\Mobile\Rider;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use Session;
 use Validator;
 
 use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
+use App\Model\Rider\RiderDeclineOrder;
 use Carbon\Carbon;
 use App\Model\Bookings\BookingOrderProcess;
 
 use App\PushNotification;
 
 use App\Model\Bookings\Bookings;
+use App\Services\RiderCommissionService;
+use App\Services\RiderOfferDispatcher;
+use Illuminate\Support\Str;
 
 
 class OrderController extends Controller
 {
+     public function __construct(
+        private readonly RiderCommissionService $riderCommissions,
+        private readonly RiderOfferDispatcher $offerDispatcher,
+     ) {}
+
      public function bookings(Request $request) {
 
      	$data = array();
      	$dataContainer = array();
 
-     	$orders = Orders::whereRiderId($request->user()->rider->id)
+        $orders = Orders::whereRiderId($request->user()->rider->id)
+                        ->whereDoesntHave('riderDeclines', function ($query) use ($request) {
+                            $query->where('rider_id', $request->user()->rider->id);
+                        })
     					->whereNull('accepted_at')
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
@@ -251,19 +264,53 @@ class OrderController extends Controller
 
 			if ($action == "accept") {
 
+                $delivery = $this->prepareOrderDelivery($order, $user->rider->id);
+                $this->riderCommissions->ensureSufficientWallet($user->rider->id, $delivery);
+
 				$order->accepted_by_rider_id = $user->rider->id;
+
+				$order->booking_status_id = Orders::STATUS_ORDER_ACCEPTED;
+				$order->order_status_id = Orders::STATUS_ORDER_ACCEPTED;
+
 				$order->accepted_at = now();
+
 				$status = $order->save();
+
+                $this->assignDelivery($delivery, $user->rider->id);
+
 				$data['status'] = 1;
 
 
+			} else if ($action == "decline") {
+
+				DB::transaction(function () use ($user, $order) {
+					$decline = RiderDeclineOrder::query()->firstOrCreate([
+						'rider_id' => $user->rider->id,
+						'order_id' => $order->id,
+					]);
+
+					if ($decline->wasRecentlyCreated) {
+						DB::table('rider_api_activity_logs')->insert([
+							'rider_id' => $user->rider->id,
+							'order_id' => $order->id,
+							'type' => 'booking_declined',
+							'recorded_at' => now(),
+							'created_at' => now(),
+							'updated_at' => now(),
+						]);
+					}
+				});
+				$data['status'] = 1;
+				$data['message'] = 'Order declined.';
+
 			} else if ($action == "pickup") {
 
-				$order->status_id = 5;
+				$order->booking_status_id = Orders::STATUS_RIDER_PICKED_UP;
+				$order->order_status_id = Orders::STATUS_RIDER_PICKED_UP;
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 5, // item pickup  
+                    'status_id' => Orders::STATUS_RIDER_PICKED_UP,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
@@ -275,27 +322,26 @@ class OrderController extends Controller
 			}
 			else if ($action == "delivered") {
 
-				// Item Pickup 
-				$order->status_id = 6;
-				$order->save();
-
-				OrderProcess::updateOrCreate([
-                    'status_id' => 6, // item pickup  
-                    'order_id' => $order->id,
-                    'user_id' => $user->id,
-                ]);
+                $delivery = $this->prepareOrderDelivery($order, $user->rider->id);
+                $this->assignDelivery($delivery, $user->rider->id, 'delivered');
 
 				// Item Delivered 
-                $order->status_id = 7;
+                $order->booking_status_id = Orders::STATUS_DELIVERED;
+				$order->order_status_id = Orders::STATUS_DELIVERED;
+				
 				$order->save();
 
 				PushNotification::sendPushOrder($order);
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => 7, // item pickup  
+                    'status_id' => Orders::STATUS_DELIVERED,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
+
+                $this->riderCommissions->deductForCompletedDelivery(
+                    DB::table('rider_api_deliveries')->where('id', $delivery->id)->first()
+                );
 
                 $data['status'] = 1;
 			}
@@ -322,9 +368,14 @@ class OrderController extends Controller
 
 			if ($action == "accept") {
 
+                $delivery = $this->prepareBookingDelivery($booking, $user->rider->id);
+                $this->riderCommissions->ensureSufficientWallet($user->rider->id, $delivery);
+
 				$booking->accepted_by_rider_id = $user->rider->id;
 				$booking->accepted_at = now();
 				$status = $booking->save();
+
+                $this->assignDelivery($delivery, $user->rider->id);
 
 				BookingOrderProcess::updateOrCreate([
                     'status_id' => 2, // item pickup  
@@ -357,6 +408,9 @@ class OrderController extends Controller
 			}
 			else if ($action == "delivered") {
 
+                $delivery = $this->prepareBookingDelivery($booking, $user->rider->id);
+                $this->assignDelivery($delivery, $user->rider->id, 'delivered');
+
 				// Item Pickup 
 				$booking->status_id = 6;
 				$booking->save();
@@ -378,6 +432,9 @@ class OrderController extends Controller
 				$booking->save();
 
                 PushNotification::sendPushOrder($booking,1);
+                $this->riderCommissions->deductForCompletedDelivery(
+                    DB::table('rider_api_deliveries')->where('id', $delivery->id)->first()
+                );
                 $data['status'] = 1;
 			}
 
@@ -391,6 +448,64 @@ class OrderController extends Controller
 
         return response()->json($data, 200);
 
+    }
+
+    private function prepareOrderDelivery(Orders $order, int $riderId): object
+    {
+        $reference = $this->offerDispatcher->dispatchOrder($order);
+        abort_if(! $reference, 409, 'The rider delivery could not be prepared.');
+
+        $delivery = DB::table('rider_api_deliveries')->where('reference', $reference)->first();
+        abort_if(! $delivery, 409, 'The rider delivery could not be prepared.');
+        abort_if($delivery->rider_id && (int) $delivery->rider_id !== $riderId, 409, 'This booking was accepted by another rider.');
+
+        return $delivery;
+    }
+
+    private function prepareBookingDelivery(Bookings $booking, int $riderId): object
+    {
+        $delivery = DB::table('rider_api_deliveries')
+            ->where('legacy_booking_id', $booking->id)
+            ->first();
+
+        if (! $delivery) {
+            $earningsCentavos = max(0, (int) round((float) $booking->delivery_rate * 100));
+            $percentage = (float) config('rider.pahatud_commission_percentage', 20);
+            $id = DB::table('rider_api_deliveries')->insertGetId([
+                'reference' => (string) Str::uuid(),
+                'legacy_booking_id' => $booking->id,
+                'current_state' => 'offered',
+                'merchant_name' => 'Pahatud booking',
+                'earnings_centavos' => $earningsCentavos,
+                'commission_percentage' => $percentage,
+                'commission_centavos' => max(0, (int) round($earningsCentavos * ($percentage / 100))),
+                'cod_centavos' => 0,
+                'order_count' => 1,
+                'is_batched' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $delivery = DB::table('rider_api_deliveries')->where('id', $id)->first();
+        }
+
+        abort_if($delivery->rider_id && (int) $delivery->rider_id !== $riderId, 409, 'This booking was accepted by another rider.');
+
+        return $delivery;
+    }
+
+    private function assignDelivery(object $delivery, int $riderId, string $state = 'accepted'): void
+    {
+        $updates = [
+            'rider_id' => $riderId,
+            'current_state' => $state,
+            'accepted_at' => $delivery->accepted_at ?? now(),
+            'updated_at' => now(),
+        ];
+        if ($state === 'delivered') {
+            $updates['completed_at'] = now();
+        }
+
+        DB::table('rider_api_deliveries')->where('id', $delivery->id)->update($updates);
     }
 
      public function saveTokenDevice(Request $request) {

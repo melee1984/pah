@@ -15,10 +15,12 @@ class isRequest
      */
     public function handle($request, Closure $next)
     {   
-        if ($request->input('admin_request') != 'apiRequestHandle001') {
-            echo "Request not allowed";
-            die();
+        if ($request->header('X-Admin-Request') !== 'apiRequestHandle001') {
+            return response()->json([
+                'message' => 'Request not allowed',
+            ], 403);
         }
-        return $next($request);  
+
+        return $next($request); 
     }
 }
