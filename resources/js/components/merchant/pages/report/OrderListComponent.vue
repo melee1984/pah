@@ -283,7 +283,8 @@
                 errors: {},
                 orders: [],
                 activeList: 'pending',
-                timerInterval: 60,
+                timerInterval: 15,
+                refreshTimer: null,
                 riders: [],
                 selectedOrder: {},
                 statuses: [],
@@ -348,6 +349,9 @@
             this.startTimer();
             this.initModal();
 
+        },
+        beforeDestroy() {
+            window.clearInterval(this.refreshTimer);
         },
         
         methods: {
@@ -428,11 +432,10 @@
             return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
           },
           startTimer: function () {
-           setInterval(() => {
+           this.refreshTimer = window.setInterval(() => {
                 this.timerInterval--;
-                if (this.timerInterval ==0) {
-                  this.timerInterval = 60;
-                  toastr.info("Refreshing...");
+                if (this.timerInterval === 0) {
+                  this.timerInterval = 15;
                   this.fetchData();
                   Event.$emit('reloadMerchantOrderSummary');
                 }
