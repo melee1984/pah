@@ -1,6 +1,6 @@
 {
-  "_OrderListComponent-DRiT-OwR.js": {
-    "file": "assets/OrderListComponent-DRiT-OwR.js",
+  "_OrderListComponent-DKd45CBO.js": {
+    "file": "assets/OrderListComponent-DKd45CBO.js",
     "name": "OrderListComponent",
     "imports": [
       "__plugin-vue2_normalizer-CevmZA-b.js"
@@ -11,18 +11,18 @@
     "name": "_plugin-vue2_normalizer"
   },
   "resources/css/agent.css": {
-    "file": "assets/agent-D-UEqhM5.css",
+    "file": "assets/agent-BA5k1tBW.css",
     "src": "resources/css/agent.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-Du5I4_SD.js",
+    "file": "assets/app-BZN_aVkE.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "imports": [
       "__plugin-vue2_normalizer-CevmZA-b.js",
-      "_OrderListComponent-DRiT-OwR.js"
+      "_OrderListComponent-DKd45CBO.js"
     ],
     "css": [
       "assets/app-CH0jHzKs.css",
@@ -30,22 +30,25 @@
     ]
   },
   "resources/js/dashboard.js": {
-    "file": "assets/dashboard-DSP2Nhsq.js",
+    "file": "assets/dashboard-CjZUuGOf.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.js",
     "isEntry": true,
     "imports": [
       "__plugin-vue2_normalizer-CevmZA-b.js"
+    ],
+    "css": [
+      "assets/dashboard--BoqoG2-.css"
     ]
   },
   "resources/js/merchant.js": {
-    "file": "assets/merchant-DtFpFi8E.js",
+    "file": "assets/merchant-D3lSM4Yn.js",
     "name": "merchant",
     "src": "resources/js/merchant.js",
     "isEntry": true,
     "imports": [
       "__plugin-vue2_normalizer-CevmZA-b.js",
-      "_OrderListComponent-DRiT-OwR.js"
+      "_OrderListComponent-DKd45CBO.js"
     ],
     "css": [
       "assets/merchant-BUT94GMt.css"
