@@ -81,6 +81,40 @@
                     <div class="admin-pagination">{{ $riders->links('pagination::bootstrap-4') }}</div>
                 @endif
             </div>
+
+            <div class="card admin-card mt-4">
+                <div class="admin-card-header">
+                    <div><h2>Pending wallet top-ups</h2><p>Verify the submitted payment proof before adding credits to a rider's wallet.</p></div>
+                    <span class="admin-number-pill">{{ number_format($pendingTopUps->count()) }}</span>
+                </div>
+
+                @if ($pendingTopUps->isEmpty())
+                    <div class="admin-empty-state"><span><i class="fas fa-receipt"></i></span><h3>No top-ups awaiting review</h3><p>New rider top-up requests will appear here.</p></div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table admin-table">
+                            <thead><tr><th>Rider</th><th>Amount</th><th>Payment</th><th>Submitted</th><th>Proof</th><th>Action</th></tr></thead>
+                            <tbody>
+                            @foreach ($pendingTopUps as $topUp)
+                                <tr>
+                                    <td><strong>{{ $topUp->rider_name ?: 'Rider #'.$topUp->rider_id }}</strong><small>Rider #{{ $topUp->rider_id }}</small></td>
+                                    <td><strong class="admin-money">₱{{ number_format($topUp->amount_centavos / 100, 2) }}</strong></td>
+                                    <td><strong>{{ Str::headline($topUp->payment_method) }}</strong><small>{{ $topUp->payment_reference }}</small></td>
+                                    <td>{{ \Carbon\Carbon::parse($topUp->created_at)->format('M d, Y') }}<small>{{ \Carbon\Carbon::parse($topUp->created_at)->format('g:i A') }}</small></td>
+                                    <td><a class="dashboard-inline-link" href="{{ route('dashboard.rider-top-ups.proof', $topUp->reference) }}" target="_blank" rel="noopener"><i class="fas fa-external-link-alt mr-1"></i>{{ $topUp->proof_original_name }}</a></td>
+                                    <td>
+                                        <form method="POST" action="{{ route('dashboard.rider-top-ups.approve', $topUp->reference) }}">
+                                            @csrf
+                                            <button class="btn admin-btn-primary btn-sm" type="submit"><i class="fas fa-check mr-1"></i>Approve top-up</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
         </div>
     </section>
 </div>

@@ -119,6 +119,10 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('wallet', [V1RiderWalletController::class, 'wallet']);
             Route::get('wallet/earnings', [V1RiderWalletController::class, 'earnings']);
             Route::get('wallet/transactions', [V1RiderWalletController::class, 'transactions']);
+            Route::get('wallet/top-ups', [V1RiderWalletController::class, 'topUps']);
+            Route::post('wallet/top-ups', [V1RiderWalletController::class, 'submitTopUp'])
+                ->middleware('throttle:5,1');
+            Route::get('wallet/top-ups/{topUp}', [V1RiderWalletController::class, 'topUp']);
             Route::get('wallet/cod', [V1RiderWalletController::class, 'cod']);
             Route::get('wallet/cod/remittance-instructions', [V1RiderWalletController::class, 'remittanceInstructions']);
             Route::post('wallet/cod/remittances', [V1RiderWalletController::class, 'submitRemittance']);

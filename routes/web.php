@@ -176,6 +176,11 @@ Route::middleware('admin')->group(function () {
     Route::post('data/dashboard/riders/{rider}/credits', [RiderManagementController::class, 'adjustCredits'])
         ->middleware('throttle:20,1')
         ->name('dashboard.riders.credits');
+    Route::get('data/dashboard/rider-top-ups/{topUp}/proof', [RiderManagementController::class, 'viewTopUpProof'])
+        ->name('dashboard.rider-top-ups.proof');
+    Route::post('data/dashboard/rider-top-ups/{topUp}/approve', [RiderManagementController::class, 'approveTopUp'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.rider-top-ups.approve');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
     Route::get('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'index'])->name('dashboard.agents.index');

@@ -79,6 +79,103 @@ class WalletController extends Controller
         ]);
     }
 
+    public function topUps(Request $request): JsonResponse
+    {
+        $paginator = DB::table('rider_api_wallet_top_ups')
+            ->where('rider_id', $this->riders->rider($request)->id)
+            ->orderByDesc('created_at')
+            ->cursorPaginate(20);
+
+        return response()->json([
+            'top_ups' => collect($paginator->items())->map(
+                fn (object $topUp) => $this->topUpData($topUp),
+            ),
+            'next_cursor' => $paginator->nextCursor()?->encode(),
+        ]);
+    }
+
+    public function submitTopUp(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'amount_centavos' => ['required', 'integer', 'min:100', 'max:100000000'],
+            'payment_method' => ['required', 'string', 'in:gcash,bank_transfer,cash_deposit,other'],
+            'payment_reference' => ['required', 'string', 'max:150'],
+            'proof' => ['required', 'file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+        ]);
+        $rider = $this->riders->rider($request);
+
+        $duplicate = DB::table('rider_api_wallet_top_ups')
+            ->where('rider_id', $rider->id)
+            ->where('payment_method', $validated['payment_method'])
+            ->where('payment_reference', $validated['payment_reference'])
+            ->exists();
+
+        if ($duplicate) {
+            return response()->json([
+                'message' => 'A wallet top-up with this payment reference has already been submitted.',
+            ], 409);
+        }
+
+        $reference = (string) Str::uuid();
+        $proof = $request->file('proof');
+        $path = $proof->store("rider-wallet-top-ups/{$reference}", 'local');
+        if (! $path) {
+            throw new RuntimeException('The wallet top-up proof could not be stored.');
+        }
+
+        try {
+            DB::transaction(function () use ($rider, $validated, $reference, $proof, $path) {
+                $now = now();
+                DB::table('rider_api_wallet_top_ups')->insert([
+                    'reference' => $reference,
+                    'rider_id' => $rider->id,
+                    'amount_centavos' => $validated['amount_centavos'],
+                    'payment_method' => $validated['payment_method'],
+                    'payment_reference' => trim($validated['payment_reference']),
+                    'proof_path' => $path,
+                    'proof_original_name' => $proof->getClientOriginalName(),
+                    'proof_mime_type' => $proof->getMimeType(),
+                    'status' => 'pending',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+                DB::table('rider_api_activity_logs')->insert([
+                    'rider_id' => $rider->id,
+                    'type' => 'top_up_submitted',
+                    'payload' => json_encode([
+                        'top_up_reference' => $reference,
+                        'amount_centavos' => (int) $validated['amount_centavos'],
+                        'payment_method' => $validated['payment_method'],
+                    ], JSON_THROW_ON_ERROR),
+                    'recorded_at' => $now,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            });
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete($path);
+            throw $exception;
+        }
+
+        return response()->json([
+            'message' => 'Wallet top-up submitted for review.',
+            'top_up' => $this->topUpData(
+                DB::table('rider_api_wallet_top_ups')->where('reference', $reference)->first(),
+            ),
+        ], 201);
+    }
+
+    public function topUp(Request $request, string $topUp): JsonResponse
+    {
+        $record = DB::table('rider_api_wallet_top_ups')
+            ->where('rider_id', $this->riders->rider($request)->id)
+            ->where('reference', $topUp)
+            ->first();
+        abort_if(! $record, 404);
+
+        return response()->json(['top_up' => $this->topUpData($record)]);
+    }
+
     public function cod(Request $request): JsonResponse
     {
         $wallet = $this->riders->wallet($this->riders->rider($request)->id);
@@ -426,6 +523,23 @@ class WalletController extends Controller
             'status' => $withdrawal->status,
             'created_at' => $withdrawal->created_at,
             'updated_at' => $withdrawal->updated_at,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function topUpData(object $topUp): array
+    {
+        return [
+            'id' => $topUp->reference,
+            'amount_centavos' => (int) $topUp->amount_centavos,
+            'payment_method' => $topUp->payment_method,
+            'payment_reference' => $topUp->payment_reference,
+            'status' => $topUp->status,
+            'review_notes' => $topUp->review_notes,
+            'submitted_at' => $topUp->created_at,
+            'reviewed_at' => $topUp->reviewed_at,
         ];
     }
 

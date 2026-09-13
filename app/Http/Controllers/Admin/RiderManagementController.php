@@ -7,9 +7,11 @@ use App\Model\Rider\Rider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RiderManagementController extends Controller
 {
@@ -40,8 +42,24 @@ class RiderManagementController extends Controller
             })->count(),
             'credits' => (float) DB::table('rider_api_wallets')->sum('credit_amount'),
         ];
+        $pendingTopUps = DB::table('rider_api_wallet_top_ups as top_ups')
+            ->join('rider as riders', 'riders.id', '=', 'top_ups.rider_id')
+            ->where('top_ups.status', 'pending')
+            ->select([
+                'top_ups.reference',
+                'top_ups.rider_id',
+                'top_ups.amount_centavos',
+                'top_ups.payment_method',
+                'top_ups.payment_reference',
+                'top_ups.proof_original_name',
+                'top_ups.created_at',
+                'riders.name as rider_name',
+            ])
+            ->orderByDesc('top_ups.created_at')
+            ->limit(50)
+            ->get();
 
-        return view('dashboard.pages.riders.index', compact('riders', 'metrics', 'search'));
+        return view('dashboard.pages.riders.index', compact('riders', 'metrics', 'pendingTopUps', 'search'));
     }
 
     public function approve(Rider $rider): RedirectResponse
@@ -140,5 +158,94 @@ class RiderManagementController extends Controller
         $verb = $validated['action'] === 'deduct' ? 'deducted from' : 'added to';
 
         return back()->with('success', '₱'.number_format((float) $validated['amount'], 2).' was '.$verb.' '.$rider->name.'\'s credits.');
+    }
+
+    public function viewTopUpProof(string $topUp): StreamedResponse
+    {
+        $record = DB::table('rider_api_wallet_top_ups')->where('reference', $topUp)->first();
+        abort_if(! $record || ! Storage::disk('local')->exists($record->proof_path), 404);
+
+        return Storage::disk('local')->response(
+            $record->proof_path,
+            $record->proof_original_name,
+            ['Content-Type' => $record->proof_mime_type ?: 'application/octet-stream'],
+        );
+    }
+
+    public function approveTopUp(string $topUp): RedirectResponse
+    {
+        $result = DB::transaction(function () use ($topUp) {
+            $record = DB::table('rider_api_wallet_top_ups')
+                ->where('reference', $topUp)
+                ->lockForUpdate()
+                ->first();
+            abort_if(! $record, 404);
+
+            if ($record->status === 'approved') {
+                return ['already_approved' => true, 'record' => $record];
+            }
+
+            abort_if($record->status !== 'pending', 409, 'Only pending wallet top-ups can be approved.');
+
+            $now = now();
+            DB::table('rider_api_wallets')->insertOrIgnore([
+                'rider_id' => $record->rider_id,
+                'credit_amount' => 0,
+                'credit_points' => 0,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            $wallet = DB::table('rider_api_wallets')
+                ->where('rider_id', $record->rider_id)
+                ->lockForUpdate()
+                ->first();
+            $currentBalanceCentavos = (int) round((float) $wallet->credit_amount * 100);
+            $newBalanceCentavos = $currentBalanceCentavos + (int) $record->amount_centavos;
+
+            DB::table('rider_api_wallets')->where('id', $wallet->id)->update([
+                'credit_amount' => $newBalanceCentavos / 100,
+                'updated_at' => $now,
+            ]);
+            DB::table('rider_api_wallet_transactions')->insert([
+                'reference' => (string) Str::uuid(),
+                'rider_id' => $record->rider_id,
+                'type' => 'wallet_top_up',
+                'amount_centavos' => (int) $record->amount_centavos,
+                'balance_after_centavos' => $newBalanceCentavos,
+                'description' => 'Approved rider wallet top-up',
+                'related_type' => 'wallet_top_up',
+                'related_reference' => $record->reference,
+                'performed_by_user_id' => auth()->id(),
+                'occurred_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('rider_api_wallet_top_ups')->where('id', $record->id)->update([
+                'status' => 'approved',
+                'reviewed_by_user_id' => auth()->id(),
+                'reviewed_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('rider_api_activity_logs')->insert([
+                'rider_id' => $record->rider_id,
+                'type' => 'top_up_approved',
+                'payload' => json_encode([
+                    'top_up_reference' => $record->reference,
+                    'amount_centavos' => (int) $record->amount_centavos,
+                    'performed_by_user_id' => auth()->id(),
+                ], JSON_THROW_ON_ERROR),
+                'recorded_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            return ['already_approved' => false, 'record' => $record];
+        });
+
+        if ($result['already_approved']) {
+            return back()->with('success', 'This wallet top-up was already approved.');
+        }
+
+        return back()->with('success', 'The rider wallet top-up was approved and credited.');
     }
 }

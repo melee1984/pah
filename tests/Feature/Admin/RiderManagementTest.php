@@ -7,6 +7,7 @@ use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class RiderManagementTest extends TestCase
@@ -122,6 +123,52 @@ class RiderManagementTest extends TestCase
             (float) DB::table('rider_api_wallets')->where('rider_id', $riderId)->value('credit_amount'),
         );
         $this->assertDatabaseCount('rider_api_wallet_transactions', 0);
+    }
+
+    public function test_admin_approval_of_a_top_up_credits_the_wallet_once_and_logs_the_transaction(): void
+    {
+        $admin = $this->createAdmin();
+        $riderId = $this->createRider('Ella Rider', true, 20);
+        $topUpReference = (string) Str::uuid();
+        DB::table('rider_api_wallet_top_ups')->insert([
+            'reference' => $topUpReference,
+            'rider_id' => $riderId,
+            'amount_centavos' => 3000,
+            'payment_method' => 'gcash',
+            'payment_reference' => 'GCASH-ELLA-1',
+            'proof_path' => 'rider-wallet-top-ups/test/proof.jpg',
+            'proof_original_name' => 'proof.jpg',
+            'proof_mime_type' => 'image/jpeg',
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $approve = fn () => $this->withoutMiddleware(isAdmin::class)
+            ->actingAs($admin)
+            ->post(route('dashboard.rider-top-ups.approve', $topUpReference));
+
+        $approve()->assertRedirect()->assertSessionHas('success');
+        $approve()->assertRedirect()->assertSessionHas('success');
+
+        $this->assertEquals(
+            50,
+            (float) DB::table('rider_api_wallets')->where('rider_id', $riderId)->value('credit_amount'),
+        );
+        $this->assertDatabaseHas('rider_api_wallet_top_ups', [
+            'reference' => $topUpReference,
+            'status' => 'approved',
+            'reviewed_by_user_id' => $admin->id,
+        ]);
+        $this->assertDatabaseHas('rider_api_wallet_transactions', [
+            'rider_id' => $riderId,
+            'type' => 'wallet_top_up',
+            'amount_centavos' => 3000,
+            'balance_after_centavos' => 5000,
+            'related_reference' => $topUpReference,
+            'performed_by_user_id' => $admin->id,
+        ]);
+        $this->assertSame(1, DB::table('rider_api_wallet_transactions')->where('related_reference', $topUpReference)->count());
     }
 
     private function createAdmin(): User
