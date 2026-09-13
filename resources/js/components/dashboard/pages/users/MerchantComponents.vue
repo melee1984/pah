@@ -80,6 +80,11 @@
                   <input v-model="member.pahatud_comm_discount" type="checkbox" :disabled="isBusy(member, 'pahatud_comm_discount')" @change="toggleSetting(member, 'pahatud_comm_discount', 'coomrate')">
                   <i></i>
                 </label>
+                <label>
+                  <span>Add-Up Settings</span>
+                  <input v-model="member.addup" type="checkbox" :disabled="isBusy(member, 'addup')" @change="toggleSetting(member, 'addup', 'addup')">
+                  <i></i>
+                </label>
               </div>
             </td>
             <td>

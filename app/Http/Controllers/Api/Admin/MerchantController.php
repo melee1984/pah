@@ -109,7 +109,7 @@ class MerchantController extends Controller
          return response()->json($data, 200);
     }
 
-     public function coomrate(Partners $partner, Request $request) {
+    public function coomrate(Partners $partner, Request $request) {
       
         $data = array();
 
@@ -128,6 +128,17 @@ class MerchantController extends Controller
          }
 
          return response()->json($data, 200);
+    }
+
+    public function addup(Partners $partner, Request $request)
+    {
+        $partner->addup = ! $partner->addup;
+        $partner->save();
+
+        return response()->json([
+            'message' => 'Successfully updated Add-Up Settings',
+            'status' => 1,
+        ], 200);
     }
 
     public function passwordSend(Partners $partner, Request $request) {
