@@ -86,6 +86,12 @@ class RiderAcceptOrderTest extends TestCase
             'order_id' => $orderId,
             'type' => 'booking_accepted',
         ]);
+        $this->assertDatabaseHas('rider_api_conversations', [
+            'rider_id' => $riderId,
+            'type' => 'customer',
+            'delivery_reference' => $deliveryReference,
+            'subject' => 'Delivery customer',
+        ]);
 
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
             ->getJson('/api/v1/rider/deliveries/active')

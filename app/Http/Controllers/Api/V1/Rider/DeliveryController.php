@@ -1090,6 +1090,27 @@ class DeliveryController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        foreach (['merchant', 'customer'] as $type) {
+            $exists = DB::table('rider_api_conversations')
+                ->where('rider_id', $riderId)
+                ->where('type', $type)
+                ->where('delivery_reference', $delivery->reference)
+                ->exists();
+
+            if (! $exists) {
+                DB::table('rider_api_conversations')->insert([
+                    'reference' => (string) Str::uuid(),
+                    'rider_id' => $riderId,
+                    'type' => $type,
+                    'delivery_reference' => $delivery->reference,
+                    'subject' => $type === 'merchant'
+                        ? $delivery->merchant_name
+                        : 'Delivery customer',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
         DB::table('rider_api_availability')->updateOrInsert(
             ['rider_id' => $riderId],
             [

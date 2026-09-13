@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Booking\RequestController;
 use App\Http\Controllers\Flower\FlowerstoreController;
 use App\Http\Controllers\PageController;
@@ -168,7 +169,13 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
 
     Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
-    Route::get('data/dashboard/riders', [DashboardController::class, 'index'])->name('dashboard.rider');
+    Route::get('data/dashboard/riders', [RiderManagementController::class, 'index'])->name('dashboard.rider');
+    Route::post('data/dashboard/riders/{rider}/approve', [RiderManagementController::class, 'approve'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.riders.approve');
+    Route::post('data/dashboard/riders/{rider}/credits', [RiderManagementController::class, 'adjustCredits'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.riders.credits');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
     Route::get('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'index'])->name('dashboard.agents.index');

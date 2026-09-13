@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\Mobile\ResourcesController;
 use App\Http\Controllers\Api\Mobile\Rider\OrderController as RiderOrderController;
 use App\Http\Controllers\Api\Mobile\UserController as MobileUserController;
 use App\Http\Controllers\Api\User\AccessController;
+use App\Http\Controllers\Api\V1\User\CommunicationController as V1UserCommunicationController;
 use App\Http\Controllers\Map\DistanceController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,15 @@ use Illuminate\Support\Facades\Route;
 // ----------------------------------------------------------------------
 
 Route::group(['middleware' => 'isRequest'], function () {
+    Route::prefix('v1/user')->middleware('auth:api')->group(function () {
+        Route::get('conversations', [V1UserCommunicationController::class, 'conversations']);
+        Route::get('conversations/{conversation}', [V1UserCommunicationController::class, 'conversation']);
+        Route::get('conversations/{conversation}/messages', [V1UserCommunicationController::class, 'messages']);
+        Route::post('conversations/{conversation}/messages', [V1UserCommunicationController::class, 'sendMessage']);
+        Route::post('conversations/{conversation}/attachments', [V1UserCommunicationController::class, 'uploadAttachment']);
+        Route::post('conversations/{conversation}/read', [V1UserCommunicationController::class, 'markConversationRead']);
+    });
+
     Route::group(['prefix' => 'mobile'], function () {
 
         Route::get('home', [MobileHomeController::class, 'home']);
@@ -43,7 +53,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
             Route::get('checkout', [MobileCheckoutController::class, 'checkout']);
-            
+
             Route::post('checkout/sms/submit', [MobileCheckoutController::class, 'smsSending']);
             Route::post('checkout/sms/confirm/submit', [MobileCheckoutController::class, 'validatedSMScode']);
             Route::post('checkout/update/user/submit', [MobileCheckoutController::class, 'updateUserProfile']);
