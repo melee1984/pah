@@ -89,7 +89,7 @@ class CommunicationController extends Controller
         ]);
         $rider = $this->riders->rider($request);
         $created = false;
-
+        
         $conversation = DB::transaction(function () use ($validated, $rider, &$created) {
             $delivery = DB::table('rider_api_deliveries')
                 ->where('legacy_order_id', $validated['delivery_id'])
@@ -97,6 +97,9 @@ class CommunicationController extends Controller
                 ->whereNotIn('current_state', ['accepted', 'delivered', 'cancelled', 'failed'])
                 ->lockForUpdate()
                 ->first();
+
+            \Log::info('Delivery conversation check', ['delivery' => $delivery]);
+
             abort_if(! $delivery, 403, 'Customer chat is only available for your active delivery.');
 
             $conversation = DB::table('rider_api_conversations')
