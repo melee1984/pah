@@ -481,6 +481,8 @@ class DeliveryController extends Controller
             ], 409);
         }
 
+        \Log::info(['what current state' => $record->current_state, 'what type' => 'cod_collected']);
+        
         if (! $this->transitionAllowed($record->current_state, 'cod_collected')) {
             return response()->json(['message' => 'COD cannot be confirmed in the current delivery state.'], 409);
         }
@@ -1444,6 +1446,8 @@ class DeliveryController extends Controller
             'proof_captured' => ['delivered'],
             default => [],
         };
+
+        // unsa ba dapat ang current state if COD_COLLECTED, CUSTOMER_VERIFIED, PROOF_CAPTURED, DELIVERED, CANCELLED, FAILED
 
         return in_array($state, self::TERMINAL_STATES, true)
             ? []
