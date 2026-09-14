@@ -920,8 +920,8 @@ class DeliveryController extends Controller
                     'order_status' => LibraryStatus::STATUS_READY_FOR_PICKUP,
                     'delivery_state' => 'arrived_at_merchant',
                 ],
-                'pickup-order', 'picked-order' => [
-                    'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP, BookingStatus::STATUS_BOOKING_ACCEPTED, BookingStatus::STATUS_BOOKING_PROCESSING, BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP],
+                'pickup-order', 'picked-order', 'accepted' => [
+                    'from' => [BookingStatus::STATUS_BOOKING_READY_FOR_PICKUP, BookingStatus::STATUS_BOOKING_ACCEPTED, BookingStatus::STATUS_BOOKING_PROCESSING],
                     'booking_status' => BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP,
                     'order_status' => LibraryStatus::STATUS_RIDER_ON_THE_WAY_TO_CUSTOMER,
                     'delivery_state' => 'picked_up',
