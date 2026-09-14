@@ -89,7 +89,7 @@ class CommunicationController extends Controller
 
         $conversation = DB::transaction(function () use ($validated, $rider, &$created) {
             $delivery = DB::table('rider_api_deliveries')
-                ->where('reference', $validated['delivery_id'])
+                ->where('legacy_order_id', $validated['delivery_id'])
                 ->where('rider_id', $rider->id)
                 ->whereNotIn('current_state', ['accepted', 'delivered', 'cancelled', 'failed'])
                 ->lockForUpdate()
