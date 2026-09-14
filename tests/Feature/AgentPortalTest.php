@@ -6,18 +6,26 @@ use App\Agent;
 use App\AgentCommission;
 use App\Http\Middleware\isAdmin;
 use App\LibraryStatus;
+use App\Mail\AgentApprovedMail;
+use App\Mail\AgentDeclinedMail;
+use App\Mail\AgentRegistrationReceivedMail;
 use App\Mail\AgentTemporaryPasswordMail;
+use App\Mail\RestaurantApplicationStatusMail;
 use App\Mail\RestaurantInvitationMail;
 use App\Model\Cart;
 use App\Model\CartItem;
 use App\Model\Orders\Orders;
 use App\Partners;
+use App\RestaurantEnrollmentDocument;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class AgentPortalTest extends TestCase
@@ -27,6 +35,13 @@ class AgentPortalTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Production adds these fields with database/sql/agent_application_review.sql.
+        Schema::table('agents', function (Blueprint $table) {
+            $table->string('review_status', 20)->nullable()->index();
+            $table->text('review_message')->nullable();
+            $table->timestamp('reviewed_at')->nullable();
+        });
 
         Schema::create('partners', function (Blueprint $table) {
             $table->id();
@@ -43,7 +58,38 @@ class AgentPortalTest extends TestCase
             $table->text('search_string')->nullable();
             $table->decimal('percentage', 5, 2)->nullable();
             $table->boolean('active')->default(false);
+            $table->unsignedInteger('account_type_id')->nullable();
+            $table->boolean('addup')->default(false);
+            $table->string('business_structure', 30)->nullable();
+            $table->string('enrolling_as', 30)->nullable();
+            $table->string('registered_business_name')->nullable();
+            $table->string('tin', 30)->nullable();
+            $table->string('business_registration_number', 100)->nullable();
+            $table->string('payout_account_name')->nullable();
+            $table->string('application_status', 30)->nullable();
+            $table->text('application_remarks')->nullable();
             $table->timestamp('verified_at')->nullable();
+            $table->unsignedBigInteger('verified_by')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('restaurant_enrollment_documents', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('partner_id');
+            $table->string('document_type', 50);
+            $table->string('file_path', 500);
+            $table->string('original_name');
+            $table->string('status', 30)->default('pending_verification');
+            $table->text('remarks')->nullable();
+            $table->date('expires_at')->nullable();
+            $table->timestamp('reviewed_at')->nullable();
+            $table->unique(['partner_id', 'document_type']);
+            $table->timestamps();
+        });
+
+        Schema::create('partner_location', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('partner_id');
             $table->timestamps();
         });
 
@@ -144,6 +190,18 @@ class AgentPortalTest extends TestCase
         $this->assertFalse(Hash::check('Temporary123', $agent->password));
     }
 
+    public function test_agent_help_page_explains_enrollment_and_earnings(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent, 'agent')->get(route('agent.help'))
+            ->assertOk()
+            ->assertSee('Help &amp; frequently asked questions', false)
+            ->assertSee('How do I register a restaurant?')
+            ->assertSee('How is my commission calculated?')
+            ->assertSee(route('agent.restaurants.create'));
+    }
+
     public function test_admin_can_create_an_agent_and_email_a_temporary_password(): void
     {
         Mail::fake();
@@ -187,6 +245,88 @@ class AgentPortalTest extends TestCase
             ->assertSee('First Listed Agent')
             ->assertSee('Second Listed Agent')
             ->assertSee('Add new agent');
+    }
+
+    public function test_admin_can_view_each_agents_details_and_restaurants(): void
+    {
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent('profile@example.com');
+        $restaurant = $this->restaurant($agent, 'Profile Restaurant');
+        $admin = User::query()->forceCreate([
+            'name' => 'Admin User', 'email' => 'admin-profile@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $admin->setAttribute('firstname', 'Admin');
+        $admin->setAttribute('lastname', 'User');
+
+        $this->actingAs($admin)->get(route('dashboard.agents.index'))
+            ->assertOk()
+            ->assertSee(route('dashboard.agents.show', $agent));
+
+        $this->get(route('dashboard.agents.show', $agent))
+            ->assertOk()
+            ->assertSee($agent->email)
+            ->assertSee($restaurant->restaurant_name)
+            ->assertSee(route('dashboard.merchant.application.show', $restaurant->id));
+    }
+
+    public function test_admin_can_approve_an_application_with_a_message(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent('approval@example.com');
+        $agent->update(['active' => false]);
+
+        $this->post(route('dashboard.agents.approve', $agent), [
+            'message' => 'Welcome to the team.',
+        ])->assertSessionHas('success');
+
+        $agent->refresh();
+        $this->assertTrue($agent->active);
+        $this->assertSame('approved', $agent->review_status);
+        $this->assertSame('Welcome to the team.', $agent->review_message);
+        $this->assertNotNull($agent->reviewed_at);
+        Mail::assertSent(AgentApprovedMail::class, fn ($mail) => $mail->hasTo($agent->email)
+            && $mail->adminMessage === 'Welcome to the team.');
+    }
+
+    public function test_agent_email_includes_the_inline_pahatud_logo(): void
+    {
+        $agent = new Agent([
+            'name' => 'Preview Agent',
+            'email' => 'preview@example.com',
+            'commission_percentage' => 30,
+        ]);
+
+        Mail::mailer('array')->to($agent->email)->send(new AgentRegistrationReceivedMail($agent));
+
+        $message = Mail::mailer('array')->getSymfonyTransport()->messages()[0]->getOriginalMessage();
+        $this->assertStringContainsString('cid:pahatud-logo@pahatud', $message->getHtmlBody());
+        $this->assertCount(1, $message->getAttachments());
+        $this->assertSame('pahatud-logo@pahatud', $message->getAttachments()[0]->getContentId());
+    }
+
+    public function test_admin_can_decline_an_application_and_cannot_review_it_again(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent('declined@example.com');
+        $agent->update(['active' => false]);
+
+        $this->post(route('dashboard.agents.decline', $agent), [
+            'message' => 'Please provide more details.',
+        ])->assertSessionHas('success');
+
+        $agent->refresh();
+        $this->assertFalse($agent->active);
+        $this->assertSame('declined', $agent->review_status);
+        $this->assertSame('Please provide more details.', $agent->review_message);
+        Mail::assertSent(AgentDeclinedMail::class, fn ($mail) => $mail->hasTo($agent->email)
+            && $mail->adminMessage === 'Please provide more details.');
+
+        $this->post(route('dashboard.agents.approve', $agent))->assertSessionHasErrors('review');
+        $this->assertFalse($agent->fresh()->active);
+        Mail::assertSentCount(1);
     }
 
     public function test_admin_can_view_the_agent_commission_report_with_cart_order_numbers(): void
@@ -253,9 +393,10 @@ class AgentPortalTest extends TestCase
     public function test_enrollment_automatically_links_the_restaurant_to_the_agent(): void
     {
         Mail::fake();
+        Storage::fake('local');
         $agent = $this->agent();
 
-        $this->actingAs($agent, 'agent')->post(route('agent.restaurants.store'), [
+        $this->actingAs($agent, 'agent')->post(route('agent.restaurants.store'), array_merge($this->enrollmentDocuments(), [
             'restaurant_name' => 'Inasal House',
             'firstname' => 'Maria',
             'lastname' => 'Santos',
@@ -264,7 +405,7 @@ class AgentPortalTest extends TestCase
             'address' => '123 Test Street',
             'city' => 'Davao City',
             'description' => 'Local grilled favorites.',
-        ])->assertRedirect(route('agent.restaurants.index'));
+        ]))->assertRedirect(route('agent.restaurants.index'));
 
         $this->assertDatabaseHas('partners', [
             'restaurant_name' => 'Inasal House',
@@ -275,6 +416,10 @@ class AgentPortalTest extends TestCase
         $user = User::query()->where('email', 'inasal@example.com')->firstOrFail();
         $restaurant = Partners::query()->where('email', 'inasal@example.com')->firstOrFail();
         $this->assertSame($user->id, $restaurant->user_id);
+        $this->assertCount(6, $restaurant->enrollmentDocuments);
+        foreach ($restaurant->enrollmentDocuments as $document) {
+            Storage::disk('local')->assertExists($document->file_path);
+        }
         $this->assertDatabaseHas('restaurant_invitations', [
             'user_id' => $user->id,
             'restaurant_id' => $restaurant->id,
@@ -284,12 +429,281 @@ class AgentPortalTest extends TestCase
         Mail::assertSent(RestaurantInvitationMail::class, fn ($mail) => $mail->hasTo('inasal@example.com'));
     }
 
-    public function test_restaurant_contact_can_complete_the_one_time_invitation(): void
+    public function test_enrollment_allows_missing_documents_for_later_upload(): void
     {
         Mail::fake();
         $agent = $this->agent();
+        $details = [
+            'restaurant_name' => 'Document Cafe',
+            'firstname' => 'Ana',
+            'lastname' => 'Reyes',
+            'email' => 'documents@example.com',
+            'mobile' => '09170000000',
+            'address' => 'Davao City',
+            'city' => 'Davao City',
+            'business_structure' => 'sole_proprietorship',
+            'enrolling_as' => 'owner',
+            'registered_business_name' => 'Document Cafe',
+            'tin' => '123-456-789',
+            'business_registration_number' => 'DTI-123',
+            'payout_account_name' => 'Ana Reyes',
+        ];
 
-        $this->actingAs($agent, 'agent')->post(route('agent.restaurants.store'), [
+        $this->actingAs($agent, 'agent')->post(route('agent.restaurants.store'), $details)
+            ->assertRedirect(route('agent.restaurants.index'));
+        $restaurant = Partners::query()->where('email', 'documents@example.com')->firstOrFail();
+        $this->assertSame('pending_review', $restaurant->application_status);
+        $this->assertCount(6, $restaurant->missingEnrollmentDocuments());
+    }
+
+    public function test_restaurant_account_can_upload_a_missing_document_and_see_its_status(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $agent = $this->agent();
+        $contact = User::query()->forceCreate([
+            'name' => 'Restaurant Contact',
+            'email' => 'contact@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $restaurant = $this->restaurant($agent);
+        $restaurant->forceFill(['user_id' => $contact->id, 'active' => false, 'application_status' => 'pending_review'])->save();
+
+        $this->actingAs($contact)
+            ->post(route('merchant.application.documents.store'), [
+                'document_type' => 'business_permit',
+                'document' => UploadedFile::fake()->create('permit.pdf', 100, 'application/pdf'),
+            ])->assertSessionHas('success');
+
+        $document = $restaurant->enrollmentDocuments()->firstOrFail();
+        $this->assertSame('pending_verification', $document->status);
+        Storage::disk('local')->assertExists($document->file_path);
+        $this->get(route('merchant.application.show'))->assertOk()->assertSee('Pending Verification');
+        Mail::assertSent(RestaurantApplicationStatusMail::class, 2);
+    }
+
+    public function test_restaurant_account_can_save_business_information_from_application_form(): void
+    {
+        Mail::fake();
+        $contact = User::query()->forceCreate([
+            'name' => 'Restaurant Contact', 'email' => 'merchant-form@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $restaurant = $this->restaurant($this->agent());
+        $restaurant->forceFill(['user_id' => $contact->id, 'active' => false])->save();
+
+        $this->actingAs($contact)->get(route('merchant.application.show'))
+            ->assertOk()
+            ->assertSee('restaurant-application.css')
+            ->assertSee('Save business information');
+
+        $this->put(route('merchant.application.update'), [
+            'firstname' => 'New', 'lastname' => 'Contact',
+            'restaurant_name' => 'Updated Cafe', 'registered_business_name' => 'Updated Cafe',
+            'tin' => '123-456-789', 'business_registration_number' => 'DTI-123',
+            'payout_account_name' => 'New Contact', 'email' => 'merchant-form@example.com',
+            'mobile' => '09171234567', 'city' => 'Davao City', 'address' => 'Updated address',
+            'business_structure' => 'sole_proprietorship', 'enrolling_as' => 'owner',
+        ])->assertSessionHas('success');
+
+        $this->assertSame('Updated Cafe', $restaurant->fresh()->restaurant_name);
+        $this->assertSame('pending_review', $restaurant->fresh()->application_status);
+    }
+
+    public function test_agent_can_view_and_update_only_their_restaurant_application(): void
+    {
+        Mail::fake();
+        $agent = $this->agent();
+        $otherAgent = $this->agent('other-agent@example.com');
+        $restaurant = $this->restaurant($agent);
+        $restaurant->update(['business_structure' => 'sole_proprietorship', 'enrolling_as' => 'owner']);
+        $contact = User::query()->forceCreate([
+            'name' => 'Old Contact', 'email' => 'old-contact@example.com', 'password' => Hash::make('password123'),
+        ]);
+        $restaurant->forceFill(['user_id' => $contact->id])->save();
+
+        $this->actingAs($otherAgent, 'agent')->get(route('agent.restaurants.show', $restaurant))->assertNotFound();
+        $this->actingAs($agent, 'agent')->get(route('agent.restaurants.show', $restaurant))->assertOk()->assertSee($restaurant->restaurant_name);
+
+        $this->put(route('agent.restaurants.update', $restaurant), [
+            'restaurant_name' => 'Updated Restaurant', 'firstname' => 'New', 'lastname' => 'Contact',
+            'email' => 'new-contact@example.com', 'mobile' => '09170000000', 'address' => 'Updated address',
+            'city' => 'Davao City', 'business_structure' => 'sole_proprietorship', 'enrolling_as' => 'owner',
+            'registered_business_name' => 'Updated Restaurant', 'tin' => '123-456-789',
+            'business_registration_number' => 'DTI-123', 'payout_account_name' => 'New Contact',
+        ])->assertSessionHas('success');
+
+        $this->assertSame('Updated Restaurant', $restaurant->fresh()->restaurant_name);
+        $this->assertSame('pending_review', $restaurant->fresh()->application_status);
+        $this->assertSame('new-contact@example.com', $contact->fresh()->email);
+    }
+
+    public function test_admin_can_open_restaurant_application_from_numeric_merchant_list_link(): void
+    {
+        $this->withoutMiddleware(isAdmin::class);
+        $restaurant = $this->restaurant($this->agent());
+        $admin = User::query()->forceCreate([
+            'name' => 'Restaurant Admin',
+            'email' => 'review-admin@example.com', 'password' => Hash::make('password123'),
+        ]);
+        $admin->setAttribute('firstname', 'Restaurant');
+        $admin->setAttribute('lastname', 'Admin');
+
+        $this->actingAs($admin)->get('/data/dashboard/merchant/'.$restaurant->id.'/application')
+            ->assertOk()
+            ->assertSee($restaurant->restaurant_name)
+            ->assertSee('action="'.route('dashboard.merchant.application.review', $restaurant->id).'"', false);
+    }
+
+    public function test_document_rejection_requires_remarks_and_notifies_both_parties(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $path = UploadedFile::fake()->create('permit.pdf', 100, 'application/pdf')->store('restaurant-enrollment/'.$restaurant->id, 'local');
+        $document = $restaurant->enrollmentDocuments()->create([
+            'document_type' => 'business_permit', 'file_path' => $path, 'original_name' => 'permit.pdf',
+        ]);
+
+        $this->post(route('dashboard.merchant.documents.review', [$restaurant->id, $document]), ['status' => 'rejected'])
+            ->assertSessionHasErrors('remarks');
+        $this->post(route('dashboard.merchant.documents.review', [$restaurant->id, $document]), [
+            'status' => 'rejected', 'remarks' => 'Please upload the current permit.',
+        ])->assertSessionHas('success');
+
+        $this->assertSame('rejected', $document->fresh()->status);
+        $this->assertSame('Please upload the current permit.', $document->fresh()->remarks);
+        Mail::assertSent(RestaurantApplicationStatusMail::class, 2);
+    }
+
+    public function test_admin_can_decline_restaurant_application_with_remarks(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $admin = User::query()->forceCreate([
+            'name' => 'Restaurant Admin', 'email' => 'restaurant-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->actingAs($admin)->post(route('dashboard.merchant.application.review', $restaurant->id), [
+            'decision' => 'declined', 'remarks' => 'Please correct the registered business name.',
+        ])->assertSessionHas('success');
+
+        $restaurant->refresh();
+        $this->assertSame('declined', $restaurant->application_status);
+        $this->assertEquals(0, $restaurant->active);
+        $this->assertNull($restaurant->verified_at);
+        Mail::assertSent(RestaurantApplicationStatusMail::class, 2);
+    }
+
+    public function test_expired_document_pauses_approved_application_and_notifies_both_parties(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $restaurant->forceFill(['application_status' => 'approved', 'active' => true, 'verified_at' => now()])->save();
+        $path = UploadedFile::fake()->create('permit.pdf', 100, 'application/pdf')->store('restaurant-enrollment/'.$restaurant->id, 'local');
+        $document = $restaurant->enrollmentDocuments()->create([
+            'document_type' => 'business_permit', 'file_path' => $path, 'original_name' => 'permit.pdf',
+            'status' => 'approved', 'expires_at' => today()->subDay(),
+        ]);
+
+        Artisan::call('restaurants:expire-documents');
+
+        $this->assertSame('expired', $document->fresh()->status);
+        $this->assertSame('pending_review', $restaurant->fresh()->application_status);
+        $this->assertEquals(0, $restaurant->fresh()->active);
+        Mail::assertSent(RestaurantApplicationStatusMail::class, 2);
+    }
+
+    public function test_agent_restaurant_cannot_be_activated_or_verified_with_missing_documents(): void
+    {
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $restaurant->update(['active' => false, 'verified_at' => null]);
+
+        $this->postJson('/api/data/merchant/'.$restaurant->id.'/status/submit')->assertStatus(422);
+        $this->postJson('/api/data/merchant/'.$restaurant->id.'/verify/submit')->assertStatus(422);
+        $this->assertEquals(0, $restaurant->fresh()->active);
+        $this->assertNull($restaurant->fresh()->verified_at);
+    }
+
+    public function test_admin_can_review_private_enrollment_documents(): void
+    {
+        Storage::fake('local');
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $path = UploadedFile::fake()->create('permit.pdf', 100, 'application/pdf')
+            ->store('restaurant-enrollment/'.$restaurant->id, 'local');
+        $document = $restaurant->enrollmentDocuments()->create([
+            'document_type' => 'business_permit',
+            'file_path' => $path,
+            'original_name' => 'permit.pdf',
+        ]);
+
+        $this->get(route('dashboard.merchant.documents.index', $restaurant))->assertRedirect('/');
+
+        $this->withoutMiddleware(isAdmin::class);
+        $this->get(route('dashboard.merchant.documents.index', $restaurant))
+            ->assertOk()
+            ->assertJsonPath('documents.0.document_type', 'business_permit');
+        $this->get(route('dashboard.merchant.documents.show', [$restaurant, $document]))->assertOk();
+    }
+
+    public function test_complete_agent_enrollment_can_be_activated_and_verified(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $restaurant->update(['active' => false, 'verified_at' => null, 'enrolling_as' => 'authorized_representative']);
+
+        foreach ([...RestaurantEnrollmentDocument::REQUIRED_TYPES, 'authorization_document'] as $type) {
+            $path = UploadedFile::fake()->create($type.'.pdf', 100, 'application/pdf')
+                ->store('restaurant-enrollment/'.$restaurant->id, 'local');
+            $restaurant->enrollmentDocuments()->create([
+                'document_type' => $type,
+                'file_path' => $path,
+                'original_name' => $type.'.pdf',
+            ]);
+        }
+
+        $admin = User::query()->forceCreate([
+            'name' => 'Restaurant Admin',
+            'email' => 'restaurant-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $this->actingAs($admin);
+        $this->post(route('dashboard.merchant.application.review', $restaurant->id), ['decision' => 'approved'])
+            ->assertSessionHasErrors('decision');
+
+        foreach ($restaurant->enrollmentDocuments as $document) {
+            $this->post(route('dashboard.merchant.documents.review', [$restaurant->id, $document]), [
+                'status' => 'approved',
+            ])->assertSessionHas('success');
+        }
+        $this->post(route('dashboard.merchant.application.review', $restaurant->id), ['decision' => 'approved'])
+            ->assertSessionHas('success');
+
+        $this->assertEquals(1, $restaurant->fresh()->active);
+        $this->assertNotNull($restaurant->fresh()->verified_at);
+        $this->assertSame('approved', $restaurant->fresh()->application_status);
+    }
+
+    public function test_restaurant_contact_can_complete_the_one_time_invitation(): void
+    {
+        Mail::fake();
+        Storage::fake('local');
+        $agent = $this->agent();
+
+        $this->actingAs($agent, 'agent')->post(route('agent.restaurants.store'), array_merge($this->enrollmentDocuments(), [
             'restaurant_name' => 'Invitation Cafe',
             'firstname' => 'Ana',
             'lastname' => 'Reyes',
@@ -297,7 +711,7 @@ class AgentPortalTest extends TestCase
             'mobile' => '09170000000',
             'address' => '123 Invitation Street',
             'city' => 'Davao City',
-        ])->assertRedirect(route('agent.restaurants.index'));
+        ]))->assertRedirect(route('agent.restaurants.index'));
 
         $token = null;
         Mail::assertSent(RestaurantInvitationMail::class, function ($mail) use (&$token) {
@@ -472,6 +886,28 @@ class AgentPortalTest extends TestCase
         ]);
     }
 
+    private function enrollmentDocuments(string $enrollingAs = 'owner'): array
+    {
+        $documents = [
+            'business_structure' => 'sole_proprietorship',
+            'enrolling_as' => $enrollingAs,
+            'registered_business_name' => 'Test Restaurant LLC',
+            'tin' => '123-456-789',
+            'business_registration_number' => 'DTI-123',
+            'payout_account_name' => 'Test Owner',
+        ];
+
+        foreach (RestaurantEnrollmentDocument::REQUIRED_TYPES as $type) {
+            $documents[$type] = UploadedFile::fake()->create($type.'.pdf', 100, 'application/pdf');
+        }
+
+        if ($enrollingAs === 'authorized_representative') {
+            $documents['authorization_document'] = UploadedFile::fake()->create('authorization.pdf', 100, 'application/pdf');
+        }
+
+        return $documents;
+    }
+
     private function restaurant(Agent $agent, string $name = 'Test Restaurant', string $email = 'restaurant@example.com'): Partners
     {
         return $agent->restaurants()->create([
@@ -480,6 +916,12 @@ class AgentPortalTest extends TestCase
             'mobile' => '09171234567',
             'address' => 'Davao City',
             'city' => 'Davao City',
+            'registered_business_name' => $name,
+            'tin' => '123-456-789',
+            'business_registration_number' => 'DTI-123',
+            'payout_account_name' => 'Test Owner',
+            'business_structure' => 'sole_proprietorship',
+            'enrolling_as' => 'owner',
             'slug' => str($name)->slug(),
             'search_string' => $name,
             'percentage' => config('agent.pahatud_commission_percentage'),

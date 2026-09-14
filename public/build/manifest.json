@@ -11,12 +11,12 @@
     "name": "_plugin-vue2_normalizer"
   },
   "resources/css/agent.css": {
-    "file": "assets/agent-BA5k1tBW.css",
+    "file": "assets/agent-BLSaaJ7N.css",
     "src": "resources/css/agent.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BZN_aVkE.js",
+    "file": "assets/app-BEtI3Dlz.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -26,11 +26,11 @@
     ],
     "css": [
       "assets/app-CH0jHzKs.css",
-      "assets/_pahatud-BsWIlITL.css"
+      "assets/_pahatud-CvbDcMBV.css"
     ]
   },
   "resources/js/dashboard.js": {
-    "file": "assets/dashboard-CjZUuGOf.js",
+    "file": "assets/dashboard-5mxEBR7S.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.js",
     "isEntry": true,
@@ -55,7 +55,7 @@
     ]
   },
   "resources/scss/_pahatud.scss": {
-    "file": "assets/_pahatud-BsWIlITL.css",
+    "file": "assets/_pahatud-CvbDcMBV.css",
     "src": "resources/scss/_pahatud.scss",
     "isEntry": true
   }

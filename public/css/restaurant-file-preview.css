@@ -1,0 +1,6 @@
+.restaurant-file-preview { background: #faf8f7; border: 1px solid #e9e4df; border-radius: 9px; display: none; margin-top: 10px; padding: 12px; }
+.restaurant-file-preview.is-visible { display: block; }
+.restaurant-file-preview strong { display: block; font-size: 13px; margin-bottom: 8px; overflow-wrap: anywhere; }
+.restaurant-file-preview img { display: block; height: auto; max-height: 260px; max-width: 100%; object-fit: contain; }
+.restaurant-file-preview iframe { background: #fff; border: 1px solid #e9e4df; display: block; height: 280px; width: 100%; }
+.restaurant-file-preview small { color: #667076; display: block; margin-top: 8px; }

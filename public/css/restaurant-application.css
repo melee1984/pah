@@ -1,0 +1,41 @@
+.application-page { max-width: 1380px; }
+.application-panel { background: #fff; border: 1px solid #e8e3de; border-radius: 14px; box-shadow: 0 8px 28px rgba(23, 27, 29, .04); margin: 0 0 22px; padding: 28px; }
+.application-panel h2 { color: #171b1d; font-family: 'Manrope', sans-serif; font-size: 21px; font-weight: 800; margin: 0; }
+.application-panel p { line-height: 1.55; }
+.application-summary { background: linear-gradient(120deg, #fff 65%, #fff4f2); }
+.application-eyebrow { color: #ef3b35; display: block; font-size: 11px; font-weight: 800; letter-spacing: 1.3px; margin-bottom: 9px; text-transform: uppercase; }
+.application-summary-heading { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.application-summary-heading h2 { font-size: 25px; }
+.application-summary p { margin: 8px 0 0; }
+.application-muted, .application-section-heading p { color: #667076; }
+.application-section-heading { border-bottom: 1px solid #eee9e5; margin-bottom: 22px; padding-bottom: 18px; }
+.application-section-heading p { font-size: 13px; margin: 7px 0 0; }
+.application-grid { display: grid; gap: 18px 22px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.application-field { display: flex; flex-direction: column; min-width: 0; }
+.application-field label { color: #343a3e; font-size: 13px; font-weight: 700; margin-bottom: 7px; }
+.application-field input, .application-field select, .application-field textarea { background: #fff; border: 1px solid #ded9d4; border-radius: 9px; color: #252b2e; font: inherit; min-height: 44px; padding: 10px 12px; width: 100%; }
+.application-field select { appearance: auto; }
+.application-field textarea { min-height: 94px; resize: vertical; }
+.application-field input:focus, .application-field select:focus, .application-field textarea:focus, .application-doc input[type=file]:focus { border-color: #ef3b35; box-shadow: 0 0 0 3px rgba(239, 59, 53, .12); outline: none; }
+.application-form-actions { border-top: 1px solid #eee9e5; margin-top: 25px; padding-top: 22px; }
+.application-button { background: #ef3b35; border: 1px solid #ef3b35; border-radius: 9px; color: #fff; cursor: pointer; font-size: 13px; font-weight: 800; min-height: 44px; padding: 10px 17px; }
+.application-button:hover, .application-button:focus { background: #d92722; border-color: #d92722; color: #fff; }
+.application-error { color: #ba2620; font-size: 12px; margin-top: 5px; }
+.application-feedback { border-radius: 10px; font-size: 13px; margin-bottom: 20px; padding: 13px 16px; }
+.application-feedback-success { background: #eaf8ef; border: 1px solid #c9ead5; color: #1c6b3a; }
+.application-feedback-error { background: #fff0ef; border: 1px solid #ffd9d5; color: #a92924; }
+.application-status { border-radius: 99px; display: inline-flex; font-size: 11px; font-weight: 800; padding: 6px 10px; white-space: nowrap; }
+.application-status-pending_review, .application-status-pending_verification, .application-status-missing { background: #fff3dc; color: #855813; }
+.application-status-approved { background: #eaf8ef; color: #1c6b3a; }
+.application-status-declined, .application-status-rejected, .application-status-expired { background: #fff0ef; color: #aa3028; }
+.application-doc { border-top: 1px solid #eee9e5; padding: 20px 0; }
+.application-doc:first-of-type { border-top: 0; padding-top: 0; }
+.application-doc:last-child { padding-bottom: 0; }
+.application-doc-heading { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.application-doc-heading strong { color: #252b2e; font-size: 15px; }
+.application-doc .application-muted { font-size: 13px; margin: 6px 0; }
+.application-doc .application-muted a { color: #c92e29; font-weight: 700; overflow-wrap: anywhere; }
+.application-doc form { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.application-doc input[type=file] { background: #faf9f8; border: 1px dashed #d7d0ca; border-radius: 9px; color: #343a3e; font-size: 13px; max-width: 100%; padding: 10px; }
+.application-doc .restaurant-file-preview { flex-basis: 100%; margin: 0; }
+@media (max-width: 700px) { .application-panel { padding: 20px; } .application-grid { grid-template-columns: 1fr; } .application-doc form { align-items: stretch; flex-direction: column; } .application-doc input[type=file], .application-doc .application-button { width: 100%; } }

@@ -121,8 +121,8 @@ Route::group(['middleware' => ['api', 'web']], function () {
     Route::get('data/member/search/list', [AdminOrderController::class, 'getListMemberwithFilter']);
 
     Route::post('data/merchant/{partner:id}/online/submit', [AdminMerchantController::class, 'updateOnlineStatus']);
-    Route::post('data/merchant/{partner:id}/status/submit', [AdminMerchantController::class, 'updateStatus']);
-    Route::post('data/merchant/{partner:id}/verify/submit', [AdminMerchantController::class, 'verify']);
+    Route::post('data/merchant/{partner:id}/status/submit', [AdminMerchantController::class, 'updateStatus'])->middleware('admin');
+    Route::post('data/merchant/{partner:id}/verify/submit', [AdminMerchantController::class, 'verify'])->middleware('admin');
     Route::post('data/merchant/{partner:id}/preorder/submit', [AdminMerchantController::class, 'preorder']);
     Route::post('data/merchant/{partner:id}/coomrate/submit', [AdminMerchantController::class, 'coomrate']);
     Route::post('data/merchant/{partner:id}/addup/submit', [AdminMerchantController::class, 'addup']);

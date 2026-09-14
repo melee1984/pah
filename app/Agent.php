@@ -14,6 +14,9 @@ class Agent extends Authenticatable
         'password',
         'commission_percentage',
         'active',
+        'review_status',
+        'review_message',
+        'reviewed_at',
         'last_login_at',
         'must_change_password',
         'temporary_password_created_at',
@@ -29,6 +32,7 @@ class Agent extends Authenticatable
     {
         return [
             'active' => 'boolean',
+            'reviewed_at' => 'datetime',
             'must_change_password' => 'boolean',
             'commission_percentage' => 'decimal:2',
             'last_login_at' => 'datetime',

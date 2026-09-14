@@ -9,6 +9,8 @@ use App\Partners;
 use Auth;
 use App\Mail\MerchantResetMail;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use App\RestaurantEnrollmentDocument;
 
 use Carbon\Carbon;
 use Str;
@@ -38,6 +40,12 @@ class MerchantController extends Controller
    	}
 
     public function updateStatus(Partners $partner, Request $request) {
+      if ($partner->agent_id) {
+        return response()->json(['status' => 0, 'message' => 'Use the restaurant application review to change this account status.'], 422);
+      }
+      if (! $partner->active && $partner->missingEnrollmentDocuments()) {
+        return response()->json(['status' => 0, 'message' => 'Cannot activate this restaurant. Required enrollment documents are missing.'], 422);
+      }
       
       $data = array();
 
@@ -58,6 +66,12 @@ class MerchantController extends Controller
       }
 
       public function verify(Partners $partner, Request $request) {
+        if ($partner->agent_id) {
+          return response()->json(['status' => 0, 'message' => 'Use the restaurant application review to change verification status.'], 422);
+        }
+        if (! $partner->verified_at && $partner->missingEnrollmentDocuments()) {
+          return response()->json(['status' => 0, 'message' => 'Cannot verify this restaurant. Required enrollment documents are missing.'], 422);
+        }
       
         $data = array();
 
@@ -86,6 +100,30 @@ class MerchantController extends Controller
          }
 
          return response()->json($data, 200);
+    }
+
+    public function viewEnrollmentDocument(Partners $partner, RestaurantEnrollmentDocument $document)
+    {
+        abort_unless($document->partner_id === $partner->id, 404);
+        abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+        return Storage::disk('local')->response($document->file_path, $document->original_name, [
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+        ]);
+    }
+
+    public function enrollmentDocuments(Partners $partner)
+    {
+        return response()->json([
+            'documents' => $partner->enrollmentDocuments()->get()->map(fn ($document) => [
+                'id' => $document->id,
+                'document_type' => $document->document_type,
+                'original_name' => $document->original_name,
+                'url' => route('dashboard.merchant.documents.show', [$partner, $document]),
+            ]),
+            'missing' => $partner->missingEnrollmentDocuments(),
+        ]);
     }
 
     public function preorder(Partners $partner, Request $request) {

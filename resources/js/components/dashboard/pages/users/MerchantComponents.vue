@@ -16,13 +16,14 @@
 
     <div v-else-if="merchantRows.length" class="table-responsive">
       <table class="table dashboard-data-table dashboard-merchant-table">
+        <colgroup><col class="merchant-col-name"><col class="merchant-col-contact"><col class="merchant-col-location"><col class="merchant-col-account"><col class="merchant-col-settings"><col class="merchant-col-actions"></colgroup>
         <thead>
           <tr>
             <th>Merchant partner</th>
             <th>Contact</th>
             <th>Location</th>
-            <th>Availability</th>
-            <th>Capabilities</th>
+            <th>Account</th>
+            <th>Store settings</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -34,6 +35,9 @@
                 <div>
                   <strong>{{ member.restaurant_name }}</strong>
                   <small>Joined {{ member.created_at_format }}</small>
+                  <span v-if="member.agent_id" class="merchant-application-status" :class="'merchant-application-status-' + (member.application_status || 'pending_review')">
+                    {{ (member.application_status || 'pending_review').replace(/_/g, ' ') }}
+                  </span>
                   <a v-if="member.facebook && member.accout_type" :href="member.facebook" target="_blank" rel="noopener" class="dashboard-inline-link">
                     {{ member.accout_type.title }} <i class="fas fa-external-link-alt"></i>
                   </a>
@@ -53,12 +57,12 @@
               <div class="dashboard-toggle-list">
                 <label>
                   <span>Account active</span>
-                  <input v-model="member.active" type="checkbox" :disabled="isBusy(member, 'active')" @change="toggleSetting(member, 'active', 'status')">
+                  <input v-model="member.active" type="checkbox" :disabled="Boolean(member.agent_id) || isBusy(member, 'active')" @change="toggleSetting(member, 'active', 'status')">
                   <i></i>
                 </label>
                 <label>
-                  <span>Store open</span>
-                  <input v-model="member.istoreopen" type="checkbox" :disabled="isBusy(member, 'istoreopen')" @change="toggleSetting(member, 'istoreopen', 'online')">
+                  <span>Verified</span>
+                  <input v-model="member.isverified" type="checkbox" :disabled="Boolean(member.agent_id) || isBusy(member, 'isverified')" @change="toggleSetting(member, 'isverified', 'verify')">
                   <i></i>
                 </label>
               </div>
@@ -66,8 +70,8 @@
             <td>
               <div class="dashboard-toggle-list">
                 <label>
-                  <span>Verified</span>
-                  <input v-model="member.isverified" type="checkbox" :disabled="isBusy(member, 'isverified')" @change="toggleSetting(member, 'isverified', 'verify')">
+                  <span>Store open</span>
+                  <input v-model="member.istoreopen" type="checkbox" :disabled="isBusy(member, 'istoreopen')" @change="toggleSetting(member, 'istoreopen', 'online')">
                   <i></i>
                 </label>
                 <label>
@@ -89,7 +93,8 @@
             </td>
             <td>
               <div class="dashboard-actions">
-                <a :href="'/merchant/aulogin/' + member.user_id" class="dashboard-action-primary" title="Open merchant dashboard">
+                <a v-if="member.agent_id" :href="`/data/dashboard/merchant/${member.id}/application`" class="dashboard-action-primary"><i class="fas fa-clipboard-check"></i><span>Review application</span></a>
+                <a :href="'/merchant/aulogin/' + member.user_id" class="dashboard-action-secondary" title="Open merchant dashboard">
                   <i class="fas fa-external-link-alt"></i><span>Open</span>
                 </a>
                 <button type="button" class="dashboard-action-secondary" :disabled="sendingId === member.id" title="Email merchant login" @click="sendMerchantLogin(member.id)">
@@ -169,9 +174,9 @@ export default {
           member[field] = !member[field];
           toastr.info(response.data.message);
         })
-        .catch(() => {
+        .catch((error) => {
           member[field] = !member[field];
-          toastr.error('Unable to update this merchant setting.');
+          toastr.error((error.response && error.response.data && error.response.data.message) || 'Unable to update this merchant setting.');
         })
         .finally(() => this.$delete(this.busy, key));
     },

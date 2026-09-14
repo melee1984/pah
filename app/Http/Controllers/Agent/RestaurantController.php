@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
+use App\RestaurantEnrollmentDocument;
 use App\Services\RestaurantEnrollmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class RestaurantController extends Controller
     {
         $restaurants = $request->user('agent')
             ->restaurants()
+            ->with(['enrollmentDocuments', 'enrollmentContact'])
             ->withCount('orders')
             ->withSum(['agentCommissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount')
             ->latest()
@@ -49,6 +51,27 @@ class RestaurantController extends Controller
             'address' => ['required', 'string', 'max:500'],
             'city' => ['required', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'business_structure' => ['required', Rule::in(['sole_proprietorship', 'corporation', 'partnership', 'cooperative'])],
+            'enrolling_as' => [
+                'required',
+                Rule::in(['owner', 'authorized_representative']),
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value === 'owner' && $request->input('business_structure') !== 'sole_proprietorship') {
+                        $fail('For this business structure, enroll as an authorized representative and provide an authorization document.');
+                    }
+                },
+            ],
+            'registered_business_name' => ['required', 'string', 'max:255'],
+            'tin' => ['required', 'string', 'max:30'],
+            'business_registration_number' => ['required', 'string', 'max:100'],
+            'payout_account_name' => ['required', 'string', 'max:255'],
+            ...collect([...RestaurantEnrollmentDocument::REQUIRED_TYPES, 'authorization_document'])
+                ->mapWithKeys(fn ($type) => [$type => [
+                    'nullable',
+                    'file',
+                    'mimes:pdf,jpg,jpeg,png',
+                    'max:10240',
+                ]])->all(),
         ]);
 
         $result = app(RestaurantEnrollmentService::class)->enroll(

@@ -7,6 +7,8 @@
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" type="image/ico">
     <title>@yield('title', 'Agent Portal') | Pahatud</title>
     @include('agent.partials.styles')
+    <link rel="stylesheet" href="{{ asset('css/restaurant-application.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/restaurant-file-preview.css') }}">
 </head>
 <body class="agent-body">
 <div class="agent-shell">
@@ -30,9 +32,11 @@
             <a class="agent-nav-link {{ request()->routeIs('agent.restaurants.create') ? 'active' : '' }}" href="{{ route('agent.restaurants.create') }}">
                 <span class="agent-nav-icon">＋</span><span>Enroll</span>
             </a>
+            <a class="agent-nav-link agent-mobile-help {{ request()->routeIs('agent.help') ? 'active' : '' }}" href="{{ route('agent.help') }}"><span class="agent-nav-icon">?</span><span>Help</span></a>
         </nav>
 
         <div class="agent-sidebar-footer">
+            <a class="agent-nav-link {{ request()->routeIs('agent.help') ? 'active' : '' }}" href="{{ route('agent.help') }}"><span class="agent-nav-icon">?</span><span>Help &amp; FAQ</span></a>
             <form method="POST" action="{{ route('agent.logout') }}">
                 @csrf
                 <button class="agent-nav-link agent-logout" type="submit"><span class="agent-nav-icon">↪</span><span>Sign out</span></button>
@@ -61,5 +65,8 @@
         </div>
     </main>
 </div>
+@if (request()->routeIs('agent.restaurants.show'))
+    <script src="{{ asset('js/restaurant-file-preview.js') }}" defer></script>
+@endif
 </body>
 </html>

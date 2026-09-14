@@ -5,8 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Agent;
 use App\AgentCommission;
 use App\Http\Controllers\Controller;
-use App\Mail\AgentTemporaryPasswordMail;
 use App\Mail\AgentApprovedMail;
+use App\Mail\AgentDeclinedMail;
+use App\Mail\AgentTemporaryPasswordMail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,18 @@ class AgentController extends Controller
         return view('dashboard.pages.agents.index', compact('agents', 'metrics', 'search'));
     }
 
+    public function show(Agent $agent): View
+    {
+        $agent->loadCount('restaurants')
+            ->loadSum(['commissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount');
+
+        $restaurants = $agent->restaurants()
+            ->orderBy('restaurant_name')
+            ->paginate(10);
+
+        return view('dashboard.pages.agents.show', compact('agent', 'restaurants'));
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -88,26 +101,57 @@ class AgentController extends Controller
             ->with('success', 'Agent account created. A temporary password was emailed to '.$validated['email'].'.');
     }
 
-    public function approve(Agent $agent): RedirectResponse
+    public function approve(Request $request, Agent $agent): RedirectResponse
     {
-        if ($agent->active) {
-            return back()->with('success', $agent->name.' already has an active Agent Portal account.');
+        return $this->review($request, $agent, 'approved');
+    }
+
+    public function decline(Request $request, Agent $agent): RedirectResponse
+    {
+        return $this->review($request, $agent, 'declined');
+    }
+
+    private function review(Request $request, Agent $agent, string $decision): RedirectResponse
+    {
+        $validated = $request->validate([
+            'message' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $message = trim($validated['message'] ?? '') ?: null;
+
+        if ($agent->active || $agent->review_status !== null) {
+            return back()->withErrors(['review' => 'This agent application has already been reviewed.']);
         }
 
-        $agent->update(['active' => true]);
-
         try {
-            Mail::to($agent->email)->send(new AgentApprovedMail($agent));
+            DB::transaction(function () use ($agent, $decision, $message) {
+                $pendingAgent = Agent::query()->lockForUpdate()->findOrFail($agent->id);
+
+                if ($pendingAgent->active || $pendingAgent->review_status !== null) {
+                    throw new \LogicException('This agent application has already been reviewed.');
+                }
+
+                $pendingAgent->update([
+                    'active' => $decision === 'approved',
+                    'review_status' => $decision,
+                    'review_message' => $message,
+                    'reviewed_at' => now(),
+                ]);
+
+                $mail = $decision === 'approved'
+                    ? new AgentApprovedMail($pendingAgent, $message)
+                    : new AgentDeclinedMail($pendingAgent, $message);
+                Mail::to($pendingAgent->email)->send($mail);
+            });
         } catch (Throwable $exception) {
-            Log::error('Agent was approved but the approval email could not be delivered.', [
+            Log::error('Agent application review could not be completed.', [
                 'agent_id' => $agent->id,
                 'email' => $agent->email,
                 'exception' => $exception->getMessage(),
             ]);
 
-            return back()->withErrors(['email' => 'The account was approved, but the approval email could not be delivered.']);
+            return back()->withErrors(['review' => 'The application could not be reviewed or the email could not be delivered. Please try again.']);
         }
 
-        return back()->with('success', $agent->name.' was approved and notified by email.');
+        return back()->with('success', $agent->name.' was '.$decision.' and notified by email.');
     }
 }

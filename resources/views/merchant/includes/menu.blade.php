@@ -36,7 +36,10 @@
             </a> -->
           </li>
 
-          <li class="nav-header">SETTINGS</li>
+         <li class="nav-header">SETTINGS</li>
+         @if (Auth::User()->merchant?->agent_id)
+           <li class="nav-item"><a href="{{ route('merchant.application.show') }}" class="nav-link {{ Request::is('merchant/application') ? 'active' : '' }}"><i class="nav-icon fas fa-file-alt"></i><p>Application &amp; documents</p></a></li>
+         @endif
           <!-- <li class="nav-item">
             <a href="{{ URL::to('merchant/voucher') }}" class="nav-link {{ Request::is('merchant/voucher') ? 'active' : '' }}">
               <i class="nav-icon fas fa-check-double"></i>

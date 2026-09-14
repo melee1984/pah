@@ -52,14 +52,16 @@
                             <tbody>
                             @foreach ($agents as $agent)
                                 <tr>
-                                    <td><div class="admin-agent-cell"><span>{{ mb_strtoupper(mb_substr($agent->name, 0, 1)) }}</span><div><strong>{{ $agent->name }}</strong><small>Agent #{{ $agent->id }}</small></div></div></td>
+                                    <td><div class="admin-agent-cell"><span>{{ mb_strtoupper(mb_substr($agent->name, 0, 1)) }}</span><div><strong><a href="{{ route('dashboard.agents.show', $agent) }}">{{ $agent->name }}</a></strong><small>Agent #{{ $agent->id }}</small></div></div></td>
                                     <td><strong>{{ $agent->email }}</strong><small>{{ $agent->mobile ?: 'No mobile number' }}</small></td>
                                     <td><span class="admin-number-pill">{{ number_format($agent->restaurants_count) }}</span></td>
                                     <td><strong>{{ number_format($agent->commission_percentage, 2) }}%</strong></td>
                                     <td><strong class="admin-money">₱{{ number_format($agent->commission_total ?? 0, 2) }}</strong></td>
                                     <td>
-                                        @if (! $agent->active)
-                                            <span class="admin-status admin-status-inactive">Inactive</span>
+                                        @if ($agent->review_status === 'declined')
+                                            <span class="admin-status admin-status-inactive">Declined</span>
+                                        @elseif (! $agent->active)
+                                            <span class="admin-status admin-status-pending">Pending review</span>
                                         @elseif ($agent->must_change_password)
                                             <span class="admin-status admin-status-pending">Awaiting setup</span>
                                         @else
@@ -68,11 +70,7 @@
                                     </td>
                                     <td>{{ $agent->last_login_at?->format('M d, Y') ?? 'Never' }}<small>{{ $agent->last_login_at?->format('g:i A') }}</small></td>
                                     <td>
-                                        @if (! $agent->active)
-                                            <form method="POST" action="{{ route('dashboard.agents.approve', $agent) }}">@csrf<button class="btn admin-btn-primary btn-sm" type="submit"><i class="fas fa-check mr-1"></i>Approve</button></form>
-                                        @else
-                                            <span class="text-muted">—</span>
-                                        @endif
+                                        <a class="btn admin-btn-secondary btn-sm" href="{{ route('dashboard.agents.show', $agent) }}">View details</a>
                                     </td>
                                 </tr>
                             @endforeach
@@ -110,7 +108,7 @@
     </div>
 </div>
 
-@if ($errors->any())
+@if ($errors->any() && (old('name') || old('email') || old('commission_percentage')))
 <script>document.addEventListener('DOMContentLoaded', function () { $('#addAgentModal').modal('show'); });</script>
 @endif
 @endsection

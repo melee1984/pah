@@ -21,6 +21,8 @@
   <!-- Theme style -->
     @vite(entrypoints: 'resources/js/merchant.js')
     <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/restaurant-application.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/restaurant-file-preview.css') }}">
 
 </head>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm pahatud-admin pahatud-merchant">
@@ -150,5 +152,8 @@
 
 </script>
 
+@if (request()->routeIs('merchant.application.show'))
+  <script src="{{ asset('js/restaurant-file-preview.js') }}" defer></script>
+@endif
 </body>
 </html>

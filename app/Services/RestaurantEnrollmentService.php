@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Agent;
 use App\Mail\RestaurantInvitationMail;
 use App\Partners;
+use App\RestaurantEnrollmentDocument;
 use App\RestaurantInvitation;
 use App\User;
 use Illuminate\Http\Request;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Throwable;
@@ -24,38 +26,67 @@ class RestaurantEnrollmentService
      */
     public function enroll(Agent $agent, array $validated, Request $request): array
     {
-        [$restaurant, $invitation, $plainToken] = DB::transaction(function () use ($agent, $validated, $request) {
-            $user = $this->createPartnerUser($validated, $request);
-            $restaurant = $agent->restaurants()->create([
-                'user_id' => $user->getKey(),
-                'restaurant_name' => $validated['restaurant_name'],
-                'email' => $validated['email'],
-                'mobile' => $validated['mobile'],
-                'telephone' => $validated['telephone'] ?? null,
-                'address' => $validated['address'],
-                'city' => $validated['city'],
-                'description' => $validated['description'] ?? null,
-                'slug' => $this->uniqueSlug($validated['restaurant_name']),
-                'search_string' => Str::lower(trim($validated['restaurant_name'].' '.$validated['city'])),
-                'active' => false,
-                'account_type_id' => 1, // restaurant 
-                'percentage' => config('agent.default_commission_percentage', 20),
-                'addup' => config('agent.default_commission_addup',  true),
-            ]);
+        $storedPaths = [];
 
-            $this->assignPartnerRole($user);
+        try {
+            [$restaurant, $invitation, $plainToken] = DB::transaction(function () use ($agent, $validated, $request, &$storedPaths) {
+                $user = $this->createPartnerUser($validated, $request);
+                $restaurant = $agent->restaurants()->create([
+                    'user_id' => $user->getKey(),
+                    'restaurant_name' => $validated['restaurant_name'],
+                    'email' => $validated['email'],
+                    'mobile' => $validated['mobile'],
+                    'telephone' => $validated['telephone'] ?? null,
+                    'address' => $validated['address'],
+                    'city' => $validated['city'],
+                    'description' => $validated['description'] ?? null,
+                    'slug' => $this->uniqueSlug($validated['restaurant_name']),
+                    'search_string' => Str::lower(trim($validated['restaurant_name'].' '.$validated['city'])),
+                    'active' => false,
+                    'account_type_id' => 1, // restaurant
+                    'percentage' => config('agent.default_commission_percentage', 20),
+                    'addup' => config('agent.default_commission_addup', true),
+                    'business_structure' => $validated['business_structure'],
+                    'enrolling_as' => $validated['enrolling_as'],
+                    'registered_business_name' => $validated['registered_business_name'],
+                    'tin' => $validated['tin'],
+                    'business_registration_number' => $validated['business_registration_number'],
+                    'payout_account_name' => $validated['payout_account_name'],
+                    'application_status' => 'pending_review',
+                ]);
 
-            $plainToken = Str::random(64);
-            $invitation = RestaurantInvitation::query()->create([
-                'user_id' => $user->getKey(),
-                'restaurant_id' => $restaurant->getKey(),
-                'email' => $validated['email'],
-                'token_hash' => hash('sha256', $plainToken),
-                'expires_at' => now()->addHours(config('agent.restaurant_invitation_expire_hours')),
-            ]);
+                foreach ([...RestaurantEnrollmentDocument::REQUIRED_TYPES, 'authorization_document'] as $type) {
+                    if (! $request->hasFile($type)) {
+                        continue;
+                    }
 
-            return [$restaurant, $invitation, $plainToken];
-        });
+                    $path = $request->file($type)->store('restaurant-enrollment/'.$restaurant->id, 'local');
+                    $storedPaths[] = $path;
+                    $restaurant->enrollmentDocuments()->create([
+                        'document_type' => $type,
+                        'file_path' => $path,
+                        'original_name' => $request->file($type)->getClientOriginalName(),
+                    ]);
+                }
+
+                $this->assignPartnerRole($user);
+
+                $plainToken = Str::random(64);
+                $invitation = RestaurantInvitation::query()->create([
+                    'user_id' => $user->getKey(),
+                    'restaurant_id' => $restaurant->getKey(),
+                    'email' => $validated['email'],
+                    'token_hash' => hash('sha256', $plainToken),
+                    'expires_at' => now()->addHours(config('agent.restaurant_invitation_expire_hours')),
+                ]);
+
+                return [$restaurant, $invitation, $plainToken];
+            });
+        } catch (Throwable $exception) {
+            Storage::disk('local')->delete($storedPaths);
+
+            throw $exception;
+        }
 
         $invitation->setRelation('restaurant', $restaurant);
         $mailSent = true;
@@ -74,6 +105,11 @@ class RestaurantEnrollmentService
                 'exception' => $exception->getMessage(),
             ]);
         }
+
+        app(RestaurantApplicationNotifier::class)->send(
+            $restaurant,
+            'Application submitted. Uploaded documents are pending verification; missing documents may be added from the restaurant account.',
+        );
 
         return ['restaurant' => $restaurant, 'invitation' => $invitation, 'mail_sent' => $mailSent];
     }

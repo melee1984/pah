@@ -13,7 +13,7 @@ class AgentApprovedMail extends Mailable
 
     public string $loginUrl;
 
-    public function __construct(public Agent $agent)
+    public function __construct(public Agent $agent, public ?string $adminMessage = null)
     {
         $this->loginUrl = route('agent.login');
     }

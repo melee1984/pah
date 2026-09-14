@@ -109,9 +109,14 @@ Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function
 
     Route::middleware('agent.password.changed')->group(function () {
         Route::get('/dashboard', \App\Http\Controllers\Agent\DashboardController::class)->name('dashboard');
+        Route::get('/help', fn () => view('agent.help', ['agent' => auth('agent')->user()]))->name('help');
         Route::get('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'index'])->name('restaurants.index');
         Route::get('/restaurants/enroll', [\App\Http\Controllers\Agent\RestaurantController::class, 'create'])->name('restaurants.create');
         Route::post('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'store'])->name('restaurants.store');
+        Route::get('/restaurants/{restaurant}', [\App\Http\Controllers\RestaurantApplicationController::class, 'showAgent'])->name('restaurants.show');
+        Route::put('/restaurants/{restaurant}', [\App\Http\Controllers\RestaurantApplicationController::class, 'updateAgent'])->name('restaurants.update');
+        Route::post('/restaurants/{restaurant}/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadAgent'])->name('restaurants.documents.store');
+        Route::get('/restaurants/{restaurant}/documents/{document}', [\App\Http\Controllers\RestaurantApplicationController::class, 'documentAgent'])->name('restaurants.documents.show');
         Route::get('/reports', \App\Http\Controllers\Agent\ReportController::class)->name('reports.index');
     });
 
@@ -183,13 +188,24 @@ Route::middleware('admin')->group(function () {
         ->name('dashboard.rider-top-ups.approve');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'show'])->name('dashboard.merchant.application.show');
+    Route::post('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'application'])->name('dashboard.merchant.application.review');
+    Route::post('data/dashboard/merchant/{restaurant:id}/documents/{document}/review', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'document'])->name('dashboard.merchant.documents.review');
+    Route::get('data/dashboard/merchant/{partner}/documents', [\App\Http\Controllers\Api\Admin\MerchantController::class, 'enrollmentDocuments'])
+        ->name('dashboard.merchant.documents.index');
+    Route::get('data/dashboard/merchant/{partner}/documents/{document}', [\App\Http\Controllers\Api\Admin\MerchantController::class, 'viewEnrollmentDocument'])
+        ->name('dashboard.merchant.documents.show');
     Route::get('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'index'])->name('dashboard.agents.index');
+    Route::get('data/dashboard/agents/{agent}', [\App\Http\Controllers\Admin\AgentController::class, 'show'])->name('dashboard.agents.show');
     Route::post('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'store'])
         ->middleware('throttle:10,1')
         ->name('dashboard.agents.store');
     Route::post('data/dashboard/agents/{agent}/approve', [\App\Http\Controllers\Admin\AgentController::class, 'approve'])
         ->middleware('throttle:10,1')
         ->name('dashboard.agents.approve');
+    Route::post('data/dashboard/agents/{agent}/decline', [\App\Http\Controllers\Admin\AgentController::class, 'decline'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.agents.decline');
 
     Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
     Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
@@ -236,6 +252,10 @@ Route::post('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\
 Route::middleware('merchant')->group(function () {
 
     Route::get('merchant/verify-status', [\App\Http\Controllers\Merchant\DashboardController::class, 'verification'])->name('merchant.status');
+    Route::get('merchant/application', [\App\Http\Controllers\RestaurantApplicationController::class, 'showMerchant'])->name('merchant.application.show');
+    Route::put('merchant/application', [\App\Http\Controllers\RestaurantApplicationController::class, 'updateMerchant'])->name('merchant.application.update');
+    Route::post('merchant/application/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadMerchant'])->name('merchant.application.documents.store');
+    Route::get('merchant/application/documents/{document}', [\App\Http\Controllers\RestaurantApplicationController::class, 'documentMerchant'])->name('merchant.application.documents.show');
     Route::get('merchant/dashboard', [\App\Http\Controllers\Merchant\DashboardController::class, 'index'])->name('merchant.dashboard.index');
 
     Route::get('merchant/products', [\App\Http\Controllers\Merchant\ItemsController::class, 'index'])->name('merchant.dashboard.product');

@@ -24,7 +24,7 @@ body.pahatud-admin {
 .pahatud-admin .brand-copy strong { color: var(--admin-ink); display: block; font-family: 'Manrope', sans-serif; font-size: 15px; }
 .pahatud-admin .brand-copy small { color: var(--admin-red); font-size: 9px; font-weight: 800; letter-spacing: 1.25px; text-transform: uppercase; }
 .pahatud-admin .user-panel { align-items: center; border-bottom: 1px solid var(--admin-line) !important; margin: 16px 14px 18px !important; padding: 0 0 16px !important; }
-.pahatud-admin .admin-user-avatar { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; font-family: 'Manrope', sans-serif; font-weight: 800; height: 38px; justify-content: center; width: 38px; }
+.pahatud-admin .admin-user-avatar { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; flex: 0 0 38px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 800; height: 38px; justify-content: center; line-height: 1; width: 38px; }
 .pahatud-admin .user-panel .info { padding-left: 10px; }
 .pahatud-admin .user-panel .info a { color: var(--admin-ink); font-size: 13px; font-weight: 700; }
 .pahatud-admin .user-panel .info small { color: var(--admin-muted); display: block; font-size: 10px; }
@@ -38,7 +38,7 @@ body.pahatud-admin {
 .pahatud-admin .main-header .nav-link { color: #626a6e; }
 .pahatud-admin .admin-top-title { color: var(--admin-ink); font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700; padding-left: 8px; }
 .pahatud-admin .admin-top-profile { align-items: center; display: flex; gap: 9px; padding: 7px 9px !important; }
-.pahatud-admin .admin-top-profile span { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; font-weight: 800; height: 32px; justify-content: center; width: 32px; }
+.pahatud-admin .admin-top-profile span { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; flex: 0 0 32px; font-weight: 800; height: 32px; justify-content: center; line-height: 1; width: 32px; }
 .pahatud-admin .admin-top-profile strong { color: var(--admin-ink); font-size: 12px; }
 .pahatud-admin .content-wrapper,
 .pahatud-admin .admin-content-wrapper { background: var(--admin-bg); }
@@ -133,6 +133,23 @@ body.pahatud-admin {
 .dashboard-data-table td > small { color: var(--admin-muted); display: block; margin-top: 3px; }
 .dashboard-data-table .form-control { border-color: #ddd8d3; border-radius: 8px; font-size: 11px; min-height: 36px; }
 .dashboard-merchant-table { min-width: 1160px; }
+.dashboard-merchant-table { table-layout: fixed; }
+.dashboard-merchant-table .merchant-col-name { width: 20%; }
+.dashboard-merchant-table .merchant-col-contact { width: 19%; }
+.dashboard-merchant-table .merchant-col-location { width: 17%; }
+.dashboard-merchant-table .merchant-col-account { width: 13%; }
+.dashboard-merchant-table .merchant-col-settings { width: 16%; }
+.dashboard-merchant-table .merchant-col-actions { width: 15%; }
+.dashboard-merchant-table tbody td { padding-bottom: 20px; padding-top: 20px; vertical-align: top; }
+.dashboard-merchant-table td > strong, .dashboard-merchant-table .admin-agent-cell strong { overflow-wrap: anywhere; }
+.dashboard-merchant-table .dashboard-toggle-list { gap: 10px; min-width: 0; }
+.dashboard-merchant-table .dashboard-toggle-list label { gap: 10px; min-height: 20px; }
+.dashboard-merchant-table .dashboard-toggle-list i { flex: 0 0 33px; margin-left: auto; }
+.dashboard-merchant-table .dashboard-actions { width: 100%; }
+.dashboard-merchant-table .dashboard-actions a, .dashboard-merchant-table .dashboard-actions button { width: 100%; }
+.merchant-application-status { background: #fff2db; border-radius: 99px; color: #805112; display: inline-block; font-size: 9px; font-weight: 800; margin-top: 8px; padding: 4px 8px; text-transform: capitalize; }
+.merchant-application-status-approved { background: #eaf8ef; color: #1c6b3a; }
+.merchant-application-status-declined { background: #fff0ef; color: #a92924; }
 .dashboard-orders-table { min-width: 1050px; }
 .dashboard-bookings-table { min-width: 900px; }
 .dashboard-report-table { min-width: 1240px; }
@@ -267,6 +284,8 @@ body.pahatud-admin {
 .pahatud-merchant .main-header .navbar-nav.ml-auto { align-items: center; }
 .pahatud-merchant .brand-copy { max-width: 170px; }
 .pahatud-merchant .brand-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pahatud-merchant .main-sidebar .sidebar { padding-top: 34px; }
+.pahatud-merchant .main-sidebar .user-panel { margin-top: 0 !important; }
 .pahatud-merchant .nav-sidebar.nav-compact .nav-link { padding: 10px 11px; }
 .pahatud-merchant .nav-sidebar .nav-header { text-transform: capitalize; }
 .merchant-dashboard-hero { background: linear-gradient(125deg, #fff 42%, #fff1ee); margin-top: 6px; }

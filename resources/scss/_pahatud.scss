@@ -1233,10 +1233,12 @@ html {
     border-radius: 8px;
     color: #fff;
     display: flex;
+    flex: 0 0 34px;
     font-family: 'Manrope', sans-serif;
     font-size: 13px;
     height: 34px;
     justify-content: center;
+    line-height: 1;
     width: 34px;
 }
 .public-account-menu .dropdown { position: relative; }
