@@ -91,7 +91,7 @@ class CommunicationController extends Controller
             $delivery = DB::table('rider_api_deliveries')
                 ->where('reference', $validated['delivery_id'])
                 ->where('rider_id', $rider->id)
-                ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+                ->whereNotIn('current_state', ['accepted', 'delivered', 'cancelled', 'failed'])
                 ->lockForUpdate()
                 ->first();
             abort_if(! $delivery, 403, 'Customer chat is only available for your active delivery.');
