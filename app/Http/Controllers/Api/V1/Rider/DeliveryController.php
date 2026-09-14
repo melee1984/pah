@@ -482,7 +482,7 @@ class DeliveryController extends Controller
         }
 
         \Log::info(['what current state' => $record->current_state, 'what type' => 'cod_collected']);
-        
+
         if (! $this->transitionAllowed($record->current_state, 'cod_collected')) {
             return response()->json(['message' => 'COD cannot be confirmed in the current delivery state.'], 409);
         }
@@ -1415,6 +1415,7 @@ class DeliveryController extends Controller
 
     private function transitionAllowed(string $currentState, string $event): bool
     {
+        \Log::info(['currentState' => $currentState, 'event' => $event, 'allowedEvents' => $this->allowedEvents($currentState)]);
         return in_array($event, $this->allowedEvents($currentState), true);
     }
 
