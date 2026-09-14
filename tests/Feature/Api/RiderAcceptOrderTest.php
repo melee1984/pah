@@ -93,6 +93,30 @@ class RiderAcceptOrderTest extends TestCase
             'subject' => 'Delivery customer',
         ]);
 
+        DB::table('rider_api_conversations')
+            ->where('delivery_reference', $deliveryReference)
+            ->where('type', 'customer')
+            ->delete();
+
+        $conversationReference = $this
+            ->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/conversations', [
+                'type' => 'customer',
+                'delivery_id' => $deliveryReference,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('conversation.type', 'customer')
+            ->assertJsonPath('conversation.delivery_id', $deliveryReference)
+            ->json('conversation.id');
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/conversations', [
+                'type' => 'customer',
+                'delivery_id' => $deliveryReference,
+            ])
+            ->assertOk()
+            ->assertJsonPath('conversation.id', $conversationReference);
+
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
             ->getJson('/api/v1/rider/deliveries/active')
             ->assertOk()

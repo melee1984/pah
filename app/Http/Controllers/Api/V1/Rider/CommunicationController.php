@@ -31,6 +31,14 @@ class CommunicationController extends Controller
 
     public function startConversation(Request $request): JsonResponse
     {
+        $request->validate([
+            'type' => ['required', Rule::in(['support', 'customer'])],
+        ]);
+
+        if ($request->input('type') === 'customer') {
+            return $this->deliveryConversation($request);
+        }
+
         $validated = $request->validate([
             'type' => ['required', Rule::in(['support'])],
             'subject' => ['required', 'string', 'max:255'],
@@ -69,6 +77,58 @@ class CommunicationController extends Controller
                 DB::table('rider_api_conversations')->where('reference', $reference)->first(),
             ),
         ], 201);
+    }
+
+    private function deliveryConversation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'delivery_id' => ['required', 'string', 'max:100'],
+        ]);
+        $rider = $this->riders->rider($request);
+        $created = false;
+
+        $conversation = DB::transaction(function () use ($validated, $rider, &$created) {
+            $delivery = DB::table('rider_api_deliveries')
+                ->where('reference', $validated['delivery_id'])
+                ->where('rider_id', $rider->id)
+                ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+                ->lockForUpdate()
+                ->first();
+            abort_if(! $delivery, 403, 'Customer chat is only available for your active delivery.');
+
+            $conversation = DB::table('rider_api_conversations')
+                ->where('rider_id', $rider->id)
+                ->where('type', 'customer')
+                ->where('delivery_reference', $delivery->reference)
+                ->first();
+
+            if ($conversation) {
+                return $conversation;
+            }
+
+            $reference = (string) Str::uuid();
+            DB::table('rider_api_conversations')->insert([
+                'reference' => $reference,
+                'rider_id' => $rider->id,
+                'type' => 'customer',
+                'delivery_reference' => $delivery->reference,
+                'subject' => 'Delivery customer',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $created = true;
+
+            return DB::table('rider_api_conversations')
+                ->where('reference', $reference)
+                ->first();
+        });
+
+        return response()->json([
+            'message' => $created
+                ? 'Customer conversation created.'
+                : 'Customer conversation ready.',
+            'conversation' => $this->conversationData($conversation),
+        ], $created ? 201 : 200);
     }
 
     public function conversation(Request $request, string $conversation): JsonResponse
