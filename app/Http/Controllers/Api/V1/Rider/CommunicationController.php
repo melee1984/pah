@@ -30,7 +30,10 @@ class CommunicationController extends Controller
     }
 
     public function startConversation(Request $request): JsonResponse
-    {
+    {   
+
+        \Log::info('Start conversation request', ['request' => $request->all()]);
+
         $request->validate([
             'type' => ['required', Rule::in(['support', 'customer'])],
         ]);
