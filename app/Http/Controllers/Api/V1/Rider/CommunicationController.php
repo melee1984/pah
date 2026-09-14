@@ -96,7 +96,7 @@ class CommunicationController extends Controller
             $delivery = DB::table('rider_api_deliveries')
                 ->where('legacy_order_id', $validated['delivery_id'])
                 ->where('rider_id', $rider->id)
-                ->whereNotIn('current_state', ['accepted', 'delivered', 'cancelled', 'failed'])
+                ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
                 ->lockForUpdate()
                 ->first();
 
