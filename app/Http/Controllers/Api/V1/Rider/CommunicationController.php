@@ -21,6 +21,7 @@ class CommunicationController extends Controller
     {
         $conversations = DB::table('rider_api_conversations')
             ->where('rider_id', $this->riders->rider($request)->id)
+            ->whereNull('rider_hidden_at')
             ->orderByDesc('last_message_at')
             ->orderByDesc('created_at')
             ->get()
@@ -30,15 +31,12 @@ class CommunicationController extends Controller
     }
 
     public function startConversation(Request $request): JsonResponse
-    {   
-
-        \Log::info('Start conversation request', ['request' => $request->all()]);
-
+    {
         $request->validate([
-            'type' => ['required', Rule::in(['support', 'customer'])],
+            'type' => ['required', Rule::in(['support', 'customer', 'merchant'])],
         ]);
 
-        if ($request->input('type') === 'customer') {
+        if (in_array($request->input('type'), ['customer', 'merchant'], true)) {
             return $this->deliveryConversation($request);
         }
 
@@ -87,40 +85,47 @@ class CommunicationController extends Controller
         $validated = $request->validate([
             'delivery_id' => ['required', 'string', 'max:100'],
         ]);
+        $type = (string) $request->input('type');
         $rider = $this->riders->rider($request);
         $created = false;
-        
-            \Log::info(['message' => 'Starting delivery conversation', 'delivery_id' => $validated['delivery_id'], 'rider_id' => $rider->id]);
 
-        $conversation = DB::transaction(function () use ($validated, $rider, &$created) {
+        $conversation = DB::transaction(function () use ($validated, $type, $rider, &$created) {
             $delivery = DB::table('rider_api_deliveries')
-                ->where('legacy_order_id', $validated['delivery_id'])
+                ->where(function ($query) use ($validated) {
+                    $query->where('reference', $validated['delivery_id'])
+                        ->orWhere('legacy_order_id', $validated['delivery_id'])
+                        ->orWhere('legacy_booking_id', $validated['delivery_id']);
+                })
                 ->where('rider_id', $rider->id)
                 ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
                 ->lockForUpdate()
                 ->first();
 
-            \Log::info('Delivery conversation check', ['delivery' => $delivery]);
-
-            abort_if(! $delivery, 403, 'Customer chat is only available for your active delivery.');
+            abort_if(! $delivery, 403, 'Delivery chat is only available for your active delivery.');
 
             $conversation = DB::table('rider_api_conversations')
                 ->where('rider_id', $rider->id)
-                ->where('type', 'customer')
+                ->where('type', $type)
                 ->where('delivery_reference', $delivery->reference)
                 ->first();
 
             if ($conversation) {
-                return $conversation;
+                DB::table('rider_api_conversations')
+                    ->where('id', $conversation->id)
+                    ->update(['rider_hidden_at' => null, 'updated_at' => now()]);
+
+                return DB::table('rider_api_conversations')->where('id', $conversation->id)->first();
             }
 
             $reference = (string) Str::uuid();
             DB::table('rider_api_conversations')->insert([
                 'reference' => $reference,
                 'rider_id' => $rider->id,
-                'type' => 'customer',
+                'type' => $type,
                 'delivery_reference' => $delivery->reference,
-                'subject' => 'Delivery customer',
+                'subject' => $type === 'merchant'
+                    ? $delivery->merchant_name
+                    : 'Delivery customer',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -133,8 +138,8 @@ class CommunicationController extends Controller
 
         return response()->json([
             'message' => $created
-                ? 'Customer conversation created.'
-                : 'Customer conversation ready.',
+                ? ucfirst($type).' conversation created.'
+                : ucfirst($type).' conversation ready.',
             'conversation' => $this->conversationData($conversation),
         ], $created ? 201 : 200);
     }
@@ -147,6 +152,7 @@ class CommunicationController extends Controller
             'conversation' => $this->conversationData($record),
             'messages' => DB::table('rider_api_messages')
                 ->where('conversation_id', $record->id)
+                ->when($record->rider_cleared_message_id, fn ($query, $messageId) => $query->where('id', '>', $messageId))
                 ->orderBy('created_at')
                 ->limit(50)
                 ->get()
@@ -162,6 +168,7 @@ class CommunicationController extends Controller
         ]);
         $paginator = DB::table('rider_api_messages')
             ->where('conversation_id', $record->id)
+            ->when($record->rider_cleared_message_id, fn ($query, $messageId) => $query->where('id', '>', $messageId))
             ->orderByDesc('created_at')
             ->cursorPaginate($validated['limit'] ?? 30);
 
@@ -217,6 +224,7 @@ class CommunicationController extends Controller
             }
             DB::table('rider_api_conversations')->where('id', $record->id)->update([
                 'last_message_at' => now(),
+                'rider_hidden_at' => null,
                 'updated_at' => now(),
             ]);
 
@@ -284,6 +292,24 @@ class CommunicationController extends Controller
             ]);
 
         return response()->json(['message' => 'Conversation marked as read.']);
+    }
+
+    public function deleteConversation(Request $request, string $conversation): JsonResponse
+    {
+        $record = $this->ownedConversation($request, $conversation);
+
+        DB::table('rider_api_conversations')
+            ->where('id', $record->id)
+            ->update([
+                'rider_hidden_at' => now(),
+                'rider_cleared_at' => now(),
+                'rider_cleared_message_id' => DB::table('rider_api_messages')
+                    ->where('conversation_id', $record->id)
+                    ->max('id'),
+                'updated_at' => now(),
+            ]);
+
+        return response()->json(['message' => 'Conversation deleted.']);
     }
 
     public function notifications(Request $request): JsonResponse

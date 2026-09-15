@@ -139,6 +139,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
             Route::get('conversations', [V1RiderCommunicationController::class, 'conversations']);
             Route::post('conversations', [V1RiderCommunicationController::class, 'startConversation']);
+            Route::delete('conversations/{conversation}', [V1RiderCommunicationController::class, 'deleteConversation']);
             Route::get('conversations/{conversation}', [V1RiderCommunicationController::class, 'conversation']);
             Route::get('conversations/{conversation}/messages', [V1RiderCommunicationController::class, 'messages']);
             Route::post('conversations/{conversation}/messages', [V1RiderCommunicationController::class, 'sendMessage']);

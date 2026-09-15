@@ -92,6 +92,20 @@ class RiderAcceptOrderTest extends TestCase
             'delivery_reference' => $deliveryReference,
             'subject' => 'Delivery customer',
         ]);
+        $this->assertDatabaseHas('rider_api_conversations', [
+            'rider_id' => $riderId,
+            'type' => 'merchant',
+            'delivery_reference' => $deliveryReference,
+        ]);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/conversations', [
+                'type' => 'merchant',
+                'delivery_id' => $deliveryReference,
+            ])
+            ->assertOk()
+            ->assertJsonPath('conversation.type', 'merchant')
+            ->assertJsonPath('conversation.delivery_id', $deliveryReference);
 
         DB::table('rider_api_conversations')
             ->where('delivery_reference', $deliveryReference)
@@ -116,6 +130,46 @@ class RiderAcceptOrderTest extends TestCase
             ])
             ->assertOk()
             ->assertJsonPath('conversation.id', $conversationReference);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/conversations/{$conversationReference}/messages", [
+                'client_message_id' => '0f796ed0-f573-4acf-a0ff-25ba0f08ef47',
+                'body' => 'This should be cleared from the rider inbox.',
+            ])
+            ->assertCreated();
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->deleteJson("/api/v1/rider/conversations/{$conversationReference}")
+            ->assertOk()
+            ->assertJsonPath('message', 'Conversation deleted.');
+
+        $this->assertNotNull(
+            DB::table('rider_api_conversations')
+                ->where('reference', $conversationReference)
+                ->value('rider_cleared_at'),
+        );
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/v1/rider/conversations')
+            ->assertOk()
+            ->assertJsonMissing(['id' => $conversationReference]);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/conversations', [
+                'type' => 'customer',
+                'delivery_id' => $deliveryReference,
+            ])
+            ->assertOk()
+            ->assertJsonPath('conversation.id', $conversationReference);
+
+        $this->assertNull(
+            DB::table('rider_api_conversations')
+                ->where('reference', $conversationReference)
+                ->value('rider_hidden_at'),
+        );
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson("/api/v1/rider/conversations/{$conversationReference}")
+            ->assertOk()
+            ->assertJsonCount(0, 'messages');
 
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
             ->getJson('/api/v1/rider/deliveries/active')

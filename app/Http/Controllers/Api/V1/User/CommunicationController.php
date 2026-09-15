@@ -105,6 +105,7 @@ class CommunicationController extends Controller
             }
             DB::table('rider_api_conversations')->where('id', $record->id)->update([
                 'last_message_at' => now(),
+                'rider_hidden_at' => null,
                 'updated_at' => now(),
             ]);
 
