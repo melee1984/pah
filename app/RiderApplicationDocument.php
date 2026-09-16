@@ -12,6 +12,8 @@ class RiderApplicationDocument extends Model
         'government_id',
         'drivers_license',
         'vehicle_registration',
+        'motorcycle_left_photo',
+        'motorcycle_rear_photo'
     ];
 
     protected $fillable = [
