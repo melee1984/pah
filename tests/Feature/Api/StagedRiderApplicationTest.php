@@ -14,6 +14,110 @@ class StagedRiderApplicationTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_rider_registration_starts_with_only_four_fields_and_uses_the_existing_application_steps(): void
+    {
+        Storage::fake('local');
+
+        $registered = $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/auth/register', [
+                'full_name' => 'Carlo Juan',
+                'mobile' => '09171234567',
+                'email' => 'CARLO@example.com',
+                'password' => 'secret-password',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('application.status', 'draft')
+            ->assertJsonPath('application.email', 'carlo@example.com')
+            ->assertJsonPath('application.personal.full_name', 'Carlo Juan')
+            ->assertJsonPath('application.personal.mobile', '09171234567')
+            ->json();
+
+        $applicationId = $registered['application']['id'];
+
+        $this->withApplicationToken($registered['access_token'])
+            ->patchJson("/api/v1/rider/applications/{$applicationId}/personal", [
+                'birth_date' => '1997-03-18',
+                'home_address' => 'Lahug, Cebu City',
+            ])
+            ->assertOk()
+            ->assertJsonPath('application.personal.full_name', 'Carlo Juan')
+            ->assertJsonPath('application.personal.mobile', '09171234567')
+            ->assertJsonPath('application.personal.birth_date', '1997-03-18');
+
+        $this->withApplicationToken($registered['access_token'])
+            ->postJson("/api/v1/rider/applications/{$applicationId}/submit")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['emergency_contact_name', 'documents.profile_photo']);
+
+        $this->withApplicationToken($registered['access_token'])
+            ->patchJson("/api/v1/rider/applications/{$applicationId}/emergency-contact", [
+                'name' => 'Maria Juan',
+                'relationship' => 'Sister',
+                'mobile' => '09185550188',
+            ])
+            ->assertOk();
+
+        $this->withApplicationToken($registered['access_token'])
+            ->patchJson("/api/v1/rider/applications/{$applicationId}/vehicle", [
+                'type' => 'Motorcycle',
+                'make_model' => 'Honda Click 125i',
+                'plate_number' => '123 ABC',
+                'color' => 'Black',
+            ])
+            ->assertOk();
+
+        $this->withApplicationToken($registered['access_token'])
+            ->patchJson("/api/v1/rider/applications/{$applicationId}/payout-account", [
+                'method' => 'GCash',
+                'account_name' => 'Carlo Juan',
+                'account_number' => '09171234567',
+            ])
+            ->assertOk();
+
+        foreach ($this->documents() as $type => $file) {
+            $this->withApplicationToken($registered['access_token'])
+                ->post("/api/v1/rider/applications/{$applicationId}/documents", [
+                    'type' => $type,
+                    'file' => $file,
+                ])
+                ->assertSuccessful();
+        }
+
+        $this->withApplicationToken($registered['access_token'])
+            ->postJson("/api/v1/rider/applications/{$applicationId}/submit")
+            ->assertOk()
+            ->assertJsonPath('application.status', 'pending');
+
+        $this->assertDatabaseHas('rider_applications', [
+            'email' => 'carlo@example.com',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_rider_registration_validates_required_fields_and_duplicate_email(): void
+    {
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/auth/register', [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['full_name', 'mobile', 'email', 'password']);
+
+        $payload = [
+            'full_name' => 'Carlo Juan',
+            'mobile' => '09171234567',
+            'email' => 'carlo@example.com',
+            'password' => 'secret-password',
+        ];
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/auth/register', $payload)
+            ->assertCreated();
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/auth/register', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+    }
+
     public function test_a_rider_can_complete_and_submit_a_staged_application(): void
     {
         Storage::fake('local');
@@ -101,8 +205,8 @@ class StagedRiderApplicationTest extends TestCase
             ->postJson("/api/v1/rider/applications/{$draft['application']['id']}/submit")
             ->assertUnprocessable()
             ->assertJsonValidationErrors([
-                'full_name',
-                'mobile',
+                'birth_date',
+                'home_address',
                 'documents.profile_photo',
                 'documents.government_id',
                 'documents.drivers_license',
@@ -167,10 +271,11 @@ class StagedRiderApplicationTest extends TestCase
     private function createDraft(): array
     {
         return $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
-            ->postJson('/api/v1/rider/applications', [
+            ->postJson('/api/v1/rider/auth/register', [
+                'full_name' => 'Carlo Juan',
+                'mobile' => '09171234567',
                 'email' => 'carlo@example.com',
                 'password' => 'secret-password',
-                'password_confirmation' => 'secret-password',
             ])
             ->assertCreated()
             ->assertJsonPath('application.status', 'draft')

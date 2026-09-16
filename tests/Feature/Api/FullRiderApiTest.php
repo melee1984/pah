@@ -18,10 +18,11 @@ class FullRiderApiTest extends TestCase
     public function test_rider_application_accepts_a_seven_character_password(): void
     {
         $this->api()
-            ->postJson('/api/v1/rider/applications', [
+            ->postJson('/api/v1/rider/auth/register', [
+                'full_name' => 'Seven Character',
+                'mobile' => '09171234567',
                 'email' => 'seven-character@example.com',
                 'password' => 'letmein',
-                'password_confirmation' => 'letmein',
             ])
             ->assertCreated()
             ->assertJsonPath('application.status', 'draft');

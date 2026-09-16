@@ -24,9 +24,8 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::post('auth/otp/verify', [V1RiderAuthController::class, 'verifyOtp']);
         Route::post('auth/password/forgot', [V1RiderAuthController::class, 'forgotPassword']);
         Route::post('auth/password/reset', [V1RiderAuthController::class, 'resetPassword']);
-
-        Route::post('applications', [RiderApplicationController::class, 'create'])
-            ->name('v1.rider.applications.create');
+        Route::post('auth/register', [RiderApplicationController::class, 'register'])
+            ->name('v1.rider.auth.register');
 
         Route::middleware('rider.application')->group(function () {
 

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\CreateRiderApplicationRequest;
+use App\Http\Requests\RegisterRiderRequest;
 use App\Http\Requests\SubmitRiderApplicationRequest;
 use App\Http\Requests\UpdateRiderEmergencyContactRequest;
 use App\Http\Requests\UpdateRiderPayoutAccountRequest;
@@ -27,20 +27,22 @@ use Throwable;
 
 class RiderApplicationController extends Controller
 {
-    public function create(CreateRiderApplicationRequest $request): JsonResponse
+    public function register(RegisterRiderRequest $request): JsonResponse
     {
         [$plainToken, $tokenHash] = $this->newAccessToken();
 
         $application = RiderApplication::create([
             'reference' => (string) Str::uuid(),
             'access_token_hash' => $tokenHash,
+            'full_name' => $request->validated('full_name'),
+            'mobile' => $request->validated('mobile'),
             'email' => $request->validated('email'),
             'password' => $request->validated('password'),
             'status' => RiderApplication::STATUS_DRAFT,
         ]);
 
         return response()->json([
-            'message' => 'Rider application draft created.',
+            'message' => 'Rider registration started. Complete the remaining application details.',
             'application' => $this->applicationData($application),
             'access_token' => $plainToken,
             'token_type' => 'Bearer',
