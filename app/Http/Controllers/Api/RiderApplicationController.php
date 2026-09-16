@@ -459,6 +459,8 @@ class RiderApplicationController extends Controller
             }
         }
 
+        \Log::info(['log' => $requiredFields, 'application' => $application->toArray(), 'uploaded' => $application->documents()->pluck('type')]);
+
         $uploadedTypes = $application->documents()->pluck('type');
 
         foreach (RiderApplicationDocument::TYPES as $type) {
