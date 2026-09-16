@@ -46,7 +46,12 @@ class RiderApplicationController extends Controller
         if (! $user) {
             [$firstName, $lastName] = $this->splitName($application->full_name);
             $attributes = [
-                'email' => $application->email,     
+                'email' => $application->email,   
+                'password' => $application->getRawOriginal('password'),
+                'created_at' => now(),
+                'updated_at' => now(),
+                'firstname' => $firstName,
+                'lastname' => $lastName,
             ];
             $user = User::create($attributes);
         }   
