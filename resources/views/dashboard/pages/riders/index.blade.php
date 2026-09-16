@@ -30,6 +30,44 @@
                 <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-wallet"></i></span><div><small>Total rider credits</small><strong>₱{{ number_format($metrics['credits'], 2) }}</strong></div></article>
             </div>
 
+            <div class="card admin-card mb-4">
+                <div class="admin-card-header">
+                    <div><h2>Applications awaiting approval</h2><p>Review submitted rider details and documents before approving access.</p></div>
+                    <span class="admin-number-pill">{{ number_format($applications->total()) }}</span>
+                </div>
+                @if ($applications->isEmpty())
+                    <div class="admin-empty-state"><span><i class="fas fa-user-clock"></i></span><h3>No applications awaiting review</h3><p>Submitted rider applications will appear here.</p></div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table admin-table">
+                            <thead><tr><th>Applicant</th><th>Vehicle</th><th>Submitted</th><th>Documents</th><th>Action</th></tr></thead>
+                            <tbody>
+                            @foreach ($applications as $application)
+                                <tr>
+                                    <td><strong>{{ $application->full_name }}</strong><small>{{ $application->email }} · {{ $application->mobile }}</small><small>{{ $application->home_address }}</small></td>
+                                    <td><strong>{{ $application->vehicle_type }} · {{ $application->vehicle_make_model }}</strong><small>{{ $application->vehicle_plate_number }} · {{ $application->vehicle_color }}</small></td>
+                                    <td>{{ $application->submitted_at?->format('M d, Y · g:i A') ?? '—' }}</td>
+                                    <td>
+                                        @foreach ($application->documents as $document)
+                                            <a class="dashboard-inline-link d-block" href="{{ route('dashboard.rider-applications.documents.show', [$application, $document]) }}" target="_blank" rel="noopener">{{ Str::headline($document->type) }}</a>
+                                        @endforeach
+                                        @if ($application->documents->isEmpty())<small>No documents uploaded</small>@endif
+                                    </td>
+                                    <td>
+                                        <form method="POST" action="{{ route('dashboard.rider-applications.approve', $application) }}">
+                                            @csrf
+                                            <button class="btn admin-btn-primary btn-sm" type="submit"><i class="fas fa-check mr-1"></i>Approve application</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="admin-pagination">{{ $applications->links('pagination::bootstrap-4') }}</div>
+                @endif
+            </div>
+
             <div class="card admin-card">
                 <div class="admin-card-header">
                     <div><h2>Rider list</h2><p>{{ number_format($riders->total()) }} available rider {{ Str::plural('account', $riders->total()) }}</p></div>

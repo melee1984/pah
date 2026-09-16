@@ -183,6 +183,11 @@ Route::middleware('admin')->group(function () {
 
     Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
     Route::get('data/dashboard/riders', [RiderManagementController::class, 'index'])->name('dashboard.rider');
+    Route::get('data/dashboard/rider-applications/{application}/documents/{document}', [RiderManagementController::class, 'applicationDocument'])
+        ->name('dashboard.rider-applications.documents.show');
+    Route::post('data/dashboard/rider-applications/{application}/approve', [RiderManagementController::class, 'approveApplication'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.rider-applications.approve');
     Route::post('data/dashboard/riders/{rider}/approve', [RiderManagementController::class, 'approve'])
         ->middleware('throttle:10,1')
         ->name('dashboard.riders.approve');

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Model\Rider\Rider;
+use App\RiderApplication;
+use App\RiderApplicationDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,6 +35,12 @@ class RiderManagementController extends Controller
             ->orderByDesc('created_at')
             ->paginate(25)
             ->withQueryString();
+        $applications = RiderApplication::query()
+            ->with('documents')
+            ->where('status', RiderApplication::STATUS_PENDING)
+            ->orderBy('submitted_at')
+            ->paginate(15, ['*'], 'applications_page')
+            ->withQueryString();
 
         $metrics = [
             'total' => Rider::query()->count(),
@@ -59,7 +67,33 @@ class RiderManagementController extends Controller
             ->limit(50)
             ->get();
 
-        return view('dashboard.pages.riders.index', compact('riders', 'metrics', 'pendingTopUps', 'search'));
+        return view('dashboard.pages.riders.index', compact('riders', 'applications', 'metrics', 'pendingTopUps', 'search'));
+    }
+
+    public function applicationDocument(RiderApplication $application, RiderApplicationDocument $document): StreamedResponse
+    {
+        abort_unless($document->rider_application_id === $application->id, 404);
+        abort_unless(Storage::disk('local')->exists($document->path), 404);
+
+        return Storage::disk('local')->response(
+            $document->path,
+            $document->original_name,
+            ['Content-Type' => $document->mime_type ?: 'application/octet-stream'],
+        );
+    }
+
+    public function approveApplication(RiderApplication $application): RedirectResponse
+    {
+        if ($application->status !== RiderApplication::STATUS_PENDING) {
+            return back()->withErrors(['application' => 'Only pending rider applications can be approved.']);
+        }
+
+        $application->forceFill([
+            'status' => RiderApplication::STATUS_APPROVED,
+            'review_notes' => null,
+        ])->save();
+
+        return back()->with('success', $application->full_name.'\'s application was approved. They can now activate their rider account.');
     }
 
     public function approve(Rider $rider): RedirectResponse
