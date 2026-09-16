@@ -101,7 +101,7 @@
           this.validateSelectedAddress();
         },
         created() {
-          // Event.$on('updateSelectedAddress', (p_selectedId) => {
+          // window.AppEvents.$on('updateSelectedAddress', (p_selectedId) => {
           //   console.log('This is the moment');
           //    this.selectedId = p_selectedId
           // });
@@ -133,7 +133,7 @@
         },
         methods: {
             popMap: function() {
-              Event.$emit('PinMapUserLocation');
+              window.AppEvents.$emit('PinMapUserLocation');
             },  
             actionAddress: function(action) {
               this.address = {};

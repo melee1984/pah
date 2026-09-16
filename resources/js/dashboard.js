@@ -5,9 +5,10 @@
  */
 
 import 'bootstrap';
+import '../css/order-details.css';
 import axios from 'axios';
 
-window.Event = new Vue();
+window.AppEvents = new Vue();
 import Vue from 'vue';
 window.axios = axios;
 
@@ -63,5 +64,4 @@ Vue.component('admin-pagination', AdminPagination);
 const app = new Vue({
     el: '#app',
 });
-
 

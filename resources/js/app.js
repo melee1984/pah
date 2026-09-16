@@ -9,7 +9,7 @@ import '../scss/_pahatud.scss';
 
 
 // Global Event Bus
-window.Event = new Vue();
+window.AppEvents = new Vue();
 window.axios = axios;
 
 // import VueGeolocation from 'vue-browser-geolocation';

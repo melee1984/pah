@@ -110,19 +110,19 @@ export default {
     if (localStorage.notes) {
       this.fields.notes = localStorage.notes;
     }
-    Event.$on("PinMapUserLocation", () => {
+    window.AppEvents.$on("PinMapUserLocation", () => {
       const modalElement = document.getElementById("pinLocation");
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
       this.initMap();
     });
 
-    Event.$on("CheckUserLocation", () => {
+    window.AppEvents.$on("CheckUserLocation", () => {
       console.log("Checking User Location Address Popup");
       this.checkUserLocationAddress();
     });
 
-    Event.$on("updateUserCartCoordinate", () => {
+    window.AppEvents.$on("updateUserCartCoordinate", () => {
       this.updateUserCartLocation();
     });
 
@@ -173,7 +173,7 @@ export default {
     // },
     setPin: function () {
       localStorage.address = this.address;
-      Event.$emit("updateLocationAddress");
+      window.AppEvents.$emit("updateLocationAddress");
 
       this.updateUserCartLocation();
       const modalElement = document.getElementById("pinLocation");
@@ -185,7 +185,7 @@ export default {
     //   this.coordinates.lat = this.place.geometry.location.lat();
     //   this.coordinates.lng = this.place.geometry.location.lng();
 
-    //   Event.$emit("updateLocationAddress");
+    //   window.AppEvents.$emit("updateLocationAddress");
     //   this.updateUserCartLocation();
     // },
     updateUserCartLocation: function () {
@@ -200,8 +200,8 @@ export default {
         axios
           .post("/api/location/submit?api_token=" + api_token, formData)
           .then((response) => {
-            Event.$emit("reloadSummary");
-            Event.$emit("reloadRestaurants");
+            window.AppEvents.$emit("reloadSummary");
+            window.AppEvents.$emit("reloadRestaurants");
           })
           .catch((errors) => {
             toastr.error(errors);
@@ -391,7 +391,7 @@ export default {
 
         this.updateUserCartLocation();
 
-        Event.$emit("updateLocationAddress");
+        window.AppEvents.$emit("updateLocationAddress");
       } catch (err) {
         console.error("Reverse geocode failed after retries:", err);
         this.address = "Unable to fetch address";

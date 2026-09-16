@@ -17,7 +17,7 @@
         this.fetchData();
       },
       created() {
-        Event.$on('CartItemCount', (cartItemCount) => {
+        window.AppEvents.$on('CartItemCount', (cartItemCount) => {
            this.setItemCount(cartItemCount);
         });
       },

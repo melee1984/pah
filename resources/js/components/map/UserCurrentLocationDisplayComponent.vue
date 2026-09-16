@@ -17,18 +17,18 @@ export default {
   },
   created() {
     // Listen for address updates from any child component
-    Event.$on('updateLocationAddress', this.updateAddress);
+    window.AppEvents.$on('updateLocationAddress', this.updateAddress);
   },
   mounted() {
     this.updateAddress(); // Initialize from localStorage if available
   },
   beforeDestroy() {
     // Clean up event listener
-    Event.$off('updateLocationAddress', this.updateAddress);
+    window.AppEvents.$off('updateLocationAddress', this.updateAddress);
   },
   methods: {
     userLocation() {
-      Event.$emit('PinMapUserLocation');
+      window.AppEvents.$emit('PinMapUserLocation');
     },
     updateAddress() {
       if (localStorage.address) {

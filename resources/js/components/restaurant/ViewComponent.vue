@@ -97,10 +97,10 @@ export default {
   },
   mounted() {
     this.fetchData();
-    Event.$emit("CheckUserLocation");
+    window.AppEvents.$emit("CheckUserLocation");
   },
   created() {
-    Event.$on("reloadRestaurants", () => {
+    window.AppEvents.$on("reloadRestaurants", () => {
       this.fetchData();
     });
   },
@@ -113,7 +113,7 @@ export default {
           }, 1000);
         } else {
           this.timerCount = 3;
-          Event.$emit("CheckUserLocation");
+          window.AppEvents.$emit("CheckUserLocation");
         }
       },
       immediate: true, // This ensures the watcher is triggered upon creation

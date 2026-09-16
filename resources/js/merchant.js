@@ -5,12 +5,13 @@
  */
 
 import 'bootstrap';
+import '../css/order-details.css';
 import axios from 'axios';
 
 window.axios = axios;
 
 import Vue from 'vue';
-window.Event = new Vue();
+window.AppEvents = new Vue();
 
 // Restaurants 
 // Restaurants
@@ -82,6 +83,5 @@ Vue.component('today-report', TodayReport);
 const app = new Vue({
     el: '#app',
 });
-
 
 

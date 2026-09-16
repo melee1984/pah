@@ -144,10 +144,10 @@ export default {
     //     this.delivery_address = "Pinned location";
     // }
 
-    Event.$emit("CheckUserLocation");
+    window.AppEvents.$emit("CheckUserLocation");
   },
   created() {
-    Event.$on("updateAddingForMerchant", () => {
+    window.AppEvents.$on("updateAddingForMerchant", () => {
       this.addingThisForMerchant = true;
     });
   },
@@ -207,7 +207,7 @@ export default {
           console.log(response.data);
 
           if (response.data.status) {
-            Event.$emit("reloadSummary");
+            window.AppEvents.$emit("reloadSummary");
           } else {
             toastr.info(response.data.message);
           }
@@ -223,7 +223,7 @@ export default {
         })
         .then((response) => {
           if (response.data.status) {
-            Event.$emit("reloadSummary");
+            window.AppEvents.$emit("reloadSummary");
           } else {
             toastr.info(response.data.message);
           }

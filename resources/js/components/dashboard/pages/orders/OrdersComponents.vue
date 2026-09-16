@@ -54,7 +54,7 @@
                     <th>Total</th>
                     <th>Status</th>
                      <th>Rider</th>
-                  </tr> 
+                  </tr>
                 </thead>
                 <tbody>
                   <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'orders' && !order.rider_id}">
@@ -71,8 +71,8 @@
                           <br>{{ order.cart.partnerlocation.mobile }}
                         </template>
                         <span v-else class="text-muted">Merchant location unavailable</span>
-                        
-                       
+
+
                         <br><br>
                     </td>
                     <td width="5%">{{ order.summary.qty }}</td>
@@ -114,152 +114,96 @@
       </div><!-- /.card-body -->
     </div>
 
-     <div class="modal fade" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
-        <div class="modal-dialog modal-lg" role="document">
-          <div class="modal-content modal-lg">
-            <div class="modal-header">
-              <h5 class="modal-title" id="exampleModalLongTitle">Booking Information</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+     <div class="modal fade order-detail-modal" id="orderDetails" tabindex="-1" role="dialog" aria-labelledby="orderDetailsTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+        <div class="modal-content">
+          <div class="modal-header order-detail-header">
+            <div class="order-detail-heading">
+              <span class="order-detail-eyebrow"><i class="fas fa-receipt"></i> Order overview</span>
+              <h2 id="orderDetailsTitle">Order #{{ selectedOrder?.cart?.order_no || '—' }}</h2>
+              <p>Placed {{ selectedOrder?.submitted_date || selectedOrder?.cart?.processed_at || 'Date unavailable' }}</p>
             </div>
-            <div class="modal-body">
-              <div class="container bootdey">
-                <div class="row invoice row-printable">
-                    <div class="col-md-12">
-                        <!-- col-lg-12 start here -->
-                        <div class="panel panel-default plain" id="dash_0">
-                            <!-- Start .panel -->
-                            <div class="panel-body p30" v-if="selectedOrder">
-                                <div class="row">
-                                    <!-- Start .row -->
-                                    <div class="col-lg-6">
-                                        <!-- col-lg-6 start here -->
-                                        <div class="invoice-logo" v-if="selectedOrder.partner">
-                                          <img width="100" :src="'/uploads/user/'+selectedOrder.partner.id+'/'+selectedOrder.partner.img" alt="Invoice logo">
-                                        </div>
-                                    </div>
-                                    <!-- col-lg-6 end here -->
-                                    <div class="col-lg-6">
-                                        <!-- col-lg-6 start here -->
-                                        <div class="invoice-from">
-                                            <ul class="list-unstyled text-right"v-if="selectedOrder.partner">
-                                                <li>{{ selectedOrder.partner.restaurant_name }}</li>
-                                                <li v-if="selectedOrder.cart && selectedOrder.cart.partnerlocation">
-                                                  <p >{{ selectedOrder.cart.partnerlocation.address_1 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.address_2 }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.mobile }} <br>
-                                                  {{ selectedOrder.cart.partnerlocation.telephone }}</p>
-                                                </li>
-                                                <li v-else class="text-muted">Merchant location unavailable</li>
-                                            </ul>
-                                        </div>
-                                    </div>
-                                    <!-- col-lg-6 end here -->
-                                    <div class="col-lg-12">
-                                        Estimated Date/Time: <br><b> {{ selectedOrder?.cart?.delivery_date }} - {{ selectedOrder?.cart?.delivery_time }}</b> <br><br>
-
-                                        Merchant: <br>
-                                        <strong>{{ selectedOrder?.partner?.restaurant_name }} </strong> <br>
-                                        <template v-if="selectedOrder?.cart?.partnerlocation">
-                                          {{ selectedOrder.cart.partnerlocation.address_1 }}, {{ selectedOrder.cart.partnerlocation.address_2 }},
-                                          <br>{{ selectedOrder.cart.partnerlocation.mobile }}
-                                        </template>
-                                        <span v-else class="text-muted">Merchant location unavailable</span>
-                                        <br>
-                                        <br>
-                                        <p><b>Details</b></p>
-                                        <table class="table">
-                                           <tr v-for="item in selectedOrder?.cart?.details">
-                                            <td>
-                                              {{ item.item.title }}
-                                               <span v-for="it in item.variance_content">
-                                                  <small>+ {{ it.title }}</small> <br>
-                                              </span>
-                                              <p v-if="item.instruction">
-                                               Note: {{ item.instruction }}
-                                               </p>
-                                            </td>
-                                            <td class="text-center">
-                                              {{ item.qty }}
-                                            </td>
-                                            <td class="text-center">{{ item.price }} PHP</td>
-                                        </tr>
-                                         </table>
-                                         <br>
-
-                                          <p><b>Customer:</b> <br>
-
-                                          {{ selectedOrder?.cart?.fullname }} <br>
-                                          <span v-if="selectedOrder?.cart?.address">Address: {{ selectedOrder.cart.address.address_1 }}</span> <br>
-                                          <span v-if="selectedOrder?.cart?.mobile">Mobile: {{ selectedOrder?.cart?.mobile }}</span>
-                                        </p>
-
-                                        <p> 
-                                            <b>Summary:</b> <br>
-                                            Sub Total: {{ selectedOrder?.summary?.sub_total }} <br>
-                                            Delivery Fee: {{ selectedOrder?.summary?.delivery_fee }} <br>
-                                            Discount: {{ selectedOrder?.summary?.discount }} <br>
-                                          Total: {{ selectedOrder?.summary?.total }} <br>
-                                        </p>
-
-                                        <div class="dashboard-delivery-card">
-                                          <p class="dashboard-delivery-card__title"><i class="fas fa-motorcycle"></i> Assigned rider</p>
-                                          <strong v-if="selectedOrder.rider">{{ selectedOrder.rider.name }}</strong>
-                                          <span v-else class="text-muted">No rider was assigned to this order.</span>
-                                          <small v-if="selectedOrder.rider && selectedOrder.rider.mobile" class="d-block text-muted">
-                                            {{ selectedOrder.rider.mobile }}
-                                          </small>
-                                        </div>
-
-                                        <div v-if="selectedOrderIsCompleted" class="dashboard-delivery-card">
-                                          <p class="dashboard-delivery-card__title"><i class="fas fa-camera"></i> Proof of delivery</p>
-                                          <div v-if="selectedOrder.delivery_proofs && selectedOrder.delivery_proofs.length" class="dashboard-proof-grid">
-                                            <a
-                                              v-for="proof in selectedOrder.delivery_proofs"
-                                              :key="proof.id"
-                                              :href="proof.file_url || undefined"
-                                              :target="proof.file_url ? '_blank' : undefined"
-                                              :class="['dashboard-proof-item', { 'dashboard-proof-item--static': !proof.file_url }]"
-                                              rel="noopener"
-                                            >
-                                              <img v-if="proof.file_url" :src="proof.file_url" alt="Proof of delivery">
-                                              <span v-else class="dashboard-proof-placeholder"><i class="fas fa-check-circle"></i></span>
-                                              <span>
-                                                <strong>{{ proofMethodLabel(proof.method) }}</strong>
-                                                <small>{{ formatProofDate(proof.created_at) }}</small>
-                                              </span>
-                                            </a>
-                                          </div>
-                                          <span v-else class="text-muted">No proof of delivery was submitted.</span>
-                                        </div>
-
-                                        <div class="invoice-footer mt25" v-if="selectedOrderIsActive">
-                                              <label for="">Delivery Status</label>
-                                               <select class="form-control"  id="optStatus" v-if="statuses" v-model="selectedOrder.status_id" @change="updateStatus($event)">
-                                                    <option value="0">Select Status</option>
-                                                    <option v-for="status in statuses" :value="status.id">{{ status.title }}</option>
-                                              </select>
-                                              <br>
-                                        </div>
-                                    </div>
-                                    <!-- col-lg-12 end here -->
-                                </div>
-                                <!-- End .row -->
-                            </div>
-                        </div>
-                        <!-- End .panel -->
-                    </div>
-                    <!-- col-lg-12 end here -->
-                </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn" data-dismiss="modal">Close</button>
+            <div class="order-detail-header-actions">
+              <span v-if="selectedOrder?.status?.title" class="order-detail-status" :class="statusClassForModal(selectedOrder?.status_id)">{{ selectedOrder?.status?.title }}</span>
+              <button type="button" class="order-detail-close" @click="closeOrderDetails" aria-label="Close order details"><i class="fas fa-times"></i></button>
             </div>
           </div>
+          <div v-if="selectedOrder && selectedOrder.cart" class="modal-body order-detail-body">
+            <div class="order-detail-highlights">
+              <div><span>Scheduled delivery</span><strong>{{ selectedOrder.cart.delivery_date || 'Date unavailable' }}</strong><small>{{ selectedOrder.cart.delivery_time || 'Time unavailable' }}</small></div>
+              <div><span>Items</span><strong>{{ selectedOrder?.summary?.qty || 0 }}</strong><small>in this order</small></div>
+              <div class="order-detail-highlight-total"><span>Order total</span><strong>₱{{ selectedOrder?.summary?.total || '0.00' }}</strong><small>including delivery</small></div>
+            </div>
+            <div class="order-detail-layout">
+              <div class="order-detail-main">
+                <section class="order-detail-panel">
+                  <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-utensils"></i></span><div><h3>Items ordered</h3><p>A breakdown of the customer's order</p></div></div>
+                  <div v-if="selectedOrder.cart.details && selectedOrder.cart.details.length" class="order-detail-items">
+                    <div v-for="(item, index) in selectedOrder.cart.details" :key="item.id || index" class="order-detail-item">
+                      <span class="order-detail-item-qty">{{ item.qty }}×</span>
+                      <div class="order-detail-item-copy"><strong>{{ item.item?.title || 'Item unavailable' }}</strong><span v-for="(variation, variationIndex) in item.variance_content" :key="variationIndex">+ {{ variation.title }}</span><em v-if="item.instruction">Note: {{ item.instruction }}</em></div>
+                      <strong class="order-detail-item-price">₱{{ item.price }}</strong>
+                    </div>
+                  </div>
+                  <p v-else class="order-detail-muted">No items are available for this order.</p>
+                </section>
+                <div class="order-detail-people">
+                  <section class="order-detail-panel">
+                    <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-store"></i></span><div><h3>Merchant</h3><p>Preparing this order</p></div></div>
+                    <strong>{{ selectedOrder?.partner?.restaurant_name || 'Merchant unavailable' }}</strong>
+                    <p class="order-detail-muted">{{ selectedOrder?.cart?.partnerlocation?.address_1 }}<template v-if="selectedOrder?.cart?.partnerlocation?.address_2">, {{ selectedOrder.cart.partnerlocation.address_2 }}</template></p>
+                    <p v-if="selectedOrder?.cart?.partnerlocation?.mobile" class="order-detail-muted">{{ selectedOrder.cart.partnerlocation.mobile }}</p>
+                  </section>
+                  <section class="order-detail-panel">
+                    <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-user"></i></span><div><h3>Customer</h3><p>Delivery recipient</p></div></div>
+                    <strong>{{ selectedOrder.cart.fullname || 'Name unavailable' }}</strong>
+                    <p v-if="selectedOrder.cart.address" class="order-detail-muted">{{ selectedOrder.cart.address.address_1 }}</p>
+                    <p v-if="selectedOrder.cart.mobile" class="order-detail-muted">{{ selectedOrder.cart.mobile }}</p>
+                  </section>
+                </div>
+
+          <section v-if="selectedOrderIsCompleted" class="order-detail-panel order-detail-proof-panel">
+            <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-camera"></i></span><div><h3>Proof of delivery</h3><p>Confirmation provided by the rider</p></div></div>
+            <div v-if="selectedOrder.delivery_proofs && selectedOrder.delivery_proofs.length" class="order-detail-proof-grid">
+              <a v-for="proof in selectedOrder.delivery_proofs" :key="proof.id" :href="proof.file_url || undefined" :target="proof.file_url ? '_blank' : undefined" :class="['order-detail-proof', { 'order-detail-proof--static': !proof.file_url }]" rel="noopener">
+                <img v-if="proof.file_url" :src="proof.file_url" alt="Proof of delivery">
+                <span v-else class="order-detail-proof-placeholder"><i class="fas fa-check-circle"></i></span>
+                <span class="order-detail-proof-caption"><strong>{{ proofMethodLabel(proof.method) }}</strong><small>{{ formatProofDate(proof.created_at) }}</small></span>
+              </a>
+            </div>
+            <p v-else class="order-detail-muted">No proof of delivery was submitted.</p>
+          </section>
+              </div>
+              <aside class="order-detail-side">
+                <section class="order-detail-panel order-detail-summary">
+                  <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-file-invoice"></i></span><div><h3>Payment summary</h3><p>Order charges at a glance</p></div></div>
+                  <div class="order-detail-summary-row"><span>Subtotal</span><strong>₱{{ selectedOrder?.summary?.sub_total || '0.00' }}</strong></div>
+                  <div class="order-detail-summary-row"><span>Delivery fee</span><strong>₱{{ selectedOrder?.summary?.delivery_fee || '0.00' }}</strong></div>
+                  <div class="order-detail-summary-row"><span>Discount</span><strong>− ₱{{ selectedOrder?.summary?.discount || '0.00' }}</strong></div>
+                  <div class="order-detail-summary-total"><span>Total</span><strong>₱{{ selectedOrder?.summary?.total || '0.00' }}</strong></div>
+                </section>
+
+            <section class="order-detail-panel">
+              <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-motorcycle"></i></span><div><h3>Delivery partner</h3><p>Assigned rider for this order</p></div></div>
+              <div v-if="selectedOrder.rider" class="order-detail-person"><strong>{{ selectedOrder.rider.name }}</strong><span v-if="selectedOrder.rider.mobile">{{ selectedOrder.rider.mobile }}</span></div>
+              <p v-else class="order-detail-muted">No rider assigned yet.</p>
+            </section>
+
+            <section v-if="selectedOrderIsActive" class="order-detail-panel order-detail-action">
+              <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-truck"></i></span><div><h3>Update delivery status</h3><p>Choose the next status for this order.</p></div></div>
+              <label class="order-detail-label" for="orderDeliveryStatus">Delivery status</label>
+              <select id="orderDeliveryStatus" class="form-control" v-model="selectedOrder.status_id" @change="updateStatus($event)">
+                <option value="0">Select status</option>
+                <option v-for="status in statuses" :key="status.id" :value="status.id">{{ status.title }}</option>
+              </select>
+            </section>
+              </aside>
+            </div>
+          </div>
+          <div class="modal-footer order-detail-footer"><button type="button" class="btn order-detail-done" @click="closeOrderDetails">Done</button></div>
         </div>
       </div>
+    </div>
   </div>
 </template>
 <script>
@@ -276,6 +220,7 @@
                 timerInterval: 10,
                 riders: [],
                 selectedOrder: {},
+                modalInstance: null,
                 statuses: [],
                 currentPage: 1,
                 pageSize: 10,
@@ -331,10 +276,10 @@
         mounted() {
             console.log('Mounted Order List View Component')
               this.fetchData();
-              this.selectedOrder = this.orders[0];  
+              this.selectedOrder = this.orders[0];
              this.startTimer();
         },
-        
+
         methods: {
           selectActiveList: function(list) {
             this.activeList = list;
@@ -342,6 +287,11 @@
           },
           setPage: function(page) {
             this.currentPage = page;
+          },
+          statusClassForModal: function(statusId) {
+            if (Number(statusId) === 7) return 'is-success';
+            if (Number(statusId) === 8) return 'is-danger';
+            return 'is-progress';
           },
           statusClass: function(status) {
             if (this.activeList === 'completed') return 'is-success';
@@ -371,7 +321,7 @@
                   this.timerInterval = 10;
                   toastr.info("Refreshing...");
                   this.fetchData();
-                  Event.$emit('reloadDashboardOrderSummary');
+                  window.AppEvents.$emit('reloadDashboardOrderSummary');
                 }
            }, 1000)
           },
@@ -383,7 +333,7 @@
                 self.cancelledOrders = response.data.cancelledOrders;
                 self.riders = response.data.riders;
                 self.statuses = response.data.statuses;
-                
+
               }).catch(function (error) {
                   console.log(error);
               });
@@ -403,7 +353,7 @@
                   }
                 }).catch((errors) => {
                     toastr.error(errors);
-                }); 
+                });
           },
             updateStatus:function(event) {
 
@@ -422,90 +372,21 @@
                   }
                 }).catch((errors) => {
                     toastr.error(errors);
-                }); 
+                });
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-               // Show Bootstrap modal
-                const modalEl = document.getElementById('orderDetails');
-                const modal = new bootstrap.Modal(modalEl);
-                modal.show();
-
+              if (!this.modalInstance) {
+                this.modalInstance = new bootstrap.Modal(document.getElementById('orderDetails'));
+              }
+              this.modalInstance.show();
+          },
+          closeOrderDetails: function() {
+              if (this.modalInstance) {
+                this.modalInstance.hide();
+              }
           }
         }
     }
 
 </script>
-
-<style scoped>
-.dashboard-delivery-card {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #e7e9ee;
-  border-radius: 0.65rem;
-  background: #f8f9fb;
-}
-
-.dashboard-delivery-card__title {
-  margin-bottom: 0.65rem;
-  font-weight: 700;
-}
-
-.dashboard-delivery-card__title i {
-  margin-right: 0.35rem;
-  color: #dc3545;
-}
-
-.dashboard-proof-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 0.75rem;
-}
-
-.dashboard-proof-item {
-  overflow: hidden;
-  border: 1px solid #dee2e6;
-  border-radius: 0.5rem;
-  background: #fff;
-  color: #343a40;
-  text-decoration: none;
-}
-
-.dashboard-proof-item:hover {
-  border-color: #dc3545;
-  color: #343a40;
-  text-decoration: none;
-}
-
-.dashboard-proof-item img,
-.dashboard-proof-placeholder {
-  display: flex;
-  width: 100%;
-  height: 120px;
-  align-items: center;
-  justify-content: center;
-  object-fit: cover;
-  background: #eef0f3;
-  color: #28a745;
-  font-size: 2rem;
-}
-
-.dashboard-proof-item > span:last-child {
-  display: block;
-  padding: 0.65rem;
-}
-
-.dashboard-proof-item strong,
-.dashboard-proof-item small {
-  display: block;
-}
-
-.dashboard-proof-item small {
-  margin-top: 0.2rem;
-  color: #6c757d;
-}
-
-.dashboard-proof-item--static {
-  cursor: default;
-}
-</style>

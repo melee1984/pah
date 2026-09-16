@@ -144,7 +144,7 @@
           }
         },
           created() {
-          Event.$on('reloadCheckout', () => {
+          window.AppEvents.$on('reloadCheckout', () => {
             this.fetchData();
           });
          

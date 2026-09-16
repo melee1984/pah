@@ -61,7 +61,7 @@
 	      </tbody>
 	    </table>
 	</div>
-    <variant-add :productId="product.id" @populatedVariant="fetchVariantRecord" ref="addVariant"/>
+    <variant-add :product-id="product.id" @populatedVariant="fetchVariantRecord" ref="addVariant"/>
 	<variant-details-view :product_header_id="selected_product_header_id" ref="modalAddVariantDetails" />
 </div>
 </template>

@@ -180,7 +180,7 @@ export default {
         ).then((response) => {
           if (response) {
             this.emptyAddCart(product);
-            Event.$emit("updateAddingForMerchant");
+            window.AppEvents.$emit("updateAddingForMerchant");
           }
         });
       } else {
@@ -208,7 +208,7 @@ export default {
             toastr.success(response.data.message);
             this.closeModal();
 
-            Event.$emit("reloadSummary");
+            window.AppEvents.$emit("reloadSummary");
           } else {
             toastr.info(response.data.message);
           }
@@ -238,7 +238,7 @@ export default {
           if (response.data.status) {
             this.closeModal();
 
-            Event.$emit("reloadSummary");
+            window.AppEvents.$emit("reloadSummary");
           } else {
             toastr.info(response.data.message);
           }

@@ -127,7 +127,7 @@
              }).then((response) => {
               if (response.data.status) {
                 $('#coupon').modal('toggle');
-                Event.$emit('reloadCheckout');
+                window.AppEvents.$emit('reloadCheckout');
               }
               else {
                 $('#coupon').modal('toggle');

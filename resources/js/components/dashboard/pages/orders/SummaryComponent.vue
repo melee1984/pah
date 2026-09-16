@@ -86,7 +86,7 @@
             }
         },
         created() {
-          Event.$on('reloadDashboardOrderSummary', () => {
+          window.AppEvents.$on('reloadDashboardOrderSummary', () => {
              this.fetchData();
           });
         },

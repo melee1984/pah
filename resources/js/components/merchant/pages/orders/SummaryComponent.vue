@@ -53,9 +53,9 @@ export default {
     trendTotal() { return this.record.salesTrend.reduce((total, day) => total + Number(day.sales || 0), 0); },
     trendMax() { return Math.max(1, ...this.record.salesTrend.map(day => Number(day.sales || 0))); },
   },
-  created() { Event.$on('reloadMerchantOrderSummary', this.fetchData); },
+  created() { window.AppEvents.$on('reloadMerchantOrderSummary', this.fetchData); },
   mounted() { this.fetchData(); },
-  beforeDestroy() { Event.$off('reloadMerchantOrderSummary', this.fetchData); },
+  beforeDestroy() { window.AppEvents.$off('reloadMerchantOrderSummary', this.fetchData); },
   methods: {
     fetchData() {
       axios.get('/api/merchant/dashboard/order/summary', {

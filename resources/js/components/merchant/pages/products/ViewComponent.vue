@@ -169,7 +169,7 @@
     </div>
 
     <div v-if="actionStatus === 'add'">
-      <product-add @actionProduct="actionProduct" @fetchData="fetchData"></product-add>
+      <product-add :categories="categories" :merchant="merchant" @actionProduct="actionProduct" @fetchData="fetchData"></product-add>
     </div>
   </div>
 </template>
@@ -185,6 +185,10 @@ export default {
     categories: {
       type: Array,
       default: () => [],
+    },
+    merchant: {
+      type: Object,
+      default: () => ({}),
     },
   },
   data() {
