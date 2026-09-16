@@ -469,6 +469,8 @@ class RiderApplicationController extends Controller
             }
         }
 
+        \Log::(['errors' => $errors]);
+
         if ($errors !== []) {
             throw ValidationException::withMessages($errors);
         }
