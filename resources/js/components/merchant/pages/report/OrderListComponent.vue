@@ -2,7 +2,7 @@
   <div>
      <div class="card admin-card dashboard-data-card merchant-order-card">
       <div class="admin-card-header">
-        <div><h2>Order management</h2><p>Review orders that need action and monitor active fulfilment.</p></div>
+        <div><h2>Order management</h2><p>Review pending, completed, and cancelled orders.</p></div>
         <span
           class="dashboard-reload-chip merchant-order-refresh"
           :class="refreshIndicatorClass"
@@ -26,16 +26,6 @@
               @click="activeList = 'pending'"
             >
               Pending <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
-            </button>
-          </li>
-          <li class="nav-item">
-            <button
-              type="button"
-              class="nav-link"
-              :class="{ active: activeList === 'accepted' }"
-              @click="activeList = 'accepted'"
-            >
-              In progress <span class="badge badge-success ml-1">{{ acceptedOrders.length }}</span>
             </button>
           </li>
           <li class="nav-item">
@@ -93,7 +83,7 @@
                       No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
-                  <tr v-for="order in displayedOrders" :key="order.id" v-bind:class="{ inactive: activeList === 'accepted' && !order.rider_id}">
+                  <tr v-for="order in displayedOrders" :key="order.id">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</button>
@@ -113,12 +103,12 @@
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
                     <td width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
                     <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
-                     <td width="10%" v-if="order.status">
+                     <td width="10%">
                       <p v-if="order.rider">{{ order.rider.name }}</p>
                     </td>
                     <td width="10%">
-                      <span v-if="order.status">
-                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
+                      <span v-if="order.order_status">
+                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.order_status_id)">{{ order.order_status.title }}</span>
                        </span>
                     </td>
                    
@@ -180,7 +170,7 @@
 
                                                     <li><strong>Date/Time:</strong> {{ selectedOrder?.cart?.delivery_date }} @ {{ selectedOrder?.cart?.delivery_time }}</li>
                                                     <li><strong>Status:</strong> 
-                                                        <span class="label label-danger">{{ selectedOrder?.status?.title }}</span>
+                                                        <span class="label label-danger">{{ selectedOrder?.order_status?.title }}</span>
                                                     </li>
                                                 </ul>
                                             </div>
@@ -320,26 +310,19 @@
         },
         computed: {
           pendingOrders: function() {
-            return this.orders.filter(order => Number(order.status_id) === 1);
-          },
-          acceptedOrders: function() {
             return this.orders.filter(order => {
-              const statusId = Number(order.status_id);
+              const statusId = Number(order.order_status_id);
 
-              return statusId >= 2 && statusId <= 6;
+              return statusId >= 1 && statusId <= 6;
             });
           },
           completedOrders: function() {
-            return this.orders.filter(order => Number(order.status_id) === 7);
+            return this.orders.filter(order => Number(order.order_status_id) === 7);
           },
           cancelledOrders: function() {
-            return this.orders.filter(order => Number(order.status_id) === 8);
+            return this.orders.filter(order => Number(order.order_status_id) === 8);
           },
           displayedOrders: function() {
-            if (this.activeList === 'accepted') {
-              return this.acceptedOrders;
-            }
-
             if (this.activeList === 'completed') {
               return this.completedOrders;
             }
@@ -351,10 +334,6 @@
             return this.pendingOrders;
           },
           activeListLabel: function() {
-            if (this.activeList === 'accepted') {
-              return 'In progress';
-            }
-
             if (this.activeList === 'completed') {
               return 'Completed';
             }
@@ -366,7 +345,7 @@
             return 'Pending';
           },
           selectedOrderIsCompleted: function() {
-            return this.selectedOrder && Number(this.selectedOrder.status_id) === 7;
+            return this.selectedOrder && Number(this.selectedOrder.order_status_id) === 7;
           },
           refreshIndicatorClass: function() {
             return {

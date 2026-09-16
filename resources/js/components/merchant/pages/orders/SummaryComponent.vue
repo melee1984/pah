@@ -4,7 +4,7 @@
       <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-coins"></i></span><div><small>Sales today</small><strong>{{ money(record.salesToday) }}</strong><em>Completed orders</em></div></article>
       <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-calendar-week"></i></span><div><small>This week</small><strong>{{ money(record.salesWeek) }}</strong><em>Sales since Monday</em></div></article>
       <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-calendar-alt"></i></span><div><small>This month</small><strong>{{ money(record.salesMonth) }}</strong><em>Current month sales</em></div></article>
-      <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-shopping-bag"></i></span><div><small>Total orders</small><strong>{{ integer(record.totalOrders) }}</strong><em>{{ integer(record.pendingOrder) }} awaiting action</em></div></article>
+      <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-shopping-bag"></i></span><div><small>Total orders</small><strong>{{ integer(record.totalOrders) }}</strong><em>{{ integer(record.pendingOrder) }} pending</em></div></article>
     </div>
 
     <div class="merchant-dashboard-grid">
@@ -22,7 +22,6 @@
         <div class="admin-card-header"><div><span class="admin-eyebrow">Order health</span><h2>Fulfilment overview</h2></div><span class="dashboard-soft-badge">{{ integer(record.totalOrders) }} total</span></div>
         <div class="merchant-status-summary">
           <div><span class="is-warning"><i class="fas fa-clock"></i></span><div><small>Pending</small><strong>{{ integer(record.pendingOrder) }}</strong></div></div>
-          <div><span class="is-info"><i class="fas fa-motorcycle"></i></span><div><small>In progress</small><strong>{{ integer(record.onGoingOrder) }}</strong></div></div>
           <div><span class="is-success"><i class="fas fa-check"></i></span><div><small>Completed</small><strong>{{ integer(record.completed) }}</strong></div></div>
           <div><span class="is-danger"><i class="fas fa-times"></i></span><div><small>Cancelled</small><strong>{{ integer(record.cancelled) }}</strong></div></div>
         </div>
@@ -44,7 +43,7 @@ export default {
   data() {
     return {
       record: {
-        pendingOrder: 0, onGoingOrder: 0, completed: 0, cancelled: 0, totalOrders: 0,
+        pendingOrder: 0, completed: 0, cancelled: 0, totalOrders: 0,
         salesToday: 0, salesWeek: 0, salesMonth: 0, grossRevenue: 0, commission: 0,
         netRevenue: 0, averageOrder: 0, completionRate: 0, salesTrend: [],
       },

@@ -33,6 +33,7 @@ class OrderController extends Controller
                 'cart.address',
                 'cart.partnerlocation',
                 'partner',
+                'orderStatus',
             ])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at') 
@@ -72,7 +73,6 @@ class OrderController extends Controller
          foreach($orders as $order) {
 
             $order->rider;
-            $order->status;
             $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
@@ -142,7 +142,7 @@ class OrderController extends Controller
         $query = Orders::with(['cart', 'cart.address', 'partner', 'rider', 'status'])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at')
-            ->where('status_id', LibraryStatus::STATUS_DELIVERED);
+            ->where('order_status_id', LibraryStatus::STATUS_DELIVERED);
 
         if ($request->filled('dateFilter')) {
             $dateFilter = explode(' - ', $request->input('dateFilter'), 2);
@@ -223,7 +223,7 @@ class OrderController extends Controller
             $order->dashboard_commission = (float) str_replace(',', '', (string) ($summary['total_comm'] ?? 0));
         });
 
-        $completed = $orders->where('status_id', 7);
+        $completed = $orders->where('order_status_id', LibraryStatus::STATUS_DELIVERED);
         $now = now();
         $salesForPeriod = function (Carbon $start) use ($completed, $now) {
             return $completed->filter(function ($order) use ($start, $now) {
@@ -247,10 +247,9 @@ class OrderController extends Controller
         $grossRevenue = (float) $completed->sum('dashboard_total');
         $commission = (float) $completed->sum('dashboard_commission');
         $data['record'] = [
-            'pendingOrder' => $orders->where('status_id', 1)->count(),
-            'onGoingOrder' => $orders->whereBetween('status_id', [2, 6])->count(),
+            'pendingOrder' => $orders->whereBetween('order_status_id', [1, 6])->count(),
             'completed' => $completed->count(),
-            'cancelled' => $orders->where('status_id', 8)->count(),
+            'cancelled' => $orders->where('order_status_id', LibraryStatus::STATUS_CANCELLED)->count(),
             'totalOrders' => $orders->count(),
             'salesToday' => $salesForPeriod($now->copy()->startOfDay()),
             'salesWeek' => $salesForPeriod($now->copy()->startOfWeek()),
