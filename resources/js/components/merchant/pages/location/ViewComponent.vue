@@ -79,7 +79,7 @@ let leafletPromise = null;
 const loadLeaflet = () => {
   if (!leafletPromise) {
     leafletPromise = Promise.all([
-      import('leaflet/dist/leaflet-src.esm.js'),
+      import('leaflet'),
       import('leaflet/dist/leaflet.css'),
     ]).then(([leaflet]) => leaflet);
   }
