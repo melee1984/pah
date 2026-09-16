@@ -9,7 +9,7 @@ class RiderApplicationDocument extends Model
 {
     public const TYPES = [
         'profile_photo',
-        'government_id',
+        // 'government_id',
         'drivers_license',
         'vehicle_registration',
         'motorcycle_left_photo',
