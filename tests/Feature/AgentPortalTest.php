@@ -184,6 +184,8 @@ class AgentPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Help &amp; frequently asked questions', false)
             ->assertSee('How do I register a restaurant?')
+            ->assertSee('Restaurant approval guide')
+            ->assertSee('Save document review')
             ->assertSee('How is my commission calculated?')
             ->assertSee(route('agent.restaurants.create'));
     }
@@ -538,6 +540,8 @@ class AgentPortalTest extends TestCase
         $this->actingAs($admin)->get('/data/dashboard/merchant/'.$restaurant->id.'/application')
             ->assertOk()
             ->assertSee($restaurant->restaurant_name)
+            ->assertSee('How to approve this application')
+            ->assertSee('Still blocking approval')
             ->assertSee('action="'.route('dashboard.merchant.application.review', $restaurant->id).'"', false);
     }
 

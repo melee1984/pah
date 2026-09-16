@@ -150,6 +150,24 @@ body.pahatud-admin {
 .merchant-application-status { background: #fff2db; border-radius: 99px; color: #805112; display: inline-block; font-size: 9px; font-weight: 800; margin-top: 8px; padding: 4px 8px; text-transform: capitalize; }
 .merchant-application-status-approved { background: #eaf8ef; color: #1c6b3a; }
 .merchant-application-status-declined { background: #fff0ef; color: #a92924; }
+.application-review-guide { border-color: #d7e7df; }
+.application-review-guide-heading { align-items: center; display: flex; gap: 16px; justify-content: space-between; }
+.application-review-guide-heading h2 { font-size: 21px; font-weight: 800; margin: 3px 0 0; }
+.application-review-progress { background: #fff2db; border-radius: 99px; color: #805112; font-size: 11px; font-weight: 800; padding: 7px 11px; }
+.application-review-progress.is-ready { background: #eaf8ef; color: #1c6b3a; }
+.application-review-steps { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; margin: 22px 0 0; padding: 0; }
+.application-review-steps li { background: #faf9f7; border: 1px solid var(--admin-line); border-radius: 11px; display: flex; gap: 11px; padding: 15px; }
+.application-review-steps li > span { align-items: center; background: #fff0ee; border-radius: 8px; color: var(--admin-red); display: flex; flex: 0 0 auto; font-size: 11px; font-weight: 800; height: 28px; justify-content: center; width: 28px; }
+.application-review-steps strong { display: block; font-size: 13px; margin-bottom: 4px; }
+.application-review-steps p { color: var(--admin-muted); font-size: 11px; line-height: 1.55; margin: 0; }
+.application-review-blockers { background: #fff8e8; border: 1px solid #eed9a5; border-radius: 11px; margin-top: 14px; padding: 14px 16px; }
+.application-review-blockers > strong { color: #805112; font-size: 12px; }
+.application-review-blockers ul { color: #6b5a34; columns: 2; font-size: 11px; line-height: 1.6; margin: 8px 0 0; padding-left: 18px; }
+.application-review-ready { align-items: center; background: #eaf8ef; border: 1px solid #c9e7d4; border-radius: 11px; color: #1c6b3a; display: flex; gap: 12px; margin-top: 14px; padding: 14px 16px; }
+.application-review-ready i { font-size: 22px; }
+.application-review-ready strong { display: block; font-size: 12px; }
+.application-review-ready p { font-size: 11px; margin: 2px 0 0; }
+@media (max-width: 900px) { .application-review-steps { grid-template-columns: 1fr; } .application-review-blockers ul { columns: 1; } }
 .dashboard-orders-table { min-width: 1050px; }
 .dashboard-bookings-table { min-width: 900px; }
 .dashboard-report-table { min-width: 1240px; }

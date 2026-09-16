@@ -399,6 +399,11 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 .agent-help-questions summary::after { color: var(--agent-red); content: '+'; font-size: 21px; font-weight: 500; position: absolute; right: 2px; top: 15px; }
 .agent-help-questions details[open] summary::after { content: '−'; }
 .agent-help-questions details p { color: var(--agent-muted); font-size: 13px; line-height: 1.7; margin: -3px 0 19px; }
+.agent-approval-guide > p { margin-top: -3px !important; }
+.agent-approval-guide ol { counter-reset: approval-step; display: grid; gap: 10px; list-style: none; margin: 0 0 20px; padding: 0; }
+.agent-approval-guide li { background: #faf8f6; border: 1px solid var(--agent-line); border-radius: 11px; color: var(--agent-muted); font-size: 13px; line-height: 1.65; padding: 13px 15px 13px 44px; position: relative; }
+.agent-approval-guide li::before { align-items: center; background: #fff0ee; border-radius: 8px; color: var(--agent-red); content: counter(approval-step); counter-increment: approval-step; display: flex; font-size: 11px; font-weight: 800; height: 25px; justify-content: center; left: 11px; position: absolute; top: 12px; width: 25px; }
+.agent-approval-guide li strong { color: var(--agent-ink); }
 .agent-help-questions details a { color: var(--agent-red); font-weight: 700; text-decoration: underline; }
 .agent-help-aside { background: linear-gradient(145deg, var(--agent-red), var(--agent-red-dark)); border-radius: 16px; color: #fff; padding: 25px; position: sticky; top: 98px; }
 .agent-help-aside-icon { align-items: center; background: rgba(255,255,255,.2); border-radius: 10px; display: flex; font-family: 'Manrope', sans-serif; font-size: 22px; font-weight: 800; height: 44px; justify-content: center; margin-bottom: 18px; width: 44px; }
