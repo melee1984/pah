@@ -19,8 +19,9 @@ class RestaurantApplicationReviewController extends Controller
         abort_unless($restaurant->agent_id, 404);
         $restaurant->load(['enrollmentDocuments', 'agent', 'enrollmentContact']);
         $documents = $restaurant->enrollmentDocuments->keyBy('document_type');
+        $approvalBlockers = $restaurant->applicationApprovalBlockers();
 
-        return view('dashboard.pages.merchant.application', compact('restaurant', 'documents'));
+        return view('dashboard.pages.merchant.application', compact('restaurant', 'documents', 'approvalBlockers'));
     }
 
     public function document(Request $request, Partners $restaurant, RestaurantEnrollmentDocument $document): RedirectResponse

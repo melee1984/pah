@@ -147,18 +147,56 @@ class Partners extends Model
 
     public function applicationReadyForApproval(): bool
     {
-        foreach (['restaurant_name', 'registered_business_name', 'tin', 'business_registration_number',
-            'payout_account_name', 'email', 'mobile', 'address', 'city', 'business_structure', 'enrolling_as'] as $field) {
+        return $this->applicationApprovalBlockers() === [];
+    }
+
+    public function applicationApprovalBlockers(): array
+    {
+        $blockers = [];
+        $requiredFields = [
+            'restaurant_name' => 'Restaurant name',
+            'registered_business_name' => 'Registered business name',
+            'tin' => 'TIN',
+            'business_registration_number' => 'Business registration number',
+            'payout_account_name' => 'Payout account name',
+            'email' => 'Email',
+            'mobile' => 'Mobile',
+            'address' => 'Address',
+            'city' => 'City',
+            'business_structure' => 'Business structure',
+            'enrolling_as' => 'Enrollment authority',
+        ];
+
+        foreach ($requiredFields as $field => $label) {
             if (blank($this->$field)) {
-                return false;
+                $blockers[] = $label.' is missing.';
             }
         }
 
-        if ($this->business_structure !== 'sole_proprietorship' && $this->enrolling_as !== 'authorized_representative') {
-            return false;
+        if ($this->business_structure && $this->business_structure !== 'sole_proprietorship'
+            && $this->enrolling_as !== 'authorized_representative') {
+            $blockers[] = 'A non-sole-proprietorship must be enrolled by an authorized representative.';
         }
 
-        return $this->documentsReadyForApproval();
+        $documents = $this->enrollmentDocuments()->get()->keyBy('document_type');
+
+        foreach ($this->requiredEnrollmentDocumentTypes() as $type) {
+            $label = RestaurantEnrollmentDocument::LABELS[$type];
+            $document = $documents->get($type);
+
+            if (! $document || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path)) {
+                $blockers[] = $label.' is missing.';
+                continue;
+            }
+
+            $status = $document->currentStatus();
+
+            if ($status !== 'approved') {
+                $blockers[] = $label.' is '.strtolower(str_replace('_', ' ', $status)).'.';
+            }
+        }
+
+        return $blockers;
     }
 
     /**

@@ -6,6 +6,19 @@
     <section class="content"><div class="container-fluid">
         @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
         @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+        <div class="card admin-card application-review-guide" id="approval-guide"><div class="card-body">
+            <div class="application-review-guide-heading"><div><span class="admin-eyebrow">Approval guide</span><h2>How to approve this application</h2></div><span class="application-review-progress {{ empty($approvalBlockers) ? 'is-ready' : '' }}">{{ empty($approvalBlockers) ? 'Ready to approve' : count($approvalBlockers).' item(s) remaining' }}</span></div>
+            <ol class="application-review-steps">
+                <li><span>1</span><div><strong>Check every uploaded file</strong><p>Open the file, verify its details, and use the real expiration date shown on the document. Leave the date blank when the document has no expiration.</p></div></li>
+                <li><span>2</span><div><strong>Save each document separately</strong><p>Select Approved or Rejected, then click <em>Save document review</em> for that document. Changing the dropdown alone does not save it. Remarks are required only when rejecting.</p></div></li>
+                <li><span>3</span><div><strong>Approve the application</strong><p>When every status label says Approved and no blockers remain, the final Approve application button becomes available.</p></div></li>
+            </ol>
+            @if ($approvalBlockers)
+                <div class="application-review-blockers"><strong>Still blocking approval</strong><ul>@foreach ($approvalBlockers as $blocker)<li>{{ $blocker }}</li>@endforeach</ul></div>
+            @else
+                <div class="application-review-ready"><i class="fas fa-check-circle" aria-hidden="true"></i><div><strong>All approval requirements are complete.</strong><p>You can approve the application at the bottom of this page.</p></div></div>
+            @endif
+        </div></div>
         <div class="card admin-card"><div class="card-body">
             <h2>Business information</h2>
             <dl class="row">
@@ -48,11 +61,11 @@
                 @endif
             @endforeach
         </div></div>
-        <div class="card admin-card"><div class="card-body"><h2>Application decision</h2><p>Approve is allowed only when business information is complete and every required document has an Approved status and is not expired.</p>
+        <div class="card admin-card"><div class="card-body"><h2>Application decision</h2><p>Approve is allowed only when business information is complete and every required document has an Approved status and is not expired. <a href="#approval-guide">Review the approval checklist</a>.</p>
             <form method="POST" action="{{ route('dashboard.merchant.application.review', $restaurant->id) }}">
                 @csrf
                 <div class="form-group"><label for="applicationRemarks">Remarks to restaurant and agent</label><textarea class="form-control" id="applicationRemarks" name="remarks" rows="3" maxlength="2000">{{ old('remarks', $restaurant->application_remarks) }}</textarea></div>
-                <button class="btn admin-btn-primary" name="decision" value="approved" type="submit" @disabled(! $restaurant->applicationReadyForApproval())>Approve application</button>
+                <button class="btn admin-btn-primary" name="decision" value="approved" type="submit" @disabled(! empty($approvalBlockers))>Approve application</button>
                 <button class="btn btn-outline-danger" name="decision" value="declined" type="submit">Decline application</button>
             </form>
         </div></div>
