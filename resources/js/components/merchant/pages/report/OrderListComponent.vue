@@ -3,7 +3,18 @@
      <div class="card admin-card dashboard-data-card merchant-order-card">
       <div class="admin-card-header">
         <div><h2>Order management</h2><p>Review orders that need action and monitor active fulfilment.</p></div>
-        <span class="dashboard-reload-chip"><i class="fas fa-sync-alt"></i> Refresh in {{ timerInterval }}s</span>
+        <span
+          class="dashboard-reload-chip merchant-order-refresh"
+          :class="refreshIndicatorClass"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <i v-if="isRefreshing" class="fas fa-sync-alt fa-spin" aria-hidden="true"></i>
+          <i v-else-if="refreshError" class="fas fa-exclamation-circle" aria-hidden="true"></i>
+          <i v-else class="fas fa-check-circle" aria-hidden="true"></i>
+          {{ refreshIndicatorText }}
+        </span>
       </div>
       <div class="card-body">
         <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
@@ -67,7 +78,17 @@
                   </tr> 
                 </thead>
                 <tbody>
-                  <tr v-if="displayedOrders.length === 0">
+                  <tr v-if="!hasLoaded && isRefreshing">
+                    <td colspan="9" class="dashboard-table-empty">
+                      Loading orders…
+                    </td>
+                  </tr>
+                  <tr v-else-if="!hasLoaded && refreshError">
+                    <td colspan="9" class="dashboard-table-empty merchant-order-load-error">
+                      Unable to load orders. Retrying automatically.
+                    </td>
+                  </tr>
+                  <tr v-else-if="displayedOrders.length === 0">
                     <td colspan="9" class="dashboard-table-empty">
                       No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
@@ -275,6 +296,8 @@
   </div>
 </template>
 <script>
+     const REFRESH_INTERVAL_SECONDS = 10;
+
      export default {
        data() {
             return {
@@ -283,8 +306,12 @@
                 errors: {},
                 orders: [],
                 activeList: 'pending',
-                timerInterval: 15,
+                timerInterval: REFRESH_INTERVAL_SECONDS,
                 refreshTimer: null,
+                isRefreshing: false,
+                hasLoaded: false,
+                refreshError: '',
+                lastUpdatedAt: null,
                 riders: [],
                 selectedOrder: {},
                 statuses: [],
@@ -341,11 +368,32 @@
           selectedOrderIsCompleted: function() {
             return this.selectedOrder && Number(this.selectedOrder.status_id) === 7;
           },
+          refreshIndicatorClass: function() {
+            return {
+              'is-loading': this.isRefreshing,
+              'is-error': Boolean(this.refreshError),
+              'is-loaded': this.hasLoaded && !this.isRefreshing && !this.refreshError,
+            };
+          },
+          refreshIndicatorText: function() {
+            if (this.isRefreshing) {
+              return this.hasLoaded ? 'Refreshing orders…' : 'Loading orders…';
+            }
+
+            if (this.refreshError) {
+              return 'Refresh failed · retry in ' + this.timerInterval + 's';
+            }
+
+            if (this.hasLoaded && this.lastUpdatedAt) {
+              return 'Loaded ' + this.lastUpdatedAt.toLocaleTimeString('en-PH')
+                + ' · refresh in ' + this.timerInterval + 's';
+            }
+
+            return 'Waiting to refresh';
+          },
         },
         mounted() {
-            console.log('Mounted Order List View Component')
             this.fetchData();
-            this.selectedOrder = this.orders[0];  
             this.startTimer();
             this.initModal();
 
@@ -432,23 +480,61 @@
             return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
           },
           startTimer: function () {
-           this.refreshTimer = window.setInterval(() => {
+            window.clearInterval(this.refreshTimer);
+            this.refreshTimer = window.setInterval(() => {
+              if (this.isRefreshing) {
+                return;
+              }
+
+              if (this.timerInterval > 1) {
                 this.timerInterval--;
-                if (this.timerInterval === 0) {
-                  this.timerInterval = 15;
-                  this.fetchData();
-                  Event.$emit('reloadMerchantOrderSummary');
-                }
-           }, 1000)
+                return;
+              }
+
+              this.fetchData(true);
+            }, 1000);
           },
-          fetchData: function() {
-              var self = this;
-              axios.get('/api/merchant/order/list?api_token='+api_token).then(function (response) {
-                self.orders = response.data.orders;
-              
-              }).catch(function (error) {
-                  console.log(error);
-              });
+          fetchData: function(reloadSummary = false) {
+            if (this.isRefreshing) {
+              return Promise.resolve(false);
+            }
+
+            this.isRefreshing = true;
+            this.refreshError = '';
+
+            return axios.get('/api/merchant/order/list', {
+              params: {
+                api_token: api_token,
+                _refresh: Date.now(),
+              },
+            }).then((response) => {
+              const orders = Array.isArray(response.data.orders) ? response.data.orders : [];
+              const selectedOrderId = this.selectedOrder ? this.selectedOrder.id : null;
+
+              this.orders = orders;
+              this.hasLoaded = true;
+              this.lastUpdatedAt = new Date();
+
+              if (selectedOrderId) {
+                this.selectedOrder = orders.find(order => order.id === selectedOrderId) || {};
+              } else {
+                this.selectedOrder = orders[0] || {};
+              }
+
+              if (reloadSummary) {
+                Event.$emit('reloadMerchantOrderSummary');
+              }
+
+              return true;
+            }).catch((error) => {
+              this.refreshError = 'Unable to refresh orders.';
+              console.error('Unable to refresh merchant orders.', error);
+
+              return false;
+            }).finally(() => {
+              this.isRefreshing = false;
+              this.timerInterval = REFRESH_INTERVAL_SECONDS;
+            });
           },
           updateRider:function(orderid) {
 
@@ -513,3 +599,32 @@
         }
     }
 </script>
+
+<style scoped>
+.merchant-order-refresh {
+  justify-content: center;
+  min-width: 190px;
+}
+
+.merchant-order-refresh.is-loading {
+  background: #eef5ff;
+  color: #2463a8;
+}
+
+.merchant-order-refresh.is-loaded {
+  background: #eaf8ef;
+  color: #197548;
+}
+
+.merchant-order-refresh.is-error,
+.merchant-order-load-error {
+  color: #b42318;
+}
+
+@media (max-width: 767px) {
+  .merchant-order-refresh {
+    margin-top: 10px;
+    width: 100%;
+  }
+}
+</style>

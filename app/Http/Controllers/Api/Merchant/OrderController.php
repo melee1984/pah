@@ -101,7 +101,10 @@ class OrderController extends Controller
         $data['totalSummary'] = $totalSummary;
         $data['orders'] = $orders;
 
-        return response()->json($data, 200);
+        return response()->json($data, 200)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function viewDeliveryProof(string $delivery, string $proof): StreamedResponse
@@ -199,7 +202,10 @@ class OrderController extends Controller
         $data['totalSummary'] = $totalSummary;
         $data['orders'] = $orders;
 
-        return response()->json($data, 200);
+        return response()->json($data, 200)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
 
 
     }
@@ -257,7 +263,10 @@ class OrderController extends Controller
             'salesTrend' => $salesTrend,
         ];
 
-        return response()->json($data, 200);
+        return response()->json($data, 200)
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
 
     }
 

@@ -59,7 +59,9 @@ export default {
   beforeDestroy() { Event.$off('reloadMerchantOrderSummary', this.fetchData); },
   methods: {
     fetchData() {
-      axios.get('/api/merchant/dashboard/order/summary?api_token=' + api_token)
+      axios.get('/api/merchant/dashboard/order/summary', {
+        params: { api_token: api_token, _refresh: Date.now() },
+      })
         .then(response => { this.record = { ...this.record, ...response.data.record }; })
         .catch(() => { toastr.error('Unable to refresh dashboard statistics.'); });
     },
