@@ -41,6 +41,16 @@ class RiderApplicationController extends Controller
             'status' => RiderApplication::STATUS_DRAFT,
         ]);
 
+        // we need to create the user account here so that the rider can log in and complete the application later
+        $user = User::query()->where('email', $application->email)->first();
+        if (! $user) {
+            [$firstName, $lastName] = $this->splitName($application->full_name);
+            $attributes = [
+                'email' => $application->email,     
+            ];
+            $user = User::create($attributes);
+        }   
+
         return response()->json([
             'message' => 'Rider registration started. Complete the remaining application details.',
             'application' => $this->applicationData($application),
