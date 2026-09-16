@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 
 use Request;
 use Validate;
 
-class LoginController extends Controller
+class LoginController extends Controller implements HasMiddleware
 {
     /*
     |--------------------------------------------------------------------------
@@ -36,9 +38,11 @@ class LoginController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public static function middleware(): array
     {
-        
+        return [
+            new Middleware('turnstile:customer_login', only: ['login']),
+        ];
     }
 
       

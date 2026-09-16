@@ -45,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'agent.password.changed' => \App\Http\Middleware\EnsureAgentPasswordChanged::class,
             'rider.application' => \App\Http\Middleware\AuthenticateRiderApplication::class,
             'rider.approved' => \App\Http\Middleware\EnsureApprovedRider::class,
+            'turnstile' => \App\Http\Middleware\ValidateTurnstile::class,
         ]);
         //
     })

@@ -6,6 +6,9 @@
   <title>Pahatud | Merchant Dashboard</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  @if (config('services.turnstile.enabled'))
+  <meta name="turnstile-site-key" content="{{ config('services.turnstile.site_key') }}">
+  @endif
   <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" type="image/ico">
 
 

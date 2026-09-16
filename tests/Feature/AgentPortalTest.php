@@ -73,20 +73,6 @@ class AgentPortalTest extends TestCase
             $table->timestamps();
         });
 
-        Schema::create('restaurant_enrollment_documents', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('partner_id');
-            $table->string('document_type', 50);
-            $table->string('file_path', 500);
-            $table->string('original_name');
-            $table->string('status', 30)->default('pending_verification');
-            $table->text('remarks')->nullable();
-            $table->date('expires_at')->nullable();
-            $table->timestamp('reviewed_at')->nullable();
-            $table->unique(['partner_id', 'document_type']);
-            $table->timestamps();
-        });
-
         Schema::create('partner_location', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('partner_id');

@@ -46,6 +46,20 @@ return [
         'distance_matrix_daily_element_limit' => env('GOOGLE_DISTANCE_MATRIX_DAILY_ELEMENT_LIMIT', 1000),
         'distance_matrix_dashboard_enabled' => env('GOOGLE_DISTANCE_MATRIX_DASHBOARD_ENABLED', false),
     ],
+
+    'turnstile' => [
+        'enabled' => env(
+            'TURNSTILE_ENABLED',
+            filled(env('TURNSTILE_SITE_KEY')) && filled(env('TURNSTILE_SECRET')),
+        ),
+        'site_key' => env('TURNSTILE_SITE_KEY'),
+        'secret' => env('TURNSTILE_SECRET'),
+        'verify_url' => env(
+            'TURNSTILE_VERIFY_URL',
+            'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+        ),
+    ],
+
     'delivery' => [
         'rate' => env('DELIVERY_STARTING_RATE', 45),
         'additional_km_rate' => env('ADDITIONAL_KM_RATE', 15),

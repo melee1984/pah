@@ -65,7 +65,9 @@ Route::get('/request-booking/completed', [\App\Http\Controllers\Booking\RequestC
 Route::get('/category/{category}', [\App\Http\Controllers\CategoryController::class, 'bepartner'])->name('category.section');
 Route::get('/partner/{partner}', [\App\Http\Controllers\PartnerController::class, 'bepartner'])->name('partner.section');
 
-Route::post('newsletter/submit', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])->name('newsletter.submit');
+Route::post('newsletter/submit', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])
+    ->middleware(['throttle:5,1', 'turnstile:newsletter'])
+    ->name('newsletter.submit');
 
 // User Profile
 Route::get('/user/profile', [ProfileController::class, 'index'])->name('profile.home');
@@ -74,8 +76,12 @@ Route::get('/user/profile', [ProfileController::class, 'index'])->name('profile.
 Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('profile.report.soa');
 
 // API
-Route::post('login/submit', [\App\Http\Controllers\Api\User\AccessController::class, 'loginAccess'])->name('login.submit');
-Route::post('contact/submit', [PageController::class, 'storeContact'])->name('contact.submit');
+Route::post('login/submit', [\App\Http\Controllers\Api\User\AccessController::class, 'loginAccess'])
+    ->middleware(['throttle:10,1', 'turnstile:customer_login'])
+    ->name('login.submit');
+Route::post('contact/submit', [PageController::class, 'storeContact'])
+    ->middleware(['throttle:5,1', 'turnstile:contact'])
+    ->name('contact.submit');
 
 Route::get('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantInvitationController::class, 'show'])
     ->name('restaurant.invitation.show');
@@ -89,7 +95,7 @@ Route::post('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantI
 
 Route::get('/agent/register', [\App\Http\Controllers\Agent\RegistrationController::class, 'create'])->name('agent.register');
 Route::post('/agent/register', [\App\Http\Controllers\Agent\RegistrationController::class, 'store'])
-    ->middleware('throttle:5,1')
+    ->middleware(['throttle:5,1', 'turnstile:agent_register'])
     ->name('agent.register.store');
 Route::get('/agent/register/thank-you', [\App\Http\Controllers\Agent\RegistrationController::class, 'success'])
     ->name('agent.register.success');
@@ -97,7 +103,7 @@ Route::get('/agent/register/thank-you', [\App\Http\Controllers\Agent\Registratio
 Route::middleware('guest:agent')->group(function () {
     Route::get('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'create'])->name('agent.login');
     Route::post('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'store'])
-        ->middleware('throttle:5,1')
+        ->middleware(['throttle:5,1', 'turnstile:agent_login'])
         ->name('agent.login.store');
 });
 
@@ -158,7 +164,9 @@ Route::middleware('auth')->group(function () {
 // -------------------------------------------------------
 
 Route::get('/data/login', [DashboardController::class, 'login']);
-Route::post('/data/dashboard/login/submit', [DashboardController::class, 'validateLogin'])->name('dashboard.login.submit');
+Route::post('/data/dashboard/login/submit', [DashboardController::class, 'validateLogin'])
+    ->middleware(['throttle:10,1', 'turnstile:admin_login'])
+    ->name('dashboard.login.submit');
 Route::get('/data/dashboard/logout', [DashboardController::class, 'logout'])->name('dashboard.logout');
 
 Route::middleware('admin')->group(function () {
@@ -242,7 +250,9 @@ Route::get('/merchant/reset', [\App\Http\Controllers\Merchant\DashboardControlle
 Route::get('/merchant/logout', [\App\Http\Controllers\Merchant\DashboardController::class, 'logout'])->name('merchant.logout');
 Route::get('/merchant/setpassword', [\App\Http\Controllers\Merchant\DashboardController::class, 'setPassword'])->name('merchant.setPassword');
 
-Route::post('/merchant/dashboard/login/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'validateLogin'])->name('merchant.login.submit');
+Route::post('/merchant/dashboard/login/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'validateLogin'])
+    ->middleware(['throttle:10,1', 'turnstile:merchant_login'])
+    ->name('merchant.login.submit');
 Route::post('/merchant/register/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'storeMerchant'])->name('merchant.register.submit');
 Route::post('/merchant/reset/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'reset'])->name('merchant.reset.submit');
 

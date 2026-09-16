@@ -51,6 +51,12 @@
                             </div>
                         </div>
 
+                        <div class="form-group row">
+                            <div class="col-md-6 col-xs-6 col-lg-6 offset-md-3 offset-lg-3">
+                                @include('components.turnstile', ['action' => 'customer_login'])
+                            </div>
+                        </div>
+
                         <div class="form-group row ">
                             <div class="col-md-6 col-xs-6 col-lg-6 offset-md-3 offset-lg-3">
                                 <button type="submit" class="btn-block btn-xs food-btn style-2"><span>{{ __('Login') }}</span></button> 

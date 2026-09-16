@@ -39,6 +39,7 @@
         </div>
         <!-- /.col -->
       </div>
+      @include('components.turnstile', ['action' => 'admin_login'])
       <button type="submit" class="btn pahatud-login-submit btn-block">Sign in to dashboard <i class="fas fa-arrow-right"></i></button>
     </form>
   </div>

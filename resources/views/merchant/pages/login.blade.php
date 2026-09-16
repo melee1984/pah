@@ -39,6 +39,7 @@
         <!-- /.col -->
         <a href="{{ route('merchant.forgot') }}">Forgot password?</a>
       </div>
+      @include('components.turnstile', ['action' => 'merchant_login'])
       <button type="submit" class="btn pahatud-login-submit btn-block">Sign in to dashboard <i class="fas fa-arrow-right"></i></button>
     </form>
     <p class="pahatud-login-register">Interested in joining Pahatud? <a href="{{ route('merchant.register') }}">Become a merchant</a></p>

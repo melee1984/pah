@@ -13,8 +13,10 @@ use App\Http\Controllers\Api\User\AccessController;
 use Illuminate\Support\Facades\Route;
 
 // Registration and password recovery
-Route::post('merchant/register/submit', [PartnerController::class, 'insertMerchantPartner']);
-Route::post('merchant/forgot/submit', [PartnerController::class, 'resetPassword']);
+Route::post('merchant/register/submit', [PartnerController::class, 'insertMerchantPartner'])
+    ->middleware(['throttle:5,1', 'turnstile:merchant_register']);
+Route::post('merchant/forgot/submit', [PartnerController::class, 'resetPassword'])
+    ->middleware(['throttle:5,1', 'turnstile:merchant_password_reset']);
 
 // Merchant dashboard API
 Route::middleware(['api', 'web'])->group(function () {

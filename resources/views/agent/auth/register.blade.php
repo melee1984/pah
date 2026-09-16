@@ -108,6 +108,7 @@
                 @error('password')<span class="agent-error">{{ $message }}</span>@enderror
                 <label class="agent-checkbox agent-terms"><input name="terms" type="checkbox" value="1" required><span>I understand that registration requires approval, earnings are based only on qualifying successful orders, and payout is coordinated by Pahatud operations.</span></label>
                 @error('terms')<span class="agent-error">{{ $message }}</span>@enderror
+                @include('components.turnstile', ['action' => 'agent_register'])
                 <button class="agent-button agent-button-primary agent-login-submit" type="submit">Submit agent application</button>
                 <p class="agent-application-login">Already approved? <a class="agent-text-link" href="{{ route('agent.login') }}">Sign in to the Agent Dashboard</a></p>
             </form>

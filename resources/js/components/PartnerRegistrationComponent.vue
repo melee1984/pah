@@ -74,6 +74,8 @@
         <span>I agree to the <a href="/terms-of-use" target="_blank" rel="noopener noreferrer">Terms and Conditions</a> and understand that my registration is subject to review.</span>
       </label>
 
+      <turnstile-widget ref="turnstile" v-model="turnstileToken" action="merchant_register" />
+
       <p class="home-form-error" v-if="errorMessage" role="alert">{{ errorMessage }}</p>
 
       <button type="submit" class="food-btn style-2" :disabled="isSubmit">
@@ -85,7 +87,12 @@
 </template>
 
 <script>
+import TurnstileWidget from './TurnstileWidget.vue';
+
 export default {
+  components: {
+    TurnstileWidget,
+  },
   props: {
     accounttype: {
       type: Array,
@@ -101,7 +108,13 @@ export default {
       display: {},
       actionSuccess: false,
       errorMessage: '',
+      turnstileToken: '',
     };
+  },
+  computed: {
+    turnstileEnabled() {
+      return Boolean(document.querySelector('meta[name="turnstile-site-key"]'));
+    },
   },
   methods: {
     emptyForm() {
@@ -128,6 +141,11 @@ export default {
         return;
       }
 
+      if (this.turnstileEnabled && !this.turnstileToken) {
+        this.errorMessage = 'Please complete the security verification.';
+        return;
+      }
+
       this.isSubmit = true;
 
       axios.post('/api/merchant/register/submit', {
@@ -143,6 +161,7 @@ export default {
         email: this.field.email,
         password: this.field.password,
         terms_accepted: this.field.termsAccepted,
+        'cf-turnstile-response': this.turnstileToken,
       }).then((response) => {
         if (response.data.status) {
           this.display = response.data;
@@ -150,12 +169,14 @@ export default {
           this.field = this.emptyForm();
         } else {
           this.errorMessage = response.data.message || 'We could not complete your registration. Please try again.';
+          this.$refs.turnstile && this.$refs.turnstile.reset();
         }
       }).catch((error) => {
         const validationErrors = error.response && error.response.data && error.response.data.errors;
         this.errorMessage = validationErrors
           ? Object.values(validationErrors).flat()[0]
           : 'We could not complete your registration. Please try again.';
+        this.$refs.turnstile && this.$refs.turnstile.reset();
       }).finally(() => {
         this.isSubmit = false;
       });

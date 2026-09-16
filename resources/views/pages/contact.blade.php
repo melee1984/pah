@@ -73,6 +73,7 @@
                                 <label><span>Email address</span><input type="email" placeholder="juan@example.com" name="email" value="{{ old('email') }}" required></label>
                                 <label class="w-100"><span>Subject</span><input class="w-100" type="text" placeholder="How can we help?" name="subject" value="{{ old('subject') }}" required></label>
                                 <label class="w-100"><span>Message</span><textarea rows="6" placeholder="Tell us what you need help with..." name="message" required>{{ old('message') }}</textarea></label>
+                                <div class="w-100">@include('components.turnstile', ['action' => 'contact'])</div>
                                 <button type="submit" class="food-btn style-2"><span>Submit Message</span></button>
                             </form></div>
                         </div>

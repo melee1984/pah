@@ -37,6 +37,7 @@
                 <div class="agent-login-row">
                     <label class="agent-checkbox"><input name="remember" type="checkbox" value="1"> Keep me signed in</label>
                 </div>
+                @include('components.turnstile', ['action' => 'agent_login'])
                 <button class="agent-button agent-button-primary agent-login-submit" type="submit">Sign in to Agent Portal</button>
             </form>
 

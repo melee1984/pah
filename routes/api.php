@@ -39,7 +39,8 @@ Route::middleware(['api', 'web'])->group(function () {
 
     Route::post('account/login', [AccessController::class, 'login']);
     Route::post('account/register', [AccessController::class, 'register']);
-    Route::post('login/submit', [AccessController::class, 'login']);
+    Route::post('login/submit', [AccessController::class, 'login'])
+        ->middleware(['throttle:10,1', 'turnstile:customer_login']);
 
     Route::post('location/submit', [CartController::class, 'updateLocationCoordinates']);
     Route::get('/getschedule', [RequestBooking::class, 'getAvailableSchedule']);
@@ -70,7 +71,8 @@ Route::get('flowerstore', [FlowerstorePageController::class, 'list']);
 
 // Partner & Register
 Route::post('partner/submit', [PartnerController::class, 'store']);
-Route::post('register/submit', [RegisterController::class, 'store']);
+Route::post('register/submit', [RegisterController::class, 'store'])
+    ->middleware(['throttle:5,1', 'turnstile:customer_register']);
 
 Route::post('account/logout', [AccessController::class, 'postLogout'])
     ->middleware('auth:api');
