@@ -447,9 +447,9 @@ class RiderApplicationController extends Controller
             'vehicle_make_model',
             'vehicle_plate_number',
             'vehicle_color',
-            'payout_method',
-            'payout_account_name',
-            'payout_account_number',
+            // 'payout_method',
+            // 'payout_account_name',
+            // 'payout_account_number',
         ];
         $errors = [];
 
