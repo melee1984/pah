@@ -45,6 +45,19 @@ class AuthController extends Controller
         $rider = $this->riders->riderForUser($user);
         $account = $this->riders->accountStatus($user, $rider);
 
+        // can we check if the status if draft?     
+        if ($account['status'] === 'draft') {
+            return response()->json([
+                'message' => 'Your rider account is still in draft status. Please complete your application.',
+                'account_status' => $account['status'],
+                'capabilities' => [
+                    'can_go_online' => false,
+                    'can_accept_offers' => false,
+                    'can_start_delivery' => false,
+                ],
+            ], 200);
+        }
+
         if (! $rider || ! $account['allowed']) {
             return response()->json([
                 'message' => $account['message'],
