@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Api;
 
+use App\Mail\RiderApplicationSubmittedMail;
 use App\RiderApplication;
+use App\RiderApplicationDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -13,6 +16,52 @@ use Tests\TestCase;
 class StagedRiderApplicationTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_submitting_a_complete_application_emails_the_rider(): void
+    {
+        Mail::fake();
+        $token = Str::random(64);
+        $application = RiderApplication::query()->create([
+            'reference' => (string) Str::uuid(),
+            'access_token_hash' => hash('sha256', $token),
+            'full_name' => 'Carlo Juan',
+            'email' => 'carlo@example.com',
+            'mobile' => '09171234567',
+            'password' => 'secret-password',
+            'birth_date' => '1997-03-18',
+            'home_address' => 'Lahug, Cebu City',
+            'emergency_contact_name' => 'Maria Juan',
+            'emergency_contact_relationship' => 'Sister',
+            'emergency_contact_mobile' => '09185550188',
+            'vehicle_type' => 'Motorcycle',
+            'vehicle_make_model' => 'Honda Click 125i',
+            'vehicle_plate_number' => '123 ABC',
+            'vehicle_color' => 'Black',
+            'status' => RiderApplication::STATUS_DRAFT,
+        ]);
+
+        foreach (RiderApplicationDocument::TYPES as $type) {
+            $application->documents()->create([
+                'reference' => (string) Str::uuid(),
+                'type' => $type,
+                'path' => "test/{$type}.jpg",
+                'original_name' => "{$type}.jpg",
+                'mime_type' => 'image/jpeg',
+                'size_bytes' => 100,
+            ]);
+        }
+
+        $this->withApplicationToken($token)
+            ->postJson("/api/v1/rider/applications/{$application->reference}/submit")
+            ->assertOk()
+            ->assertJsonPath('application.status', RiderApplication::STATUS_PENDING);
+
+        Mail::assertSent(RiderApplicationSubmittedMail::class, function (RiderApplicationSubmittedMail $mail) {
+            return $mail->hasTo('carlo@example.com')
+                && str_contains($mail->render(), 'submitted and is now under review');
+        });
+        Mail::assertSentCount(1);
+    }
 
     public function test_rider_registration_starts_with_only_four_fields_and_uses_the_existing_application_steps(): void
     {

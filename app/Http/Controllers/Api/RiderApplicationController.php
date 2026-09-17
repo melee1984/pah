@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RiderApplicationSubmittedMail;
 use App\Http\Requests\RegisterRiderRequest;
 use App\Http\Requests\SubmitRiderApplicationRequest;
 use App\Http\Requests\UpdateRiderEmergencyContactRequest;
@@ -17,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -422,10 +424,25 @@ class RiderApplicationController extends Controller
     {
         $this->validateApplicationIsComplete($application);
 
-        $application->update([
-            'status' => RiderApplication::STATUS_PENDING,
-            'submitted_at' => now(),
-        ]);
+        try {
+            DB::transaction(function () use ($application) {
+                $application->update([
+                    'status' => RiderApplication::STATUS_PENDING,
+                    'submitted_at' => now(),
+                ]);
+
+                Mail::to($application->email)->send(new RiderApplicationSubmittedMail($application));
+            });
+        } catch (Throwable $exception) {
+            Log::error('Rider application submission email could not be delivered.', [
+                'application_id' => $application->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'The application could not be submitted or the confirmation email could not be delivered. Please try again.',
+            ], 503);
+        }
 
         return response()->json([
             'message' => 'Your rider application has been submitted and is now under review.',
@@ -447,9 +464,6 @@ class RiderApplicationController extends Controller
             'vehicle_make_model',
             'vehicle_plate_number',
             'vehicle_color',
-            // 'payout_method',
-            // 'payout_account_name',
-            // 'payout_account_number',
         ];
         $errors = [];
 

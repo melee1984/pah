@@ -3,16 +3,51 @@
 namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\isAdmin;
+use App\Mail\RiderApplicationApprovedMail;
+use App\RiderApplication;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class RiderManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_approving_an_application_emails_the_rider_once(): void
+    {
+        Mail::fake();
+        $admin = $this->createAdmin();
+        $application = RiderApplication::query()->forceCreate([
+            'reference' => (string) Str::uuid(),
+            'full_name' => 'Ana Rider',
+            'email' => 'ana@example.com',
+            'mobile' => '09171234567',
+            'password' => Hash::make('password'),
+            'status' => RiderApplication::STATUS_PENDING,
+            'submitted_at' => now(),
+        ]);
+
+        $approve = fn () => $this->withoutMiddleware(isAdmin::class)
+            ->actingAs($admin)
+            ->post(route('dashboard.rider-applications.approve', $application));
+
+        $approve()->assertRedirect()->assertSessionHas('success');
+        $this->assertDatabaseHas('rider_applications', [
+            'id' => $application->id,
+            'status' => RiderApplication::STATUS_APPROVED,
+        ]);
+        Mail::assertSent(RiderApplicationApprovedMail::class, function (RiderApplicationApprovedMail $mail) use ($application) {
+            return $mail->hasTo($application->email)
+                && str_contains($mail->render(), 'follow the account activation steps');
+        });
+
+        $approve()->assertRedirect()->assertSessionHasErrors('application');
+        Mail::assertSentCount(1);
+    }
 
     public function test_rider_menu_page_lists_available_riders_and_balances(): void
     {

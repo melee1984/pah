@@ -3,17 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RiderApplicationApprovedMail;
 use App\Model\Rider\Rider;
 use App\RiderApplication;
 use App\RiderApplicationDocument;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Throwable;
 
 class RiderManagementController extends Controller
 {
@@ -84,16 +88,33 @@ class RiderManagementController extends Controller
 
     public function approveApplication(RiderApplication $application): RedirectResponse
     {
-        if ($application->status !== RiderApplication::STATUS_PENDING) {
-            return back()->withErrors(['application' => 'Only pending rider applications can be approved.']);
+        try {
+            DB::transaction(function () use ($application) {
+                $pendingApplication = RiderApplication::query()->lockForUpdate()->findOrFail($application->id);
+
+                if ($pendingApplication->status !== RiderApplication::STATUS_PENDING) {
+                    throw new \LogicException('Only pending rider applications can be approved.');
+                }
+
+                $pendingApplication->forceFill([
+                    'status' => RiderApplication::STATUS_APPROVED,
+                    'review_notes' => null,
+                ])->save();
+
+                Mail::to($pendingApplication->email)->send(new RiderApplicationApprovedMail($pendingApplication));
+            });
+        } catch (\LogicException $exception) {
+            return back()->withErrors(['application' => $exception->getMessage()]);
+        } catch (Throwable $exception) {
+            Log::error('Rider application approval could not be completed.', [
+                'application_id' => $application->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return back()->withErrors(['application' => 'The application could not be approved or the email could not be delivered. Please try again.']);
         }
 
-        $application->forceFill([
-            'status' => RiderApplication::STATUS_APPROVED,
-            'review_notes' => null,
-        ])->save();
-
-        return back()->with('success', $application->full_name.'\'s application was approved. They can now activate their rider account.');
+        return back()->with('success', $application->full_name.'\'s application was approved and the rider was notified by email.');
     }
 
     public function approve(Rider $rider): RedirectResponse
