@@ -122,13 +122,6 @@ class RiderManagementController extends Controller
                 // we need to create a user account for the rider if it doesn't exist yet.
                 // user was created during submission of the application, so we just need to find the user by email.
 
-                \Log::info('Rider application approved by admin.', [
-                    'application_id' => $pendingApplication->id,
-                    'application_reference' => $pendingApplication->reference,
-                    'performed_by_user_id' => auth()->id(),
-                    'email' => $pendingApplication->email,
-                    'application' => $pendingApplication->toArray(),
-                ]);
                 $user = User::query()->where('email', $pendingApplication->email)->first();
                 // we just need to update the rider table to active and approved_at timestamp.
                 $rider =  DB::table('rider')->where('user_id', $user->user_id)->update([
