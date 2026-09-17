@@ -102,6 +102,7 @@
                                     <td><strong class="admin-money">₱{{ number_format((float) ($rider->wallet?->credit_amount ?? 0), 2) }}</strong></td>
                                     <td>
                                         <div class="d-flex flex-wrap" style="gap: 7px">
+                                            <a class="btn admin-btn-secondary btn-sm" href="{{ route('dashboard.riders.show', $rider) }}"><i class="fas fa-eye mr-1"></i>View information</a>
                                             @if (! $rider->active || ! $rider->approved_at)
                                                 <form method="POST" action="{{ route('dashboard.riders.approve', $rider) }}">
                                                     @csrf

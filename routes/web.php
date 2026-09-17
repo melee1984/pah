@@ -183,6 +183,7 @@ Route::middleware('admin')->group(function () {
 
     Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
     Route::get('data/dashboard/riders', [RiderManagementController::class, 'index'])->name('dashboard.rider');
+    Route::get('data/dashboard/riders/{rider}', [RiderManagementController::class, 'show'])->name('dashboard.riders.show');
     Route::get('data/dashboard/rider-applications/{application}/documents/{document}', [RiderManagementController::class, 'applicationDocument'])
         ->name('dashboard.rider-applications.documents.show');
     Route::post('data/dashboard/rider-applications/{application}/approve', [RiderManagementController::class, 'approveApplication'])

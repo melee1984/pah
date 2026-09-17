@@ -75,6 +75,24 @@ class RiderManagementController extends Controller
         return view('dashboard.pages.riders.index', compact('riders', 'applications', 'metrics', 'pendingTopUps', 'search'));
     }
 
+    public function show(Rider $rider): View
+    {
+        $rider->load('wallet');
+
+        // The legacy rider table has no application_id. Match both fields to avoid
+        // showing another applicant's private details when a number is reused.
+        $application = $rider->name && $rider->mobile
+            ? RiderApplication::query()
+                ->with('documents')
+                ->where('full_name', $rider->name)
+                ->where('mobile', $rider->mobile)
+                ->latest('id')
+                ->first()
+            : null;
+
+        return view('dashboard.pages.riders.show', compact('rider', 'application'));
+    }
+
     public function applicationDocument(RiderApplication $application, RiderApplicationDocument $document): StreamedResponse
     {
         abort_unless($document->rider_application_id === $application->id, 404);
