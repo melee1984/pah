@@ -123,6 +123,9 @@ class RiderManagementController extends Controller
                 // user was created during submission of the application, so we just need to find the user by email.
 
                 $user = User::query()->where('email', $pendingApplication->email)->first();
+
+                \Log::info(['user' => $user, 'pendingApplication' => $pendingApplication]);
+            
                 // we just need to update the rider table to active and approved_at timestamp.
                 $rider =  DB::table('rider')->where('user_id', $user->user_id)->update([
                     'active' => true,
@@ -131,6 +134,8 @@ class RiderManagementController extends Controller
                     'updated_at' => now(),
                 ]);
 
+                \Log::info(['rider' => $rider]);
+
                 DB::table('rider_api_activity_logs')->insert([
                     'rider_id' => $rider->id,
                     'type' => 'admin_approval',
@@ -138,7 +143,7 @@ class RiderManagementController extends Controller
                         'performed_by_user_id' => auth()->id(),
                         'active' => true,
                         'is_active' => true,
-                        'approved_at' => now()->toISOString(),
+                        'approved_at' => now(),
                     ], JSON_THROW_ON_ERROR),
                     'recorded_at' => now(),
                     'created_at' => now(),
