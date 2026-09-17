@@ -39,13 +39,13 @@ class RiderApplicationController extends Controller
             'full_name' => $request->validated('full_name'),
             'mobile' => $request->validated('mobile'),
             'email' => $request->validated('email'),
-            'password' => $request->validated('password'),
             'status' => RiderApplication::STATUS_DRAFT,
         ]);
 
         // we need to create the user account here so that the rider can log in and complete the application later
         $user = User::query()->where('email', $application->email)->first();
         if (! $user) {
+
             [$firstName, $lastName] = $this->splitName($application->full_name);
             $attributes = [
                 'email' => $application->email,   
@@ -55,7 +55,17 @@ class RiderApplicationController extends Controller
                 'firstname' => $firstName,
                 'lastname' => $lastName,
             ];
+
             $user = User::create($attributes);
+            // create also rider account in the rider table
+            DB::table('rider')->insert([
+                'user_id' => $user->id,
+                'name' => $application->full_name,
+                'mobile' => $application->mobile,
+                'active' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]); 
         }   
 
         return response()->json([

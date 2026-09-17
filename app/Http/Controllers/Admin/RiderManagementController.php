@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Mail\RiderApplicationApprovedMail;
 use App\Model\Rider\Rider;
+use App\Models\User;
 use App\RiderApplication;
 use App\RiderApplicationDocument;
 use Illuminate\Http\RedirectResponse;
@@ -100,6 +101,17 @@ class RiderManagementController extends Controller
                     'status' => RiderApplication::STATUS_APPROVED,
                     'review_notes' => null,
                 ])->save();
+                // we need to create a user account for the rider if it doesn't exist yet.
+                // user was created during submission of the application, so we just need to find the user by email.
+                // 
+                $user = User::query()->where('email', $application->email)->first();
+                // we just need to update the rider table to active and approved_at timestamp.
+                DB::table('rider')->where('user_id', $user->user_id)->update([
+                    'active' => true,
+                    'is_active' => true,
+                    'approved_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
                 Mail::to($pendingApplication->email)->send(new RiderApplicationApprovedMail($pendingApplication));
             });
