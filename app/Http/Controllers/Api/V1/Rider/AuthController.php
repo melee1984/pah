@@ -196,25 +196,7 @@ class AuthController extends Controller
     {
         $rider = $this->riders->riderForUser($request->user());
         $account = $this->riders->accountStatus($request->user(), $rider);
-
-        $token = $request->user()->currentAccessToken();
-
-        if ($account['status'] === 'draft') {
-            return response()->json([
-                'message' => 'Your rider account is still in draft status. Please complete your application.',
-                'account_status' => $account['status'],
-                'account' => $account,
-                'access_token' => $token->plainTextToken,
-                'token_type' => 'Bearer',
-                'expires_at' => $token->accessToken->expires_at?->toISOString(),    
-                'capabilities' => [
-                    'can_go_online' => false,
-                    'can_accept_offers' => false,
-                    'can_start_delivery' => false,
-                ],
-            ], 200);
-        }
-
+        
         return response()->json([
             'account_status' => $account['status'],
             'rider' => $rider ? $this->riders->riderData($request->user(), $rider) : null,
