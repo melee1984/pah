@@ -122,7 +122,7 @@ class RiderManagementController extends Controller
                 // we need to create a user account for the rider if it doesn't exist yet.
                 // user was created during submission of the application, so we just need to find the user by email.
 
-                $user = User::query()->where('email', $pendingApplication->email)->first();
+                $user = User::where('email', $pendingApplication->email)->first();
 
                 \Log::info(['user' => $user, 'pendingApplication' => $pendingApplication]);
             
