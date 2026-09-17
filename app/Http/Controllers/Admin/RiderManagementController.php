@@ -26,11 +26,15 @@ class RiderManagementController extends Controller
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
+            'view' => ['nullable', 'in:active,archived'],
         ]);
 
         $search = trim($validated['search'] ?? '');
+        $view = $validated['view'] ?? 'active';
         $riders = Rider::query()
             ->with('wallet')
+            ->when($view === 'archived', fn ($query) => $query->whereNotNull('archived_at'))
+            ->when($view === 'active', fn ($query) => $query->whereNull('archived_at'))
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('name', 'like', "%{$search}%")
@@ -48,9 +52,10 @@ class RiderManagementController extends Controller
             ->withQueryString();
 
         $metrics = [
-            'total' => Rider::query()->count(),
-            'approved' => Rider::query()->where('active', true)->count(),
-            'pending' => Rider::query()->where(function ($query) {
+            'total' => Rider::query()->whereNull('archived_at')->count(),
+            'archived' => Rider::query()->whereNotNull('archived_at')->count(),
+            'approved' => Rider::query()->whereNull('archived_at')->where('active', true)->count(),
+            'pending' => Rider::query()->whereNull('archived_at')->where(function ($query) {
                 $query->whereNull('active')->orWhere('active', false);
             })->count(),
             'credits' => (float) DB::table('rider_api_wallets')->sum('credit_amount'),
@@ -72,7 +77,7 @@ class RiderManagementController extends Controller
             ->limit(50)
             ->get();
 
-        return view('dashboard.pages.riders.index', compact('riders', 'applications', 'metrics', 'pendingTopUps', 'search'));
+        return view('dashboard.pages.riders.index', compact('riders', 'applications', 'metrics', 'pendingTopUps', 'search', 'view'));
     }
 
     public function show(Rider $rider): View
@@ -173,8 +178,63 @@ class RiderManagementController extends Controller
         return back()->with('success', $application->full_name.'\'s application was approved and the rider was notified by email.');
     }
 
+    public function declineApplication(Request $request, RiderApplication $application): RedirectResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $declined = DB::transaction(function () use ($application, $validated) {
+            $pendingApplication = RiderApplication::query()->lockForUpdate()->findOrFail($application->id);
+
+            if ($pendingApplication->status !== RiderApplication::STATUS_PENDING) {
+                return false;
+            }
+
+            $pendingApplication->forceFill([
+                'status' => RiderApplication::STATUS_REJECTED,
+                'review_notes' => trim($validated['reason']),
+            ])->save();
+
+            DB::table('rider')
+                ->whereIn('user_id', DB::table('users')->select('id')->where('email', $pendingApplication->email))
+                ->update([
+                    'active' => false,
+                    'is_active' => false,
+                    'updated_at' => now(),
+                ]);
+
+            return true;
+        });
+
+        return $declined
+            ? back()->with('success', $application->full_name.'\'s application was declined.')
+            : back()->withErrors(['application' => 'Only pending rider applications can be declined.']);
+    }
+
+    public function archive(Rider $rider): RedirectResponse
+    {
+        if ($rider->archived_at) {
+            return back()->with('success', $rider->name.' is already archived.');
+        }
+
+        $rider->forceFill(['archived_at' => now()])->save();
+
+        return back()->with('success', $rider->name.' was archived.');
+    }
+
+    public function restore(Rider $rider): RedirectResponse
+    {
+        $rider->forceFill(['archived_at' => null])->save();
+
+        return back()->with('success', $rider->name.' was restored.');
+    }
+
     public function approve(Rider $rider): RedirectResponse
     {
+        if ($rider->archived_at) {
+            return back()->withErrors(['rider' => 'Restore this rider before approving the account.']);
+        }
         $alreadyApproved = (bool) $rider->active && $rider->approved_at !== null;
 
         if ($alreadyApproved) {

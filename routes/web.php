@@ -189,9 +189,18 @@ Route::middleware('admin')->group(function () {
     Route::post('data/dashboard/rider-applications/{application}/approve', [RiderManagementController::class, 'approveApplication'])
         ->middleware('throttle:10,1')
         ->name('dashboard.rider-applications.approve');
+    Route::post('data/dashboard/rider-applications/{application}/decline', [RiderManagementController::class, 'declineApplication'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.rider-applications.decline');
     Route::post('data/dashboard/riders/{rider}/approve', [RiderManagementController::class, 'approve'])
         ->middleware('throttle:10,1')
         ->name('dashboard.riders.approve');
+    Route::post('data/dashboard/riders/{rider}/archive', [RiderManagementController::class, 'archive'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.riders.archive');
+    Route::post('data/dashboard/riders/{rider}/restore', [RiderManagementController::class, 'restore'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.riders.restore');
     Route::post('data/dashboard/riders/{rider}/credits', [RiderManagementController::class, 'adjustCredits'])
         ->middleware('throttle:20,1')
         ->name('dashboard.riders.credits');

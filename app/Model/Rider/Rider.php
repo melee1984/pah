@@ -16,6 +16,7 @@ class Rider extends Model
         'is_active' => 'boolean',
         'date_join' => 'datetime',
         'approved_at' => 'datetime',
+        'archived_at' => 'datetime',
     ];
 
     public function wallet(): HasOne

@@ -65,6 +65,65 @@ class RiderManagementTest extends TestCase
             ->assertSee(route('dashboard.riders.credits', $riderId));
     }
 
+    public function test_admin_can_decline_a_pending_application_with_a_reason(): void
+    {
+        $admin = $this->createAdmin();
+        $application = RiderApplication::query()->forceCreate([
+            'reference' => (string) Str::uuid(),
+            'full_name' => 'Declined Rider',
+            'email' => 'declined@example.com',
+            'mobile' => '09171234567',
+            'password' => Hash::make('password'),
+            'status' => RiderApplication::STATUS_PENDING,
+            'submitted_at' => now(),
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
+            ->post(route('dashboard.rider-applications.decline', $application), ['reason' => 'Documents could not be verified.'])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('rider_applications', [
+            'id' => $application->id,
+            'status' => RiderApplication::STATUS_REJECTED,
+            'review_notes' => 'Documents could not be verified.',
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
+            ->post(route('dashboard.rider-applications.decline', $application), ['reason' => 'Again'])
+            ->assertSessionHasErrors('application');
+    }
+
+    public function test_admin_can_archive_and_restore_a_rider_without_changing_approval(): void
+    {
+        $admin = $this->createAdmin();
+        $riderId = $this->createRider('Archived Rider', true);
+
+        $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
+            ->post(route('dashboard.riders.archive', $riderId))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertNotNull(DB::table('rider')->where('id', $riderId)->value('archived_at'));
+        $this->assertSame(1, (int) DB::table('rider')->where('id', $riderId)->value('active'));
+
+        $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
+            ->get(route('dashboard.rider'))
+            ->assertOk()
+            ->assertViewHas('riders', fn ($riders) => ! $riders->getCollection()->contains('id', $riderId));
+
+        $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
+            ->get(route('dashboard.rider', ['view' => 'archived']))
+            ->assertOk()
+            ->assertViewHas('riders', fn ($riders) => $riders->getCollection()->contains('id', $riderId));
+
+        $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
+            ->post(route('dashboard.riders.restore', $riderId))
+            ->assertRedirect();
+
+        $this->assertNull(DB::table('rider')->where('id', $riderId)->value('archived_at'));
+    }
+
     public function test_admin_can_approve_a_rider_and_the_approval_is_audited(): void
     {
         $admin = $this->createAdmin();

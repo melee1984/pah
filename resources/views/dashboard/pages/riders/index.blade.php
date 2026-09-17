@@ -8,7 +8,7 @@
                 <div>
                     <span class="admin-eyebrow">Rider management</span>
                     <h1>Available riders</h1>
-                    <p>Review rider accounts, approve access, and manage rider credit balances.</p>
+                    <p>Review applications, manage rider accounts, and update credit balances.</p>
                 </div>
             </div>
         </div>
@@ -58,6 +58,12 @@
                                             @csrf
                                             <button class="btn admin-btn-primary btn-sm" type="submit"><i class="fas fa-check mr-1"></i>Approve application</button>
                                         </form>
+                                        <form method="POST" action="{{ route('dashboard.rider-applications.decline', $application) }}" class="mt-2">
+                                            @csrf
+                                            <label class="sr-only" for="declineReason{{ $application->id }}">Reason for declining {{ $application->full_name }}</label>
+                                            <textarea class="form-control form-control-sm mb-2" id="declineReason{{ $application->id }}" name="reason" rows="2" maxlength="2000" placeholder="Reason for declining" required></textarea>
+                                            <button class="btn btn-outline-danger btn-sm" type="submit" onclick="return confirm('Decline this rider application?')"><i class="fas fa-times mr-1"></i>Decline application</button>
+                                        </form>
                                     </td>
                                 </tr>
                             @endforeach
@@ -70,16 +76,20 @@
 
             <div class="card admin-card">
                 <div class="admin-card-header">
-                    <div><h2>Rider list</h2><p>{{ number_format($riders->total()) }} available rider {{ Str::plural('account', $riders->total()) }}</p></div>
+                    <div><h2>{{ $view === 'archived' ? 'Archived riders' : 'Rider list' }}</h2><p>{{ number_format($riders->total()) }} {{ $view === 'archived' ? 'archived' : 'available' }} rider {{ Str::plural('account', $riders->total()) }}</p>
+                        <a class="dashboard-inline-link mr-3" href="{{ route('dashboard.rider', ['view' => 'active']) }}">Active riders</a>
+                        <a class="dashboard-inline-link" href="{{ route('dashboard.rider', ['view' => 'archived']) }}">Archived riders ({{ number_format($metrics['archived']) }})</a>
+                    </div>
                     <form class="admin-search" method="GET" action="{{ route('dashboard.rider') }}">
+                        <input type="hidden" name="view" value="{{ $view }}">
                         <i class="fas fa-search"></i>
                         <input name="search" value="{{ $search }}" placeholder="Search name or mobile" aria-label="Search riders">
-                        @if ($search !== '')<a href="{{ route('dashboard.rider') }}" aria-label="Clear search">&times;</a>@endif
+                        @if ($search !== '')<a href="{{ route('dashboard.rider', ['view' => $view]) }}" aria-label="Clear search">&times;</a>@endif
                     </form>
                 </div>
 
                 @if ($riders->isEmpty())
-                    <div class="admin-empty-state"><span><i class="fas fa-motorcycle"></i></span><h3>No riders found</h3><p>{{ $search !== '' ? 'Try another search term.' : 'Registered riders will appear here.' }}</p></div>
+                    <div class="admin-empty-state"><span><i class="fas fa-motorcycle"></i></span><h3>No riders found</h3><p>{{ $search !== '' ? 'Try another search term.' : ($view === 'archived' ? 'Archived riders will appear here.' : 'Registered riders will appear here.') }}</p></div>
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
@@ -91,7 +101,10 @@
                                     <td><strong>{{ $rider->mobile ?: 'No mobile number' }}</strong></td>
                                     <td>{{ $rider->date_join?->format('M d, Y') ?? $rider->created_at?->format('M d, Y') ?? '—' }}</td>
                                     <td>
-                                        @if ($rider->active)
+                                        @if ($rider->archived_at)
+                                            <span class="admin-status admin-status-inactive">Archived</span>
+                                            <small>{{ $rider->archived_at->format('M d, Y · g:i A') }}</small>
+                                        @elseif ($rider->active)
                                             <span class="admin-status admin-status-active">Approved</span>
                                             <small>{{ $rider->approved_at?->format('M d, Y · g:i A') ?? 'Approval date unavailable' }}</small>
                                         @else
@@ -103,13 +116,24 @@
                                     <td>
                                         <div class="d-flex flex-wrap" style="gap: 7px">
                                             <a class="btn admin-btn-secondary btn-sm" href="{{ route('dashboard.riders.show', $rider) }}"><i class="fas fa-eye mr-1"></i>View information</a>
-                                            @if (! $rider->active || ! $rider->approved_at)
+                                            @if (! $rider->archived_at && (! $rider->active || ! $rider->approved_at))
                                                 <form method="POST" action="{{ route('dashboard.riders.approve', $rider) }}">
                                                     @csrf
                                                     <button class="btn admin-btn-primary btn-sm" type="submit"><i class="fas fa-check mr-1"></i>Approve</button>
                                                 </form>
                                             @endif
                                             <button class="btn admin-btn-secondary btn-sm" type="button" data-toggle="modal" data-target="#creditModal{{ $rider->id }}"><i class="fas fa-coins mr-1"></i>Update credits</button>
+                                            @if ($rider->archived_at)
+                                                <form method="POST" action="{{ route('dashboard.riders.restore', $rider) }}">
+                                                    @csrf
+                                                    <button class="btn admin-btn-secondary btn-sm" type="submit"><i class="fas fa-undo mr-1"></i>Restore</button>
+                                                </form>
+                                            @else
+                                                <form method="POST" action="{{ route('dashboard.riders.archive', $rider) }}">
+                                                    @csrf
+                                                    <button class="btn admin-btn-secondary btn-sm" type="submit" onclick="return confirm('Archive this rider?')"><i class="fas fa-archive mr-1"></i>Archive</button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
