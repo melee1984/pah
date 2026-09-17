@@ -115,8 +115,12 @@ class SendTestBookingPush extends Command
                     'message' => [
                         'token' => $token,
                         'notification' => [
-                            'title' => 'Pahatud Delivery',
+                            'title' => 'Pahatud Rider',
                             'body' => 'You got a new booking: '.$this->option('job-order'),
+                        ],
+                        'data' => [
+                            'type' => 'new_booking',
+                            'booking_id' => (string) $this->option('job-order'),
                         ],
                         'android' => [
                             'priority' => 'HIGH',
