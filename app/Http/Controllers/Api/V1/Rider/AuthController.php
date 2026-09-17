@@ -50,6 +50,7 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Your rider account is still in draft status. Please complete your application.',
                 'account_status' => $account['status'],
+                'account' => $account,
                 'capabilities' => [
                     'can_go_online' => false,
                     'can_accept_offers' => false,

@@ -43,6 +43,7 @@ class RiderApiService
 
             return [
                 'status' => $status,
+                'application' => $application,
                 'allowed' => false,
                 'message' => $this->statusMessage($status),
             ];
@@ -67,6 +68,7 @@ class RiderApiService
         return [
             'status' => $status,
             'allowed' => false,
+            'application' => $application,
             'message' => $this->statusMessage($status),
         ];
     }
