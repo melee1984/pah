@@ -26,6 +26,12 @@ the application routes, including document uploads. The draft login response
 also includes `application_id` for the application URL. Approved rider accounts
 use the access token returned by `POST /auth/login`.
 
+For a draft rider, `GET /me` includes `application_id` and an `application`
+object with the saved personal, emergency contact, vehicle, payout, document,
+and progress details. The `application` object uses the same shape as
+`GET /applications/current`; document file paths and full payout account numbers
+are not returned.
+
 ## Authentication and applications
 
 ```text

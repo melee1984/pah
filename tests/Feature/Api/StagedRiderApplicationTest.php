@@ -311,6 +311,15 @@ class StagedRiderApplicationTest extends TestCase
         Storage::disk('local')->assertExists($document->path);
 
         $this->withApplicationToken($login['access_token'])
+            ->getJson('/api/v1/rider/me')
+            ->assertOk()
+            ->assertJsonPath('account_status', 'draft')
+            ->assertJsonPath('application_id', $applicationId)
+            ->assertJsonPath('application.personal.full_name', 'Carlo Juan')
+            ->assertJsonPath('application.documents.0.type', 'profile_photo')
+            ->assertJsonMissingPath('application.documents.0.path');
+
+        $this->withApplicationToken($login['access_token'])
             ->getJson('/api/v1/rider/applications/'.Str::uuid())
             ->assertNotFound();
 

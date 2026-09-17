@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
 use App\Services\RiderApiService;
+use App\Services\RiderApplicationPresenter;
 use App\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,10 @@ use Throwable;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly RiderApiService $riders) {}
+    public function __construct(
+        private readonly RiderApiService $riders,
+        private readonly RiderApplicationPresenter $applications,
+    ) {}
 
     public function login(Request $request): JsonResponse
     {
@@ -196,9 +200,16 @@ class AuthController extends Controller
     {
         $rider = $this->riders->riderForUser($request->user());
         $account = $this->riders->accountStatus($request->user(), $rider);
+        $draftApplication = $account['status'] === 'draft'
+            ? $account['application']
+            : null;
         
         return response()->json([
             'account_status' => $account['status'],
+            ...($draftApplication ? [
+                'application_id' => $draftApplication->reference,
+                'application' => $this->applications->application($draftApplication),
+            ] : []),
             'rider' => $rider ? $this->riders->riderData($request->user(), $rider) : null,
             'capabilities' => [
                 'can_go_online' => $account['allowed'],
