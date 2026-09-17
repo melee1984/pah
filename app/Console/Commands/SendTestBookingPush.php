@@ -118,6 +118,13 @@ class SendTestBookingPush extends Command
                             'title' => 'Pahatud Delivery',
                             'body' => 'You got a new booking: '.$this->option('job-order'),
                         ],
+                        'android' => [
+                            'priority' => 'HIGH',
+                            'notification' => [
+                                'channel_id' => 'new_bookings_v1',
+                                'sound' => 'new_booking_alert',
+                            ],
+                        ],
                     ],
                 ]);
 
