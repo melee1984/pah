@@ -62,7 +62,7 @@
                                             @csrf
                                             <label class="sr-only" for="declineReason{{ $application->id }}">Reason for declining {{ $application->full_name }}</label>
                                             <textarea class="form-control form-control-sm mb-2" id="declineReason{{ $application->id }}" name="reason" rows="2" maxlength="2000" placeholder="Reason for declining" required></textarea>
-                                            <button class="btn btn-outline-danger btn-sm" type="submit" onclick="return confirm('Decline this rider application?')"><i class="fas fa-times mr-1"></i>Decline application</button>
+                                            <button class="btn admin-btn-secondary btn-sm" type="submit" onclick="return confirm('Decline this rider application?')"><i class="fas fa-times mr-1"></i>Decline application</button>
                                         </form>
                                     </td>
                                 </tr>

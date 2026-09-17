@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin;
 
 use App\Http\Middleware\isAdmin;
 use App\Mail\RiderApplicationApprovedMail;
+use App\Mail\RiderApplicationDeclinedMail;
 use App\RiderApplication;
 use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -67,7 +68,22 @@ class RiderManagementTest extends TestCase
 
     public function test_admin_can_decline_a_pending_application_with_a_reason(): void
     {
+        Mail::fake();
         $admin = $this->createAdmin();
+        $applicant = User::query()->forceCreate([
+            'name' => 'Declined Rider',
+            'email' => 'declined@example.com',
+            'password' => Hash::make('password'),
+        ]);
+        $riderId = DB::table('rider')->insertGetId([
+            'user_id' => $applicant->id,
+            'name' => 'Declined Rider',
+            'mobile' => '09171234567',
+            'active' => false,
+            'is_active' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $application = RiderApplication::query()->forceCreate([
             'reference' => (string) Str::uuid(),
             'full_name' => 'Declined Rider',
@@ -88,10 +104,16 @@ class RiderManagementTest extends TestCase
             'status' => RiderApplication::STATUS_REJECTED,
             'review_notes' => 'Documents could not be verified.',
         ]);
+        $this->assertNotNull(DB::table('rider')->where('id', $riderId)->value('archived_at'));
+        Mail::assertSent(RiderApplicationDeclinedMail::class, function (RiderApplicationDeclinedMail $mail) use ($application) {
+            return $mail->hasTo($application->email)
+                && str_contains($mail->render(), 'Documents could not be verified.');
+        });
 
         $this->withoutMiddleware(isAdmin::class)->actingAs($admin)
             ->post(route('dashboard.rider-applications.decline', $application), ['reason' => 'Again'])
             ->assertSessionHasErrors('application');
+        Mail::assertSentCount(1);
     }
 
     public function test_admin_can_archive_and_restore_a_rider_without_changing_approval(): void

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Mail\RiderApplicationApprovedMail;
+use App\Mail\RiderApplicationDeclinedMail;
 use App\Model\Rider\Rider;
 use App\Models\User;
 use App\RiderApplication;
@@ -184,31 +185,45 @@ class RiderManagementController extends Controller
             'reason' => ['required', 'string', 'max:2000'],
         ]);
 
-        $declined = DB::transaction(function () use ($application, $validated) {
-            $pendingApplication = RiderApplication::query()->lockForUpdate()->findOrFail($application->id);
+        try {
+            $declined = DB::transaction(function () use ($application, $validated) {
+                $pendingApplication = RiderApplication::query()->lockForUpdate()->findOrFail($application->id);
 
-            if ($pendingApplication->status !== RiderApplication::STATUS_PENDING) {
-                return false;
-            }
+                if ($pendingApplication->status !== RiderApplication::STATUS_PENDING) {
+                    return false;
+                }
 
-            $pendingApplication->forceFill([
-                'status' => RiderApplication::STATUS_REJECTED,
-                'review_notes' => trim($validated['reason']),
-            ])->save();
+                $pendingApplication->forceFill([
+                    'status' => RiderApplication::STATUS_REJECTED,
+                    'review_notes' => trim($validated['reason']),
+                ])->save();
 
-            DB::table('rider')
-                ->whereIn('user_id', DB::table('users')->select('id')->where('email', $pendingApplication->email))
-                ->update([
-                    'active' => false,
-                    'is_active' => false,
-                    'updated_at' => now(),
-                ]);
+                $userId = DB::table('users')->where('email', $pendingApplication->email)->value('id');
 
-            return true;
-        });
+                if ($userId) {
+                    DB::table('rider')->where('user_id', $userId)->update([
+                        'active' => false,
+                        'is_active' => false,
+                        'archived_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                Mail::to($pendingApplication->email)->send(new RiderApplicationDeclinedMail($pendingApplication));
+
+                return true;
+            });
+        } catch (Throwable $exception) {
+            Log::error('Rider application decline could not be completed.', [
+                'application_id' => $application->id,
+                'exception' => $exception->getMessage(),
+            ]);
+
+            return back()->withErrors(['application' => 'The application could not be declined or the email could not be delivered. Please try again.']);
+        }
 
         return $declined
-            ? back()->with('success', $application->full_name.'\'s application was declined.')
+            ? back()->with('success', $application->full_name.'\'s application was declined, the rider was archived, and an email was sent.')
             : back()->withErrors(['application' => 'Only pending rider applications can be declined.']);
     }
 
