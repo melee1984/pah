@@ -124,12 +124,27 @@ class RiderManagementController extends Controller
                 // 
                 $user = User::query()->where('email', $application->email)->first();
                 // we just need to update the rider table to active and approved_at timestamp.
-                DB::table('rider')->where('user_id', $user->user_id)->update([
+                $rider =  DB::table('rider')->where('user_id', $user->user_id)->update([
                     'active' => true,
                     'is_active' => true,
                     'approved_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                DB::table('rider_api_activity_logs')->insert([
+                    'rider_id' => $rider->id,
+                    'type' => 'admin_approval',
+                    'payload' => json_encode([
+                        'performed_by_user_id' => auth()->id(),
+                        'active' => true,
+                        'is_active' => true,
+                        'approved_at' => now()->toISOString(),
+                    ], JSON_THROW_ON_ERROR),
+                    'recorded_at' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
 
                 Mail::to($pendingApplication->email)->send(new RiderApplicationApprovedMail($pendingApplication));
             });
