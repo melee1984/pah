@@ -39,6 +39,7 @@ class RiderApplicationController extends Controller
             'full_name' => $request->validated('full_name'),
             'mobile' => $request->validated('mobile'),
             'email' => $request->validated('email'),
+            'password' => $request->validated('password'), // we need to remove this since we are not using this anymore. we will create the user account once the rider submits the application.
             'status' => RiderApplication::STATUS_DRAFT,
         ]);
 
