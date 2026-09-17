@@ -48,10 +48,11 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
-                            <thead><tr><th>Agent</th><th>Contact</th><th>Restaurants</th><th>Agent share</th><th>Commission earned</th><th>Account</th><th>Last login</th><th>Action</th></tr></thead>
+                            <thead><tr><th>Date/Timer</th><th>Agent</th><th>Contact</th><th>Restaurants</th><th>Agent share</th><th>Commission earned</th><th>Account</th><th>Last login</th><th>Action</th></tr></thead>
                             <tbody>
                             @foreach ($agents as $agent)
                                 <tr>
+                                    <td><strong>{{  $agent->created_at?->format('M d, Y · g:i A') ?? '—'  }}</strong></td>
                                     <td><div class="admin-agent-cell"><span>{{ mb_strtoupper(mb_substr($agent->name, 0, 1)) }}</span><div><strong><a href="{{ route('dashboard.agents.show', $agent) }}">{{ $agent->name }}</a></strong><small>Agent #{{ $agent->id }}</small></div></div></td>
                                     <td><strong>{{ $agent->email }}</strong><small>{{ $agent->mobile ?: 'No mobile number' }}</small></td>
                                     <td><span class="admin-number-pill">{{ number_format($agent->restaurants_count) }}</span></td>
