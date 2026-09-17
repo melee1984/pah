@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Mail\RiderApplicationSubmittedMail;
 use App\RiderApplication;
 use App\RiderApplicationDocument;
+use App\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -275,6 +276,68 @@ class StagedRiderApplicationTest extends TestCase
             ->getJson("/api/v1/rider/applications/{$draft['application']['id']}")
             ->assertUnauthorized()
             ->assertJsonPath('message', 'Invalid or missing rider application token.');
+    }
+
+    public function test_a_draft_rider_can_log_back_in_and_upload_a_photo(): void
+    {
+        Storage::fake('local');
+        $draft = $this->createDraft();
+        $applicationId = $draft['application']['id'];
+
+        $login = $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/auth/login', [
+                'email' => 'carlo@example.com',
+                'password' => 'secret-password',
+            ])
+            ->assertOk()
+            ->assertJsonPath('account_status', 'draft')
+            ->assertJsonPath('application_id', $applicationId)
+            ->json();
+
+        $this->withApplicationToken($login['access_token'])
+            ->getJson('/api/v1/rider/applications/current')
+            ->assertOk()
+            ->assertJsonPath('application.id', $applicationId);
+
+        $this->withApplicationToken($login['access_token'])
+            ->post("/api/v1/rider/applications/{$applicationId}/documents", [
+                'type' => 'profile_photo',
+                'file' => UploadedFile::fake()->image('profile.jpg'),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('document.type', 'profile_photo');
+
+        $document = RiderApplicationDocument::query()->firstOrFail();
+        Storage::disk('local')->assertExists($document->path);
+
+        $this->withApplicationToken($login['access_token'])
+            ->getJson('/api/v1/rider/applications/'.Str::uuid())
+            ->assertNotFound();
+
+        $this->withApplicationToken($login['access_token'])
+            ->postJson('/api/v1/rider/auth/logout')
+            ->assertOk();
+
+        $this->withApplicationToken($login['access_token'])
+            ->getJson('/api/v1/rider/applications/current')
+            ->assertUnauthorized();
+    }
+
+    public function test_another_riders_login_token_cannot_access_a_draft(): void
+    {
+        $draft = $this->createDraft();
+        $otherUser = User::query()->findOrFail(DB::table('users')->insertGetId([
+            'name' => 'Other Rider',
+            'email' => 'other@example.com',
+            'password' => bcrypt('other-password'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
+        $token = $otherUser->createToken('rider:other', ['rider:*'])->plainTextToken;
+
+        $this->withApplicationToken($token)
+            ->getJson("/api/v1/rider/applications/{$draft['application']['id']}")
+            ->assertUnauthorized();
     }
 
     public function test_an_approved_application_can_activate_a_rider_account(): void

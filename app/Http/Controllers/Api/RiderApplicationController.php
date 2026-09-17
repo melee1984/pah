@@ -53,11 +53,22 @@ class RiderApplicationController extends Controller
                 'password' => $application->getRawOriginal('password'),
                 'created_at' => now(),
                 'updated_at' => now(),
-                'firstname' => $firstName,
-                'lastname' => $lastName,
             ];
 
-            $user = User::create($attributes);
+            if (Schema::hasColumn('users', 'name')) {
+                $attributes['name'] = $application->full_name;
+            }
+            if (Schema::hasColumn('users', 'firstname')) {
+                $attributes['firstname'] = $firstName;
+            }
+            if (Schema::hasColumn('users', 'lastname')) {
+                $attributes['lastname'] = $lastName;
+            }
+            if (Schema::hasColumn('users', 'mobile')) {
+                $attributes['mobile'] = $application->mobile;
+            }
+
+            $user = User::query()->findOrFail(DB::table('users')->insertGetId($attributes));
             // create also rider account in the rider table
             DB::table('rider')->insert([
                 'user_id' => $user->id,

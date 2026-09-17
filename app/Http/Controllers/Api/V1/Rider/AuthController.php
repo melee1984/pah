@@ -52,12 +52,12 @@ class AuthController extends Controller
             now()->addDays(30),
         );
 
-        // can we check if the status if draft?     
         if ($account['status'] === 'draft') {
             return response()->json([
                 'message' => 'Your rider account is still in draft status. Please complete your application.',
                 'account_status' => $account['status'],
                 'account' => $account,
+                'application_id' => $account['application']->reference,
                 'access_token' => $token->plainTextToken,
                 'token_type' => 'Bearer',
                 'expires_at' => $token->accessToken->expires_at?->toISOString(),

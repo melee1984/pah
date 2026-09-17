@@ -19,9 +19,12 @@ Authenticated rider endpoints also require:
 Authorization: Bearer {access_token}
 ```
 
-Application drafts use the application bearer token returned by
-`POST /applications`. Approved rider accounts use the access token returned by
-`POST /auth/login`.
+Application routes accept the application bearer token returned by
+`POST /auth/register`. If a rider leaves an application in draft status, they
+can sign in with `POST /auth/login` and use that response's `access_token` for
+the application routes, including document uploads. The draft login response
+also includes `application_id` for the application URL. Approved rider accounts
+use the access token returned by `POST /auth/login`.
 
 ## Authentication and applications
 
