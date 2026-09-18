@@ -49,7 +49,7 @@ class OrderController extends Controller
         $order->logs = $order->getActionLogs();
         $order->rider->locations;
         
-        $data['orders'] = $order;
+        $data['order'] = $order;
 
         return response()->json($data, 200);
 
