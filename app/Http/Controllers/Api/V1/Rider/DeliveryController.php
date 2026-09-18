@@ -70,6 +70,20 @@ class DeliveryController extends Controller
         ]);
     }
 
+    public function offers(Request $request): JsonResponse
+    {
+        $offers = DB::table('rider_api_offers')
+            ->where('rider_id', $this->riders->rider($request)->id)
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->get()
+            ->map(fn (object $offer) => $this->offerData($offer));
+
+        return response()->json(['offers' => $offers]);
+    }
+
     public function offer(Request $request, string $offer): JsonResponse
     {
         return response()->json([
@@ -117,6 +131,15 @@ class DeliveryController extends Controller
             ]);
             DB::table('rider_api_offers')
                 ->where('delivery_id', $record->delivery_id)
+                ->where('id', '!=', $record->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'expired',
+                    'responded_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            DB::table('rider_api_offers')
+                ->where('rider_id', $rider->id)
                 ->where('id', '!=', $record->id)
                 ->where('status', 'pending')
                 ->update([
@@ -1089,6 +1112,15 @@ class DeliveryController extends Controller
             ->where('status', 'pending')
             ->update([
                 'status' => 'accepted',
+                'responded_at' => now(),
+                'updated_at' => now(),
+            ]);
+        DB::table('rider_api_offers')
+            ->where('rider_id', $riderId)
+            ->where('delivery_id', '!=', $delivery->id)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'expired',
                 'responded_at' => now(),
                 'updated_at' => now(),
             ]);

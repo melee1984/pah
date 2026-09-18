@@ -73,6 +73,9 @@ class RiderOfferDispatcher
 
         if (! $delivery->rider_id && $delivery->current_state === 'offered') {
             foreach ($this->nearbyRiderIds($delivery) as $riderId) {
+
+                \Log::info("Dispatching delivery {$delivery->id} to rider {$riderId}");
+
                 $this->offerDeliveryToRider($delivery->id, $riderId);
             }
         }
@@ -155,6 +158,15 @@ class RiderOfferDispatcher
                 return;
             }
 
+            $availability = DB::table('rider_api_availability')
+                ->where('rider_id', $riderId)
+                ->lockForUpdate()
+                ->first();
+            if (! $availability || $availability->state !== 'available'
+                || $this->pendingOfferCount($riderId) >= $this->maxPendingOffersPerRider()) {
+                return;
+            }
+
             $hasActiveDelivery = DB::table('rider_api_deliveries')
                 ->where('rider_id', $riderId)
                 ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
@@ -167,6 +179,7 @@ class RiderOfferDispatcher
                 return;
             }
 
+            // One offer per rider and delivery; the push job sends it to their active devices.
             if (DB::table('rider_api_offers')->where('delivery_id', $deliveryId)->count()
                 >= max(1, (int) config('rider.offer_nearby_limit', 10))) {
                 return;
@@ -211,6 +224,23 @@ class RiderOfferDispatcher
             ->exists();
     }
 
+    private function maxPendingOffersPerRider(): int
+    {
+        return max(1, (int) config('rider.offer_max_pending_per_rider', 3));
+    }
+
+    private function pendingOfferCount(int $riderId): int
+    {
+        return DB::table('rider_api_offers as pending_offer')
+            ->join('rider_api_deliveries as pending_delivery', 'pending_delivery.id', '=', 'pending_offer.delivery_id')
+            ->where('pending_offer.rider_id', $riderId)
+            ->where('pending_offer.status', 'pending')
+            ->where('pending_offer.expires_at', '>', now())
+            ->where('pending_delivery.current_state', 'offered')
+            ->whereNull('pending_delivery.rider_id')
+            ->count();
+    }
+
     /** @return list<int> */
     private function nearbyRiderIds(object $delivery): array
     {
@@ -221,6 +251,7 @@ class RiderOfferDispatcher
         $maxAgeMinutes = max(1, (int) config('rider.offer_location_max_age_minutes', 5));
         $maxDistanceMeters = max(0, (float) config('rider.offer_max_distance_km', 20)) * 1000;
         $limit = max(1, (int) config('rider.offer_nearby_limit', 10));
+        $maxPendingOffers = $this->maxPendingOffersPerRider();
 
         // Use each rider's most recently recorded fix, not an older nearby fix.
         $riders = DB::table('rider')
@@ -229,6 +260,7 @@ class RiderOfferDispatcher
             ->whereRaw('location.id = (SELECT latest.id FROM rider_api_locations AS latest WHERE latest.rider_id = rider.id ORDER BY latest.recorded_at DESC, latest.id DESC LIMIT 1)')
             ->where('rider.active', true)
             ->where('rider_api_availability.state', 'available')
+            ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = rider.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', ['pending', now(), 'offered', $maxPendingOffers])
             ->whereExists(function ($query) {
                 $query->selectRaw('1')
                     ->from('rider_api_devices')

@@ -92,6 +92,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('location/batch', [V1RiderOperationsController::class, 'saveLocationBatch']);
             Route::get('location/config', [V1RiderOperationsController::class, 'locationConfig']);
 
+            Route::get('offers', [V1RiderDeliveryController::class, 'offers']);
             Route::get('offers/current', [V1RiderDeliveryController::class, 'currentOffer']);
             Route::get('offers/{offer}', [V1RiderDeliveryController::class, 'offer']);
             Route::post('offers/{offer}/accept', [V1RiderDeliveryController::class, 'acceptOffer']);

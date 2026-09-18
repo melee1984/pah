@@ -575,6 +575,103 @@ class FullRiderApiTest extends TestCase
         $job->handle($sender);
     }
 
+    public function test_rider_can_receive_multiple_pending_offers_up_to_a_configurable_limit(): void
+    {
+        config(['rider.offer_max_pending_per_rider' => 2]);
+        Bus::fake([SendRiderOfferPush::class]);
+        $token = $this->loginApprovedRider('multiple-offers@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        DB::table('rider_api_availability')->updateOrInsert(
+            ['rider_id' => $riderId],
+            ['state' => 'available', 'created_at' => now(), 'updated_at' => now()],
+        );
+        DB::table('rider_api_locations')->insert([
+            'rider_id' => $riderId,
+            'latitude' => 10.3157,
+            'longitude' => 123.8854,
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $dispatcher = app(RiderOfferDispatcher::class);
+        foreach ([101, 102, 103] as $orderId) {
+            DB::table('rider_api_deliveries')->insert([
+                'reference' => (string) Str::uuid(),
+                'legacy_order_id' => $orderId,
+                'current_state' => 'offered',
+                'merchant_name' => "Restaurant {$orderId}",
+                'pickup_latitude' => 10.3157,
+                'pickup_longitude' => 123.8854,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $order = new Orders;
+            $order->id = $orderId;
+            $dispatcher->dispatchOrder($order);
+        }
+
+        $offers = $this->authenticated($token)->getJson('/api/v1/rider/offers')
+            ->assertOk()->json('offers');
+        $this->assertCount(2, $offers);
+        $this->assertDatabaseCount('rider_api_offers', 2);
+        $this->assertSame(2, DB::table('rider_api_offers')->where('rider_id', $riderId)->count());
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 2);
+
+        DB::table('rider_api_offers')->where('rider_id', $riderId)->orderBy('id')->limit(1)
+            ->update(['expires_at' => now()->subSecond()]);
+        $thirdOrder = new Orders;
+        $thirdOrder->id = 103;
+        $dispatcher->dispatchOrder($thirdOrder);
+
+        $this->authenticated($token)->getJson('/api/v1/rider/offers')
+            ->assertOk()->assertJsonCount(2, 'offers');
+        $this->assertDatabaseCount('rider_api_offers', 3);
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 3);
+    }
+
+    public function test_accepting_one_offer_closes_the_riders_other_pending_offers(): void
+    {
+        $token = $this->loginApprovedRider('accept-multiple@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        $offerReferences = [];
+        foreach ([1, 2] as $number) {
+            $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+                'reference' => (string) Str::uuid(),
+                'current_state' => 'offered',
+                'merchant_name' => "Restaurant {$number}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $offerReferences[] = (string) Str::uuid();
+            DB::table('rider_api_offers')->insert([
+                'reference' => $offerReferences[$number - 1],
+                'rider_id' => $riderId,
+                'delivery_id' => $deliveryId,
+                'status' => 'pending',
+                'expires_at' => now()->addMinutes(15),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $this->authenticated($token)->getJson('/api/v1/rider/offers')
+            ->assertOk()->assertJsonCount(2, 'offers');
+        $this->authenticated($token)
+            ->postJson('/api/v1/rider/offers/'.$offerReferences[0].'/accept')
+            ->assertOk();
+        $this->assertDatabaseHas('rider_api_offers', [
+            'reference' => $offerReferences[0],
+            'status' => 'accepted',
+        ]);
+        $this->assertDatabaseHas('rider_api_offers', [
+            'reference' => $offerReferences[1],
+            'status' => 'expired',
+        ]);
+        $this->authenticated($token)->getJson('/api/v1/rider/offers')
+            ->assertOk()->assertJsonCount(0, 'offers');
+    }
+
     public function test_rider_status_wallet_overview_and_activity_logs_are_available(): void
     {
         $token = $this->loginApprovedRider();

@@ -71,7 +71,9 @@ class SendRiderOfferPush implements ShouldQueue
                         'delivery_id' => (string) $delivery->reference,
                         'booking_id' => (string) ($delivery->legacy_order_id ?? ''),
                     ],
+                    
                 );
+                
             } catch (Throwable $exception) {
                 Log::warning('Rider offer push failed.', [
                     'rider_id' => $this->riderId,
