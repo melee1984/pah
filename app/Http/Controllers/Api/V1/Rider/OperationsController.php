@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
+use App\Model\Rider\RiderApiLocation;
 use App\Services\RiderApiService;
 use App\Services\RiderOfferDispatcher;
 use Illuminate\Http\JsonResponse;
@@ -188,7 +189,7 @@ class OperationsController extends Controller
      */
     private function insertLocation(int $riderId, array $location): void
     {
-        DB::table('rider_api_locations')->insert([
+        RiderApiLocation::create([
             'rider_id' => $riderId,
             'delivery_reference' => $location['delivery_id'] ?? null,
             'latitude' => $location['latitude'],
@@ -197,8 +198,6 @@ class OperationsController extends Controller
             'heading' => $location['heading'] ?? null,
             'speed_mps' => $location['speed_mps'] ?? null,
             'recorded_at' => $this->riders->databaseDateTime($location['recorded_at']),
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
     }
 

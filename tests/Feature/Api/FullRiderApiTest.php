@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Jobs\SendRiderOfferPush;
 use App\Model\Orders\Orders;
+use App\Model\Riders;
 use App\RiderApplication;
 use App\Services\FirebaseRiderPush;
 use App\Services\RiderOfferDispatcher;
@@ -110,6 +111,19 @@ class FullRiderApiTest extends TestCase
                 'recorded_at' => now()->toISOString(),
             ])
             ->assertAccepted();
+
+        $rider = Riders::query()->firstOrFail();
+        DB::table('rider_api_locations')->insert([
+            'rider_id' => $rider->id,
+            'latitude' => 9.0000,
+            'longitude' => 122.0000,
+            'recorded_at' => now()->subMinute(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->assertSame('10.3157000', $rider->location->latitude);
+        $this->assertSame('123.8854000', $rider->location->longitude);
     }
 
     public function test_wallet_earnings_returns_delivery_fee_less_pahatud_commission(): void

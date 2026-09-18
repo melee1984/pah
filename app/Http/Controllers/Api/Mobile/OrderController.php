@@ -47,6 +47,7 @@ class OrderController extends Controller
         $order->status;  
         $order->rider;
         $order->logs = $order->getActionLogs();
+        $order->rider->locations;
         
         $data['cart'] = $order;
 

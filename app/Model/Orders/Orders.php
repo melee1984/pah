@@ -9,6 +9,7 @@ use App\Model\Orders\OrderProcess;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Rider\RiderDeclineOrder;
 use App\LibraryStatus;
+use App\Model\Rider\Rider;
 
 class Orders extends Model
 {
@@ -200,9 +201,9 @@ class Orders extends Model
      * [status description]
      * @return [type] [description]
      */
-    public function rider() 
-    {
-         return $this->hasOne('App\Model\Riders','id', 'rider_id');
+  
+    public function rider() {
+        return $this->hasOne(Rider::class, 'id', 'rider_id');
     }
 
     public function riderDeclines()

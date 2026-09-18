@@ -3,6 +3,7 @@
 namespace App\Model\Rider;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Rider extends Model
@@ -22,5 +23,10 @@ class Rider extends Model
     public function wallet(): HasOne
     {
         return $this->hasOne(RiderApiWallet::class, 'rider_id');
+    }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(RiderApiLocation::class, 'rider_id');
     }
 }
