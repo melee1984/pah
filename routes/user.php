@@ -61,7 +61,7 @@ Route::group(['middleware' => 'isRequest'], function () {
 
             Route::post('order/{order}', [MobileOrderController::class, 'index']);
             Route::get('getorders', [MobileOrderController::class, 'orders']);
-            Route::post('getorder/{order}', [MobileOrderController::class, 'getOrderById']);
+            Route::get('getorder/{order}', [MobileOrderController::class, 'getOrderById']);
 
             Route::post('address/add/submit', [MobileCheckoutController::class, 'addAddress']);
             Route::get('address/list', [MobileUserController::class, 'getAddresses']);
