@@ -11,12 +11,13 @@
 - Incoming orders without riders are visually highlighted
 - Order detail view with merchant, delivery, customer, item, and payment information
 - Rider assignment
+- Check available riders again for merchant accepted orders without an assigned rider; the result reports new offers or why no offer was sent
 - Order-status updates
 - Pagination for long order lists
 
 ## Data source
 
-The Vue order component requests `GET /api/dashboard/order/list`. Updates use the existing authenticated rider and status endpoints under `/api/data/dashboard/update/{order}`.
+The Vue order component requests `GET /api/dashboard/order/list`. Rider and status updates use `/api/data/dashboard/update/{order}`. The admin-only retry action uses `POST /api/data/dashboard/orders/{order}/retry-rider-offers`.
 
 ## Primary actions
 

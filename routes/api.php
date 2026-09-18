@@ -112,6 +112,8 @@ Route::group(['middleware' => ['api', 'web']], function () {
     Route::get('dashboard/booking/list', [AdminBookingController::class, 'getList']);
 
     Route::post('data/dashboard/update/{order}/rider/submit', [AdminOrderController::class, 'updateOrderRider']);
+    Route::post('data/dashboard/orders/{order}/retry-rider-offers', [AdminOrderController::class, 'retryRiderOffers'])
+        ->middleware(['admin', 'throttle:10,1']);
     Route::post('data/dashboard/update/{order}/status/submit', [AdminOrderController::class, 'updateOrderStatus']);
 
     Route::post('data/dashboard/booking/update/{booking}/rider/submit', [AdminBookingController::class, 'updateOrderRider']);

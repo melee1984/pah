@@ -97,6 +97,12 @@
                             <p v-if="order.rider">{{ order.rider.name }}</p>
                             <span v-else class="text-muted">Not assigned</span>
                         </span>
+                        <div v-if="canRetryRiderOffers(order)" class="mt-2">
+                          <small v-if="order.rider_dispatch.pending_offers" class="d-block text-muted mb-1">{{ order.rider_dispatch.pending_offers }} active rider offer(s)</small>
+                          <button type="button" class="btn btn-sm btn-outline-primary" :disabled="retryingOrderId === order.id" @click="retryRiderOffers(order)">
+                            {{ retryingOrderId === order.id ? 'Checking riders…' : 'Check available riders' }}
+                          </button>
+                        </div>
                       </template>
                     </td>
                   </tr>
@@ -224,6 +230,7 @@
                 statuses: [],
                 currentPage: 1,
                 pageSize: 10,
+                retryingOrderId: null,
             }
         },
         computed: {
@@ -281,6 +288,31 @@
         },
 
         methods: {
+          canRetryRiderOffers: function(order) {
+            return this.activeList === 'orders'
+              && Boolean(order.store_accepted_at)
+              && [2, 3, 4].includes(Number(order.order_status_id))
+              && !order.rider_dispatch?.assigned;
+          },
+          retryRiderOffers: function(order) {
+            this.retryingOrderId = order.id;
+            axios.post('/api/data/dashboard/orders/' + order.id + '/retry-rider-offers?api_token=' + api_token)
+              .then((response) => {
+                if (response.data.new_offers > 0) {
+                  toastr.success(response.data.message);
+                } else {
+                  toastr.info(response.data.message);
+                }
+                this.fetchData();
+              })
+              .catch((error) => {
+                toastr.error(error.response?.data?.message || 'Could not check available riders. Please try again.');
+                this.fetchData();
+              })
+              .finally(() => {
+                this.retryingOrderId = null;
+              });
+          },
           selectActiveList: function(list) {
             this.activeList = list;
             this.currentPage = 1;

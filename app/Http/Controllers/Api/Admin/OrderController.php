@@ -15,6 +15,7 @@ use Auth;
 use Validator;
 use App\User;
 use App\LibraryStatus;
+use App\Services\RiderOfferDispatcher;
 
 use App\PushNotification;
 use Illuminate\Support\Facades\DB;
@@ -33,7 +34,16 @@ class OrderController extends Controller
 
         $deliveries = DB::table('rider_api_deliveries')
             ->whereIn('legacy_order_id', $orders->pluck('id'))
-            ->get(['id', 'reference', 'legacy_order_id']);
+            ->get(['id', 'reference', 'legacy_order_id', 'rider_id', 'current_state']);
+
+        $pendingOffers = DB::table('rider_api_offers')
+            ->whereIn('delivery_id', $deliveries->pluck('id'))
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->selectRaw('delivery_id, count(*) as total')
+            ->groupBy('delivery_id')
+            ->pluck('total', 'delivery_id');
+        $deliveriesByOrder = $deliveries->keyBy('legacy_order_id');
 
         $proofsByDelivery = DB::table('rider_api_delivery_proofs')
             ->whereIn('delivery_id', $deliveries->pluck('id'))
@@ -71,6 +81,11 @@ class OrderController extends Controller
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
             $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
+            $delivery = $deliveriesByOrder->get($order->id);
+            $order->rider_dispatch = [
+                'assigned' => (bool) ($order->rider_id || $delivery?->rider_id),
+                'pending_offers' => $delivery ? (int) ($pendingOffers[$delivery->id] ?? 0) : 0,
+            ];
         }
 
         $data['orders'] = $orders->whereNotIn('status_id', [
@@ -98,6 +113,47 @@ class OrderController extends Controller
         abort_unless(Storage::disk('local')->exists($attachedProof->path), 404);
 
         return Storage::disk('local')->response($attachedProof->path);
+    }
+
+    public function retryRiderOffers(Orders $order, RiderOfferDispatcher $dispatcher)
+    {
+        if (! $order->submitted_at || ! $order->store_accepted_at
+            || ! in_array((int) $order->order_status_id, [
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+            return response()->json(['message' => 'Only accepted orders awaiting pickup can be sent to riders.'], 409);
+        }
+
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        if ($order->rider_id || $order->accepted_by_rider_id || $delivery?->rider_id
+            || ($delivery && $delivery->current_state !== 'offered')) {
+            return response()->json(['message' => 'This order already has a rider or is no longer available.'], 409);
+        }
+
+        $before = $delivery
+            ? DB::table('rider_api_offers')->where('delivery_id', $delivery->id)->count()
+            : 0;
+        $reference = $dispatcher->dispatchOrder($order);
+        if (! $reference) {
+            return response()->json(['message' => 'Rider dispatch is currently unavailable.'], 503);
+        }
+
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        $newOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)->count() - $before;
+        $activeOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)
+            ->where('status', 'pending')->where('expires_at', '>', now())->count();
+
+        return response()->json([
+            'new_offers' => $newOffers,
+            'active_offers' => $activeOffers,
+            'message' => $newOffers > 0
+                ? "Sent this order to {$newOffers} available rider(s)."
+                : ($activeOffers > 0
+                    ? 'No new riders found. Existing rider offers are still active.'
+                    : 'No eligible riders are available nearby right now. Try again later.'),
+        ]);
     }
 
      public function getListwithFilter(Request $request) {
