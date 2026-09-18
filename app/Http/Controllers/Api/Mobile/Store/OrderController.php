@@ -195,6 +195,73 @@ class OrderController extends Controller
 
 	}
 
+    public function riderOffers(Orders $order, Request $request)
+    {
+        $merchant = $request->user()?->merchant;
+        if (! $merchant) {
+            return response()->json(['message' => 'Merchant account not found.'], 403);
+        }
+
+        $order = Orders::query()
+            ->whereKey($order->getKey())
+            ->where('partner_id', $merchant->id)
+            ->firstOrFail();
+
+        $delivery = DB::table('rider_api_deliveries')
+            ->where('legacy_order_id', $order->id)
+            ->first();
+
+        if (! $delivery) {
+            return response()->json([
+                'order_id' => $order->id,
+                'dispatch_status' => $order->store_accepted_at ? 'not_dispatched' : 'awaiting_merchant_acceptance',
+                'delivery_id' => null,
+                'assigned_rider' => null,
+                'offers' => [],
+            ]);
+        }
+
+        $offers = DB::table('rider_api_offers as offer')
+            ->join('rider', 'rider.id', '=', 'offer.rider_id')
+            ->leftJoin('rider_api_availability as availability', 'availability.rider_id', '=', 'rider.id')
+            ->where('offer.delivery_id', $delivery->id)
+            ->orderBy('offer.id')
+            ->get([
+                'offer.reference', 'offer.rider_id', 'rider.name as rider_name',
+                'availability.state as availability_state', 'offer.status',
+                'offer.expires_at', 'offer.responded_at', 'offer.created_at',
+            ])
+            ->map(fn (object $offer, int $index) => [
+                'rank' => $index + 1,
+                'offer_id' => $offer->reference,
+                'rider_id' => (int) $offer->rider_id,
+                'rider_name' => $offer->rider_name,
+                'availability' => $offer->availability_state,
+                'status' => $offer->status === 'pending' && now()->greaterThanOrEqualTo($offer->expires_at)
+                    ? 'expired' : $offer->status,
+                'expires_at' => $offer->expires_at,
+                'responded_at' => $offer->responded_at,
+                'offered_at' => $offer->created_at,
+            ]);
+
+        $assignedRider = $delivery->rider_id
+            ? DB::table('rider')->where('id', $delivery->rider_id)->first(['id', 'name'])
+            : null;
+        $hasPendingOffer = $offers->contains(fn (array $offer) => $offer['status'] === 'pending');
+
+        return response()->json([
+            'order_id' => $order->id,
+            'dispatch_status' => $assignedRider ? 'assigned' : ($delivery->current_state !== 'offered'
+                ? $delivery->current_state : ($hasPendingOffer ? 'offered' : 'no_active_offers')),
+            'delivery_id' => $delivery->reference,
+            'assigned_rider' => $assignedRider ? [
+                'id' => (int) $assignedRider->id,
+                'name' => $assignedRider->name,
+            ] : null,
+            'offers' => $offers,
+        ]);
+    }
+
     public function acceptOrder(Orders $order, Request $request)
     {
         if ($request->input('action') === 'ready-for-pickup') {

@@ -2,13 +2,19 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\SendRiderOfferPush;
+use App\Model\Orders\Orders;
 use App\RiderApplication;
+use App\Services\FirebaseRiderPush;
 use App\Services\RiderOfferDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Mockery;
 use Tests\TestCase;
 
 class FullRiderApiTest extends TestCase
@@ -390,6 +396,8 @@ class FullRiderApiTest extends TestCase
             'current_state' => 'offered',
             'merchant_name' => 'Pahatud Test Store',
             'pickup_area' => 'Lahug',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.8854,
             'dropoff_area' => 'Mabolo',
             'earnings_centavos' => 8500,
             'cod_centavos' => 0,
@@ -403,9 +411,23 @@ class FullRiderApiTest extends TestCase
             ['credit_amount' => 100, 'created_at' => now(), 'updated_at' => now()],
         );
 
-        $this->authenticated($firstToken)
-            ->putJson('/api/v1/rider/availability', ['state' => 'available'])
-            ->assertOk();
+        foreach ([$firstRiderId, $secondRiderId] as $riderId) {
+            DB::table('rider_api_availability')->updateOrInsert(
+                ['rider_id' => $riderId],
+                ['state' => 'available', 'created_at' => now(), 'updated_at' => now()],
+            );
+        }
+        foreach ([$firstRiderId, $secondRiderId] as $riderId) {
+            DB::table('rider_api_locations')->insert([
+                'rider_id' => $riderId,
+                'latitude' => 10.3157,
+                'longitude' => 123.8854,
+                'recorded_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+        app(RiderOfferDispatcher::class)->dispatchPendingForRider($firstRiderId);
         app(RiderOfferDispatcher::class)->dispatchPendingForRider($secondRiderId);
 
         $firstOffer = DB::table('rider_api_offers')
@@ -418,6 +440,10 @@ class FullRiderApiTest extends TestCase
             ->value('reference');
         $this->assertNotNull($firstOffer);
         $this->assertNotNull($secondOffer);
+        $this->authenticated($firstToken)
+            ->getJson('/api/v1/rider/offers/current')
+            ->assertOk()
+            ->assertJsonPath('offer.id', $firstOffer);
 
         $this->authenticated($firstToken)
             ->postJson("/api/v1/rider/offers/{$firstOffer}/accept")
@@ -432,6 +458,121 @@ class FullRiderApiTest extends TestCase
             'reference' => $secondOffer,
             'status' => 'expired',
         ]);
+    }
+
+    public function test_pending_delivery_is_offered_only_to_ten_nearest_riders_with_fresh_locations(): void
+    {
+        Bus::fake([SendRiderOfferPush::class]);
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => 42,
+            'current_state' => 'offered',
+            'merchant_name' => 'Test Restaurant',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.8854,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $riderIds = [];
+        foreach (range(1, 16) as $position) {
+            $riderId = DB::table('rider')->insertGetId([
+                'name' => "Rider {$position}",
+                'active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $riderIds[] = $riderId;
+            DB::table('rider_api_availability')->insert([
+                'rider_id' => $riderId,
+                'state' => $position === 12 ? 'offline' : 'available',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            if ($position !== 14) {
+                DB::table('rider_api_devices')->insert([
+                    'reference' => (string) Str::uuid(),
+                    'rider_id' => $riderId,
+                    'device_key' => "test-device-{$position}",
+                    'push_token' => $position === 16 ? null : Crypt::encryptString("test-token-{$position}"),
+                    'revoked_at' => $position === 15 ? now() : null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            DB::table('rider_api_locations')->insert([
+                'rider_id' => $riderId,
+                'latitude' => 10.3157,
+                'longitude' => $position >= 14 ? 123.8854 : 123.8854 + $position * 0.001,
+                'recorded_at' => $position === 13 ? now()->subMinutes(6) : now()->subSecond(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        // A newer, distant fix must disqualify rider 1's older nearby fix.
+        DB::table('rider_api_locations')->insert([
+            'rider_id' => $riderIds[0],
+            'latitude' => 10.3157,
+            'longitude' => 125.0,
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $dispatcher = app(RiderOfferDispatcher::class);
+        $order = new Orders;
+        $order->id = 42;
+        $dispatcher->dispatchOrder($order);
+
+        $offeredIds = DB::table('rider_api_offers')->where('delivery_id', $deliveryId)
+            ->orderBy('rider_id')->pluck('rider_id')->all();
+        $this->assertEquals(array_slice($riderIds, 1, 10), $offeredIds);
+        $this->assertDatabaseCount('rider_api_notifications', 10);
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 10);
+
+        foreach ($riderIds as $riderId) {
+            $dispatcher->dispatchPendingForRider($riderId);
+        }
+        $this->assertDatabaseCount('rider_api_offers', 10);
+        $this->assertDatabaseCount('rider_api_notifications', 10);
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 10);
+    }
+
+    public function test_offer_push_uses_the_registered_device_token_only_while_offer_is_pending(): void
+    {
+        $this->loginApprovedRider('push-rider@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'current_state' => 'offered',
+            'merchant_name' => 'Test Restaurant',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $offerReference = (string) Str::uuid();
+        DB::table('rider_api_offers')->insert([
+            'reference' => $offerReference,
+            'rider_id' => $riderId,
+            'delivery_id' => $deliveryId,
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $sender = Mockery::mock(FirebaseRiderPush::class);
+        $sender->shouldReceive('send')->once()->withArgs(function ($token, $title, $body, $data) use ($offerReference) {
+            return $token === 'test-push-token-push-rider@example.com'
+                && $title === 'New delivery offer'
+                && str_contains($body, 'Test Restaurant')
+                && $data['offer_id'] === $offerReference;
+        });
+
+        $job = new SendRiderOfferPush($riderId, $offerReference);
+        $job->handle($sender);
+        DB::table('rider_api_offers')->where('reference', $offerReference)->update(['status' => 'expired']);
+        $job->handle($sender);
     }
 
     public function test_rider_status_wallet_overview_and_activity_logs_are_available(): void
@@ -544,6 +685,7 @@ class FullRiderApiTest extends TestCase
                 'device_name' => 'Test phone',
                 'platform' => 'android',
                 'app_version' => '1.0.0',
+                'push_token' => 'test-push-token-'.$email,
             ])
             ->assertOk()
             ->assertJsonPath('account_status', 'approved')

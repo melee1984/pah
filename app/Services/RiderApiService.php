@@ -209,6 +209,15 @@ class RiderApiService
             ->whereNull('accepted_by_rider_at')
             ->whereNull('accepted_by_rider_id')
             ->whereBookingStatusId(BookingStatus::STATUS_BOOKING_PLACED)
+            ->whereExists(function ($query) use ($riderId) {
+                $query->selectRaw('1')
+                    ->from('rider_api_deliveries')
+                    ->join('rider_api_offers', 'rider_api_offers.delivery_id', '=', 'rider_api_deliveries.id')
+                    ->whereColumn('rider_api_deliveries.legacy_order_id', 'order.id')
+                    ->where('rider_api_offers.rider_id', $riderId)
+                    ->where('rider_api_offers.status', 'pending')
+                    ->where('rider_api_offers.expires_at', '>', now());
+            })
             ->whereNotExists(function ($query) use ($riderId) { // this hide the orders that are declined by the rider
                 $query->selectRaw('1')
                     ->from('rider_decline_order')

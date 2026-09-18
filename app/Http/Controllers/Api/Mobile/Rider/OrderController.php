@@ -262,7 +262,15 @@ class OrderController extends Controller
 
 			$user = $request->user();
 
-			if ($action == "accept") {
+            if ($action == "accept") {
+
+                abort_unless(DB::table('rider_api_deliveries')
+                    ->join('rider_api_offers', 'rider_api_offers.delivery_id', '=', 'rider_api_deliveries.id')
+                    ->where('rider_api_deliveries.legacy_order_id', $order->id)
+                    ->where('rider_api_offers.rider_id', $user->rider->id)
+                    ->where('rider_api_offers.status', 'pending')
+                    ->where('rider_api_offers.expires_at', '>', now())
+                    ->exists(), 403, 'This order was not offered to this rider.');
 
                 $delivery = $this->prepareOrderDelivery($order, $user->rider->id);
                 $this->riderCommissions->ensureSufficientWallet($user->rider->id, $delivery);

@@ -85,13 +85,16 @@ class DeliveryController extends Controller
             $record = DB::table('rider_api_offers')
                 ->where('rider_id', $rider->id)
                 ->where('reference', $offer)
-                ->lockForUpdate()
                 ->first();
             abort_if(! $record, 404);
+
+            $delivery = DB::table('rider_api_deliveries')->where('id', $record->delivery_id)->lockForUpdate()->first();
+            $record = DB::table('rider_api_offers')->where('id', $record->id)->lockForUpdate()->first();
 
             if ($record->status !== 'pending' || now()->greaterThanOrEqualTo($record->expires_at)) {
                 abort(409, 'This delivery offer is no longer available.');
             }
+            abort_if(! $delivery || $delivery->current_state !== 'offered', 409, 'This delivery offer is no longer available.');
 
             $activeExists = DB::table('rider_api_deliveries')
                 ->where('rider_id', $rider->id)
@@ -100,7 +103,6 @@ class DeliveryController extends Controller
                 ->exists();
             abort_if($activeExists, 409, 'Finish the active delivery before accepting another offer.');
 
-            $delivery = DB::table('rider_api_deliveries')->where('id', $record->delivery_id)->first();
             abort_if(
                 $delivery->rider_id && (int) $delivery->rider_id !== (int) $rider->id,
                 409,
@@ -740,6 +742,15 @@ class DeliveryController extends Controller
                     $query->whereNull('accepted_at')
                         ->where(function ($query) use ($riderId) {
                             $query->whereNull('rider_id')->orWhere('rider_id', $riderId);
+                        })
+                        ->whereExists(function ($query) use ($riderId) {
+                            $query->selectRaw('1')
+                                ->from('rider_api_deliveries')
+                                ->join('rider_api_offers', 'rider_api_offers.delivery_id', '=', 'rider_api_deliveries.id')
+                                ->whereColumn('rider_api_deliveries.legacy_order_id', 'order.id')
+                                ->where('rider_api_offers.rider_id', $riderId)
+                                ->where('rider_api_offers.status', 'pending')
+                                ->where('rider_api_offers.expires_at', '>', now());
                         });
                 })->orWhere(function ($query) use ($riderId) {
                     $query->whereNotNull('accepted_at')
@@ -789,6 +800,13 @@ class DeliveryController extends Controller
                 'This order is assigned to another rider.',
             );
             abort_if($lockedOrder->booking_status_id === BookingStatus::STATUS_BOOKING_ACCEPTED, 409, 'This order has already been accepted.');
+            abort_unless(DB::table('rider_api_deliveries')
+                ->join('rider_api_offers', 'rider_api_offers.delivery_id', '=', 'rider_api_deliveries.id')
+                ->where('rider_api_deliveries.legacy_order_id', $lockedOrder->id)
+                ->where('rider_api_offers.rider_id', $riderId)
+                ->where('rider_api_offers.status', 'pending')
+                ->where('rider_api_offers.expires_at', '>', now())
+                ->exists(), 403, 'This order was not offered to this rider.');
 
             $lockedOrder->rider_id = $riderId;
             $lockedOrder->accepted_by_rider_id = $riderId;

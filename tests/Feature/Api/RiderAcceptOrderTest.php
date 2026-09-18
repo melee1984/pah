@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\LibraryStatus;
 use App\Model\Orders\Orders;
+use App\Services\RiderApiService;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,6 +56,13 @@ class RiderAcceptOrderTest extends TestCase
                 $table->timestamps();
             });
         }
+
+        if (! Schema::hasTable('cart')) {
+            Schema::create('cart', fn (Blueprint $table) => $table->id());
+        }
+        if (! Schema::hasTable('library_booking_status')) {
+            Schema::create('library_booking_status', fn (Blueprint $table) => $table->id());
+        }
     }
 
     public function test_rider_can_accept_an_available_order(): void
@@ -62,6 +70,7 @@ class RiderAcceptOrderTest extends TestCase
         [$user, $riderId] = $this->createRider('accept-test@example.com');
         $orderId = $this->createAvailableOrder();
         $deliveryReference = $this->createDeliveryForOrder($orderId);
+        $this->offerDeliveryToRider($deliveryReference, $riderId);
 
         Sanctum::actingAs($user);
 
@@ -188,7 +197,8 @@ class RiderAcceptOrderTest extends TestCase
         [$user, $riderId] = $this->createRider('insufficient-wallet@example.com');
         DB::table('rider_api_wallets')->where('rider_id', $riderId)->update(['credit_amount' => 1]);
         $orderId = $this->createAvailableOrder();
-        $this->createDeliveryForOrder($orderId);
+        $deliveryReference = $this->createDeliveryForOrder($orderId);
+        $this->offerDeliveryToRider($deliveryReference, $riderId);
 
         Sanctum::actingAs($user);
 
@@ -205,6 +215,33 @@ class RiderAcceptOrderTest extends TestCase
             'accepted_by_rider_id' => null,
             'accepted_at' => null,
         ]);
+    }
+
+    public function test_only_a_rider_with_a_live_offer_can_see_and_accept_a_new_booking(): void
+    {
+        [$offeredUser, $offeredRiderId] = $this->createRider('offered@example.com');
+        [$otherUser, $otherRiderId] = $this->createRider('not-offered@example.com');
+        $orderId = $this->createAvailableOrder();
+        $deliveryReference = $this->createDeliveryForOrder($orderId);
+        $this->offerDeliveryToRider($deliveryReference, $offeredRiderId);
+
+        $this->assertTrue(app(RiderApiService::class)->newBookings($offeredRiderId)->contains('id', $orderId));
+        $this->assertFalse(app(RiderApiService::class)->newBookings($otherRiderId)->contains('id', $orderId));
+
+        Sanctum::actingAs($otherUser);
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/accept")
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('order', ['id' => $orderId, 'accepted_by_rider_id' => null]);
+
+        DB::table('rider_api_offers')->where('rider_id', $offeredRiderId)
+            ->update(['expires_at' => now()->subSecond()]);
+        $this->assertFalse(app(RiderApiService::class)->newBookings($offeredRiderId)->contains('id', $orderId));
+        Sanctum::actingAs($offeredUser);
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson("/api/v1/rider/orders/{$orderId}/accept")
+            ->assertForbidden();
     }
 
     public function test_rider_can_list_and_filter_only_their_deliveries(): void
@@ -610,5 +647,18 @@ class RiderAcceptOrderTest extends TestCase
         ]);
 
         return $reference;
+    }
+
+    private function offerDeliveryToRider(string $deliveryReference, int $riderId): void
+    {
+        DB::table('rider_api_offers')->insert([
+            'reference' => (string) \Illuminate\Support\Str::uuid(),
+            'delivery_id' => DB::table('rider_api_deliveries')->where('reference', $deliveryReference)->value('id'),
+            'rider_id' => $riderId,
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

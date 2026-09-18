@@ -97,6 +97,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('location/{partnerLocation}/device-token', [StoreOrderController::class, 'updateLocationDeviceToken'])->name('merchant.location.update-device-token');
 
             Route::get('orders', [StoreOrderController::class, 'orders']);
+            Route::get('orders/{order}/rider-offers', [StoreOrderController::class, 'riderOffers'])->name('merchant.orders.rider-offers');
             Route::post('orders/{order}/accept', [StoreOrderController::class, 'acceptOrder'])->name('merchant.orders.accept');
             Route::post('orders/{order}/ready-for-pickup', [StoreOrderController::class, 'markOrderReadyForPickup'])->name('merchant.orders.ready-for-pickup');
             Route::post('orders/{order}/cancel', [StoreOrderController::class, 'cancelOrder'])->name('merchant.orders.cancel');

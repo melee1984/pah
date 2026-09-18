@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\SendRiderOfferPush;
 use App\Model\Orders\Orders;
 use App\PaymentMethod;
 use Illuminate\Support\Facades\DB;
@@ -70,14 +71,10 @@ class RiderOfferDispatcher
             $delivery = DB::table('rider_api_deliveries')->where('id', $deliveryId)->first();
         }
 
-        $riderIds = DB::table('rider')
-            ->join('rider_api_availability', 'rider_api_availability.rider_id', '=', 'rider.id')
-            ->where('rider.active', true)
-            ->where('rider_api_availability.state', 'available')
-            ->pluck('rider.id');
-
-        foreach ($riderIds as $riderId) {
-            $this->offerDeliveryToRider($delivery->id, (int) $riderId);
+        if (! $delivery->rider_id && $delivery->current_state === 'offered') {
+            foreach ($this->nearbyRiderIds($delivery) as $riderId) {
+                $this->offerDeliveryToRider($delivery->id, $riderId);
+            }
         }
 
         return $delivery->reference;
@@ -89,16 +86,18 @@ class RiderOfferDispatcher
             return;
         }
 
-        $deliveryIds = DB::table('rider_api_deliveries')
+        $deliveries = DB::table('rider_api_deliveries')
             ->whereNull('rider_id')
             ->where('current_state', 'offered')
             ->where('created_at', '>=', now()->subDay())
             ->orderBy('created_at')
             ->limit(20)
-            ->pluck('id');
+            ->get();
 
-        foreach ($deliveryIds as $deliveryId) {
-            $this->offerDeliveryToRider((int) $deliveryId, $riderId);
+        foreach ($deliveries as $delivery) {
+            if (in_array($riderId, $this->nearbyRiderIds($delivery), true)) {
+                $this->offerDeliveryToRider((int) $delivery->id, $riderId);
+            }
         }
     }
 
@@ -149,33 +148,123 @@ class RiderOfferDispatcher
 
     private function offerDeliveryToRider(int $deliveryId, int $riderId): void
     {
-        $hasActiveDelivery = DB::table('rider_api_deliveries')
-            ->where('rider_id', $riderId)
-            ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
-            ->exists();
-        if ($hasActiveDelivery) {
-            return;
-        }
+        DB::transaction(function () use ($deliveryId, $riderId) {
+            // Lock the delivery so concurrent dispatches cannot exceed the rider limit.
+            $delivery = DB::table('rider_api_deliveries')->where('id', $deliveryId)->lockForUpdate()->first();
+            if (! $delivery || $delivery->rider_id || $delivery->current_state !== 'offered') {
+                return;
+            }
 
-        $offer = DB::table('rider_api_offers')
-            ->where('rider_id', $riderId)
-            ->where('delivery_id', $deliveryId)
-            ->first();
-        if ($offer && $offer->status !== 'pending') {
-            return;
-        }
+            $hasActiveDelivery = DB::table('rider_api_deliveries')
+                ->where('rider_id', $riderId)
+                ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+                ->exists();
+            if ($hasActiveDelivery || DB::table('rider_api_offers')
+                ->where('rider_id', $riderId)->where('delivery_id', $deliveryId)->exists()) {
+                return;
+            }
+            if (! $this->hasPushDevice($riderId)) {
+                return;
+            }
 
-        DB::table('rider_api_offers')->updateOrInsert(
-            ['rider_id' => $riderId, 'delivery_id' => $deliveryId],
-            [
-                'reference' => $offer?->reference ?? (string) Str::uuid(),
+            if (DB::table('rider_api_offers')->where('delivery_id', $deliveryId)->count()
+                >= max(1, (int) config('rider.offer_nearby_limit', 10))) {
+                return;
+            }
+
+            $reference = (string) Str::uuid();
+            DB::table('rider_api_offers')->insert([
+                'rider_id' => $riderId,
+                'delivery_id' => $deliveryId,
+                'reference' => $reference,
                 'status' => 'pending',
                 'expires_at' => now()->addMinutes(15),
-                'responded_at' => null,
-                'created_at' => $offer?->created_at ?? now(),
+                'created_at' => now(),
                 'updated_at' => now(),
-            ],
-        );
+            ]);
+
+            if (Schema::hasTable('rider_api_notifications')) {
+                DB::table('rider_api_notifications')->insert([
+                    'reference' => (string) Str::uuid(),
+                    'rider_id' => $riderId,
+                    'type' => 'delivery_offer',
+                    'title' => 'New delivery offer',
+                    'body' => 'A delivery from '.($delivery->merchant_name ?: 'a nearby merchant').' is available.',
+                    'deep_link' => '/app/home',
+                    'data' => json_encode(['offer_id' => $reference, 'delivery_id' => $delivery->reference], JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            SendRiderOfferPush::dispatch($riderId, $reference)->afterCommit();
+        });
+    }
+
+    private function hasPushDevice(int $riderId): bool
+    {
+        return DB::table('rider_api_devices')
+            ->where('rider_id', $riderId)
+            ->whereNull('revoked_at')
+            ->whereNotNull('push_token')
+            ->where('push_token', '!=', '')
+            ->exists();
+    }
+
+    /** @return list<int> */
+    private function nearbyRiderIds(object $delivery): array
+    {
+        if (! is_numeric($delivery->pickup_latitude) || ! is_numeric($delivery->pickup_longitude)) {
+            return [];
+        }
+
+        $maxAgeMinutes = max(1, (int) config('rider.offer_location_max_age_minutes', 5));
+        $maxDistanceMeters = max(0, (float) config('rider.offer_max_distance_km', 20)) * 1000;
+        $limit = max(1, (int) config('rider.offer_nearby_limit', 10));
+
+        // Use each rider's most recently recorded fix, not an older nearby fix.
+        $riders = DB::table('rider')
+            ->join('rider_api_availability', 'rider_api_availability.rider_id', '=', 'rider.id')
+            ->join('rider_api_locations as location', 'location.rider_id', '=', 'rider.id')
+            ->whereRaw('location.id = (SELECT latest.id FROM rider_api_locations AS latest WHERE latest.rider_id = rider.id ORDER BY latest.recorded_at DESC, latest.id DESC LIMIT 1)')
+            ->where('rider.active', true)
+            ->where('rider_api_availability.state', 'available')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_devices')
+                    ->whereColumn('rider_api_devices.rider_id', 'rider.id')
+                    ->whereNull('rider_api_devices.revoked_at')
+                    ->whereNotNull('rider_api_devices.push_token')
+                    ->where('rider_api_devices.push_token', '!=', '');
+            })
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_deliveries as active_delivery')
+                    ->whereColumn('active_delivery.rider_id', 'rider.id')
+                    ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
+            })
+            ->whereBetween('location.recorded_at', [now()->subMinutes($maxAgeMinutes), now()])
+            ->select('rider.id', 'location.latitude', 'location.longitude')
+            ->get();
+
+        return $riders
+            ->map(function (object $rider) use ($delivery) {
+                $rider->distance_meters = $this->distanceMeters(
+                    $delivery->pickup_latitude,
+                    $delivery->pickup_longitude,
+                    $rider->latitude,
+                    $rider->longitude,
+                );
+
+                return $rider;
+            })
+            ->filter(fn (object $rider) => $rider->distance_meters !== null
+                && $rider->distance_meters <= $maxDistanceMeters)
+            ->sort(fn (object $a, object $b) => $a->distance_meters <=> $b->distance_meters ?: $a->id <=> $b->id)
+            ->take($limit)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     private function tablesAvailable(): bool
@@ -183,6 +272,8 @@ class RiderOfferDispatcher
         return Schema::hasTable('rider_api_deliveries')
             && Schema::hasTable('rider_api_offers')
             && Schema::hasTable('rider_api_availability')
+            && Schema::hasTable('rider_api_devices')
+            && Schema::hasTable('rider_api_locations')
             && Schema::hasTable('rider');
     }
 
