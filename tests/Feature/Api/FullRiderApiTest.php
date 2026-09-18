@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Jobs\SendRiderOfferPush;
 use App\Model\Orders\Orders;
+use App\Model\Rider\Rider as ApiRider;
 use App\Model\Riders;
 use App\RiderApplication;
 use App\Services\FirebaseRiderPush;
@@ -124,6 +125,7 @@ class FullRiderApiTest extends TestCase
 
         $this->assertSame('10.3157000', $rider->location->latitude);
         $this->assertSame('123.8854000', $rider->location->longitude);
+        $this->assertSame('10.3157000', ApiRider::query()->findOrFail($rider->id)->location->latitude);
     }
 
     public function test_wallet_earnings_returns_delivery_fee_less_pahatud_commission(): void
