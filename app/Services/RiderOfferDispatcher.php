@@ -279,6 +279,8 @@ class RiderOfferDispatcher
             ->select('rider.id', 'location.latitude', 'location.longitude')
             ->get();
 
+        \Log::info('Nearby riders for delivery '.$delivery->id.': '.implode(', ', $riders->pluck('id')->all()));
+        
         return $riders
             ->map(function (object $rider) use ($delivery) {
                 $rider->distance_meters = $this->distanceMeters(
