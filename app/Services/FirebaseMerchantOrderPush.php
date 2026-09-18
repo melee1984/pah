@@ -8,6 +8,37 @@ use RuntimeException;
 
 class FirebaseMerchantOrderPush
 {
+    public function sendCustomerAccepted(string $deviceToken, string $orderNo, int $orderId): void
+    {
+        $credentials = $this->credentials();
+        $accessToken = Cache::remember(
+            'firebase-messaging-token:'.$credentials['project_id'],
+            now()->addMinutes(50),
+            fn () => $this->accessToken($credentials),
+        );
+
+        $response = Http::timeout(10)->withToken($accessToken)
+            ->post('https://fcm.googleapis.com/v1/projects/'.rawurlencode($credentials['project_id']).'/messages:send', [
+                'message' => [
+                    'token' => $deviceToken,
+                    'notification' => [
+                        'title' => 'Order accepted',
+                        'body' => 'Your order '.$orderNo.' has been accepted by the merchant.',
+                    ],
+                    'data' => [
+                        'type' => 'order_accepted',
+                        'order_id' => (string) $orderId,
+                        'order_no' => $orderNo,
+                    ],
+                    'android' => ['priority' => 'HIGH'],
+                ],
+            ]);
+
+        if (! $response->successful()) {
+            throw new RuntimeException('Firebase rejected the customer order notification (HTTP '.$response->status().').');
+        }
+    }
+
     public function send(string $deviceToken, string $orderNo, int $orderId, int $locationId): void
     {
         $credentials = $this->credentials();

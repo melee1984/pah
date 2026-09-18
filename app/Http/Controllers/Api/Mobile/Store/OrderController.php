@@ -14,6 +14,7 @@ use App\PartnerLocation;
 use Carbon\Carbon;
 use App\Products;
 use App\PushNotification;
+use App\Jobs\SendCustomerOrderAcceptedPush;
 use App\Services\RiderOfferDispatcher;
 use Auth;
 use Illuminate\Support\Facades\DB;
@@ -362,9 +363,9 @@ class OrderController extends Controller
 
         if (! $result['already_accepted']) {
             try {
-                PushNotification::sendPushOrder($result['order']);
+                SendCustomerOrderAcceptedPush::dispatch((int) $result['order']->id)->afterCommit();
             } catch (\Throwable $exception) {
-                Log::warning('Order accepted, but the customer notification failed.', [
+                Log::warning('Order accepted, but the customer notification could not be queued.', [
                     'order_id' => $result['order']->id,
                     'exception' => $exception->getMessage(),
                 ]);
