@@ -294,10 +294,8 @@ class CheckoutController extends Controller
 
                     try {
                         
-                        $order = Orders::updateOrCreate([
-                                'user_id' => $cart->user_id,
+                        $order = Orders::firstOrCreate([
                                 'cart_id' => $cart_id,
-                                'order_status_id' => 1,
                             ], 
                             array(
                                 'user_id' => $cart->user_id,
@@ -314,9 +312,9 @@ class CheckoutController extends Controller
                                 'order_id' => $order->id
                             ]);
 
-                            // Push Notification 
-                            // PushNotification::sendPushStore($order);
-                            event (new SendPushNotificationEvent($order));
+                            if ($order->wasRecentlyCreated) {
+                                event(new SendPushNotificationEvent($order));
+                            }
                         }
 
                     } catch (Exception $e) {

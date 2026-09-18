@@ -2,11 +2,8 @@
 
 namespace App\Listeners;
 
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-
-use App\PushNotification;
-use App\SmsNotification;
+use App\Events\SendPushNotificationEvent;
+use App\Jobs\SendMerchantOrderPush;
 
 class SendPushListerner
 {
@@ -26,9 +23,8 @@ class SendPushListerner
      * @param  object  $event
      * @return void
      */
-    public function handle($event)
+    public function handle(SendPushNotificationEvent $event): void
     {
-        PushNotification::sendPushStore($event->order);
-        SmsNotification::sendNewOrder();
+        SendMerchantOrderPush::dispatch((int) $event->order->id)->afterCommit();
     }
 }

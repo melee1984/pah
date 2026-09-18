@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\SendPushNotificationEvent;
+use App\Listeners\SendPushListerner;
 use App\Model\Orders\Orders;
 use App\Observers\OrderObserver;
 use Illuminate\Mail\Events\MessageSending;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
         Orders::observe(OrderObserver::class);
+        Event::listen(SendPushNotificationEvent::class, SendPushListerner::class);
         Event::listen(MessageSending::class, function (MessageSending $event) {
             $html = $event->message->getHtmlBody();
 

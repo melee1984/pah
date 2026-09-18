@@ -536,11 +536,9 @@ class CartController extends Controller
 
                         try {
 
-                            $order = Orders::updateOrCreate(
+                            $order = Orders::firstOrCreate(
                                 [
-                                    'user_id' => $cart->user_id,
                                     'cart_id' => $cart_id,
-                                    'status_id' => 1,
                                 ],
                                 array(
                                     'user_id' => $cart->user_id,
@@ -558,7 +556,9 @@ class CartController extends Controller
                                     'order_id' => $order->id
                                 ]);
 
-                                event(new SendPushNotificationEvent($order));
+                                if ($order->wasRecentlyCreated) {
+                                    event(new SendPushNotificationEvent($order));
+                                }
                             }
                         } catch (Exception $e) {
                             \Log('Error on saving Order ' . $cart_id);
