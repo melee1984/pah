@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Mobile\Rider;
 
 use App\Http\Controllers\Controller;
+use App\LibraryItemStatus;
+use App\LibraryStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +20,7 @@ use App\Model\Bookings\BookingOrderProcess;
 use App\PushNotification;
 
 use App\Model\Bookings\Bookings;
+use App\Model\Bookings\BookingStatus;
 use App\Services\RiderCommissionService;
 use App\Services\RiderOfferDispatcher;
 use Illuminate\Support\Str;
@@ -253,7 +256,9 @@ class OrderController extends Controller
     	return response()->json($data, 200);
     }
 
-
+	// merchant accept the booking 
+	// this will also assign offer to the rider and then deduct commission from the rider wallet.
+	// 
     public function acceptBooking(Orders $order, $action, Request $request) {
 		
 		$data = array();
@@ -272,14 +277,14 @@ class OrderController extends Controller
                     ->where('rider_api_offers.expires_at', '>', now())
                     ->exists(), 403, 'This order was not offered to this rider.');
 
+				// Check if the rider has already accepted this order
                 $delivery = $this->prepareOrderDelivery($order, $user->rider->id);
+				// Check if the rider has sufficient wallet balance
                 $this->riderCommissions->ensureSufficientWallet($user->rider->id, $delivery);
-
+				
 				$order->accepted_by_rider_id = $user->rider->id;
-
-				$order->booking_status_id = Orders::STATUS_ORDER_ACCEPTED;
-				$order->order_status_id = Orders::STATUS_ORDER_ACCEPTED;
-
+				$order->booking_status_id = BookingStatus::STATUS_BOOKING_PLACED;
+				$order->order_status_id = LibraryStatus::STATUS_ORDER_ACCEPTED;
 				$order->accepted_at = now();
 
 				$status = $order->save();
@@ -313,12 +318,13 @@ class OrderController extends Controller
 
 			} else if ($action == "pickup") {
 
-				$order->booking_status_id = Orders::STATUS_RIDER_PICKED_UP;
-				$order->order_status_id = Orders::STATUS_RIDER_PICKED_UP;
+				$order->booking_status_id = BookingStatus::STATUS_BOOKING_RIDER_PICKED_UP;
+				$order->order_status_id = LibraryStatus::STATUS_RIDER_ON_THE_WAY_TO_CUSTOMER;
+
 				$order->save();
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => Orders::STATUS_RIDER_PICKED_UP,
+                    'status_id' => LibraryStatus::STATUS_RIDER_ON_THE_WAY_TO_CUSTOMER,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
@@ -334,15 +340,15 @@ class OrderController extends Controller
                 $this->assignDelivery($delivery, $user->rider->id, 'delivered');
 
 				// Item Delivered 
-                $order->booking_status_id = Orders::STATUS_DELIVERED;
-				$order->order_status_id = Orders::STATUS_DELIVERED;
+                $order->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
+				$order->order_status_id = LibraryStatus::STATUS_DELIVERED;
 				
 				$order->save();
 
 				PushNotification::sendPushOrder($order);
 
 				OrderProcess::updateOrCreate([
-                    'status_id' => Orders::STATUS_DELIVERED,
+                    'status_id' => LibraryStatus::STATUS_DELIVERED,
                     'order_id' => $order->id,
                     'user_id' => $user->id,
                 ]);
