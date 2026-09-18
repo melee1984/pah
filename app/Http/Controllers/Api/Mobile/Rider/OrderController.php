@@ -538,11 +538,17 @@ class OrderController extends Controller
     }
 
     public function saveTokenDeviceFood(Request $request) {
-        
+        $validated = $request->validate([
+            'platform' => ['sometimes', 'required', 'in:ios,android,web'],
+        ]);
+
         if ($request->input('token')!="") {
 			$user = $request->user();
-	        $user->device_token_food = $request->input('token');
-	        $user->device_id = $request->input('device');
+			$user->device = $request->input('token');
+	        $user->device_token = $request->input('device');
+	        if (array_key_exists('platform', $validated)) {
+	            $user->device_platform = $validated['platform'];
+	        }
 	        $user->save();
 
 	        return response()->json(['token saved successfully.']);
@@ -550,8 +556,6 @@ class OrderController extends Controller
         else {
         	return response()->json(['Token is empty']);
         }
-
-
     }
 
     public function saveTokenDeviceStore(Request $request) {
