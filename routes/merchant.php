@@ -107,6 +107,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             // Route::post('bookings/{order}/{action}/submit', [StoreOrderController::class, 'acceptBooking']);
 
             Route::post('token/submit', [StoreOrderController::class, 'saveTokenDeviceStore']);
+            Route::post('device-token', [StoreOrderController::class, 'savePartnerDeviceToken'])->name('merchant.device-token.store');
             Route::post('toggle/store/online', [StoreOrderController::class, 'toggleStoreOnline']);
 
             // we need to have the products and categories locate per merchant login

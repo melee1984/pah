@@ -3,8 +3,8 @@
 namespace Tests\Unit;
 
 use App\Http\Controllers\Api\Mobile\Store\OrderController;
-use App\Partners;
 use App\PartnerLocation;
+use App\Partners;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;

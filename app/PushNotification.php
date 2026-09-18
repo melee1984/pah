@@ -140,7 +140,9 @@ class PushNotification extends Model
 
     public static function sendPushStore($order)
     {		
-    	if ($order->partner->partner_user->device_token_store!="") {
+        $deviceToken = $order->cart?->partnerlocation?->device_token;
+
+        if (is_string($deviceToken) && trim($deviceToken) !== '') {
 
     		$jobOrder = "0";
 	    	$title = "PahatudFood Delivery";
@@ -149,7 +151,7 @@ class PushNotification extends Model
 
 	        $SERVER_API_KEY = config('app.firebase_server_key');
 
-	        $firebaseToken = array($order->partner->partner_user->device_token_store);
+            $firebaseToken = array($deviceToken);
 
 	        $data = [
 	            "registration_ids" => $firebaseToken,

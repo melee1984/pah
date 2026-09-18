@@ -622,19 +622,48 @@ class OrderController extends Controller
 
     }
 
-    public function saveTokenDeviceStore(Request $request) {
-        
-    	if ($request->input('token')!="") {
-			$user = $request->user();
-	        $user->device_token_store = $request->input('token');
-	        $user->device_id = $request->input('device');
-	        $user->save();
-	        return response()->json(['token saved successfully.']);
-        }
-        else {
-        	return response()->json(['Token is empty']);
+    public function saveTokenDeviceStore(Request $request)
+    {
+        $request->merge(['device_token_store' => $request->input('token')]);
+
+        return $this->savePartnerDeviceToken($request);
+    }
+
+    public function savePartnerDeviceToken(Request $request)
+    {
+        $validated = $request->validate([
+            'merchant_location_id' => ['required', 'integer', 'min:1'],
+            'device_token_store' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user?->merchant) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant account not found.',
+            ], 403);
         }
 
+        $location = PartnerLocation::query()
+            ->where('partner_id', $user->merchant->id)
+            ->find($validated['merchant_location_id']);
+
+        if (! $location) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant location not found.',
+            ], 404);
+        }
+
+        $location->device_token = $validated['device_token_store'];
+        $location->save();
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Merchant location device token saved successfully.',
+            'location_id' => $location->id,
+        ]);
     }
 
     public function updateDeviceId(Request $request)

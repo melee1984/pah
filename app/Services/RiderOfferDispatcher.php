@@ -210,7 +210,9 @@ class RiderOfferDispatcher
                 ]);
             }
 
+            \Log::info("Dispatching delivery {$deliveryId} to rider {$riderId} with offer reference {$reference}");
             SendRiderOfferPush::dispatch($riderId, $reference)->afterCommit();
+            
         });
     }
 
