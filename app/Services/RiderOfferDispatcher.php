@@ -275,7 +275,7 @@ class RiderOfferDispatcher
                     ->whereColumn('active_delivery.rider_id', 'rider.id')
                     ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
             })
-            ->whereBetween('location.recorded_at', [now()->subMinutes($maxAgeMinutes), now()])
+            // ->whereBetween('location.recorded_at', [now()->subMinutes($maxAgeMinutes), now()]) / I am removing this since we are not using the recorded_at to filter the riders, we are using the latest location of the rider instead
             ->select('rider.id', 'location.latitude', 'location.longitude')
             ->get();
 
