@@ -27,12 +27,14 @@ use App\Http\Controllers\Map\DistanceController;
 // Register / Partner
 use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\RegisterController;
+use App\Http\Controllers\Api\Mobile\ResourcesController;
 
 // -------------------------------------------------------------
 // PUBLIC ROUTES
 // -------------------------------------------------------------
 
-
+Route::get('promotions', [ResourcesController::class, 'getPromoBanner']);
+Route::get('home-promo-banner', [ResourcesController::class, 'getPromoBanner']);
 
 // Item
 Route::middleware(['api', 'web'])->group(function () {
@@ -60,7 +62,6 @@ Route::middleware(['web'])->group(function () {
 
 // Route::get('home-categories', [ResourcesController::class, 'getCategories']);
 // Route::get('home-cuisines', [ResourcesController::class, 'getCuisines']);
-// Route::get('home-promo-banner', [ResourcesController::class, 'getPromoBanner']);
 // Route::get('home-top-picks', [ResourcesController::class, 'getTopPicks']);
 // Route::get('near/restaurants', [RestaurantPageController::class, 'list']);
 

@@ -34,6 +34,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::get('home', [MobileHomeController::class, 'home']);
         Route::get('restaurants', [MobileHomeController::class, 'list']);
         Route::get('data/dashboard', [ResourcesController::class, 'getDashboardData']);
+        Route::get('promotions', [ResourcesController::class, 'getPromoBanner']);
         Route::get('restaurant/search', [MobileHomeController::class, 'search']);
         Route::get('restaurant/{partner:id}', [MobileHomeController::class, 'restaurant']);
         Route::post('account/login', [AccessController::class, 'login']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Model\Cart;
+use App\PartnerPromotion;
 use App\Partners;
 use App\PartnerTopPick;
 use App\Services\RestaurantService;
@@ -90,22 +91,43 @@ class ResourcesController extends Controller
 
     public function getPromoBanner()
     {
-        return response()->json([
-            [
-                'image' => 'promo-banner-1.jpg',
-                'title' => 'Special Offer',
-                'subtitle' => 'On orders over ₱299',
-                'description' => 'Get 50% off on your first order!',
-                'cta_label' => 'Order Now',
-            ],
-            [
-                'image' => 'promo-banner-2.jpg',
-                'title' => 'New Menu',
-                'subtitle' => 'On orders over ₱299',
-                'description' => 'Check out our new delicious items!',
-                'cta_label' => 'Explore Menu',
-            ],
-        ]);
+        $promotions = PartnerPromotion::query()
+            ->with('partner:id,restaurant_name,slug')
+            ->visible()
+            ->whereHas('partner', function ($query) {
+                $query->where('active', true);
+            })
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (PartnerPromotion $promotion) => [
+                'id' => $promotion->id,
+                'partner_id' => $promotion->partner_id,
+                'partner' => [
+                    'id' => $promotion->partner->id,
+                    'name' => $promotion->partner->restaurant_name,
+                    'slug' => $promotion->partner->slug,
+                ],
+                'action' => [
+                    'type' => 'merchant',
+                    'partner_id' => $promotion->partner_id,
+                    'slug' => $promotion->partner->slug,
+                ],
+                'name' => $promotion->name,
+                'title' => $promotion->name,
+                'subtitle' => $promotion->subtitle,
+                'description' => $promotion->description,
+                'cta_label' => $promotion->cta_label,
+                'link_url' => $promotion->link_url ?: route('restaurant.view', $promotion->partner->slug),
+                'image' => $promotion->image_url,
+                'image_url' => $promotion->image_url,
+                'sort_order' => $promotion->sort_order,
+                'starts_at' => $promotion->starts_at?->toIso8601String(),
+                'ends_at' => $promotion->ends_at?->toIso8601String(),
+            ])
+            ->values();
+
+        return response()->json($promotions);
     }
 
     public function getTopPicks()
@@ -157,7 +179,6 @@ class ResourcesController extends Controller
         $promoBanners = $this->getPromoBanner()->getData();
         $topPicks = $this->getTopPicks()->getData();
 
-        
         return response()->json([
             'categories' => $categories,
             'cuisines' => $cuisines,
@@ -177,16 +198,16 @@ class ResourcesController extends Controller
             'latitude' => $request->input('latitude'),
             'longitude' => $request->input('longitude'),
         ]);
-        
+
         $cart = Cart::whereSessionId($request->session_id)->first();
-        
-        if (!$cart) {
+
+        if (! $cart) {
             return response()->json(['message' => 'Cart not found.'], 404);
         }
 
         $cart->user_lat = $request->input('latitude');
         $cart->user_long = $request->input('longitude');
-       
+
         $cart->save();
 
         return response()->json(['message' => 'User coordinates updated successfully.']);

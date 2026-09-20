@@ -73,6 +73,11 @@ class Partners extends Model
         return $this->hasMany(PartnerTopPick::class, 'partner_id');
     }
 
+    public function promotions()
+    {
+        return $this->hasMany(PartnerPromotion::class, 'partner_id');
+    }
+
     public function agent()
     {
         return $this->belongsTo(Agent::class);

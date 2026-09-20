@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PartnerPromotionController;
 use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Booking\RequestController;
 use App\Http\Controllers\Flower\FlowerstoreController;
@@ -211,6 +212,9 @@ Route::middleware('admin')->group(function () {
         ->name('dashboard.rider-top-ups.approve');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::resource('data/dashboard/promotions', PartnerPromotionController::class)
+        ->except('show')
+        ->names('dashboard.promotions');
     Route::get('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'show'])->name('dashboard.merchant.application.show');
     Route::post('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'application'])->name('dashboard.merchant.application.review');
     Route::post('data/dashboard/merchant/{restaurant:id}/documents/{document}/review', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'document'])->name('dashboard.merchant.documents.review');
