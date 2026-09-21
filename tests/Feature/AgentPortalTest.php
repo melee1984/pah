@@ -291,7 +291,13 @@ class AgentPortalTest extends TestCase
         Mail::mailer('array')->to($agent->email)->send(new AgentRegistrationReceivedMail($agent));
 
         $message = Mail::mailer('array')->getSymfonyTransport()->messages()[0]->getOriginalMessage();
-        $this->assertStringContainsString('cid:pahatud-logo@pahatud', $message->getHtmlBody());
+        $html = $message->getHtmlBody();
+        $this->assertStringContainsString('cid:pahatud-logo@pahatud', $html);
+        $this->assertMatchesRegularExpression(
+            '/<td class="header"[^>]*>\s*<a[^>]*><img[^>]+><\/a>\s*<\/td>/s',
+            $html,
+        );
+        $this->assertStringNotContainsString('letter-spacing: 2px', $html);
         $this->assertCount(1, $message->getAttachments());
         $this->assertSame('pahatud-logo@pahatud', $message->getAttachments()[0]->getContentId());
     }
@@ -407,7 +413,13 @@ class AgentPortalTest extends TestCase
         $restaurant = Partners::query()->where('email', 'inasal@example.com')->firstOrFail();
         $this->assertSame($user->id, $restaurant->user_id);
         $this->assertCount(2, $restaurant->enrollmentDocuments);
+        $this->assertEqualsCanonicalizing(
+            RestaurantEnrollmentDocument::REQUIRED_TYPES,
+            $restaurant->enrollmentDocuments->pluck('document_type')->all(),
+        );
         foreach ($restaurant->enrollmentDocuments as $document) {
+            $this->assertSame($document->document_type.'.pdf', $document->original_name);
+            $this->assertSame('pending_verification', $document->status);
             Storage::disk('local')->assertExists($document->file_path);
         }
         $this->assertDatabaseHas('restaurant_invitations', [
