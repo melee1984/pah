@@ -1,91 +1,78 @@
 <template>
-  <div>
-     <div class="card">
-      <div class="card-header">
-        <div class="row">
-          <div class="col-md-6">
-          <h3 class="card-title">
-            <i class="fas fa-chart-pie mr-1"></i>
-            List
-          </h3>
-        </div> 
-         <div class="col-md-6 text-right">
-            
-         </div>  
-        </div> 
-      </div><!-- /.card-header -->
-      <div class="card-body">
-        <div class="tab-content p-0">
-          <!-- Morris chart - Sales -->
-          <div class="chart tab-pane active" id="revenue-chart">
-            <div class="table-responsive">
-              <table class="table table-bordered table-hover table-lg">
-                <thead>
-                  <tr>
-                    <th>Date Joined</th>
-                    <th>Fullname</th>
-                    <th>Email</th>
-                    <th>Mobile</th>
-<!--                     <th></th>
- -->                  </tr> 
-                </thead>
-                <tbody>
-                <tr v-if="members.length <=0">
-                    <td colspan="4">No record found...</td>
-                  </tr>
-
-                  <tr v-for="member in members.data" > 
-                    <td>{{ member.created_at_format }}</td>
-                    <td>{{ member.firstname }} {{ member.lastname }}</td>
-                    <td>{{ member.mobile }}</td>
-                    <td>{{ member.email }}</td>
-                  </tr>
-                  
-                </tbody>
-
-                <tfoot>
-                  <tr>
-                   
-                    <td colspan="4">
-                    <pagination-display :data="members" @pagination-change-page="fetchData"></pagination-display>
-
-                    </td>
-                  </tr>
-                </tfoot>
-              </table> 
-            </div>
-           </div>
-        </div>
-      </div><!-- /.card-body -->
+  <div class="card admin-card dashboard-data-card">
+    <div class="admin-card-header">
+      <div><h2>All members</h2><p>{{ members.total || 0 }} registered customer accounts</p></div>
+      <label class="admin-search dashboard-search">
+        <i class="fas fa-search"></i>
+        <input v-model="search" type="search" placeholder="Search name, email, or mobile" aria-label="Search members">
+        <button v-if="search" type="button" aria-label="Clear search" @click="search = ''">&times;</button>
+      </label>
     </div>
 
-
+    <div v-if="loading" class="dashboard-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading members…</div>
+    <div v-else-if="memberRows.length" class="table-responsive">
+      <table class="table dashboard-data-table dashboard-member-table">
+        <thead><tr><th>Member</th><th>Contact</th><th>Date joined</th></tr></thead>
+        <tbody>
+          <tr v-for="member in memberRows" :key="member.id">
+            <td><div class="admin-agent-cell"><span>{{ initial(member) }}</span><div><strong>{{ fullName(member) }}</strong><small>Member #{{ member.id }}</small></div></div></td>
+            <td><strong>{{ member.email }}</strong><small>{{ member.mobile || 'No mobile number' }}</small></td>
+            <td><strong>{{ member.created_at_format }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div v-else class="admin-empty-state"><span><i class="fas fa-users"></i></span><h3>No members found</h3><p>{{ search ? 'Try a different search term.' : 'Registered customer accounts will appear here.' }}</p></div>
+    <admin-pagination v-if="!loading" :pagination="members" @pagination-change-page="fetchData" />
   </div>
 </template>
+
 <script>
-     export default {
-       data() {
-            return {
-                field: {
-                },
-                errors: {},
-                members: {},
-            }
-        },
-        mounted() {
-          this.fetchData();
-        },
-        methods: {
-          fetchData: function(page=1) {
-            var self = this;
-              axios.get('/api/data/member/search/list?api_token='+api_token+'&page='+page).then(function (response) {
-                self.members = response.data.members;
-              }).catch(function (error) {
-                  console.log(error);
-              });
-          },
-        }
-    }
-
+export default {
+  data() {
+    return {
+      members: { data: [], current_page: 1, last_page: 1, total: 0 },
+      loading: true,
+      search: '',
+      searchTimer: null,
+    };
+  },
+  computed: {
+    memberRows() {
+      return this.members.data || [];
+    },
+  },
+  watch: {
+    search() {
+      window.clearTimeout(this.searchTimer);
+      this.searchTimer = window.setTimeout(() => this.fetchData(1), 300);
+    },
+  },
+  mounted() {
+    this.fetchData();
+  },
+  beforeDestroy() {
+    window.clearTimeout(this.searchTimer);
+  },
+  methods: {
+    fetchData(page = 1) {
+      this.loading = true;
+      const query = new URLSearchParams({ api_token, page, search: this.search });
+      axios.get(`/api/data/member/search/list?${query.toString()}`)
+        .then((response) => {
+          this.members = response.data.members;
+        })
+        .catch(() => toastr.error('Unable to load members.'))
+        .finally(() => {
+          this.loading = false;
+        });
+    },
+    fullName(member) {
+      return [member.firstname, member.lastname].filter(Boolean).join(' ') || 'Unnamed member';
+    },
+    initial(member) {
+      return this.fullName(member).charAt(0).toUpperCase();
+    },
+  },
+};
 </script>
-

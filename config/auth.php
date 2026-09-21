@@ -40,6 +40,15 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'api' => [
+            'driver' => 'token', 
+            'provider' => 'users',
+            'hash' => false,
+        ],
+        'agent' => [
+            'driver' => 'session',
+            'provider' => 'agents',
+        ],
     ],
 
     /*
@@ -63,6 +72,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\User::class),
+        ],
+        'agents' => [
+            'driver' => 'eloquent',
+            'model' => App\Agent::class,
         ],
 
         // 'users' => [

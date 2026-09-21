@@ -94,10 +94,13 @@
           </div>
         </div>
 
+        <turnstile-widget ref="turnstile" v-model="turnstileToken" action="merchant_register" />
+        <p class="text-danger" v-if="turnstileError" role="alert">{{ turnstileError }}</p>
+
         <div class="row">
           <div class="col-8">
             <div class="icheck-primary">
-              <input type="checkbox" id="agreeTerms" name="terms" value="agree">
+              <input type="checkbox" id="agreeTerms" name="terms" value="agree" required v-model="field.termsAccepted">
               <label for="agreeTerms">
                I agree to the <a href="javascript:void(0)" v-on:click="IAgreeTerms()">Terms and Conditions</a>
               </label>
@@ -121,10 +124,12 @@
 
 <script>
     import DisplayComponents from '../merchant/includes/ModalComponents.vue';
+    import TurnstileWidget from '../TurnstileWidget.vue';
 
      export default {
         components: {
            'modal-display': DisplayComponents,
+           TurnstileWidget,
         },
        data() {
             return {
@@ -140,11 +145,14 @@
                   password: '',
                   facebook: '',
                   accountType: '',
+                  termsAccepted: false,
                 },
                 errors: {},
                 isSubmit: false,
                 display: {},
                 actionSuccess: false,
+                turnstileToken: '',
+                turnstileError: '',
             }
         },
         props: ['accounttype'],
@@ -153,9 +161,17 @@
         },
         methods: {
           IAgreeTerms: function() {
-            $('#modalGeneral').modal();
+            var myModal = new bootstrap.Modal(document.getElementById('modalGeneral'));
+            myModal.show();
           },
           submitRecord: function() {
+
+                this.turnstileError = '';
+
+                if (document.querySelector('meta[name="turnstile-site-key"]') && !this.turnstileToken) {
+                  this.turnstileError = 'Please complete the security verification.';
+                  return false;
+                }
 
                 this.isSubmit = true;
 
@@ -173,6 +189,8 @@
                         password: this.field.password,
                         facebook: this.field.facebook,
                         accountType: this.field.accountType,
+                        terms_accepted: this.field.termsAccepted,
+                        'cf-turnstile-response': this.turnstileToken,
 
                       }).then((response) => {
 
@@ -182,10 +200,12 @@
                         }
                         else {
                           toastr.info(response.data.message);
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                         }
                       }).catch((errors) => {
                           toastr.error(errors);
                           this.isSubmit = false;
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                       }); 
                 }
                 return false;
@@ -248,6 +268,9 @@
                   $('#password').addClass('border-danger ding');
                   this.errors.push("Password is required.");
                 }
+                if (!this.field.termsAccepted) {
+                  this.errors.push("You must agree to the Terms and Conditions.");
+                }
 
                 if (!this.errors.length) {
                   return true;
@@ -270,6 +293,7 @@
                 this.field.password = "";
                 this.field.facebook = "";
                 this.field.accountType = "";
+                this.field.termsAccepted = false;
                 
                 this.errors = {};
                 this.isSubmit = false;

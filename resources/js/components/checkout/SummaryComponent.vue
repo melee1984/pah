@@ -46,7 +46,7 @@
         </div>
 
          <div v-if="refresh" class="text-center m-b-4">
-          <!-- <img src="/images/ajax-loader.gif" alt=""> -->
+          <img src="/images/ajax-loader.gif" alt="">
         </div>
 
         <div class="total-summary" v-if="!refresh">
@@ -87,7 +87,6 @@
                 <button type="button" class="btn btn-block btn-pahatud" v-on:click="checkout"v-if="store_open"><span>CHECKOUT</span></button>
                 <button type="button" class="btn btn-block btn-pahatud" v-if="!store_open" disabled><span>CHECKOUT</span> </button>
             </div>
-
 
         </div>
     </div>
@@ -219,11 +218,11 @@
         },
         props: ['store_open'],
         created() {
-          Event.$on('reloadSummary', () => {
+          window.AppEvents.$on('reloadSummary', () => {
             console.log('Updating cart');
             this.fetchData();
           });
-          Event.$on('proceed-to-cart', () => {
+          window.AppEvents.$on('proceed-to-cart', () => {
             this.checkout();
           });
         },
@@ -239,8 +238,8 @@
                   if (self.cart) {
                     self.items = response.data.cart.details;
                     self.summary = response.data.summary;
-                    Event.$emit('CartItemCount',  self.summary.qty);
-                    Event.$emit('app-summary-cart',  self.summary);  
+                    window.AppEvents.$emit('CartItemCount',  self.summary.qty);
+                    window.AppEvents.$emit('app-summary-cart',  self.summary);
                   }
                   self.refresh = false;
               })
@@ -249,6 +248,7 @@
               });
             },
             checkout: function() {
+              // diriah nako Dece 10 2025 
                 if (isLogged) {
                     window.location = "/checkout";
                 }
@@ -259,7 +259,7 @@
             updateCartItemMinus: function(cartItem) {
               axios.post('/api/cart/'+cartItem.id+'/action/minus/submit').then((response) => {
                 if (response.data.status) {
-                  Event.$emit('reloadSummary');
+                  window.AppEvents.$emit('reloadSummary');
                 }
                 else {
                   toastr.info(response.data.message);
@@ -271,7 +271,7 @@
             updateCartItemAdd: function (cartItem) {
               axios.post('/api/cart/'+cartItem.id+'/action/add/submit').then((response) => {
                 if (response.data.status) {
-                  Event.$emit('reloadSummary');
+                  window.AppEvents.$emit('reloadSummary');
                 }
                 else {
                   toastr.info(response.data.message);
@@ -283,7 +283,7 @@
             updateCartItemDelete: function (cartItem) {
               axios.post('/api/cart/'+cartItem.id+'/action/delete/submit').then((response) => {
                 if (response.data.status) {
-                  Event.$emit('reloadSummary');
+                  window.AppEvents.$emit('reloadSummary');
                 }
                 else {
                   toastr.info(response.data.message);

@@ -23,6 +23,8 @@
             <div class="form-group">
               <input type="password" class="form-control" name="password" placeholder="Enter your Password" required v-model="field.password"> 
             </div>
+            <turnstile-widget ref="turnstile" v-model="turnstileToken" action="customer_login" />
+            <p class="text-danger" v-if="turnstileError" role="alert">{{ turnstileError }}</p>
             <button type="submit" class="btn-block btn-xs food-btn style-2"><span v-if="!isSubmit">Submit</span> <span v-if="isSubmit">Please wait...</span></button> 
             <br/>
             <p>Forgot <a href="/password/reset" style="margin-top:5px;">Password?</a></p>
@@ -43,7 +45,12 @@
     </div>
 </template>
 <script>
+    import TurnstileWidget from '../TurnstileWidget.vue';
+
     export default {
+      components: {
+        TurnstileWidget,
+      },
       data() {
             return {
                 field: {
@@ -55,6 +62,8 @@
                 display: {},
                 actionSuccess: false,
                 displayMessage: false,
+                turnstileToken: '',
+                turnstileError: '',
             }
         },
         mounted() {
@@ -62,6 +71,13 @@
         },
         methods: {
           submitRecord: function() {
+
+                this.turnstileError = '';
+
+                if (document.querySelector('meta[name="turnstile-site-key"]') && !this.turnstileToken) {
+                  this.turnstileError = 'Please complete the security verification.';
+                  return false;
+                }
 
                 this.isSubmit = true;
 
@@ -74,6 +90,7 @@
                         email: this.field.email,
                         password: this.field.password,
                         page: page_url,
+                        'cf-turnstile-response': this.turnstileToken,
                       })
                       .then((response) => {
                         if (response.data.status) {
@@ -83,10 +100,12 @@
                           this.display.message = response.data.message;
                           this.displayMessage = true;
                           this.isSubmit = false;
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                         }
                       }).catch((errors) => {
                           console.log('There was an error => ', errors);
                           this.isSubmit = false;
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                       }); 
                 }
                 return false;
@@ -133,5 +152,4 @@
         }
     }
 </script>
-
 

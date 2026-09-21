@@ -16,6 +16,9 @@ use App\Sector;
 use DB;
 use App\PartnerSector;
 
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Imagick\Driver;
+
 class ProfileController extends Controller
 {
 	public function getList() {	
@@ -88,113 +91,122 @@ class ProfileController extends Controller
 		return response()->json($data, 200);
 
     }
-	public function uploadImageBanner(Request $request) {
+	
+	public function uploadImageBanner(Request $request)
+	{
+		$request->validate([
+			'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+		]);
 
-		request()->validate([
-            'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
+		$data = [];
+		$image = $request->file('file');
+		$filename = now()->toDateString() . "-" . $image->getClientOriginalName();
 
-    	$data = array();
-    	$image = $request->file('file');
-        $filename   = now()->toDateString()."-".$image->getClientOriginalName();
-       //Fullsize
-       //
-       	try {
-       		$this->unlinkImageBanner();
-			try {
+		try {
+			$this->unlinkImageBanner();
 
-				$originalDirectory = public_path().'/uploads/user/'.Auth::User()->merchant->id . "/banner";
+			$originalDirectory = public_path('uploads/user/' . Auth::user()->merchant->id . '/banner');
 
-	    		if (!file_exists($originalDirectory)) {
-		            mkdir($originalDirectory, 0777, true);
-		        }
-		       
-			} catch (Exception $e) {
-				\Log('Error when uploading image ProfileController Merchant Uploading Image');
-				$data['message'] = "Uploading banner image failed.";
-				$data['status'] = 0;
-				return response()->json($data, 200);
+			if (!file_exists($originalDirectory)) {
+				mkdir($originalDirectory, 0777, true);
 			}
-	        
-	       	$image->move($originalDirectory."/",$filename);
 
-			$image_resize = Image::make($originalDirectory."/".$filename);
+			// Move uploaded file
+			$image->move($originalDirectory, $filename);
 
-			Auth::User()->merchant->banner = $filename;
-			$status = Auth::User()->merchant->save();
+			// Intervention Image v3
+			$manager = new ImageManager(new Driver());
+			$img = $manager->read($originalDirectory . '/' . $filename);
+
+			// OPTIONAL: resize if needed
+			// $img->resize(1200, 400);
+
+			// Save (overwrite if modified)
+			$img->save();
+
+			Auth::user()->merchant->banner = $filename;
+			$status = Auth::user()->merchant->save();
 
 			if ($status) {
-				$data['banner'] = asset('uploads/user/'.Auth::User()->merchant->id."/banner/".$filename);
-				$data['message'] = "Successfully uploaded banner image";
+				$data['banner'] = asset('uploads/user/' . Auth::user()->merchant->id . '/banner/' . $filename);
+				$data['message'] = 'Successfully uploaded banner image';
 				$data['status'] = 1;
-			}
-			else {
-				$data['message'] = "Unable to upload image. Please refresh the page and try again. Thank you.";
+			} else {
+				$data['message'] = 'Unable to upload image. Please try again.';
 				$data['status'] = 0;
 			}
 
-       	} catch (Exception $e) {
-       		$data['message'] = "An error occur:" . $e;
+		} catch (\Exception $e) {
+			$data['message'] = 'An error occurred: ' . $e->getMessage();
 			$data['status'] = 0;
-       	}
-        
+		}
+
 		return response()->json($data, 200);
-
 	}
-	public function uploadImage(Request $request) {
 
-		request()->validate([
-            'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-        // 'file' => 'required|image|mimes:jpeg,png,jpg|max:2048|dimensions:max_width=500,max_height=500',
+	public function uploadImage(Request $request)
+	{
+		$request->validate([
+			'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+		]);
 
-    	$data = array();
-    	$image = $request->file('file');
-        $filename   = now()->toDateString()."-".$image->getClientOriginalName();
-       //Fullsize
-       //
-       	try {
-       		
-       		$this->unlinkImage();
+		$data = [];
+		$image = $request->file('file');
+		$filename = now()->toDateString() . "-" . $image->getClientOriginalName();
+
+		try {
+			$this->unlinkImage();
 
 			try {
+				$originalDirectory = public_path('uploads/user/' . Auth::user()->merchant->id);
+				$thumbDirectory    = public_path('uploads/user/' . Auth::user()->merchant->id . '/thumb');
 
-			$originalDirectory = public_path().'/uploads/user/'.Auth::User()->merchant->id . "";
-       		$originalDirectoryThumb = public_path().'/uploads/user/'.Auth::User()->merchant->id ."/thumb"."";
+				if (!file_exists($originalDirectory)) {
+					mkdir($originalDirectory, 0777, true);
+				}
 
-    		if (!file_exists($originalDirectory)) {
-	            mkdir($originalDirectory, 0777, true);
-	        }
+				if (!file_exists($thumbDirectory)) {
+					mkdir($thumbDirectory, 0777, true);
+				}
 
-			} catch (Exception $e) {
-				\Log('Error when uploading image ProfileController Merchant');
-				$data['message'] = "Uploading image failed";
-				$data['status'] = 0;
-				return response()->json($data, 200);
+			} catch (\Exception $e) {
+				\Log::error('Error when uploading image ProfileController Merchant');
+				return response()->json([
+					'message' => 'Uploading image failed',
+					'status'  => 0,
+				], 200);
 			}
-	        
-	       	$image->move($originalDirectory."/",$filename);
 
-			$image_resize = Image::make($originalDirectory."/".$filename);
+			// Move original file
+			$image->move($originalDirectory, $filename);
 
-			Auth::User()->merchant->img = $filename;
-			$status = Auth::User()->merchant->save();
+			// Intervention Image v3
+			$manager = new ImageManager(new Driver());
+			$img = $manager->read($originalDirectory . '/' . $filename);
+
+			// OPTIONAL: resize or optimize
+			// $img->resize(500, 500);
+
+			// Save (overwrite if modified)
+			$img->save();
+
+			Auth::user()->merchant->img = $filename;
+			$status = Auth::user()->merchant->save();
 
 			if ($status) {
-				$data['img'] = asset('uploads/user/'.Auth::User()->merchant->id."/".$filename);
-				$data['message'] = "Successfully uploaded new image";
+				$data['img'] = asset('uploads/user/' . Auth::user()->merchant->id . '/' . $filename);
+				$data['message'] = 'Successfully uploaded new image';
 				$data['status'] = 1;
-			}
-			else {
-				$data['message'] = "Unable to upload image. Please refresh the page and try again. Thank you.";
+			} else {
+				$data['message'] = 'Unable to upload image. Please refresh the page and try again.';
 				$data['status'] = 0;
 			}
 
-       	} catch (Exception $e) {
-       		$data['message'] = "An error occur:" . $e;
+		} catch (\Exception $e) {
+			$data['message'] = 'An error occurred: ' . $e->getMessage();
 			$data['status'] = 0;
-       	}
-        
+		}
+
 		return response()->json($data, 200);
 	}
 

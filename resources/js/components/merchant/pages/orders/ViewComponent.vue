@@ -223,26 +223,35 @@
                 },
                 errors: {},
                 orders: {},
-                timerInterval: 60,
+                timerInterval: 15,
+                refreshTimer: null,
                 riders: {},
                 selectedOrder: {},
                 statuses: {},
+                modalInstance: null,
             }
         },
         mounted() {
             console.log('Mounted Order List View Component')
-              this.fetchData();
-              this.selectedOrder = this.orders[0];  
-             this.startTimer();
+            this.fetchData();
+            this.selectedOrder = this.orders[0];  
+            this.startTimer();
+            
+            const modalEl = document.getElementById("orderDetails");
+            this.modalInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
         },
-        
+        beforeDestroy() {
+            window.clearInterval(this.refreshTimer);
+        },
         methods: {
           startTimer: function () {
-           setInterval(() => {
+           this.refreshTimer = window.setInterval(() => {
                 this.timerInterval--;
-                if (this.timerInterval ==0) {
-                  this.timerInterval = 60;
-                  toastr.info("Refreshing...");
+                if (this.timerInterval === 0) {
+                  this.timerInterval = 15;
                   this.fetchData();
                 }
            }, 1000)
@@ -294,11 +303,22 @@
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          }
+              this.openModal();
+          },
+          openModal() {
+            if (!this.modalInstance) {
+              const modalEl = document.getElementById("orderDetails");
+              this.modalInstance = new bootstrap.Modal(modalEl);
+            }
+            this.modalInstance.show();
+          },
+          closeModal() {
+            if (this.modalInstance) {
+              this.modalInstance.hide();
+            }
+          },
           
         }
     }
 
 </script>
-

@@ -54,7 +54,7 @@ class CategoryController extends Controller
 	    ]);
 
 		$status = Category::create([
-			'user_id'	=> Auth::User()->id,
+			'user_id'	=> Auth::user()->id,
 	    	'name' => $request->input('name'),
 	    	'parent_category_id' => $request->input('parent_category_id')?$request->input('parent_category_id'):null,
 	    	'identifier' => Str::slug($request->input('name')),

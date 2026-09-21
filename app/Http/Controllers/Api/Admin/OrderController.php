@@ -8,44 +8,153 @@ use Illuminate\Http\Request;
 use App\Model\Orders\Orders;
 use App\Model\Cart;
 use App\Model\Riders;
-use App\LibraryStatus;
+use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Partners;
 use Auth;
 use Validator;
 use App\User;
+use App\LibraryStatus;
+use App\Services\RiderOfferDispatcher;
 
 use App\PushNotification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 class OrderController extends Controller
 {
    
     public function getList() 
     {	 
          $orders = Orders::with('cart')
-            ->whereNotNull('submitted_at') 
-            ->whereNull('delivered_at')
-            // ->whereRaw('status_id != 8')
-            ->with('partner')
-            ->orderBy('created_at', 'desc')->get();
+                ->whereNotNull('submitted_at') 
+                ->with(['partner', 'rider', 'status'])
+                ->orderBy('created_at', 'desc')->get();
+
+        $deliveries = DB::table('rider_api_deliveries')
+            ->whereIn('legacy_order_id', $orders->pluck('id'))
+            ->get(['id', 'reference', 'legacy_order_id', 'rider_id', 'current_state']);
+
+        $pendingOffers = DB::table('rider_api_offers')
+            ->whereIn('delivery_id', $deliveries->pluck('id'))
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->selectRaw('delivery_id, count(*) as total')
+            ->groupBy('delivery_id')
+            ->pluck('total', 'delivery_id');
+        $deliveriesByOrder = $deliveries->keyBy('legacy_order_id');
+
+        $proofsByDelivery = DB::table('rider_api_delivery_proofs')
+            ->whereIn('delivery_id', $deliveries->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('delivery_id');
+
+        $proofsByOrder = $deliveries
+            ->groupBy('legacy_order_id')
+            ->map(function ($orderDeliveries) use ($proofsByDelivery) {
+                return $orderDeliveries->flatMap(function ($delivery) use ($proofsByDelivery) {
+                    return $proofsByDelivery->get($delivery->id, collect())->map(function ($proof) use ($delivery) {
+                        return [
+                            'id' => $proof->reference,
+                            'method' => $proof->method,
+                            'processing_status' => $proof->processing_status,
+                            'created_at' => $proof->created_at,
+                            'file_url' => $proof->path
+                                ? route('dashboard.orders.delivery-proof', [
+                                    'delivery' => $delivery->reference,
+                                    'proof' => $proof->reference,
+                                ])
+                                : null,
+                        ];
+                    });
+                })->values();
+            });
 
         foreach($orders as $order) {
 
-            $order->rider;
-        	$order->status;
             $order->cart->address;
             $order->cart->partnerlocation;
 
             $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
+            $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
+            $delivery = $deliveriesByOrder->get($order->id);
+            $order->rider_dispatch = [
+                'assigned' => (bool) ($order->rider_id || $delivery?->rider_id),
+                'pending_offers' => $delivery ? (int) ($pendingOffers[$delivery->id] ?? 0) : 0,
+            ];
         }
 
-        $data['orders'] = $orders;
+        $data['orders'] = $orders->whereNotIn('status_id', [
+            LibraryStatus::STATUS_DELIVERED,
+            LibraryStatus::STATUS_CANCELLED,
+        ])->values();
+        $data['completedOrders'] = $orders->where('status_id', LibraryStatus::STATUS_DELIVERED)->values();
+        $data['cancelledOrders'] = $orders->where('status_id', LibraryStatus::STATUS_CANCELLED)->values();
         $data['riders'] = Riders::active()->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
     	return response()->json($data, 200);
     }   
+
+    public function viewDeliveryProof(string $delivery, string $proof): StreamedResponse
+    {
+        $attachedProof = DB::table('rider_api_delivery_proofs as proofs')
+            ->join('rider_api_deliveries as deliveries', 'deliveries.id', '=', 'proofs.delivery_id')
+            ->where('deliveries.reference', $delivery)
+            ->where('proofs.reference', $proof)
+            ->select('proofs.path')
+            ->first();
+
+        abort_if(! $attachedProof || ! $attachedProof->path, 404);
+        abort_unless(Storage::disk('local')->exists($attachedProof->path), 404);
+
+        return Storage::disk('local')->response($attachedProof->path);
+    }
+
+    public function retryRiderOffers(Orders $order, RiderOfferDispatcher $dispatcher)
+    {
+        if (! $order->submitted_at || ! $order->store_accepted_at
+            || ! in_array((int) $order->order_status_id, [
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+            return response()->json(['message' => 'Only accepted orders awaiting pickup can be sent to riders.'], 409);
+        }
+
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        if ($order->rider_id || $order->accepted_by_rider_id || $delivery?->rider_id
+            || ($delivery && $delivery->current_state !== 'offered')) {
+            return response()->json(['message' => 'This order already has a rider or is no longer available.'], 409);
+        }
+
+        $before = $delivery
+            ? DB::table('rider_api_offers')->where('delivery_id', $delivery->id)->count()
+            : 0;
+        $reference = $dispatcher->dispatchOrder($order);
+        if (! $reference) {
+            return response()->json(['message' => 'Rider dispatch is currently unavailable.'], 503);
+        }
+
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        $newOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)->count() - $before;
+        $activeOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)
+            ->where('status', 'pending')->where('expires_at', '>', now())->count();
+
+        return response()->json([
+            'new_offers' => $newOffers,
+            'active_offers' => $activeOffers,
+            'message' => $newOffers > 0
+                ? "Sent this order to {$newOffers} available rider(s)."
+                : ($activeOffers > 0
+                    ? 'No new riders found. Existing rider offers are still active.'
+                    : 'No eligible riders are available nearby right now. Try again later.'),
+        ]);
+    }
 
      public function getListwithFilter(Request $request) {
 
@@ -147,39 +256,56 @@ class OrderController extends Controller
 
     }
 
-    public function getListMemberwithFilter() {
+    public function getListMemberwithFilter(Request $request)
+    {
+        $data = [];
+        $search = trim((string) $request->query('search', ''));
 
-        $data = array();
+        $users = User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('firstname', 'like', "%{$search}%")
+                        ->orWhere('lastname', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
 
-        $users =  User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email')
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(100);
-
-        foreach($users as $user) {
-
+        foreach ($users as $user) {
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
         }
 
         $data['members'] = $users;
+
         return response()->json($data, 200);
-
     }
-    public function getListMerchantwithFilter() {
 
-        $data = array();
+    public function getListMerchantwithFilter(Request $request)
+    {
+        $data = [];
+        $search = trim((string) $request->query('search', ''));
 
-        $users =  Partners::orderBy('created_at', 'desc')
-                    ->paginate(100);
+        $users = Partners::with('accoutType')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('restaurant_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('telephone', 'like', "%{$search}%")
+                        ->orWhere('city', 'like', "%{$search}%");
+                });
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
 
-        foreach($users as $user) {
-
+        foreach ($users as $user) {
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
-            $user->isverified = $user->verified_at?1:0;
-            $user->istoreopen = $user->store_open?1:0;
-            $user->accoutType;
+            $user->isverified = $user->verified_at ? 1 : 0;
+            $user->istoreopen = $user->store_open ? 1 : 0;
         }
 
-        
         $data['members'] = $users;
 
         return response()->json($data, 200);
@@ -196,6 +322,11 @@ class OrderController extends Controller
 
             if ($request->input('status_id')!=null) {
                 $order->status_id = $request->input('status_id');    
+                $order->order_status_id = $request->input('status_id');
+
+                if ((int) $request->input('status_id') === LibraryStatus::STATUS_DELIVERED) {
+                    $order->delivered_at = $order->delivered_at ?: now();
+                }
             }
             else {
                 $order->status_id = "";

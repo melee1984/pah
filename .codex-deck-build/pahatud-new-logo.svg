@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">PahatudFood logo</title>
+  <rect width="48" height="48" rx="11" fill="#EF3B35"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" d="M14 9h14.25C35.84 9 41 13.7 41 20.55 41 27.4 35.84 32 28.25 32H23v7h-9V9Zm9 8v7h5.1c2.45 0 3.9-1.28 3.9-3.5S30.55 17 28.1 17H23Z" clip-rule="evenodd"/>
+</svg>

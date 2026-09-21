@@ -24,7 +24,16 @@ class Partners extends Model
                                 'account_type_id',
                                 'percentage',
                                 'addup',
-                                'is_pre_order'
+                                'is_pre_order',
+                                'agent_id'
+                                ,'business_structure'
+                                ,'enrolling_as'
+                                ,'registered_business_name'
+                                ,'tin'
+                                ,'business_registration_number'
+                                ,'payout_account_name'
+                                ,'application_status'
+                                ,'application_remarks'
                             );
     
 	public $timestamps = true;
@@ -58,6 +67,142 @@ class Partners extends Model
     public function foodType() {
         return $this->hasMany('App\PartnerFoodType', 'partner_id', 'id');
     }
+
+    public function topPicks()
+    {
+        return $this->hasMany(PartnerTopPick::class, 'partner_id');
+    }
+
+    public function promotions()
+    {
+        return $this->hasMany(PartnerPromotion::class, 'partner_id');
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(\App\Model\Orders\Orders::class, 'partner_id');
+    }
+
+    public function agentCommissions()
+    {
+        return $this->hasMany(AgentCommission::class, 'restaurant_id');
+    }
+
+    public function enrollmentDocuments()
+    {
+        return $this->hasMany(RestaurantEnrollmentDocument::class, 'partner_id');
+    }
+
+    public function enrollmentContact()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function missingEnrollmentDocuments(): array
+    {
+        if (! $this->agent_id) {
+            return [];
+        }
+
+        $required = RestaurantEnrollmentDocument::REQUIRED_TYPES;
+
+        if ($this->enrolling_as === 'authorized_representative') {
+            $required[] = 'authorization_document';
+        }
+
+        $available = $this->enrollmentDocuments()->get()
+            ->filter(fn ($document) => \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path))
+            ->pluck('document_type')
+            ->all();
+
+        return array_values(array_diff($required, $available));
+    }
+
+    public function requiredEnrollmentDocumentTypes(): array
+    {
+        $types = RestaurantEnrollmentDocument::REQUIRED_TYPES;
+
+        if ($this->enrolling_as === 'authorized_representative') {
+            $types[] = 'authorization_document';
+        }
+
+        return $types;
+    }
+
+    public function documentsReadyForApproval(): bool
+    {
+        $documents = $this->enrollmentDocuments()->get()->keyBy('document_type');
+
+        foreach ($this->requiredEnrollmentDocumentTypes() as $type) {
+            $document = $documents->get($type);
+
+            if (! $document || $document->currentStatus() !== 'approved'
+                || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function applicationReadyForApproval(): bool
+    {
+        return $this->applicationApprovalBlockers() === [];
+    }
+
+    public function applicationApprovalBlockers(): array
+    {
+        $blockers = [];
+        $requiredFields = [
+            'restaurant_name' => 'Restaurant name',
+            'registered_business_name' => 'Registered business name',
+            'tin' => 'TIN',
+            'payout_account_name' => 'Payout account name and details',
+            'email' => 'Email',
+            'mobile' => 'Mobile',
+            'address' => 'Address',
+            'city' => 'City',
+            'business_structure' => 'Business structure',
+            'enrolling_as' => 'Enrollment authority',
+        ];
+
+        foreach ($requiredFields as $field => $label) {
+            if (blank($this->$field)) {
+                $blockers[] = $label.' is missing.';
+            }
+        }
+
+        if ($this->business_structure && $this->business_structure !== 'sole_proprietorship'
+            && $this->enrolling_as !== 'authorized_representative') {
+            $blockers[] = 'A non-sole-proprietorship must be enrolled by an authorized representative.';
+        }
+
+        $documents = $this->enrollmentDocuments()->get()->keyBy('document_type');
+
+        foreach ($this->requiredEnrollmentDocumentTypes() as $type) {
+            $label = RestaurantEnrollmentDocument::label($type);
+            $document = $documents->get($type);
+
+            if (! $document || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path)) {
+                $blockers[] = $label.' is missing.';
+                continue;
+            }
+
+            $status = $document->currentStatus();
+
+            if ($status !== 'approved') {
+                $blockers[] = $label.' is '.strtolower(str_replace('_', ' ', $status)).'.';
+            }
+        }
+
+        return $blockers;
+    }
+
     /**
      * [category description]
      * @return [type] [description]
@@ -129,6 +274,7 @@ class Partners extends Model
             else {
                 return asset('uploads/no-img.png') ;   
             }
+            
 
          }
 

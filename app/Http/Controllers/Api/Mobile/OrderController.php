@@ -23,6 +23,37 @@ class OrderController extends Controller
     	return response()->json($data, 200);
 
     }
+
+    public function getOrderById(Orders $order, Request $request) {
+
+        $data = array();        
+
+        $order->summary = $order->cart->cartItemSummary();
+        $product_items = $order->cart->cartItemList();    
+        $order->cart_total = $order->cart->cartItemTotal();
+
+        foreach($product_items as $list) {
+            $list->variance_content = unserialize($list->variance_content);
+            if ($list->item) {
+                $list->price = number_format($list->item->getPrice() + number_format($list->variance_total,2),2);
+            }
+        }
+
+        $order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
+        $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
+        $order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
+        $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
+        $order->cart->address;
+        $order->status;  
+        $order->load('rider.location');
+        $order->logs = $order->getActionLogs();
+
+        $data['order'] = $order;
+
+        return response()->json($data, 200);
+
+    }
+
     public function orders(Request $request) {
 
     	$data = array();	
@@ -49,6 +80,7 @@ class OrderController extends Controller
                 $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
                 $order->cart->address;
                 $order->status;  
+                $order->rider;
                 $order->logs = $order->getActionLogs();
             }
             else {
@@ -79,7 +111,7 @@ class OrderController extends Controller
             
             if ($request->input('status') =="cancel") {
                 $status_id = 8;
-                $order->status_id = $status_id; // Cancelled 
+                $order->order_status_id = $status_id; // Cancelled 
             }
 
             $status = $order->save();
@@ -111,33 +143,7 @@ class OrderController extends Controller
         return response()->json($data, 200);
     }
 
-     public function getOrderById(Orders $order, Request $request) {
-
-        $data = array();        
-
-        $order->summary = $order->cart->cartItemSummary();
-        $product_items = $order->cart->cartItemList();    
-        $order->cart_total = $order->cart->cartItemTotal();
-
-        foreach($product_items as $list) {
-            $list->variance_content = unserialize($list->variance_content);
-            if ($list->item) {
-                $list->price = number_format($list->item->getPrice() + number_format($list->variance_total,2),2);
-            }
-        }
-
-        $order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
-        $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
-        $order->cart->address;
-        $order->status;  
-        $order->logs = $order->getActionLogs();
-       
-        
-        $data['cart'] = $order;
-
-        return response()->json($data, 200);
-
-    }
+     
 
    
 

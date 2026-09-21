@@ -37,16 +37,15 @@ class PartnerController extends Controller
 			$when = Carbon::now()->addMinutes(5);
 
 			Mail::to('lparba@gmail.com')
-				->bcc('leslie@artagile.com')
 				->later($when, new PartnerMail($partners));
 
-			$data['message'] = "You have successfully submitted your information. We will get back to you shortly. Thank you";
+			$data['message'] = "You have successfully submitted your information. We will get back to you shortly. Thank you.";
 			$data['type'] = "success";
 			$data['title'] = "Great!";
 			$data['status'] = 1;
 		}
 		else {
-			$data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
+			$data['message'] = "We've encountered an issue during the process. Please refresh your page and try again. Thank you.";
 			$data['type'] = "error";
 			$data['title'] = "Sorry!";
 			$data['status'] = 0;	
@@ -71,7 +70,8 @@ class PartnerController extends Controller
 			'address' => 'required',
 	        'city' => 'required|max:30',
 			'email' => 'required',
-			'password' => 'required',
+			'password' => 'required|min:8',
+			'terms_accepted' => 'accepted',
 	    ]);
 		
 		$user =  User::create([

@@ -1,4 +1,4 @@
-@extends('app')
+@extends('errors.layout')
 
 @section('title', 'Server Error')
 

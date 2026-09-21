@@ -6,6 +6,9 @@
   <title>Pahatud | Merchant Dashboard</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  @if (config('services.turnstile.enabled'))
+  <meta name="turnstile-site-key" content="{{ config('services.turnstile.site_key') }}">
+  @endif
   <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" type="image/ico">
 
 
@@ -31,15 +34,19 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
   <!-- Theme style -->
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/custom.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/admin-login.css') }}">
   <!-- Google Font: Source Sans Pro -->
   <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
-  <script src="{{ asset('js/merchant.js') }}" defer></script>
+  
+  @vite('resources/js/merchant.js')
+
 </head>
-<body class="hold-transition login-page">
+<body class="hold-transition login-page pahatud-login-page">
 <div class="login-box" id="app">
   <div class="login-logo">
     <a href="{{ URL::to('/') }}">
-      <img src="{{ asset('mobile/logo-white.png') }}" alt="" class="img-responsive">
+      <img src="{{ asset('images/logo.jpg') }}" alt="Pahatud" class="img-responsive">
+      <span><strong>Pahatud</strong><small>Merchant portal</small></span>
     </a>
   </div>
   <!-- /.login-logo -->

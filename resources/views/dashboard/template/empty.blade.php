@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Pahatud | Merchant Dashboard</title>
+  <title>Pahatud | Admin Login</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -17,15 +17,17 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
   <!-- Theme style -->
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/custom.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/admin-login.css') }}">
   <!-- Google Font: Source Sans Pro -->
   <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
   <script src="{{ asset('js/app.js') }}" defer></script>
 </head>
-<body class="hold-transition login-page">
+<body class="hold-transition login-page pahatud-login-page">
 <div class="login-box" id="app">
   <div class="login-logo">
     <a href="{{ URL::to('/') }}">
-      <img src="{{ asset('mobile/logo-white.png') }}" alt="" class="img-responsive">
+      <img src="{{ asset('images/logo.jpg') }}" alt="Pahatud" class="img-responsive">
+      <span><strong>Pahatud</strong><small>Admin portal</small></span>
     </a>
   </div>
   <!-- /.login-logo -->

@@ -19,10 +19,13 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
   <!-- Theme style -->
-  <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-  
+    @vite(entrypoints: 'resources/js/merchant.js')
+    <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/restaurant-application.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/restaurant-file-preview.css') }}">
+
 </head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm pahatud-admin pahatud-merchant">
 <div class="wrapper" id="app">
   <!-- Navbar -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light navbar-white">
@@ -32,7 +35,7 @@
         <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
       </li>
       <li class="nav-item d-none d-sm-inline-block">
-         
+         <span class="admin-top-title">Merchant dashboard</span>
       </li>
     </ul>
     <!-- Right navbar links -->
@@ -41,6 +44,12 @@
       <li class="nav-item dropdown">
          <store-online-button  :store_online="{{ Auth::User()->merchant->store_open}}"></store-online-button>
       </li>
+      <li class="nav-item d-none d-md-flex align-items-center">
+        <div class="merchant-top-profile">
+          <span>{{ mb_strtoupper(mb_substr(Auth::User()->fullname, 0, 1)) }}</span>
+          <div><strong>{{ Auth::User()->fullname }}</strong><small>Merchant administrator</small></div>
+        </div>
+      </li>
     </ul>
   </nav>
   <!-- /.navbar -->
@@ -48,22 +57,13 @@
   <aside class="main-sidebar elevation-4 sidebar-light-danger">
     <!-- Brand Logo -->
     <a href="{{ route('merchant.dashboard.index') }}" class="brand-link">
-      <span class="brand-text font-weight-light">{{ Auth::User()->merchant->restaurant_name }}</span>
+      <img src="{{ asset('images/logo.jpg') }}" alt="Pahatud" class="brand-image">
+      <span class="brand-copy"><strong>{{ Auth::User()->merchant->restaurant_name }}</strong><small>Merchant partner</small></span>
     </a>
     <!-- Sidebar -->
     <div class="sidebar">
-      <!-- Sidebar user panel (optional) -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="text-success" style="font-size: 20px;margin-left: 18px;">
-          <i class="far fa-id-card"></i>
-        </div>
-        <div class="info">
-          <a href="#" class="d-block">{{ Auth::User()->fullname }}</a>
-        </div>
-      </div>
-
       <!-- Sidebar Menu -->
-      <nav class="mt-2">
+      <nav class="merchant-sidebar-navigation" aria-label="Merchant navigation">
           @include('merchant.includes.menu')
       </nav>
       <!-- /.sidebar-menu -->
@@ -81,8 +81,8 @@
 
   <!-- Main Footer -->
   <footer class="main-footer">
-    <strong>Copyright &copy; 2020 <a href="http://pahatud.com\">Pahatud.com</a>.</strong>
-    All rights reserved.
+    <strong>Copyright &copy; {{ date('Y') }} <a href="https://pahatud.com">Pahatud.com</a>.</strong>
+    All rights reserved. <a class="merchant-footer-help" href="{{ route('merchant.help') }}">Help desk &amp; documentation</a>
     <div class="float-right d-none d-sm-inline-block">
       <b>Version</b> 1.0.0
     </div>
@@ -119,7 +119,8 @@
 <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
 <!-- <script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
  -->
-<script src="{{ asset('js/merchant.js') }}" defer></script>
+
+@vite('resources/js/merchant.js')
 
 <script type="text/javascript">
  
@@ -148,5 +149,8 @@
 
 </script>
 
+@if (request()->routeIs('merchant.application.show'))
+  <script src="{{ asset('js/restaurant-file-preview.js') }}" defer></script>
+@endif
 </body>
 </html>

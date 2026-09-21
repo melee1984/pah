@@ -1,31 +1,20 @@
 @extends('templates.inside')
 
+@section('title', 'Terms of use')
 @section('content')
 
- <!-- Page Header Section Start Here -->
-        <section class="page-header style-2">
-            <div class="container">
-                <div class="page-title text-center">
-                    <h3>Terms of Use</h3>
-                    <ul class="breadcrumb">
-                        <li><a href="{{ URL::to('/') }}">Home</a></li>
-                        <li>Terms of Use</li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-        <!-- Page Header Section Ending Here -->
+        @include('pages.partials.public-page-header', ['title' => 'Terms of use', 'kicker' => 'Using Pahatud', 'description' => 'These terms explain the rules and responsibilities that apply when you access or use Pahatud services.'])
 
         
         <!-- About Section Start here -->
-		<section class="about about-page padding-tb">
+		<section class="about about-page public-policy-page">
             <div class="container">
 
                 <div class="row align-items-center">
                     
                     <div class="col-lg-12 col-12">
                         <div class="about-content">
-                            <div class="section-wrapper">
+                            <div class="section-wrapper public-policy-card">
                                 
                             <p>The terms of use for this Pahatud website, www.Pahatud.com (the “Website”) operated by (Pahatud) are applicable to all users (“you” and “your”) of the Website. By accessing the Website, you are deemed to agree to the following terms and conditions, the Privacy Policy;and any other relevant policies, terms and conditions and notices (collectively referred to as the “Terms of Use”) which are currently applicable or will be applicable to your use of the Website, without qualification. If you do not agree to these Terms of Use, then you must stop using or accessing the Website.</p>
 

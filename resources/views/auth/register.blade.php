@@ -61,7 +61,9 @@
                                             <strong>{{ $message }}</strong>
                                         </span>
                                     @enderror
-                            
+
+                                    @include('components.turnstile', ['action' => 'customer_register'])
+
                                     <button type="submit" class="food-btn btn-block style-2"><span>Register</span></button>
                                 </form>
                             </div>

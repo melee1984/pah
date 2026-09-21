@@ -2,6 +2,7 @@
 
 namespace App\Model\Orders;
 
+use App\Model\Bookings\BookingStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class OrderProcess extends Model
@@ -24,7 +25,7 @@ class OrderProcess extends Model
      */
     public function status() 
     {
-         return $this->hasOne('App\LibraryStatus','id', 'status_id');
+         return $this->hasOne(BookingStatus::class, 'id', 'status_id');
     }
 
 }

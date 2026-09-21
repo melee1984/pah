@@ -2,17 +2,12 @@
 
 @section('content')
   
-   <div class="content-wrapper" style="min-height: 1416.81px;">
+   <div class="content-wrapper admin-content-wrapper">
 
     <section class="content-header">
       <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1>Merchant</h1>
-          </div>
-          <div class="col-sm-6">
-          
-          </div>
+        <div class="admin-page-heading">
+          <div><span class="admin-eyebrow">Marketplace network</span><h1>Merchant Partners</h1><p>Manage restaurant availability, account access, and partner capabilities.</p></div>
         </div>
       </div><!-- /.container-fluid -->
     </section>
@@ -31,4 +26,3 @@
 
 
 @endsection
-
