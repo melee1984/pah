@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Mail\RiderApplicationSubmittedMail;
 use App\Http\Requests\RegisterRiderRequest;
 use App\Http\Requests\SubmitRiderApplicationRequest;
 use App\Http\Requests\UpdateRiderEmergencyContactRequest;
@@ -11,6 +10,8 @@ use App\Http\Requests\UpdateRiderPayoutAccountRequest;
 use App\Http\Requests\UpdateRiderPersonalRequest;
 use App\Http\Requests\UpdateRiderVehicleRequest;
 use App\Http\Requests\UploadRiderApplicationDocumentRequest;
+use App\Mail\RiderApplicationSubmittedMail;
+use App\Mail\RiderVerificationCodeMail;
 use App\RiderApplication;
 use App\RiderApplicationDocument;
 use App\Services\RiderApplicationPresenter;
@@ -52,7 +53,7 @@ class RiderApplicationController extends Controller
 
             [$firstName, $lastName] = $this->splitName($application->full_name);
             $attributes = [
-                'email' => $application->email,   
+                'email' => $application->email,
                 'password' => $application->getRawOriginal('password'),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -80,8 +81,8 @@ class RiderApplicationController extends Controller
                 'active' => false,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]); 
-        }   
+            ]);
+        }
 
         return response()->json([
             'message' => 'Rider registration started. Complete the remaining application details.',
@@ -348,12 +349,8 @@ class RiderApplicationController extends Controller
             'updated_at' => now(),
         ]);
 
-        Mail::raw(
-            "Your Pahatud Rider activation code is {$code}. It expires in 10 minutes.",
-            fn ($message) => $message
-                ->to($riderApplication->email)
-                ->subject('Activate your Pahatud Rider account'),
-        );
+        Mail::to($riderApplication->email)
+            ->send(new RiderVerificationCodeMail($code, 'activation'));
 
         return response()->json([
             'message' => 'Rider activation code sent.',

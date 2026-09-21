@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
+use App\Mail\RiderVerificationCodeMail;
 use App\Services\RiderApiService;
 use App\Services\RiderApplicationPresenter;
 use App\User;
@@ -48,7 +49,7 @@ class AuthController extends Controller
 
         $rider = $this->riders->riderForUser($user);
         $account = $this->riders->accountStatus($user, $rider);
-        
+
         $deviceKey = $validated['device_id'] ?? (string) Str::uuid();
         $token = $user->createToken(
             "rider:{$deviceKey}",
@@ -203,7 +204,7 @@ class AuthController extends Controller
         $draftApplication = $account['status'] === 'draft'
             ? $account['application']
             : null;
-        
+
         return response()->json([
             'account_status' => $account['status'],
             ...($draftApplication ? [
@@ -369,12 +370,8 @@ class AuthController extends Controller
 
         try {
             if ($validated['channel'] === 'email') {
-                Mail::raw(
-                    "Your Pahatud Rider verification code is {$code}. It expires in 10 minutes.",
-                    fn ($message) => $message
-                        ->to($validated['destination'])
-                        ->subject('Pahatud Rider verification code'),
-                );
+                Mail::to($validated['destination'])
+                    ->send(new RiderVerificationCodeMail($code, $validated['purpose']));
             } else {
                 Http::asForm()
                     ->timeout(10)
