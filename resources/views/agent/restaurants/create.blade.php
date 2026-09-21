@@ -87,23 +87,25 @@
                     <small>For a corporation, partnership, or cooperative, choose authorized representative.</small>
                     @error('enrolling_as')<span class="agent-error">{{ $message }}</span>@enderror
                 </div>
-                @foreach (['registered_business_name' => 'Registered business name', 'tin' => 'TIN', 'business_registration_number' => 'Business registration number', 'payout_account_name' => 'Payout account name'] as $field => $label)
+                @foreach (['registered_business_name' => 'Registered business name', 'tin' => 'TIN'] as $field => $label)
                     <div class="agent-field">
                         <label for="{{ $field }}">{{ $label }} <span class="agent-required">*</span></label>
                         <input class="agent-input @error($field) agent-input-error @enderror" id="{{ $field }}" name="{{ $field }}" value="{{ old($field) }}" required>
                         @error($field)<span class="agent-error">{{ $message }}</span>@enderror
                     </div>
                 @endforeach
+                <div class="agent-field agent-field-full">
+                    <label for="payout_account_name">Payout account name and account details <span class="agent-required">*</span></label>
+                    <textarea class="agent-input @error('payout_account_name') agent-input-error @enderror" id="payout_account_name" name="payout_account_name" maxlength="255" placeholder="Account name, bank or e-wallet, and account number" required>{{ old('payout_account_name') }}</textarea>
+                    <small>Enter the account holder name and the details Pahatud should use for payout.</small>
+                    @error('payout_account_name')<span class="agent-error">{{ $message }}</span>@enderror
+                </div>
             </div>
-            <div class="agent-card-header agent-document-heading"><div><h2>Approval documents</h2><p>Upload what is available now. Missing permits can be added later from the restaurant account. All required documents must be approved before the restaurant is approved. PDF, JPG, or PNG, up to 10 MB each.</p></div></div>
+            <div class="agent-card-header agent-document-heading"><div><h2>Required documents</h2><p>Upload the valid ID and business registration certificate now, or add a missing file later from the restaurant account. Both documents must be approved before the restaurant is approved. PDF, JPG, or PNG, up to 10 MB each.</p></div></div>
             <div class="agent-form-grid">
                 @foreach ([
-                    'government_id' => ['Government-issued ID', 'Owner’s ID for a sole proprietorship; authorized representative’s ID for a corporation or partnership.'],
-                    'business_registration' => ['Business registration', 'DTI certificate (sole proprietorship), SEC certificate (corporation or partnership), or CDA certificate (cooperative).'],
-                    'business_permit' => ['Current Mayor’s / Business Permit', 'Must match the restaurant name and location. Davao City permits are renewed annually.'],
-                    'bir_registration' => ['BIR Certificate of Registration', 'BIR Form 2303 showing the TIN and registered business name.'],
-                    'sanitary_permit' => ['Sanitary Permit', 'Issued by the local health office.'],
-                    'payout_account' => ['Proof of payout account', 'Bank certificate, bank statement, or verified e-wallet. The name should match the business, owner, or authorized representative.'],
+                    'government_id' => ['Valid government-issued ID', 'Owner’s ID for a sole proprietorship; authorized representative’s ID for a corporation or partnership.'],
+                    'business_registration' => ['Business registration certificate', 'DTI certificate (sole proprietorship), SEC certificate (corporation or partnership), or CDA certificate (cooperative).'],
                 ] as $field => [$label, $hint])
                     <div class="agent-field">
                         <label for="{{ $field }}">{{ $label }}</label>
@@ -120,7 +122,6 @@
                     <div class="restaurant-file-preview" aria-live="polite"></div>
                     @error('authorization_document')<span class="agent-error">{{ $message }}</span>@enderror
                 </div>
-                <p class="agent-field-full">For Davao City businesses, see the <a href="https://davaocity.gov.ph/services/social-services/renewal-of-business-permits/" target="_blank" rel="noopener">City Government’s annual permit renewal guidance</a>.</p>
             </div>
             <div class="agent-form-actions">
                 <a class="agent-button agent-button-secondary" href="{{ route('agent.restaurants.index') }}">Cancel</a>

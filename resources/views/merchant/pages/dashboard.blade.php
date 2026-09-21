@@ -14,6 +14,7 @@
         <order-summary-view></order-summary-view>
         <div class="admin-section-heading"><div><span class="admin-eyebrow">Live operations</span><h2>Recent and incoming orders</h2></div><p>Order activity refreshes automatically.</p></div>
         <order-listing-view></order-listing-view>
+        @include('merchant.partials.documentation')
       </div>
     </section>
   </div>

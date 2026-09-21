@@ -40,7 +40,7 @@
                   <h5>Alert!</h5>
                   <p>We are still on progress verifying your account. If you like to follow regarding the status your account. Please contact system administrator. Thank you.</p>  
                   @if (Auth::User()->merchant?->agent_id)
-                    <p><a href="{{ route('merchant.application.show') }}">View your application, check document status, and upload missing permits</a>.</p>
+                    <p><a href="{{ route('merchant.application.show') }}">View your application, check document status, and upload missing required documents</a>.</p>
                   @endif
                 </div>
               

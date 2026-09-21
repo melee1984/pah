@@ -47,7 +47,7 @@ class RestaurantApplicationReviewController extends Controller
         });
 
         app(RestaurantApplicationNotifier::class)->send($restaurant,
-            RestaurantEnrollmentDocument::LABELS[$document->document_type].' status: '.str_replace('_', ' ', $validated['status']).'.',
+            RestaurantEnrollmentDocument::label($document->document_type).' status: '.str_replace('_', ' ', $validated['status']).'.',
             $validated['remarks'] ?? null);
 
         return back()->with('success', 'Document review saved and notifications sent.');

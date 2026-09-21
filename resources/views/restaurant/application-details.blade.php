@@ -3,8 +3,8 @@
     $uploadUrl = $agentView ? route('agent.restaurants.documents.store', $restaurant) : route('merchant.application.documents.store');
     $fields = [
         'restaurant_name' => 'Restaurant name', 'registered_business_name' => 'Registered business name',
-        'tin' => 'TIN', 'business_registration_number' => 'Business registration number',
-        'payout_account_name' => 'Payout account name', 'email' => 'Business email',
+        'tin' => 'TIN', 'payout_account_name' => 'Payout account name and account details',
+        'email' => 'Business email',
         'mobile' => 'Mobile number', 'telephone' => 'Telephone', 'city' => 'City',
         'address' => 'Complete business address', 'description' => 'Restaurant description',
     ];
@@ -28,8 +28,8 @@
             <div class="application-field"><label for="lastname">Contact last name</label><input id="lastname" name="lastname" value="{{ old('lastname', $contact?->lastname ?: Str::after($contact?->name ?? '', ' ')) }}" required></div>
             @foreach ($fields as $field => $label)
                 <div class="application-field"><label for="{{ $field }}">{{ $label }}</label>
-                    @if ($field === 'description')
-                        <textarea id="{{ $field }}" name="{{ $field }}">{{ old($field, $restaurant->$field) }}</textarea>
+                    @if (in_array($field, ['description', 'payout_account_name'], true))
+                        <textarea id="{{ $field }}" name="{{ $field }}" @if ($field === 'payout_account_name') maxlength="255" required @endif>{{ old($field, $restaurant->$field) }}</textarea>
                     @else
                         <input id="{{ $field }}" name="{{ $field }}" value="{{ old($field, $restaurant->$field) }}" @if ($field !== 'telephone') required @endif>
                     @endif

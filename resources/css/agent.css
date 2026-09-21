@@ -378,8 +378,9 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 .agent-guide-example small { color: var(--agent-muted); display: block; font-size: 11px; line-height: 1.5; }
 .agent-guide-notes ul { margin: 0; padding-left: 19px; }
 .agent-guide-notes li + li { margin-top: 8px; }
+.agent-page-head-actions { display: flex; gap: 10px; }
 @media (max-width: 1150px) { .agent-guide-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 680px) { .agent-guide-heading { align-items: stretch; flex-direction: column; } .agent-guide-heading .agent-button { width: 100%; } .agent-guide-steps, .agent-guide-bottom { grid-template-columns: 1fr; } }
+@media (max-width: 680px) { .agent-guide-heading { align-items: stretch; flex-direction: column; } .agent-guide-heading .agent-button { width: 100%; } .agent-guide-steps, .agent-guide-bottom { grid-template-columns: 1fr; } .agent-page-head-actions { flex-direction: column; } .agent-page-head-actions .agent-button { width: 100%; } }
 .agent-guide-more { color: var(--agent-red); display: inline-flex; font-size: 13px; font-weight: 800; gap: 8px; margin-top: 18px; }
 .agent-sidebar-footer > .agent-nav-link { margin-bottom: 9px; }
 .agent-help-jump { display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 22px; }

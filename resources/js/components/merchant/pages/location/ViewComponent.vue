@@ -2,20 +2,20 @@
   <div class="merchant-settings-page">
     <div v-if="actionStatus === 'view'" class="card admin-card dashboard-data-card">
       <div class="admin-card-header merchant-settings-card-header">
-        <div><h2>Store locations</h2><p>{{ searchFilter.length }} locations shown. Select a row to edit its details.</p></div>
+        <div><h2>Store branches</h2><p>{{ searchFilter.length }} branches shown. Select a row to edit its details.</p></div>
         <div class="merchant-settings-toolbar">
           <label class="admin-search" for="location-search">
             <i class="fas fa-search" aria-hidden="true"></i>
             <input id="location-search" v-model.trim="search" type="search" placeholder="Search addresses">
           </label>
-          <button type="button" class="btn admin-btn-primary" @click="action('add')"><i class="fas fa-plus mr-2"></i>Add location</button>
+          <button type="button" class="btn admin-btn-primary" @click="action('add')"><i class="fas fa-plus mr-2"></i>Add branch</button>
         </div>
       </div>
       <div class="card-body table-responsive p-0">
         <table class="table dashboard-data-table merchant-settings-table merchant-location-table">
-          <thead><tr><th>Location</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
+          <thead><tr><th>Branch</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
           <tbody>
-            <tr v-if="searchFilter.length === 0"><td colspan="5" class="dashboard-table-empty">{{ search ? 'No locations match your search.' : 'No store locations have been added yet.' }}</td></tr>
+            <tr v-if="searchFilter.length === 0"><td colspan="5" class="dashboard-table-empty">{{ search ? 'No branches match your search.' : 'No store branches have been added yet.' }}</td></tr>
             <tr v-for="location in searchFilter" :key="location.id" class="merchant-settings-row" @click="editAction(location)">
               <td><strong>{{ location.address_1 }}</strong><small>{{ [location.address_2, location.city, location.zip_code].filter(Boolean).join(', ') || 'No additional address details' }}</small></td>
               <td>{{ location.telephone || '—' }}</td>
@@ -37,12 +37,12 @@
     <div v-else class="merchant-form-shell merchant-form-shell-wide">
       <div class="card admin-card merchant-form-card">
         <div class="admin-card-header">
-          <div><span class="admin-eyebrow">Location details</span><h2>{{ actionStatus === 'add' ? 'Add a store location' : 'Edit store location' }}</h2><p>Provide an address and reliable contact details for this branch.</p></div>
+          <div><span class="admin-eyebrow">Branch details</span><h2>{{ actionStatus === 'add' ? 'Add a branch' : 'Edit branch' }}</h2><p>Provide an address and reliable contact details for this branch.</p></div>
           <button v-if="actionStatus === 'edit'" type="button" class="btn merchant-danger-button" @click="onDelete"><i class="fas fa-trash-alt mr-2"></i>Delete</button>
         </div>
         <form class="merchant-settings-form" @submit.prevent="onSubmit">
           <div class="merchant-toggle-panel">
-            <div><strong>Location availability</strong><small>Active locations can receive customer orders.</small></div>
+            <div><strong>Branch availability</strong><small>Active branches can receive customer orders.</small></div>
             <label class="merchant-toggle" for="active"><input id="active" v-model="field.active" type="checkbox"><span><i></i></span><strong>{{ field.active ? 'Active' : 'Hidden' }}</strong></label>
           </div>
           <div class="merchant-form-grid">
@@ -54,19 +54,19 @@
             <div class="form-group"><label for="telephone">Telephone</label><input id="telephone" v-model.trim="field.telephone" type="text" class="form-control" placeholder="Telephone number"></div>
             <div class="form-group merchant-form-span merchant-location-picker">
               <div class="merchant-location-picker-header">
-                <div><label>Pin store location</label><small>Click the map or drag the pin to set the exact coordinates.</small></div>
+                <div><label>Pin branch location</label><small>Click the map or drag the pin to set the exact coordinates.</small></div>
                 <button type="button" class="btn admin-btn-secondary merchant-location-button" :disabled="isLocating" @click="useCurrentLocation">
                   <i :class="isLocating ? 'fas fa-spinner fa-spin' : 'fas fa-crosshairs'" aria-hidden="true"></i>
                   {{ isLocating ? 'Getting location…' : 'Use my location' }}
                 </button>
               </div>
-              <div ref="locationMap" class="merchant-location-map" aria-label="Interactive store location map"></div>
+              <div ref="locationMap" class="merchant-location-map" aria-label="Interactive branch location map"></div>
               <small class="merchant-location-message" role="status" aria-live="polite">{{ locationMessage }}</small>
             </div>
             <div class="form-group"><label for="latitude">Latitude</label><input id="latitude" v-model.trim="field.latitude" type="number" step="any" min="-90" max="90" class="form-control" placeholder="e.g. 10.3157"><small class="merchant-field-help">A value from -90 to 90.</small></div>
             <div class="form-group"><label for="longtitude">Longitude</label><input id="longtitude" v-model.trim="field.longtitude" type="number" step="any" min="-180" max="180" class="form-control" placeholder="e.g. 123.8854"><small class="merchant-field-help">A value from -180 to 180.</small></div>
           </div>
-          <div class="merchant-form-actions"><button type="button" class="btn admin-btn-secondary" @click="cancel">Cancel</button><button type="submit" class="btn admin-btn-primary">{{ actionStatus === 'add' ? 'Add location' : 'Save changes' }}</button></div>
+          <div class="merchant-form-actions"><button type="button" class="btn admin-btn-secondary" @click="cancel">Cancel</button><button type="submit" class="btn admin-btn-primary">{{ actionStatus === 'add' ? 'Add branch' : 'Save changes' }}</button></div>
         </form>
       </div>
     </div>

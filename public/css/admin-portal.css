@@ -302,10 +302,27 @@ body.pahatud-admin {
 .pahatud-merchant .main-header .navbar-nav.ml-auto { align-items: center; }
 .pahatud-merchant .brand-copy { max-width: 170px; }
 .pahatud-merchant .brand-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pahatud-merchant .main-sidebar .sidebar { padding-top: 34px; }
-.pahatud-merchant .main-sidebar .user-panel { margin-top: 0 !important; }
-.pahatud-merchant .nav-sidebar.nav-compact .nav-link { padding: 10px 11px; }
-.pahatud-merchant .nav-sidebar .nav-header { text-transform: capitalize; }
+.pahatud-merchant .main-sidebar .sidebar { display: flex; flex-direction: column; height: calc(100vh - 66px); overflow: hidden; padding: 22px 10px 15px; }
+.pahatud-merchant .merchant-top-profile { align-items: center; border-left: 1px solid var(--admin-line); display: flex; gap: 9px; margin-left: 10px; padding: 3px 14px; }
+.pahatud-merchant .merchant-top-profile > span { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; flex: 0 0 34px; font-family: 'Manrope', sans-serif; font-size: 13px; font-weight: 800; height: 34px; justify-content: center; width: 34px; }
+.pahatud-merchant .merchant-top-profile strong { color: var(--admin-ink); display: block; font-size: 11px; line-height: 1.2; }
+.pahatud-merchant .merchant-top-profile small { color: var(--admin-muted); display: block; font-size: 9px; margin-top: 2px; }
+.pahatud-merchant .merchant-sidebar-navigation { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.pahatud-merchant .merchant-nav-label { color: #969da0; flex: 0 0 auto; font-size: 10px; font-weight: 800; letter-spacing: 1.25px; margin: 2px 11px 9px; text-transform: uppercase; }
+.pahatud-merchant .merchant-sidebar-menu { flex: 0 1 auto; overflow-y: auto; padding: 0; }
+.pahatud-merchant .nav-sidebar.nav-compact .nav-link,
+.pahatud-merchant .merchant-sidebar-footer .nav-link { align-items: center; border-radius: 9px; color: #596164; display: flex; font-size: 13px; font-weight: 700; margin-bottom: 4px; min-height: 42px; padding: 10px 11px; }
+.pahatud-merchant .merchant-sidebar-footer { border-top: 1px solid var(--admin-line); flex: 0 0 auto; margin-top: auto; padding-top: 14px; }
+.pahatud-merchant .merchant-sidebar-footer .nav-link:hover { background: #fff3f1; color: var(--admin-red); }
+.pahatud-merchant .merchant-sidebar-footer .nav-link.active { background: var(--admin-red); box-shadow: 0 9px 22px rgba(239,59,53,.21); color: #fff; }
+.pahatud-merchant .merchant-sidebar-footer .nav-icon { font-size: 15px; margin-right: 8px; text-align: center; width: 1.6rem; }
+.pahatud-merchant .merchant-sidebar-footer .nav-link p { margin: 0; }
+.pahatud-merchant .merchant-logout-link { margin-top: 2px; }
+.sidebar-collapse.pahatud-merchant .merchant-nav-label { visibility: hidden; }
+.sidebar-collapse.pahatud-merchant .brand-copy,
+.sidebar-collapse.pahatud-merchant .merchant-sidebar-footer .nav-link p { display: none; }
+.sidebar-collapse.pahatud-merchant .merchant-sidebar-footer .nav-link { justify-content: center; padding-left: 8px; padding-right: 8px; }
+.sidebar-collapse.pahatud-merchant .merchant-sidebar-footer .nav-icon { margin-right: 0; }
 .merchant-dashboard-hero { background: linear-gradient(125deg, #fff 42%, #fff1ee); margin-top: 6px; }
 .merchant-primary-stats .admin-stat-card { min-height: 118px; }
 .merchant-primary-stats .admin-stat-card em { color: #9a9fa2; display: block; font-size: 10px; font-style: normal; margin-top: 5px; }
@@ -443,6 +460,49 @@ body.pahatud-admin {
 .pahatud-admin .nav-tabs .nav-link.active { color: var(--admin-red); font-weight: 700; }
 .pahatud-admin .badge-danger { background: var(--admin-red); }
 
+.merchant-footer-help { margin-left: 8px; }
+.merchant-guide { margin-top: 30px; padding-bottom: 8px; }
+.merchant-guide-heading { align-items: flex-end; display: flex; gap: 20px; justify-content: space-between; margin: 0 3px 16px; }
+.merchant-guide-heading h2 { font-size: 21px; font-weight: 800; margin: 3px 0 4px; }
+.merchant-guide-heading p { color: var(--admin-muted); font-size: 12px; margin: 0; }
+.merchant-guide-steps { display: grid; gap: 14px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.merchant-guide-steps article,
+.merchant-guide-bottom > div { background: #fff; border: 1px solid var(--admin-line); border-radius: 14px; box-shadow: 0 8px 28px rgba(23,27,29,.04); padding: 21px; }
+.merchant-guide-steps article > span { align-items: center; background: #fff0ee; border-radius: 9px; color: var(--admin-red); display: inline-flex; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 800; height: 34px; justify-content: center; margin-bottom: 15px; width: 34px; }
+.merchant-guide h3 { color: var(--admin-ink); font-size: 15px; font-weight: 800; margin: 0 0 8px; }
+.merchant-guide p { color: var(--admin-muted); font-size: 11px; line-height: 1.65; margin: 0; }
+.merchant-guide a:not(.btn) { color: var(--admin-red); display: inline-block; font-size: 11px; font-weight: 800; margin-top: 13px; }
+.merchant-guide-bottom { display: grid; gap: 14px; grid-template-columns: 1.1fr .9fr; margin-top: 14px; }
+.merchant-guide-contact { display: flex; flex-wrap: wrap; gap: 9px 18px; }
+
+.merchant-help-jump { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.merchant-help-jump a { background: #fff; border: 1px solid var(--admin-line); border-radius: 99px; color: #596164; font-size: 11px; font-weight: 700; padding: 8px 12px; }
+.merchant-help-jump a:hover, .merchant-help-jump a:focus { border-color: var(--admin-red); color: var(--admin-red); text-decoration: none; }
+.merchant-help-layout { align-items: start; display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr) 275px; }
+.merchant-help-main { display: grid; gap: 17px; min-width: 0; }
+.merchant-help-section { background: #fff; border: 1px solid var(--admin-line); border-radius: 14px; box-shadow: 0 8px 28px rgba(23,27,29,.04); overflow: hidden; scroll-margin-top: 90px; }
+.merchant-help-section-head { align-items: center; border-bottom: 1px solid var(--admin-line); display: flex; gap: 13px; padding: 20px 22px; }
+.merchant-help-section-head > span { align-items: center; background: #fff0ee; border-radius: 9px; color: var(--admin-red); display: flex; flex: 0 0 auto; font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 800; height: 37px; justify-content: center; width: 37px; }
+.merchant-help-section-head h2 { font-size: 17px; font-weight: 800; margin: 0; }
+.merchant-help-section-head p { color: var(--admin-muted); font-size: 11px; margin: 3px 0 0; }
+.merchant-help-questions { padding: 0 22px; }
+.merchant-help-questions details + details { border-top: 1px solid var(--admin-line); }
+.merchant-help-questions summary { color: var(--admin-ink); cursor: pointer; font-size: 13px; font-weight: 800; list-style: none; padding: 17px 25px 17px 0; position: relative; }
+.merchant-help-questions summary::-webkit-details-marker { display: none; }
+.merchant-help-questions summary::after { color: var(--admin-red); content: '+'; font-size: 20px; font-weight: 500; position: absolute; right: 2px; top: 13px; }
+.merchant-help-questions details[open] summary::after { content: '−'; }
+.merchant-help-questions details p { color: var(--admin-muted); font-size: 12px; line-height: 1.72; margin: -2px 0 18px; }
+.merchant-help-questions details a { color: var(--admin-red); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.merchant-help-aside { background: linear-gradient(145deg, var(--admin-red), var(--admin-red-dark)); border-radius: 14px; color: #fff; padding: 23px; position: sticky; top: 84px; }
+.merchant-help-aside-icon { align-items: center; background: rgba(255,255,255,.18); border-radius: 10px; display: flex; font-size: 19px; height: 43px; justify-content: center; margin-bottom: 17px; width: 43px; }
+.merchant-help-aside h2 { color: #fff; font-size: 19px; font-weight: 800; margin: 0 0 8px; }
+.merchant-help-aside > p { color: #ffe2df; font-size: 12px; line-height: 1.6; margin: 0 0 16px; }
+.merchant-help-aside > a { align-items: center; border-top: 1px solid rgba(255,255,255,.22); color: #fff; display: flex; font-size: 12px; font-weight: 800; gap: 10px; padding: 12px 0; }
+.merchant-help-aside > a:hover { color: #fff; text-decoration: none; }
+.merchant-help-aside > a > i { text-align: center; width: 17px; }
+.merchant-help-aside > a span { display: block; }
+.merchant-help-aside > a small { color: #ffd7d4; display: block; font-size: 9px; font-weight: 500; margin-top: 2px; }
+
 @media (max-width: 991px) {
     .admin-stat-grid { grid-template-columns: repeat(2,1fr); }
     .admin-card-header { align-items: stretch; flex-direction: column; }
@@ -456,6 +516,9 @@ body.pahatud-admin {
     .merchant-profile-layout { grid-template-columns: 1fr; }
     .merchant-delivery-details { grid-template-columns: 1fr; }
     .merchant-sales-filter { grid-template-columns: 1fr; }
+    .merchant-guide-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .merchant-help-layout { grid-template-columns: 1fr; }
+    .merchant-help-aside { position: static; }
 }
 @media (max-width: 575px) {
     .admin-page-heading, .admin-dashboard-hero { align-items: stretch; flex-direction: column; }
@@ -489,4 +552,9 @@ body.pahatud-admin {
     .merchant-upload-control { flex-direction: column; }
     .merchant-sales-filter-actions { flex-direction: column; }
     .merchant-sales-filter-actions .btn { width: 100%; }
+    .merchant-guide-heading { align-items: stretch; flex-direction: column; }
+    .merchant-guide-heading .btn { width: 100%; }
+    .merchant-guide-steps, .merchant-guide-bottom { grid-template-columns: 1fr; }
+    .merchant-help-section-head { padding: 17px; }
+    .merchant-help-questions { padding: 0 17px; }
 }

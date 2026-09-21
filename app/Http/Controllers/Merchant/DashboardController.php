@@ -123,4 +123,9 @@ class DashboardController extends Controller
      	return view('merchant.pages.dashboard');
     }
 
+    public function help()
+    {
+        return view('merchant.pages.help');
+    }
+
 }
