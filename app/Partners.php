@@ -162,8 +162,7 @@ class Partners extends Model
             'restaurant_name' => 'Restaurant name',
             'registered_business_name' => 'Registered business name',
             'tin' => 'TIN',
-            'business_registration_number' => 'Business registration number',
-            'payout_account_name' => 'Payout account name',
+            'payout_account_name' => 'Payout account name and details',
             'email' => 'Email',
             'mobile' => 'Mobile',
             'address' => 'Address',
@@ -186,7 +185,7 @@ class Partners extends Model
         $documents = $this->enrollmentDocuments()->get()->keyBy('document_type');
 
         foreach ($this->requiredEnrollmentDocumentTypes() as $type) {
-            $label = RestaurantEnrollmentDocument::LABELS[$type];
+            $label = RestaurantEnrollmentDocument::label($type);
             $document = $documents->get($type);
 
             if (! $document || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path)) {

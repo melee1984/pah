@@ -23,7 +23,7 @@
 	          <th>Required</th>
 	          <th>Multiple</th>
 	          <th>Title</th>
-	          <th>Branch/Location</th>
+	          <th>Branch</th>
 	          <th v-if="actionVariant=='manage'"></th>
 	        </tr>
 	      </thead>

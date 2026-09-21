@@ -63,7 +63,7 @@ class RestaurantController extends Controller
             ],
             'registered_business_name' => ['required', 'string', 'max:255'],
             'tin' => ['required', 'string', 'max:30'],
-            'business_registration_number' => ['required', 'string', 'max:100'],
+            'business_registration_number' => ['nullable', 'string', 'max:100'],
             'payout_account_name' => ['required', 'string', 'max:255'],
             ...collect([...RestaurantEnrollmentDocument::REQUIRED_TYPES, 'authorization_document'])
                 ->mapWithKeys(fn ($type) => [$type => [

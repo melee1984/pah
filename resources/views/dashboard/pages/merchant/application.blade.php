@@ -25,8 +25,8 @@
                 @foreach ([
                     'Restaurant' => $restaurant->restaurant_name, 'Registered business name' => $restaurant->registered_business_name,
                     'Structure' => Str::headline($restaurant->business_structure ?: 'Not provided'), 'Enrolling as' => Str::headline($restaurant->enrolling_as ?: 'Not provided'),
-                    'TIN' => $restaurant->tin, 'Registration number' => $restaurant->business_registration_number,
-                    'Payout account name' => $restaurant->payout_account_name,
+                    'TIN' => $restaurant->tin,
+                    'Payout account name and details' => $restaurant->payout_account_name,
                     'Contact' => $restaurant->enrollmentContact?->name ?: trim(($restaurant->enrollmentContact?->firstname ?? '').' '.($restaurant->enrollmentContact?->lastname ?? '')),
                     'Email' => $restaurant->email,
                     'Mobile' => $restaurant->mobile, 'Telephone' => $restaurant->telephone,
@@ -38,7 +38,7 @@
             </dl>
             <p><strong>Application:</strong> {{ Str::headline($restaurant->application_status ?: 'Pending review') }} @if ($restaurant->application_remarks) — {{ $restaurant->application_remarks }} @endif</p>
         </div></div>
-        <div class="card admin-card"><div class="card-body"><h2>Documents</h2><p>Check the file contents, names, location, and validity dates before approving. Reject a file with remarks to request a replacement.</p>
+        <div class="card admin-card"><div class="card-body"><h2>Required documents</h2><p>Check the valid ID and business registration certificate before approving. Reject a file with remarks to request a replacement.</p>
             @foreach (\App\RestaurantEnrollmentDocument::LABELS as $type => $label)
                 @if ($type !== 'authorization_document' || $restaurant->enrolling_as === 'authorized_representative')
                     @php $document = $documents->get($type); @endphp

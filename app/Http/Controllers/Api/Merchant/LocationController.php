@@ -71,7 +71,7 @@ class LocationController extends Controller
 		]);
 	   
 		if ($status) {
-			$data['message'] = "Successfully added new location";
+			$data['message'] = "Successfully added new branch";
 			$data['status'] = 1;
 		}
 		else {
@@ -108,7 +108,7 @@ class LocationController extends Controller
     	$status = $location->save();
 
 		if ($status) {
-			$data['message'] = "Successfully updated location";
+			$data['message'] = "Successfully updated branch";
 			$data['status'] = 1;
 		}
 		else {
@@ -127,7 +127,7 @@ class LocationController extends Controller
     	$status = $delete->delete();
 
     	if ($status) {
-			$data['message'] = "Successfully delete location";
+			$data['message'] = "Successfully deleted branch";
 			$data['status'] = 1;
 		}
 		else {

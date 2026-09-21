@@ -187,6 +187,8 @@ class AgentPortalTest extends TestCase
             ->assertSee('Restaurant approval guide')
             ->assertSee('Save document review')
             ->assertSee('How is my commission calculated?')
+            ->assertSee('Contact agent support')
+            ->assertSee('mailto:info@pahatud.com?subject=Agent%20support%20request', false)
             ->assertSee(route('agent.restaurants.create'));
     }
 
@@ -404,7 +406,7 @@ class AgentPortalTest extends TestCase
         $user = User::query()->where('email', 'inasal@example.com')->firstOrFail();
         $restaurant = Partners::query()->where('email', 'inasal@example.com')->firstOrFail();
         $this->assertSame($user->id, $restaurant->user_id);
-        $this->assertCount(6, $restaurant->enrollmentDocuments);
+        $this->assertCount(2, $restaurant->enrollmentDocuments);
         foreach ($restaurant->enrollmentDocuments as $document) {
             Storage::disk('local')->assertExists($document->file_path);
         }
@@ -415,6 +417,24 @@ class AgentPortalTest extends TestCase
             'accepted_at' => null,
         ]);
         Mail::assertSent(RestaurantInvitationMail::class, fn ($mail) => $mail->hasTo('inasal@example.com'));
+    }
+
+    public function test_enrollment_form_only_shows_the_simplified_documents_and_payout_textarea(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.restaurants.create'))
+            ->assertOk()
+            ->assertSee('Payout account name and account details')
+            ->assertSee('name="payout_account_name"', false)
+            ->assertSee('Valid government-issued ID')
+            ->assertSee('Business registration certificate')
+            ->assertDontSee('name="business_registration_number"', false)
+            ->assertDontSee('Mayor’s / Business Permit')
+            ->assertDontSee('BIR Certificate of Registration')
+            ->assertDontSee('Sanitary Permit')
+            ->assertDontSee('Proof of payout account');
     }
 
     public function test_enrollment_allows_missing_documents_for_later_upload(): void
@@ -441,7 +461,7 @@ class AgentPortalTest extends TestCase
             ->assertRedirect(route('agent.restaurants.index'));
         $restaurant = Partners::query()->where('email', 'documents@example.com')->firstOrFail();
         $this->assertSame('pending_review', $restaurant->application_status);
-        $this->assertCount(6, $restaurant->missingEnrollmentDocuments());
+        $this->assertCount(2, $restaurant->missingEnrollmentDocuments());
     }
 
     public function test_restaurant_account_can_upload_a_missing_document_and_see_its_status(): void
@@ -459,8 +479,8 @@ class AgentPortalTest extends TestCase
 
         $this->actingAs($contact)
             ->post(route('merchant.application.documents.store'), [
-                'document_type' => 'business_permit',
-                'document' => UploadedFile::fake()->create('permit.pdf', 100, 'application/pdf'),
+                'document_type' => 'business_registration',
+                'document' => UploadedFile::fake()->create('registration.pdf', 100, 'application/pdf'),
             ])->assertSessionHas('success');
 
         $document = $restaurant->enrollmentDocuments()->firstOrFail();
@@ -496,6 +516,44 @@ class AgentPortalTest extends TestCase
 
         $this->assertSame('Updated Cafe', $restaurant->fresh()->restaurant_name);
         $this->assertSame('pending_review', $restaurant->fresh()->application_status);
+    }
+
+    public function test_merchant_help_desk_and_dashboard_documentation_are_available(): void
+    {
+        $contact = User::query()->forceCreate([
+            'name' => 'Merchant Help User',
+            'email' => 'merchant-help@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $restaurant = $this->restaurant($this->agent(), 'Help Desk Cafe', 'merchant-help@example.com');
+        $restaurant->forceFill(['user_id' => $contact->id])->save();
+
+        $this->actingAs($contact)
+            ->get(route('merchant.help'))
+            ->assertOk()
+            ->assertSee('Help desk &amp; documentation', false)
+            ->assertSee('valid government-issued ID')
+            ->assertSee('business registration certificate')
+            ->assertSee('info@pahatud.com')
+            ->assertSeeInOrder([
+                'Workspace',
+                'Dashboard',
+                'Products',
+                'Orders',
+                'Application &amp; documents',
+                'Branches',
+                'Category',
+                'Profile',
+                'Sales',
+                'Help &amp; documentation',
+                'Logout',
+            ], false)
+            ->assertDontSee('nav-header', false);
+
+        $this->get(route('merchant.dashboard.index'))
+            ->assertOk()
+            ->assertSee('Merchant documentation')
+            ->assertSee(route('merchant.help'));
     }
 
     public function test_agent_can_view_and_update_only_their_restaurant_application(): void
@@ -597,9 +655,9 @@ class AgentPortalTest extends TestCase
         $agent = $this->agent();
         $restaurant = $this->restaurant($agent);
         $restaurant->forceFill(['application_status' => 'approved', 'active' => true, 'verified_at' => now()])->save();
-        $path = UploadedFile::fake()->create('permit.pdf', 100, 'application/pdf')->store('restaurant-enrollment/'.$restaurant->id, 'local');
+        $path = UploadedFile::fake()->create('government-id.pdf', 100, 'application/pdf')->store('restaurant-enrollment/'.$restaurant->id, 'local');
         $document = $restaurant->enrollmentDocuments()->create([
-            'document_type' => 'business_permit', 'file_path' => $path, 'original_name' => 'permit.pdf',
+            'document_type' => 'government_id', 'file_path' => $path, 'original_name' => 'government-id.pdf',
             'status' => 'approved', 'expires_at' => today()->subDay(),
         ]);
 

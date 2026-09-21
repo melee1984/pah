@@ -50,7 +50,7 @@ class RestaurantEnrollmentService
                     'enrolling_as' => $validated['enrolling_as'],
                     'registered_business_name' => $validated['registered_business_name'],
                     'tin' => $validated['tin'],
-                    'business_registration_number' => $validated['business_registration_number'],
+                    'business_registration_number' => $validated['business_registration_number'] ?? null,
                     'payout_account_name' => $validated['payout_account_name'],
                     'application_status' => 'pending_review',
                 ]);
