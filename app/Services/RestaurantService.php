@@ -32,7 +32,7 @@ class RestaurantService
         $userLat = $hasValidUserCoordinates ? (float) $userLat : 0.0;
         $userLong = $hasValidUserCoordinates ? (float) $userLong : 0.0;
 
-        $restaurants = Partners::select('partners.user_id', 'partners.restaurant_name', 'partners.id', 'partners.img', 'partners.address', 'partners.slug', 'partners.city', 'partners.budget_id', 'partners.account_type_id', 'partners.store_open', 'partner_location.id as location_id', DB::raw('
+        $restaurants = Partners::select('partners.user_id', 'partners.restaurant_name', 'partners.id', 'partners.img', 'partners.banner', 'partners.address', 'partners.slug', 'partners.city', 'partners.budget_id', 'partners.account_type_id', 'partners.store_open', 'partner_location.id as location_id', DB::raw('
                                 (ST_Distance_Sphere(
                                 point(partner_location.longtitude, partner_location.latitude),
                                 point('.$userLong.', '.$userLat.')) * 0.001 / 1000) as meter'), DB::raw('
@@ -151,10 +151,11 @@ class RestaurantService
             // check primary if has an item item // then locate and get the image render 
             // otherwise use the merchant logo 
             $hasItemImage = false;
+            $restaurant->banner_image_url = $restaurant->banner
+                ? $restaurant->image('banner')
+                : null;
             
             foreach($restaurant->products as $product) {
-
-               $restaurant->banner_image_url = $product->banner ? Partners::imgCheck($restaurant, 'banner') : null;
                
                 // Get the image here from the product library 
                 if ($product->img!="") {
