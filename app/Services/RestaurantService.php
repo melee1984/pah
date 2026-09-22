@@ -153,6 +153,8 @@ class RestaurantService
             $hasItemImage = false;
             
             foreach($restaurant->products as $product) {
+
+               $restaurant->banner_image_url = $product->banner ? Partners::imgCheck($restaurant, 'banner') : null;
                
                 // Get the image here from the product library 
                 if ($product->img!="") {
