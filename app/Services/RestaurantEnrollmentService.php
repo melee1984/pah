@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Throwable;
 
@@ -50,22 +51,33 @@ class RestaurantEnrollmentService
                     'enrolling_as' => $validated['enrolling_as'],
                     'registered_business_name' => $validated['registered_business_name'],
                     'tin' => $validated['tin'],
-                    'business_registration_number' => $validated['business_registration_number'],
+                    'business_registration_number' => $validated['business_registration_number'] ?? null,
                     'payout_account_name' => $validated['payout_account_name'],
                     'application_status' => 'pending_review',
                 ]);
 
                 foreach ([...RestaurantEnrollmentDocument::REQUIRED_TYPES, 'authorization_document'] as $type) {
-                    if (! $request->hasFile($type)) {
+                    $file = $validated[$type] ?? null;
+
+                    if (! $file) {
                         continue;
                     }
 
-                    $path = $request->file($type)->store('restaurant-enrollment/'.$restaurant->id, 'local');
+                    $path = $file->store('restaurant-enrollment/'.$restaurant->id, 'local');
+
+                    if (! $path) {
+                        throw new RuntimeException('The restaurant enrollment document could not be stored.');
+                    }
+
                     $storedPaths[] = $path;
                     $restaurant->enrollmentDocuments()->create([
                         'document_type' => $type,
                         'file_path' => $path,
-                        'original_name' => $request->file($type)->getClientOriginalName(),
+                        'original_name' => $file->getClientOriginalName(),
+                        'status' => 'pending_verification',
+                        'remarks' => null,
+                        'expires_at' => null,
+                        'reviewed_at' => null,
                     ]);
                 }
 

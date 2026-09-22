@@ -102,7 +102,7 @@ class RestaurantApplicationController extends Controller
             'enrolling_as' => ['required', Rule::in(['owner', 'authorized_representative'])],
             'registered_business_name' => ['required', 'string', 'max:255'],
             'tin' => ['required', 'string', 'max:30'],
-            'business_registration_number' => ['required', 'string', 'max:100'],
+            'business_registration_number' => ['nullable', 'string', 'max:100'],
             'payout_account_name' => ['required', 'string', 'max:255'],
         ]);
 
@@ -194,7 +194,7 @@ class RestaurantApplicationController extends Controller
         }
 
         app(RestaurantApplicationNotifier::class)->send($restaurant,
-            RestaurantEnrollmentDocument::LABELS[$type].' uploaded. Status: Pending Verification.');
+            RestaurantEnrollmentDocument::label($type).' uploaded. Status: Pending Verification.');
 
         return back()->with('success', 'Document uploaded and sent for verification.');
     }

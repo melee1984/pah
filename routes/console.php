@@ -12,6 +12,7 @@ Artisan::command('inspire', function () {
 
 Artisan::command('restaurants:expire-documents', function () {
     RestaurantEnrollmentDocument::query()
+        ->whereIn('document_type', array_keys(RestaurantEnrollmentDocument::LABELS))
         ->whereDate('expires_at', '<', today())
         ->whereNotIn('status', ['expired', 'rejected'])
         ->with('restaurant')
@@ -24,7 +25,7 @@ Artisan::command('restaurants:expire-documents', function () {
                 }
                 if ($restaurant) {
                     app(RestaurantApplicationNotifier::class)->send($restaurant,
-                        RestaurantEnrollmentDocument::LABELS[$document->document_type].' has expired. Please upload a current replacement.');
+                        RestaurantEnrollmentDocument::label($document->document_type).' has expired. Please upload a current replacement.');
                 }
             }
         });

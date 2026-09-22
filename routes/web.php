@@ -286,6 +286,7 @@ Route::middleware('merchant')->group(function () {
     Route::post('merchant/application/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadMerchant'])->name('merchant.application.documents.store');
     Route::get('merchant/application/documents/{document}', [\App\Http\Controllers\RestaurantApplicationController::class, 'documentMerchant'])->name('merchant.application.documents.show');
     Route::get('merchant/dashboard', [\App\Http\Controllers\Merchant\DashboardController::class, 'index'])->name('merchant.dashboard.index');
+    Route::get('merchant/help', [\App\Http\Controllers\Merchant\DashboardController::class, 'help'])->name('merchant.help');
 
     Route::get('merchant/products', [\App\Http\Controllers\Merchant\ItemsController::class, 'index'])->name('merchant.dashboard.product');
     Route::get('merchant/product/{product}/edit', [\App\Http\Controllers\Merchant\ItemsController::class, 'edit'])->name('merchant.dashboard.product.edit');

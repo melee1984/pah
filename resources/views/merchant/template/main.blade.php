@@ -44,6 +44,12 @@
       <li class="nav-item dropdown">
          <store-online-button  :store_online="{{ Auth::User()->merchant->store_open}}"></store-online-button>
       </li>
+      <li class="nav-item d-none d-md-flex align-items-center">
+        <div class="merchant-top-profile">
+          <span>{{ mb_strtoupper(mb_substr(Auth::User()->fullname, 0, 1)) }}</span>
+          <div><strong>{{ Auth::User()->fullname }}</strong><small>Merchant administrator</small></div>
+        </div>
+      </li>
     </ul>
   </nav>
   <!-- /.navbar -->
@@ -56,17 +62,8 @@
     </a>
     <!-- Sidebar -->
     <div class="sidebar">
-      <!-- Sidebar user panel (optional) -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="admin-user-avatar">{{ mb_strtoupper(mb_substr(Auth::User()->fullname, 0, 1)) }}</div>
-        <div class="info">
-          <a href="#" class="d-block">{{ Auth::User()->fullname }}</a>
-          <small>Merchant administrator</small>
-        </div>
-      </div>
-
       <!-- Sidebar Menu -->
-      <nav class="mt-2">
+      <nav class="merchant-sidebar-navigation" aria-label="Merchant navigation">
           @include('merchant.includes.menu')
       </nav>
       <!-- /.sidebar-menu -->
@@ -85,7 +82,7 @@
   <!-- Main Footer -->
   <footer class="main-footer">
     <strong>Copyright &copy; {{ date('Y') }} <a href="https://pahatud.com">Pahatud.com</a>.</strong>
-    All rights reserved.
+    All rights reserved. <a class="merchant-footer-help" href="{{ route('merchant.help') }}">Help desk &amp; documentation</a>
     <div class="float-right d-none d-sm-inline-block">
       <b>Version</b> 1.0.0
     </div>

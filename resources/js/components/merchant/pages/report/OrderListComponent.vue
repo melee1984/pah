@@ -90,7 +90,7 @@
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br>
-                        <span><strong>Store Location:</strong> {{ storeAddress(order) }}</span><br>
+                        <span><strong>Branch:</strong> {{ storeAddress(order) }}</span><br>
                         Delivery Date/Time: {{ order.cart.delivery_time }}
                         <br>
                         Customer: {{ order.cart.fullname }} <br>
