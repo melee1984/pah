@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Mobile\CheckoutController as MobileCheckoutControll
 use App\Http\Controllers\Api\Mobile\HomeController as MobileHomeController;
 use App\Http\Controllers\Api\Mobile\OrderController as MobileOrderController;
 use App\Http\Controllers\Api\Mobile\ResourcesController;
+use App\Http\Controllers\Api\Mobile\RestaurantReviewController;
 use App\Http\Controllers\Api\Mobile\Rider\OrderController as RiderOrderController;
 use App\Http\Controllers\Api\Mobile\UserController as MobileUserController;
 use App\Http\Controllers\Api\User\AccessController;
@@ -36,6 +37,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::get('data/dashboard', [ResourcesController::class, 'getDashboardData']);
         Route::get('promotions', [ResourcesController::class, 'getPromoBanner']);
         Route::get('restaurant/search', [MobileHomeController::class, 'search']);
+        Route::get('restaurant/reviews', [RestaurantReviewController::class, 'index']);
         Route::get('restaurant/{partner:id}', [MobileHomeController::class, 'restaurant']);
         Route::post('account/login', [AccessController::class, 'login']);
         Route::post('account/google', [AccessController::class, 'google']);
@@ -45,6 +47,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::group(['middleware' => ['auth:api']], function () {
             //
             Route::post('account/logout', [AccessController::class, 'postLogout']);
+            Route::post('restaurant/review/submit', [RestaurantReviewController::class, 'store']);
             Route::post('user/coordinates', [ResourcesController::class, 'updateUserCoordinates']);
 
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);

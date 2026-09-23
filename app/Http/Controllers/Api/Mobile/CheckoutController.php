@@ -205,6 +205,8 @@ class CheckoutController extends Controller
         $cart = Cart::whereSessionId($session_id)
                         ->whereUserId($user->id)->first();
 
+        $cart->payment;
+        
         if (!$cart) {
             return response()->json([
                 'status' => 0,

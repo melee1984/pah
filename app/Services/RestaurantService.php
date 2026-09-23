@@ -16,7 +16,7 @@ class RestaurantService
        $data = array();
 
         \Log::info(['message' => 'Fetching restaurants input', 'request' => $request->all()]);
-       
+
         $session_id = $request->session_id ?? $request->session()->getId();
         $cart = Cart::whereSessionId($session_id)->first();
 
@@ -57,7 +57,7 @@ class RestaurantService
                 'user_long' => $userLong,
                 'session_id' => $session_id,
             ]);
-       
+
         // display only the active restaurants and not the ghost restaurants
         // $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
         //                     ->with('products','products.variants', 'products.category')
@@ -73,7 +73,6 @@ class RestaurantService
         //     'user_long' => $cart ? $cart->user_long : null,
         //     'session_id' => $session_id,
         // ]);
-     
 
         $restaurantIds = $restaurants->pluck('id');
         $restaurantOrigins = $restaurants
@@ -113,6 +112,13 @@ class RestaurantService
         }
         $cuisineTags = self::getCuisineTagsByPartner($restaurantIds);
         $categoryTags = self::getCategoryTagsByPartner($restaurantIds);
+        $reviewSummaries = DB::table('restaurant_reviews')
+            ->whereIn('partner_id', $restaurantIds)
+            ->where('active', true)
+            ->selectRaw('partner_id, AVG(rating) as average_rating, COUNT(*) as rating_count')
+            ->groupBy('partner_id')
+            ->get()
+            ->keyBy('partner_id');
 
         foreach($restaurants as $restaurant) {
 
@@ -124,9 +130,25 @@ class RestaurantService
 
             $restaurant->listing_id = $restaurant->id.'-'.$restaurant->location_id;
 
+            $restaurant->address_1 = $location?->address_1 ?: $restaurant->address;
+            $restaurant->city = $location?->city ?: $restaurant->city;
+            $restaurant->mobile = $location?->mobile ?: $restaurant->mobile;
+            $restaurant->telephone = $location?->telephone ?: $restaurant->telephone;
+            $restaurant->latitude = is_numeric($location?->latitude)
+                ? (float) $location->latitude
+                : null;
+            $restaurant->longitude = is_numeric($location?->longtitude)
+                ? (float) $location->longtitude
+                : null;
+
             $restaurant->short_title = Str::limit($restaurant->restaurant_name, 20);
-            $restaurant->rating = 5.0;
-            $restaurant->rating_count = 0;
+            $reviewSummary = $reviewSummaries->get($restaurant->id);
+            $restaurant->rating = $reviewSummary
+                ? round((float) $reviewSummary->average_rating, 2)
+                : 0.0;
+            $restaurant->rating_count = $reviewSummary
+                ? (int) $reviewSummary->rating_count
+                : 0;
             $routeComputation = $routeComputations[$restaurant->location_id] ?? null;
             $distanceKilometers = $routeComputation['distance_km']
                 ?? (isset($restaurant->distance_km) ? (float) $restaurant->distance_km : null);
@@ -154,9 +176,9 @@ class RestaurantService
             $restaurant->banner_image_url = $restaurant->banner
                 ? $restaurant->image('banner')
                 : null;
-            
+
             foreach($restaurant->products as $product) {
-               
+
                 // Get the image here from the product library 
                 if ($product->img!="") {
                     $imagePath = Partners::imageResizeThumb($product, $product->id);
@@ -169,7 +191,6 @@ class RestaurantService
                  $product->getPriceDisplay();
             }
 
-            
             // verify if the img content image but if not then get the merchant logo 
             if (!$hasItemImage) {
                 $restaurant = Partners::imageResize($restaurant, 'logo');    // Get the Image Thumbnail 
