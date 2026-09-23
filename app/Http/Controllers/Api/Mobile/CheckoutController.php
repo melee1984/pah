@@ -571,8 +571,13 @@ class CheckoutController extends Controller
     }
 
     public function couponCode(Request $request) {
+
+
+        $session_id = $request->input('session_id');
+        $user = $request->user();
+
 		$request->validate(['coupon' => ['required', 'string', 'max:255']]);
-		$cart = Cart::query()->whereSessionId(Session::getId())->first();
+		$cart = Cart::query()->whereSessionId($session_id)->first();
 
 		if (! $cart) {
 			return response()->json(['status' => 0, 'message' => 'Cart not found.'], 200);
@@ -670,6 +675,6 @@ class CheckoutController extends Controller
 			'currency' => '₱',
 		];
 	}
-    
+
 
 }
