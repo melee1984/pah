@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class PartnerPromotion extends Model
 {
+    public const APPROVAL_PENDING = 'pending';
+
+    public const APPROVAL_APPROVED = 'approved';
+
+    public const APPROVAL_REJECTED = 'rejected';
+
     protected $fillable = [
         'partner_id',
         'name',
@@ -16,6 +22,9 @@ class PartnerPromotion extends Model
         'link_url',
         'image_path',
         'active',
+        'approval_status',
+        'approved_at',
+        'approved_by',
         'sort_order',
         'starts_at',
         'ends_at',
@@ -26,12 +35,14 @@ class PartnerPromotion extends Model
         'sort_order' => 'integer',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     public function scopeVisible(Builder $query): Builder
     {
         return $query
             ->where('active', true)
+            ->where('approval_status', self::APPROVAL_APPROVED)
             ->where(function (Builder $query) {
                 $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })

@@ -102,6 +102,7 @@ Route::group(['middleware' => ['api', 'web']], function () {
     Route::post('checkout/submit', [CartController::class, 'process']);
     Route::post('checkout/sms/submit', [CartController::class, 'smsSending']);
     Route::post('checkout/coupon/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'couponCode']);
+    Route::get('checkout/coupons', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'availableCoupons']);
 
     // Distance
     Route::post('/distance', [DistanceController::class, 'getKilometerByCoodinates']);

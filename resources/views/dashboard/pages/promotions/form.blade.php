@@ -54,7 +54,7 @@
                         <div class="form-group"><label for="image">{{ $promotion->exists ? 'Replace banner image' : 'Banner image' }}</label><input class="form-control-file" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" {{ $promotion->exists ? '' : 'required' }}></div>
                         <div class="form-group form-check"><input type="hidden" name="active" value="0"><input class="form-check-input" id="active" name="active" type="checkbox" value="1" @checked((bool) old('active', $promotion->active))><label class="form-check-label" for="active">Active and eligible to display</label></div>
 
-                        <div class="d-flex justify-content-end mt-4">
+                        <div class="d-flex justify-content-end mt-4 promotion-form-actions">
                             <a class="btn admin-btn-secondary mr-2" href="{{ route('dashboard.promotions.index') }}">Cancel</a>
                             <button class="btn admin-btn-primary" type="submit">{{ $promotion->exists ? 'Save changes' : 'Create promotion' }}</button>
                         </div>

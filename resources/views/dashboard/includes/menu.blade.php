@@ -17,6 +17,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.promotions.index') }}" class="nav-link {{ Request::is('data/dashboard/promotions*') ? 'active' : '' }}"><i class="nav-icon fas fa-bullhorn"></i><p>Promotions</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.coupons.index') }}" class="nav-link {{ Request::is('data/dashboard/coupons*') ? 'active' : '' }}"><i class="nav-icon fas fa-ticket-alt"></i><p>Discount coupons</p></a>
+    </li>
 
     <li class="nav-header">People</li>
     <li class="nav-item">

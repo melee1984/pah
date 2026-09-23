@@ -56,6 +56,10 @@ class PartnerPromotionTest extends TestCase
             'partner_id' => 2,
             'name' => 'Inactive merchant banner',
         ]));
+        PartnerPromotion::create($this->promotionData([
+            'name' => 'Pending merchant banner',
+            'approval_status' => PartnerPromotion::APPROVAL_PENDING,
+        ]));
 
         $response = $this->getJson('/api/promotions');
 

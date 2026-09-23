@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PartnerPromotionController;
 use App\Http\Controllers\Admin\RiderManagementController;
@@ -215,6 +216,13 @@ Route::middleware('admin')->group(function () {
     Route::resource('data/dashboard/promotions', PartnerPromotionController::class)
         ->except('show')
         ->names('dashboard.promotions');
+    Route::post('data/dashboard/promotions/{promotion}/approve', [PartnerPromotionController::class, 'approve'])
+        ->name('dashboard.promotions.approve');
+    Route::post('data/dashboard/promotions/{promotion}/reject', [PartnerPromotionController::class, 'reject'])
+        ->name('dashboard.promotions.reject');
+    Route::resource('data/dashboard/coupons', CouponController::class)
+        ->except('show')
+        ->names('dashboard.coupons');
     Route::get('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'show'])->name('dashboard.merchant.application.show');
     Route::post('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'application'])->name('dashboard.merchant.application.review');
     Route::post('data/dashboard/merchant/{restaurant:id}/documents/{document}/review', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'document'])->name('dashboard.merchant.documents.review');
@@ -305,6 +313,14 @@ Route::middleware('merchant')->group(function () {
     Route::get('merchant/category', [\App\Http\Controllers\Merchant\CategoryController::class, 'index'])->name('merchant.dashboard.category');
     Route::get('merchant/settings', [\App\Http\Controllers\Merchant\SettingsController::class, 'index'])->name('merchant.dashboard.settings');
     Route::get('merchant/voucher', [\App\Http\Controllers\Merchant\VoucherController::class, 'index'])->name('merchant.dashboard.voucher');
+    Route::get('merchant/promotions/coupons/create', [\App\Http\Controllers\Merchant\CouponController::class, 'create'])->name('merchant.dashboard.coupons.create');
+    Route::post('merchant/promotions/coupons', [\App\Http\Controllers\Merchant\CouponController::class, 'store'])->name('merchant.dashboard.coupons.store');
+    Route::get('merchant/promotions/coupons/{coupon}/edit', [\App\Http\Controllers\Merchant\CouponController::class, 'edit'])->name('merchant.dashboard.coupons.edit');
+    Route::put('merchant/promotions/coupons/{coupon}', [\App\Http\Controllers\Merchant\CouponController::class, 'update'])->name('merchant.dashboard.coupons.update');
+    Route::delete('merchant/promotions/coupons/{coupon}', [\App\Http\Controllers\Merchant\CouponController::class, 'destroy'])->name('merchant.dashboard.coupons.destroy');
+    Route::resource('merchant/promotions', \App\Http\Controllers\Merchant\PartnerPromotionController::class)
+        ->except('show')
+        ->names('merchant.dashboard.promotions');
 
     // Reports
     Route::get('merchant/report-sales-for-today', [\App\Http\Controllers\Merchant\ReportController::class, 'today'])->name('merchant.dashboard.report.salestoday');

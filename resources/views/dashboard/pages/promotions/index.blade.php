@@ -33,7 +33,7 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
-                            <thead><tr><th>Banner</th><th>Promotion</th><th>Linked merchant</th><th>Schedule</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Banner</th><th>Promotion</th><th>Linked merchant</th><th>Schedule</th><th>Approval</th><th>Status</th><th>Actions</th></tr></thead>
                             <tbody>
                             @foreach ($promotions as $promotion)
                                 <tr>
@@ -44,9 +44,20 @@
                                         <strong>{{ $promotion->starts_at?->format('M d, Y · g:i A') ?? 'Immediately' }}</strong>
                                         <small>Until {{ $promotion->ends_at?->format('M d, Y · g:i A') ?? 'no end date' }}</small>
                                     </td>
-                                    <td><span class="admin-number-pill">{{ $promotion->sort_order }}</span></td>
                                     <td>
-                                        @if (! $promotion->active)
+                                        @if ($promotion->approval_status === \App\PartnerPromotion::APPROVAL_APPROVED)
+                                            <span class="admin-status admin-status-active">Approved</span>
+                                        @elseif ($promotion->approval_status === \App\PartnerPromotion::APPROVAL_REJECTED)
+                                            <span class="admin-status admin-status-inactive">Rejected</span>
+                                        @else
+                                            <span class="admin-status admin-status-pending">Pending</span>
+                                        @endif
+                                        <small>Order: {{ $promotion->sort_order }}</small>
+                                    </td>
+                                    <td>
+                                        @if ($promotion->approval_status !== \App\PartnerPromotion::APPROVAL_APPROVED)
+                                            <span class="admin-status admin-status-pending">Not published</span>
+                                        @elseif (! $promotion->active)
                                             <span class="admin-status admin-status-inactive">Inactive</span>
                                         @elseif ($promotion->starts_at && $promotion->starts_at->isFuture())
                                             <span class="admin-status admin-status-pending">Scheduled</span>
@@ -57,12 +68,18 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <a class="btn admin-btn-secondary btn-sm mr-2" href="{{ route('dashboard.promotions.edit', $promotion) }}">Edit</a>
+                                        <div class="promotion-actions">
+                                            @if ($promotion->approval_status !== \App\PartnerPromotion::APPROVAL_APPROVED)
+                                                <form method="POST" action="{{ route('dashboard.promotions.approve', $promotion) }}">@csrf<button class="btn admin-btn-primary promotion-action-button" type="submit">Approve</button></form>
+                                            @endif
+                                            @if ($promotion->approval_status !== \App\PartnerPromotion::APPROVAL_REJECTED)
+                                                <form method="POST" action="{{ route('dashboard.promotions.reject', $promotion) }}" onsubmit="return confirm('Reject this promotion?');">@csrf<button class="btn promotion-action-button promotion-action-danger" type="submit">Reject</button></form>
+                                            @endif
+                                            <a class="btn admin-btn-secondary promotion-action-button" href="{{ route('dashboard.promotions.edit', $promotion) }}">Edit</a>
                                             <form method="POST" action="{{ route('dashboard.promotions.destroy', $promotion) }}" onsubmit="return confirm('Delete this promotion? This cannot be undone.');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-outline-danger btn-sm" type="submit">Delete</button>
+                                                <button class="btn promotion-action-button promotion-action-danger" type="submit">Delete</button>
                                             </form>
                                         </div>
                                     </td>

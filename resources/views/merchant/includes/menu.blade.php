@@ -16,6 +16,11 @@
       <i class="nav-icon fas fa-shopping-cart"></i><p>Orders</p>
     </a>
   </li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.promotions.index') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.promotions.*') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-bullhorn"></i><p>Promotions</p>
+    </a>
+  </li>
   @if (Auth::User()->merchant?->agent_id)
     <li class="nav-item">
       <a href="{{ route('merchant.application.show') }}" class="nav-link {{ request()->routeIs('merchant.application.*') ? 'active' : '' }}">
