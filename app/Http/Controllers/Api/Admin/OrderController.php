@@ -90,12 +90,13 @@ class OrderController extends Controller
         }
 
         $data['orders'] = $orders->whereNotIn('order_status_id', [
-            LibraryStatus::STATUS_ORDER_PLACED,
+            LibraryStatus::STATUS_DELIVERED,
             LibraryStatus::STATUS_CANCELLED,
         ])->values();
 
-        $data['completedOrders'] = $orders->where('status_id', LibraryStatus::STATUS_DELIVERED)->values();
-        $data['cancelledOrders'] = $orders->where('status_id', LibraryStatus::STATUS_CANCELLED)->values();
+        $data['completedOrders'] = $orders->where('booking_status_id', BookingStatus::STATUS_BOOKING_DELIVERED)->where('order_status_id', '=', LibraryStatus::STATUS_DELIVERED)->values();
+        $data['cancelledOrders'] = $orders->where('booking_status_id', BookingStatus::STATUS_BOOKING_CANCELLED)->where('order_status_id', '!=', LibraryStatus::STATUS_CANCELLED)->values();
+
         $data['riders'] = Riders::active()->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
