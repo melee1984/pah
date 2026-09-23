@@ -334,7 +334,7 @@ class DeliveryController extends Controller
         $validated = $request->validate([
             'event_id' => ['required', 'uuid'],
             'type' => ['required', Rule::in(self::EVENT_TYPES)],
-            'occurred_at' => ['required', 'date', 'before_or_equal:now'],
+            // 'occurred_at' => ['required', 'date', 'before_or_equal:now'],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'metadata' => ['nullable', 'array'],
