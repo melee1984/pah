@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\Coupon;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -569,5 +570,106 @@ class CheckoutController extends Controller
         return response()->json($data, 200);
     }
 
+    public function couponCode(Request $request) {
+		$request->validate(['coupon' => ['required', 'string', 'max:255']]);
+		$cart = Cart::query()->whereSessionId(Session::getId())->first();
+
+		if (! $cart) {
+			return response()->json(['status' => 0, 'message' => 'Cart not found.'], 200);
+		}
+
+		$code = strtoupper(trim((string) $request->input('coupon')));
+		$coupon = Coupon::query()
+			->available($cart->partner_id ? (int) $cart->partner_id : null)
+			->whereRaw('UPPER(coupon) = ?', [$code])
+			->first();
+
+		if (! $coupon) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'The coupon code is invalid, inactive, expired, or unavailable for this merchant.',
+			], 200);
+		}
+
+		$subtotal = $this->discountableSubtotal($cart);
+		if ($coupon->condition !== null && $subtotal < (float) $coupon->condition) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'This coupon requires a minimum order of ₱'.number_format((float) $coupon->condition, 2).'.',
+			], 200);
+		}
+
+		$discount = $coupon->discountFor($subtotal);
+		$cart->discount_amount = $discount;
+		$cart->discount_code = $coupon->coupon;
+		$cart->save();
+
+		return response()->json([
+			'status' => 1,
+			'message' => 'Coupon applied successfully.',
+			'coupon' => $this->couponPayload($coupon),
+			'discount_amount' => $discount,
+			'cart_summary' => $this->checkoutSummary($cart->fresh()),
+		], 200);
+    	
+    }
+
+	public function availableCoupons(Request $request)
+	{
+		$cart = Cart::query()->whereSessionId(Session::getId())->first();
+		$partnerId = $cart?->partner_id ?: $request->integer('partner_id') ?: null;
+
+		$coupons = Coupon::query()
+			->available($partnerId ? (int) $partnerId : null)
+			->orderBy('valid_until')
+			->get()
+			->map(fn (Coupon $coupon) => $this->couponPayload($coupon))
+			->values();
+
+		return response()->json(['data' => $coupons]);
+	}
+
+    private function couponPayload(Coupon $coupon): array
+	{
+		return [
+			'id' => $coupon->id,
+			'code' => $coupon->coupon,
+			'partner_id' => $coupon->partner_id,
+			'scope' => $coupon->partner_id ? 'partner' : 'pahatud',
+			'discount_value' => $coupon->discount_value !== null ? (float) $coupon->discount_value : null,
+			'discount_percentage' => $coupon->discount_percentage !== null ? (float) $coupon->discount_percentage : null,
+			'minimum_order' => $coupon->condition !== null ? (float) $coupon->condition : null,
+			'valid_from' => $coupon->valid_from?->toIso8601String(),
+			'valid_until' => ($coupon->valid_until ?? $coupon->valid_at)?->toIso8601String(),
+			'limit' => $coupon->limit,
+		];
+	}
+    
+    private function discountableSubtotal(Cart $cart): float
+    {
+        return $cart->cartItems()
+            ->where('is_discountable', 1)
+            ->get()
+            ->sum(fn (CartItem $item) => $item->getPrice(true) + $item->variance_total);
+    }
+
+    private function checkoutSummary(Cart $cart): array
+	{
+		$items = DB::table('cart_details')->where('cart_id', $cart->id)->get();
+		$subtotal = (float) $items->sum(fn ($item) => (int) $item->qty * ((float) $item->price + (float) $item->variance_total));
+		$itemDiscount = (float) $items->sum(fn ($item) => (int) $item->qty * (float) $item->discount_amount);
+		$discount = $itemDiscount + (float) $cart->discount_amount;
+		$deliveryFee = (float) $cart->delivery_fee;
+
+		return [
+			'sub_total' => number_format($subtotal, 2),
+			'delivery_fee' => number_format($deliveryFee, 2),
+			'discount' => number_format($discount, 2),
+			'total' => number_format(max(0, $subtotal + $deliveryFee - $discount), 2),
+			'qty' => (int) $items->sum('qty'),
+			'currency' => '₱',
+		];
+	}
+    
 
 }

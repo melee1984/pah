@@ -88,6 +88,11 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('getbooking/{booking}', [MobileBookingController::class, 'getBookingById']);
 
             Route::post('booking/address/delete/submit', [MobileBookingController::class, 'deleteBookingAddress']);
+
+            Route::post('checkout/coupon/submit', [MobileCheckoutController::class, 'couponCode']);
+            Route::get('checkout/coupons', [MobileCheckoutController::class, 'availableCoupons']);
+
+
         });
 
         Route::post('account/registration/mobile/submit', [AccessController::class, 'registerMobile2']);
