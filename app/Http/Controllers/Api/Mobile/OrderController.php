@@ -44,6 +44,7 @@ class OrderController extends Controller
         $order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
         $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
         $order->cart->address;
+        $order->cart->payment;
         $order->status;  
         $order->load('rider.location');
         $order->logs = $order->getActionLogs();
