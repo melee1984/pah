@@ -22,7 +22,7 @@
             <td>{{ order.summary.qty }}</td>
             <td><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
             <td><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
-            <td><span class="dashboard-money">{{ order.summary.discount_amount > 0 ? '₱' + order.summary.discount_amount : '—' }}</span></td>
+            <td><span class="dashboard-money">{{ Number(order.summary.discount) > 0 ? '₱' + order.summary.discount : '—' }}</span></td>
             <td><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
             <td><span class="dashboard-money">₱{{ order.summary.total_comm }}</span></td>
             <td><span class="dashboard-money">₱{{ Number(order.summary.total - order.summary.total_comm).toFixed(2) }}</span></td>

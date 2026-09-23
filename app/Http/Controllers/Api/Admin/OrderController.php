@@ -16,6 +16,7 @@ use Validator;
 use App\User;
 use App\LibraryStatus;
 use App\Services\RiderOfferDispatcher;
+use Carbon\Carbon;
 
 use App\PushNotification;
 use Illuminate\Support\Facades\DB;
@@ -170,19 +171,17 @@ class OrderController extends Controller
 
         $merchant = "";
 
-        $query = Orders::query();
+        $completedAt = DB::raw('COALESCE(delivered_at, submitted_at)');
+        $query = Orders::with(['cart', 'partner'])
+            ->whereNotNull('submitted_at')
+            ->where('order_status_id', LibraryStatus::STATUS_DELIVERED);
      
         if ($request->has('dateFilter')) {
 
             $dataFilterArray = explode('-', $request->input('dateFilter'));    
 
-            $query->with('cart')
-                ->with('partner')
-                ->whereNotNull('submitted_at') 
-                ->whereNull('delivered_at')
-                ->where('submitted_at','>=', date('Y-m-d G:i', strtotime($dataFilterArray[0]) ))
-                ->where('submitted_at','<=', date('Y-m-d G:i', strtotime($dataFilterArray[1]) ))
-                ->orderBy('created_at', 'asc');
+            $query->where($completedAt, '>=', date('Y-m-d G:i', strtotime($dataFilterArray[0])))
+                ->where($completedAt, '<=', date('Y-m-d G:i', strtotime($dataFilterArray[1])));
 
             // $query = Orders::with('cart')
             //     ->with('partner')
@@ -197,12 +196,7 @@ class OrderController extends Controller
             //     ->whereDay('submitted_at', '=', date('d'))
             //     ->orderBy('created_at', 'asc');
                
-             $query->with('cart')
-                    ->with('partner')
-                    ->whereNotNull('submitted_at') 
-                    ->whereNull('delivered_at')
-                    ->whereDay('submitted_at', '=', date('d'))
-                    ->orderBy('created_at', 'asc');
+             $query->whereBetween($completedAt, [now()->startOfDay(), now()->endOfDay()]);
         }
 
         if ($request->has('merchant')) { 
@@ -212,7 +206,7 @@ class OrderController extends Controller
         }
 
 
-        $orders = $query->get();
+        $orders = $query->orderByDesc($completedAt)->get();
 
 
         if (!$orders) return response()->json($data, 200);
@@ -224,7 +218,8 @@ class OrderController extends Controller
             $order->status;
             $order->cart->address;
 
-            $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
+            $completedDate = $order->delivered_at ?: $order->submitted_at;
+            $order->submitted_date = Carbon::parse($completedDate)->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
             $order->cart->cartItemVariance();
