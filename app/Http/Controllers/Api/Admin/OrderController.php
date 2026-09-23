@@ -89,10 +89,11 @@ class OrderController extends Controller
             ];
         }
 
-        $data['orders'] = $orders->whereNotIn('status_id', [
-            LibraryStatus::STATUS_DELIVERED,
+        $data['orders'] = $orders->whereNotIn('order_status_id', [
+            LibraryStatus::STATUS_ORDER_PLACED,
             LibraryStatus::STATUS_CANCELLED,
         ])->values();
+
         $data['completedOrders'] = $orders->where('status_id', LibraryStatus::STATUS_DELIVERED)->values();
         $data['cancelledOrders'] = $orders->where('status_id', LibraryStatus::STATUS_CANCELLED)->values();
         $data['riders'] = Riders::active()->get();
