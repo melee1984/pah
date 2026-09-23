@@ -184,6 +184,8 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
 
     Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
+    Route::get('data/dashboard/available-riders', [RiderManagementController::class, 'available'])
+        ->name('dashboard.riders.available');
     Route::get('data/dashboard/riders', [RiderManagementController::class, 'index'])->name('dashboard.rider');
     Route::get('data/dashboard/riders/{rider}', [RiderManagementController::class, 'show'])->name('dashboard.riders.show');
     Route::get('data/dashboard/rider-applications/{application}/documents/{document}', [RiderManagementController::class, 'applicationDocument'])

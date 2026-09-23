@@ -59,6 +59,10 @@ class SendRiderOfferPush implements ShouldQueue
             ->where('push_token', '!=', '')
             ->get(['id', 'push_token']);
 
+        if ($devices->isEmpty()) {
+            return;
+        }
+
         foreach ($devices as $device) {
             try {
                 $push->send(

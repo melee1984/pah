@@ -31,6 +31,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.rider') }}" class="nav-link {{ Request::is('data/dashboard/riders') ? 'active' : '' }}"><i class="nav-icon fas fa-motorcycle"></i><p>Riders</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.riders.available') }}" class="nav-link {{ Request::is('data/dashboard/available-riders') ? 'active' : '' }}"><i class="nav-icon fas fa-broadcast-tower"></i><p>Available riders</p></a>
+    </li>
 
     <li class="nav-header">Reporting</li>
     <li class="nav-item">

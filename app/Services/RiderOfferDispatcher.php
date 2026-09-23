@@ -175,11 +175,9 @@ class RiderOfferDispatcher
                 ->where('rider_id', $riderId)->where('delivery_id', $deliveryId)->exists()) {
                 return;
             }
-            if (! $this->hasPushDevice($riderId)) {
-                return;
-            }
-
-            // One offer per rider and delivery; the push job sends it to their active devices.
+            // One offer per rider and delivery. A device is optional: the rider can
+            // still see the offer in the app, while the push job safely skips riders
+            // that do not currently have a push-enabled device.
             if (DB::table('rider_api_offers')->where('delivery_id', $deliveryId)->count()
                 >= max(1, (int) config('rider.offer_nearby_limit', 10))) {
                 return;
@@ -214,16 +212,6 @@ class RiderOfferDispatcher
             SendRiderOfferPush::dispatch($riderId, $reference)->afterCommit();
             
         });
-    }
-
-    private function hasPushDevice(int $riderId): bool
-    {
-        return DB::table('rider_api_devices')
-            ->where('rider_id', $riderId)
-            ->whereNull('revoked_at')
-            ->whereNotNull('push_token')
-            ->where('push_token', '!=', '')
-            ->exists();
     }
 
     private function maxPendingOffersPerRider(): int
@@ -261,16 +249,9 @@ class RiderOfferDispatcher
             ->join('rider_api_locations as location', 'location.rider_id', '=', 'rider.id')
             ->whereRaw('location.id = (SELECT latest.id FROM rider_api_locations AS latest WHERE latest.rider_id = rider.id ORDER BY latest.recorded_at DESC, latest.id DESC LIMIT 1)')
             ->where('rider.active', true)
+            ->whereNull('rider.archived_at')
             ->where('rider_api_availability.state', 'available')
             ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = rider.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', ['pending', now(), 'offered', $maxPendingOffers])
-            ->whereExists(function ($query) {
-                $query->selectRaw('1')
-                    ->from('rider_api_devices')
-                    ->whereColumn('rider_api_devices.rider_id', 'rider.id')
-                    ->whereNull('rider_api_devices.revoked_at')
-                    ->whereNotNull('rider_api_devices.push_token')
-                    ->where('rider_api_devices.push_token', '!=', '');
-            })
             ->whereNotExists(function ($query) {
                 $query->selectRaw('1')
                     ->from('rider_api_deliveries as active_delivery')

@@ -7,9 +7,10 @@
             <div class="admin-page-heading">
                 <div>
                     <span class="admin-eyebrow">Rider management</span>
-                    <h1>Available riders</h1>
+                    <h1>Rider management</h1>
                     <p>Review applications, manage rider accounts, and update credit balances.</p>
                 </div>
+                <a class="btn admin-btn-primary" href="{{ route('dashboard.riders.available') }}"><i class="fas fa-broadcast-tower mr-2"></i>View available riders</a>
             </div>
         </div>
     </section>

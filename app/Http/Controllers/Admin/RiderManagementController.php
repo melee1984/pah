@@ -23,6 +23,121 @@ use Throwable;
 
 class RiderManagementController extends Controller
 {
+    public function available(Request $request): View
+    {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $search = trim($validated['search'] ?? '');
+        $maxPendingOffers = max(1, (int) config('rider.offer_max_pending_per_rider', 3));
+
+        $approvedRiders = DB::table('rider as riders')
+            ->where('riders.active', true)
+            ->whereNull('riders.archived_at');
+
+        $availableRiders = (clone $approvedRiders)
+            ->join('rider_api_availability as availability', 'availability.rider_id', '=', 'riders.id')
+            ->where('availability.state', 'available');
+
+        $readyRiders = (clone $availableRiders)
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_locations as location')
+                    ->whereColumn('location.rider_id', 'riders.id');
+            })
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_deliveries as active_delivery')
+                    ->whereColumn('active_delivery.rider_id', 'riders.id')
+                    ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
+            })
+            ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = riders.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', [
+                'pending', now(), 'offered', $maxPendingOffers,
+            ]);
+
+        $readyCount = (clone $readyRiders)->count();
+        $availableCount = (clone $availableRiders)->count();
+        $approvedCount = (clone $approvedRiders)->count();
+        $busyCount = (clone $approvedRiders)
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_deliveries as active_delivery')
+                    ->whereColumn('active_delivery.rider_id', 'riders.id')
+                    ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
+            })
+            ->count();
+
+        $riders = $readyRiders
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('riders.name', 'like', "%{$search}%")
+                        ->orWhere('riders.mobile', 'like', "%{$search}%");
+                });
+            })
+            ->select([
+                'riders.id',
+                'riders.name',
+                'riders.mobile',
+                'availability.heartbeat_at',
+            ])
+            ->selectSub(function ($query) {
+                $query->from('rider_api_locations as latest_location')
+                    ->whereColumn('latest_location.rider_id', 'riders.id')
+                    ->orderByDesc('latest_location.recorded_at')
+                    ->orderByDesc('latest_location.id')
+                    ->limit(1)
+                    ->select('latest_location.recorded_at');
+            }, 'location_recorded_at')
+            ->selectSub(function ($query) {
+                $query->from('rider_api_devices as latest_device')
+                    ->whereColumn('latest_device.rider_id', 'riders.id')
+                    ->whereNull('latest_device.revoked_at')
+                    ->whereNotNull('latest_device.push_token')
+                    ->where('latest_device.push_token', '!=', '')
+                    ->orderByDesc('latest_device.last_seen_at')
+                    ->limit(1)
+                    ->select('latest_device.last_seen_at');
+            }, 'device_last_seen_at')
+            ->selectSub(function ($query) {
+                $query->from('rider_api_devices as push_device')
+                    ->whereColumn('push_device.rider_id', 'riders.id')
+                    ->whereNull('push_device.revoked_at')
+                    ->whereNotNull('push_device.push_token')
+                    ->where('push_device.push_token', '!=', '')
+                    ->limit(1)
+                    ->select('push_device.id');
+            }, 'push_device_id')
+            ->selectSub(function ($query) {
+                $query->from('rider_api_offers as pending_offer')
+                    ->join('rider_api_deliveries as pending_delivery', 'pending_delivery.id', '=', 'pending_offer.delivery_id')
+                    ->whereColumn('pending_offer.rider_id', 'riders.id')
+                    ->where('pending_offer.status', 'pending')
+                    ->where('pending_offer.expires_at', '>', now())
+                    ->where('pending_delivery.current_state', 'offered')
+                    ->whereNull('pending_delivery.rider_id')
+                    ->selectRaw('COUNT(*)');
+            }, 'pending_offer_count')
+            ->orderByDesc('availability.heartbeat_at')
+            ->orderBy('riders.name')
+            ->paginate(25)
+            ->withQueryString();
+
+        $metrics = [
+            'ready' => $readyCount,
+            'available' => $availableCount,
+            'busy' => $busyCount,
+            'unavailable' => max(0, $approvedCount - $availableCount - $busyCount),
+        ];
+
+        return view('dashboard.pages.riders.available', compact(
+            'riders',
+            'metrics',
+            'search',
+            'maxPendingOffers',
+        ));
+    }
+
     public function index(Request $request): View
     {
         $validated = $request->validate([

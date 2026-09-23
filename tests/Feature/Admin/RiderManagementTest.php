@@ -59,11 +59,80 @@ class RiderManagementTest extends TestCase
             ->actingAs($admin)
             ->get(route('dashboard.rider'))
             ->assertOk()
-            ->assertSee('Available riders')
+            ->assertSee('Rider management')
             ->assertSee('Ana Rider')
             ->assertSee('₱125.50')
             ->assertSee(route('dashboard.riders.approve', $riderId))
             ->assertSee(route('dashboard.riders.credits', $riderId));
+    }
+
+    public function test_available_riders_page_includes_ready_riders_without_push_devices(): void
+    {
+        $admin = $this->createAdmin();
+        $readyRiderId = $this->createRider('Ready Rider', true);
+        $missingDeviceRiderId = $this->createRider('No Device Rider', true);
+        $this->createRider('Offline Rider', true);
+        $now = now();
+
+        DB::table('rider_api_availability')->insert([
+            [
+                'rider_id' => $readyRiderId,
+                'state' => 'available',
+                'heartbeat_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'rider_id' => $missingDeviceRiderId,
+                'state' => 'available',
+                'heartbeat_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('rider_api_locations')->insert([
+            [
+                'rider_id' => $readyRiderId,
+                'latitude' => 7.0731,
+                'longitude' => 125.6128,
+                'recorded_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'rider_id' => $missingDeviceRiderId,
+                'latitude' => 7.0731,
+                'longitude' => 125.6128,
+                'recorded_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+        ]);
+        DB::table('rider_api_devices')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $readyRiderId,
+            'device_key' => 'ready-rider-phone',
+            'push_token' => 'push-token',
+            'last_seen_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class)
+            ->actingAs($admin)
+            ->get(route('dashboard.riders.available'))
+            ->assertOk()
+            ->assertSee('Ready for booking')
+            ->assertSee('Ready Rider')
+            ->assertSee('No Device Rider')
+            ->assertSee('No push device')
+            ->assertDontSee('Offline Rider')
+            ->assertViewHas('metrics', [
+                'ready' => 2,
+                'available' => 2,
+                'busy' => 0,
+                'unavailable' => 1,
+            ]);
     }
 
     public function test_admin_can_decline_a_pending_application_with_a_reason(): void

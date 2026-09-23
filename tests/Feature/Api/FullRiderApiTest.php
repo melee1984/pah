@@ -505,7 +505,8 @@ class FullRiderApiTest extends TestCase
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            if ($position !== 14) {
+            // Rider 2 has no registered device but remains eligible for an offer.
+            if (! in_array($position, [2, 14], true)) {
                 DB::table('rider_api_devices')->insert([
                     'reference' => (string) Str::uuid(),
                     'rider_id' => $riderId,
@@ -543,7 +544,12 @@ class FullRiderApiTest extends TestCase
 
         $offeredIds = DB::table('rider_api_offers')->where('delivery_id', $deliveryId)
             ->orderBy('rider_id')->pluck('rider_id')->all();
-        $this->assertEquals(array_slice($riderIds, 1, 10), $offeredIds);
+        $expectedRiderIds = array_merge(
+            array_slice($riderIds, 1, 7),
+            array_slice($riderIds, 13, 3),
+        );
+        $this->assertEquals($expectedRiderIds, $offeredIds);
+        $this->assertContains($riderIds[1], $offeredIds);
         $this->assertDatabaseCount('rider_api_notifications', 10);
         Bus::assertDispatchedTimes(SendRiderOfferPush::class, 10);
 
@@ -589,6 +595,40 @@ class FullRiderApiTest extends TestCase
         $job->handle($sender);
         DB::table('rider_api_offers')->where('reference', $offerReference)->update(['status' => 'expired']);
         $job->handle($sender);
+    }
+
+    public function test_offer_push_is_skipped_when_the_rider_has_no_registered_device(): void
+    {
+        $this->loginApprovedRider('no-push-device@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        DB::table('rider_api_devices')->where('rider_id', $riderId)->delete();
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'current_state' => 'offered',
+            'merchant_name' => 'Test Restaurant',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $offerReference = (string) Str::uuid();
+        DB::table('rider_api_offers')->insert([
+            'reference' => $offerReference,
+            'rider_id' => $riderId,
+            'delivery_id' => $deliveryId,
+            'status' => 'pending',
+            'expires_at' => now()->addMinutes(15),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $sender = Mockery::mock(FirebaseRiderPush::class);
+        $sender->shouldNotReceive('send');
+
+        (new SendRiderOfferPush($riderId, $offerReference))->handle($sender);
+
+        $this->assertDatabaseHas('rider_api_offers', [
+            'reference' => $offerReference,
+            'status' => 'pending',
+        ]);
     }
 
     public function test_rider_can_receive_multiple_pending_offers_up_to_a_configurable_limit(): void
