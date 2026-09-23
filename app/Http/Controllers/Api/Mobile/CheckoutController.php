@@ -217,6 +217,17 @@ class CheckoutController extends Controller
             ], 200);
         }
 
+        if ($cart->discount_code) {
+            $coupon = Coupon::appliedToCart($cart);
+
+            if (! $coupon || $coupon->hasReachedUsageLimit()) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The applied coupon is no longer available or has reached its usage limit. Please remove it and try again.',
+                ], 200);
+            }
+        }
+
         \Log::info('checkout input data: ' . json_encode($request->all()));
 
         $userAddress = UserAddress::where('id', $request->input('deliveryAddressId'))
@@ -597,6 +608,13 @@ class CheckoutController extends Controller
 			], 200);
 		}
 
+		if ($coupon->hasReachedUsageLimit()) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'This coupon has reached its usage limit.',
+			], 200);
+		}
+
 		$subtotal = $this->discountableSubtotal($cart);
 		if ($coupon->condition !== null && $subtotal < (float) $coupon->condition) {
 			return response()->json([
@@ -629,6 +647,7 @@ class CheckoutController extends Controller
 			->available($partnerId ? (int) $partnerId : null)
 			->orderBy('valid_until')
 			->get()
+			->reject(fn (Coupon $coupon) => $coupon->hasReachedUsageLimit())
 			->map(fn (Coupon $coupon) => $this->couponPayload($coupon))
 			->values();
 

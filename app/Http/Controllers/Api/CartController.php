@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Coupon;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -479,6 +480,17 @@ class CartController extends Controller
 
             $cart = Cart::whereSessionId($session_id)
                 ->whereUserId(Auth::User()->id)->first();
+
+            if ($cart?->discount_code) {
+                $coupon = Coupon::appliedToCart($cart);
+
+                if (! $coupon || $coupon->hasReachedUsageLimit()) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'The applied coupon is no longer available or has reached its usage limit. Please remove it and try again.',
+                    ]);
+                }
+            }
 
             if ($request->input('smsCode') != $cart->sms_code) {
                 $data['message'] = "Invalid OTP Password. Please try again";

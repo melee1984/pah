@@ -300,6 +300,13 @@ class CheckoutController extends Controller
 			], 200);
 		}
 
+		if ($coupon->hasReachedUsageLimit()) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'This coupon has reached its usage limit.',
+			], 200);
+		}
+
 		$subtotal = $this->discountableSubtotal($cart);
 		if ($coupon->condition !== null && $subtotal < (float) $coupon->condition) {
 			return response()->json([
@@ -332,6 +339,7 @@ class CheckoutController extends Controller
 			->available($partnerId ? (int) $partnerId : null)
 			->orderBy('valid_until')
 			->get()
+			->reject(fn (Coupon $coupon) => $coupon->hasReachedUsageLimit())
 			->map(fn (Coupon $coupon) => $this->couponPayload($coupon))
 			->values();
 

@@ -55,6 +55,12 @@ class CouponCheckoutTest extends TestCase
             $table->decimal('discount_amount', 8, 2)->default(0);
             $table->timestamps();
         });
+        Schema::create('order', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('cart_id');
+            $table->dateTime('submitted_at')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function test_percentage_coupon_for_the_cart_partner_is_applied_to_checkout(): void
@@ -191,5 +197,45 @@ class CouponCheckoutTest extends TestCase
 
         $response->assertOk()->assertJsonCount(2, 'data');
         $this->assertEqualsCanonicalizing(['GLOBAL', 'CURRENT'], $response->json('data.*.code'));
+    }
+
+    public function test_coupon_cannot_be_applied_after_its_usage_limit_is_reached(): void
+    {
+        $this->startSession();
+        session()->save();
+
+        $usedCartId = DB::table('cart')->insertGetId([
+            'session_id' => 'previous-order',
+            'partner_id' => 12,
+            'discount_code' => 'ONCEONLY',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('order')->insert([
+            'cart_id' => $usedCartId,
+            'submitted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('cart')->insert([
+            'session_id' => session()->getId(),
+            'partner_id' => 12,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        Coupon::create([
+            'coupon' => 'ONCEONLY',
+            'partner_id' => 12,
+            'discount_value' => 50,
+            'limit' => 1,
+            'active' => true,
+        ]);
+
+        $this->withCredentials()->withCookie(config('session.cookie'), session()->getId())
+            ->postJson('/api/checkout/coupon/submit', ['coupon' => 'ONCEONLY'])
+            ->assertOk()
+            ->assertJsonPath('status', 0)
+            ->assertJsonPath('message', 'This coupon has reached its usage limit.');
     }
 }

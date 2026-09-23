@@ -13,7 +13,7 @@ class CouponController extends Controller
 {
     public function index(): View
     {
-        $coupons = Coupon::query()->with('partner:id,restaurant_name')->latest()->paginate(20);
+        $coupons = Coupon::query()->withUsageCount()->with('partner:id,restaurant_name')->latest()->paginate(20);
 
         return view('dashboard.pages.coupons.index', compact('coupons'));
     }

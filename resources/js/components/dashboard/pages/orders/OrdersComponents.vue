@@ -61,6 +61,7 @@
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</button>
+                        <small v-if="order.cart.discount_code" class="d-block mt-1">Coupon: <strong>{{ order.cart.discount_code }}</strong></small>
                     </td>
                     <td width="25%" v-if="order.partner">
                         Estimated Date/Time: <br><b> {{ order.cart.delivery_date }} - {{ order.cart.delivery_time }}</b> <br>
@@ -186,6 +187,7 @@
                   <div class="order-detail-summary-row"><span>Subtotal</span><strong>₱{{ selectedOrder?.summary?.sub_total || '0.00' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Delivery fee</span><strong>₱{{ selectedOrder?.summary?.delivery_fee || '0.00' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Discount</span><strong>− ₱{{ selectedOrder?.summary?.discount || '0.00' }}</strong></div>
+                  <div v-if="selectedOrder?.cart?.discount_code" class="order-detail-summary-row"><span>Coupon code</span><strong>{{ selectedOrder.cart.discount_code }}</strong></div>
                   <div class="order-detail-summary-total"><span>Total</span><strong>₱{{ selectedOrder?.summary?.total || '0.00' }}</strong></div>
                 </section>
 

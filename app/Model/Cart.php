@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 class Cart extends Model
 {
   protected $table = 'cart';
-  protected $fillable = array('user_id', 'session_id', 'active', 'ip_address', 'partner_id', 'address_id', 'payment_id', 'user_long', 'user_lat', 'delivery_date', 'delivery_time', 'sms_code_validated_at', 'partner_location_address_id', 'delivery_fee', 'distance_rate', 'duration', 'origin', 'destination', 'discount_amount');
+  protected $fillable = array('user_id', 'session_id', 'active', 'ip_address', 'partner_id', 'address_id', 'payment_id', 'user_long', 'user_lat', 'delivery_date', 'delivery_time', 'sms_code_validated_at', 'partner_location_address_id', 'delivery_fee', 'distance_rate', 'duration', 'origin', 'destination', 'discount_amount', 'discount_code');
   protected $hidden = array('created_at', 'updated_at', 'processed_at', 'user_id', 'ip_address');
 
   public $timestamps = true;

@@ -40,6 +40,7 @@
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
+                        <small v-if="order.cart.discount_code" class="d-block mt-1">Coupon: <strong>{{ order.cart.discount_code }}</strong></small>
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
@@ -182,6 +183,10 @@
                                                         <tr>
                                                             <th colspan="2" class="text-right">Discount:</th>
                                                             <th class="text-center">{{ selectedOrder.summary.discount }} PHP</th>
+                                                        </tr>
+                                                        <tr v-if="selectedOrder.cart.discount_code">
+                                                            <th colspan="2" class="text-right">Coupon code:</th>
+                                                            <th class="text-center">{{ selectedOrder.cart.discount_code }}</th>
                                                         </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Total:</th>

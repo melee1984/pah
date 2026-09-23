@@ -2,8 +2,10 @@
 
 namespace App;
 
+use App\Model\Cart;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Coupon extends Model
 {
@@ -53,6 +55,47 @@ class Coupon extends Model
                         ->where(fn (Builder $query) => $query->whereNull('valid_at')->orWhere('valid_at', '>=', now()));
                 });
             });
+    }
+
+    public function scopeWithUsageCount(Builder $query): Builder
+    {
+        return $query->select('coupon.*')->selectSub(function ($query) {
+            $query->from('order')
+                ->join('cart', 'cart.id', '=', 'order.cart_id')
+                ->whereNotNull('order.submitted_at')
+                ->whereColumn('cart.discount_code', 'coupon.coupon')
+                ->selectRaw('COUNT(*)');
+        }, 'usage_count');
+    }
+
+    public function usageCount(): int
+    {
+        if (array_key_exists('usage_count', $this->attributes)) {
+            return (int) $this->attributes['usage_count'];
+        }
+
+        return DB::table('order')
+            ->join('cart', 'cart.id', '=', 'order.cart_id')
+            ->whereNotNull('order.submitted_at')
+            ->where('cart.discount_code', $this->coupon)
+            ->count();
+    }
+
+    public function hasReachedUsageLimit(): bool
+    {
+        return $this->limit !== null && $this->usageCount() >= $this->limit;
+    }
+
+    public static function appliedToCart(Cart $cart): ?self
+    {
+        if (! $cart->discount_code) {
+            return null;
+        }
+
+        return static::query()
+            ->available($cart->partner_id ? (int) $cart->partner_id : null)
+            ->whereRaw('UPPER(coupon) = ?', [strtoupper((string) $cart->discount_code)])
+            ->first();
     }
 
     public function discountFor(float $subtotal): float

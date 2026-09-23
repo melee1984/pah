@@ -25,6 +25,7 @@ class PartnerPromotionController extends Controller
             ->latest()
             ->paginate(15);
         $coupons = Coupon::query()
+            ->withUsageCount()
             ->where('partner_id', $partnerId)
             ->latest()
             ->paginate(15, ['*'], 'coupon_page');
