@@ -89,25 +89,25 @@ class RiderManagementController extends Controller
                     ->limit(1)
                     ->select('latest_location.recorded_at');
             }, 'location_recorded_at')
-            // ->selectSub(function ($query) {
-            //     $query->from('rider_api_devices as latest_device')
-            //         ->whereColumn('latest_device.rider_id', 'riders.id')
-            //         ->whereNull('latest_device.revoked_at')
-            //         ->whereNotNull('latest_device.push_token')
-            //         ->where('latest_device.push_token', '!=', '')
-            //         ->orderByDesc('latest_device.last_seen_at')
-            //         ->limit(1)
-            //         ->select('latest_device.last_seen_at');
-            // }, 'device_last_seen_at')
-            // ->selectSub(function ($query) {
-            //     $query->from('rider_api_devices as push_device')
-            //         ->whereColumn('push_device.rider_id', 'riders.id')
-            //         ->whereNull('push_device.revoked_at')
-            //         ->whereNotNull('push_device.push_token')
-            //         ->where('push_device.push_token', '!=', '')
-            //         ->limit(1)
-            //         ->select('push_device.id');
-            // }, 'push_device_id')
+            ->selectSub(function ($query) {
+                $query->from('rider_api_devices as latest_device')
+                    ->whereColumn('latest_device.rider_id', 'riders.id')
+                    ->whereNull('latest_device.revoked_at')
+                    ->whereNotNull('latest_device.push_token')
+                    ->where('latest_device.push_token', '!=', '')
+                    ->orderByDesc('latest_device.last_seen_at')
+                    ->limit(1)
+                    ->select('latest_device.last_seen_at');
+            }, 'device_last_seen_at')
+            ->selectSub(function ($query) {
+                $query->from('rider_api_devices as push_device')
+                    ->whereColumn('push_device.rider_id', 'riders.id')
+                    ->whereNull('push_device.revoked_at')
+                    ->whereNotNull('push_device.push_token')
+                    ->where('push_device.push_token', '!=', '')
+                    ->limit(1)
+                    ->select('push_device.id');
+            }, 'push_device_id')
             ->selectSub(function ($query) {
                 $query->from('rider_api_offers as pending_offer')
                     ->join('rider_api_deliveries as pending_delivery', 'pending_delivery.id', '=', 'pending_offer.delivery_id')
