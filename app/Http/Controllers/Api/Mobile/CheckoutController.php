@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Mobile;
 use App\Coupon;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 use Session;
 use App\Model\Cart;
@@ -652,10 +653,11 @@ class CheckoutController extends Controller
     
     private function discountableSubtotal(Cart $cart): float
     {
-        return $cart->cartItems()
-            ->where('is_discountable', 1)
-            ->get()
-            ->sum(fn (CartItem $item) => $item->getPrice(true) + $item->variance_total);
+        return round((float) DB::table('cart_details')->where('cart_id', $cart->id)->get()->sum(function ($item) {
+            return max(0, (int) $item->qty * (
+                (float) $item->price + (float) $item->variance_total - (float) $item->discount_amount
+            ));
+        }), 2);
     }
 
     private function checkoutSummary(Cart $cart): array

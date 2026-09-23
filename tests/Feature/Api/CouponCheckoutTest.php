@@ -3,8 +3,10 @@
 namespace Tests\Feature\Api;
 
 use App\Coupon;
+use App\Http\Controllers\Api\Mobile\CheckoutController as MobileCheckoutController;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -123,6 +125,46 @@ class CouponCheckoutTest extends TestCase
             ->postJson('/api/checkout/coupon/submit', ['coupon' => 'OTHERSTORE'])
             ->assertOk()
             ->assertJsonPath('status', 0);
+    }
+
+    public function test_mobile_coupon_is_applied_using_the_provided_session_id(): void
+    {
+        $cartId = DB::table('cart')->insertGetId([
+            'session_id' => 'mobile-session-id',
+            'partner_id' => 12,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('cart_details')->insert([
+            'cart_id' => $cartId,
+            'qty' => 2,
+            'price' => 100,
+            'variance_total' => 0,
+            'discount_amount' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        Coupon::create([
+            'coupon' => 'MOBILE20',
+            'partner_id' => 12,
+            'discount_percentage' => 20,
+            'active' => true,
+        ]);
+
+        $request = Request::create('/api/mobile/checkout/coupon/submit', 'POST', [
+            'session_id' => 'mobile-session-id',
+            'coupon' => 'mobile20',
+        ]);
+        $response = (new MobileCheckoutController)->couponCode($request);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame(1, $response->getData(true)['status']);
+        $this->assertEquals(40.0, $response->getData(true)['discount_amount']);
+        $this->assertDatabaseHas('cart', [
+            'id' => $cartId,
+            'discount_code' => 'MOBILE20',
+            'discount_amount' => 40,
+        ]);
     }
 
     public function test_available_coupon_endpoint_returns_global_and_current_partner_coupons_only(): void
