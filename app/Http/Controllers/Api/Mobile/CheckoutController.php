@@ -59,6 +59,7 @@ class CheckoutController extends Controller
             }
             
             $cart->partnerlocation;
+            $cart->payment;
 
             try {
                 foreach($product_items as $list) {
@@ -206,7 +207,7 @@ class CheckoutController extends Controller
                         ->whereUserId($user->id)->first();
 
         $cart->payment;
-        
+
         if (!$cart) {
             return response()->json([
                 'status' => 0,
@@ -265,7 +266,7 @@ class CheckoutController extends Controller
                 $cart->order_no = $cart->generateOrderNo();
                 $cart->sms_code = "";
                 $cart->active = 1;
-
+              
                 $status = $cart->save();
 
                 if ($status) {
