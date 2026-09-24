@@ -51,12 +51,12 @@ class Orders extends Model
      */
     public function orderStatus() 
     {
-         return $this->hasOne(LibraryStatus::class, 'id', 'order_status_id');
+         return $this->hasOne(LibraryStatus::class, 'id', 'order_status_id'); // order status
     }
 
     public function status() 
     {
-         return $this->hasOne(BookingStatus::class, 'id', 'booking_status_id');
+         return $this->hasOne(BookingStatus::class, 'id', 'booking_status_id'); // delivery status 
     }
 
     // get should be the latest status of the order

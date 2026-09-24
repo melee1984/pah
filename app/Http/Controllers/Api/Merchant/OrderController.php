@@ -29,11 +29,12 @@ class OrderController extends Controller
         $total_net = 0;
 
         $orders = Orders::with([
-                'cart',
+                'cart.payment',
                 'cart.address',
                 'cart.partnerlocation',
                 'partner',
                 'orderStatus',
+                'status',
             ])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at') 

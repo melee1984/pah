@@ -28,7 +28,7 @@ class OrderController extends Controller
    
     public function getList() 
     {	 
-         $orders = Orders::with('cart')
+         $orders = Orders::with('cart.payment')->with('orderStatus')
                 ->whereNotNull('submitted_at') 
                 ->with(['partner', 'rider', 'status'])
                 ->orderBy('created_at', 'desc')->get();

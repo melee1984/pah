@@ -7,7 +7,9 @@
 .order-detail-heading h2 { margin: 0 0 5px; color: #fff; font-size: clamp(23px, 3vw, 31px); font-weight: 800; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .order-detail-heading p { margin: 0; color: #d3dce7; font-size: 13px; }
 .order-detail-header-actions { display: flex; align-items: center; gap: 14px; }
-.order-detail-status { display: inline-flex; align-items: center; padding: 7px 12px; border-radius: 100px; background: #eaf2ff; color: #2e5c94; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.order-detail-statuses { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.order-detail-status { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 100px; background: #eaf2ff; color: #2e5c94; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.order-detail-status small { color: inherit; font-size: 8px; font-weight: 900; letter-spacing: .08em; opacity: .7; text-transform: uppercase; }
 .order-detail-status.is-success { background: #dcf6e6; color: #16744a; }
 .order-detail-status.is-danger { background: #ffe7e7; color: #ad3838; }
 .order-detail-status.is-progress { background: #fff0d7; color: #925b15; }
@@ -43,6 +45,9 @@
 .order-detail-summary-row, .order-detail-summary-total { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; font-size: 13px; }
 .order-detail-summary-row span { color: #718094; }
 .order-detail-summary-row strong { color: #35445a; font-weight: 700; white-space: nowrap; }
+.order-detail-payment-method { margin-bottom: 8px; padding: 10px 12px; border-radius: 9px; background: #f1f5fa; }
+.order-detail-payment-method span { color: #52657e; font-weight: 700; }
+.order-detail-payment-method strong { color: #25354c; }
 .order-detail-summary-total { align-items: center; margin-top: 12px; padding-top: 18px; border-top: 1px dashed #dce2eb; color: #26374d; font-size: 15px; font-weight: 800; }
 .order-detail-summary-total strong { color: #e25445; font-size: 21px; white-space: nowrap; }
 .order-detail-person { display: flex; flex-direction: column; gap: 5px; }
@@ -64,6 +69,7 @@
   .order-detail-modal .modal-content { border-radius: 14px; }
   .order-detail-header { padding: 22px; }
   .order-detail-header-actions { flex-direction: column-reverse; align-items: flex-end; gap: 9px; }
+  .order-detail-statuses { align-items: flex-end; flex-direction: column; }
   .order-detail-body { max-height: 75vh; padding: 18px; }
   .order-detail-highlights { grid-template-columns: 1fr 1fr; }
   .order-detail-highlight-total { grid-column: 1 / -1; }

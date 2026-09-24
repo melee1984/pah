@@ -52,7 +52,8 @@
                     <th nowrap="">Discount</th>
                     <th nowrap="">Delivery Fee</th>
                     <th>Total</th>
-                    <th>Status</th>
+                    <th>Order Status</th>
+                    <th>Delivery Status</th>
                      <th>Rider</th>
                   </tr>
                 </thead>
@@ -82,9 +83,12 @@
                     <td width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
                     <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
                     <td width="10%">
-                      <span v-if="order.status">
-                        <span class="dashboard-status-pill" :class="statusClass(order.status)">{{ order.status.title }}</span>
-                       </span>
+                      <span v-if="order.order_status" class="dashboard-status-pill" :class="statusBadgeClass(order.order_status.id)">{{ order.order_status.title }}</span>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                    <td width="10%">
+                      <span v-if="order.status" class="dashboard-status-pill" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
+                      <span v-else class="text-muted">—</span>
                     </td>
                     <td width="10%">
                       <template v-if="order.status">
@@ -108,7 +112,7 @@
                     </td>
                   </tr>
                   <tr v-if="displayedOrders.length === 0">
-                    <td colspan="9" class="dashboard-table-empty">
+                    <td colspan="10" class="dashboard-table-empty">
                       No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
@@ -131,7 +135,10 @@
               <p>Placed {{ selectedOrder?.submitted_date || selectedOrder?.cart?.processed_at || 'Date unavailable' }}</p>
             </div>
             <div class="order-detail-header-actions">
-              <span v-if="selectedOrder?.status?.title" class="order-detail-status" :class="statusClassForModal(selectedOrder?.status_id)">{{ selectedOrder?.status?.title }}</span>
+              <div class="order-detail-statuses">
+                <span v-if="selectedOrder?.order_status" class="order-detail-status" :class="statusClassForModal(selectedOrder.order_status.id)"><small>Order</small>{{ selectedOrder.order_status.title }}</span>
+                <span v-if="selectedOrder?.status" class="order-detail-status" :class="statusClassForModal(selectedOrder.status.id)"><small>Delivery</small>{{ selectedOrder.status.title }}</span>
+              </div>
               <button type="button" class="order-detail-close" @click="closeOrderDetails" aria-label="Close order details"><i class="fas fa-times"></i></button>
             </div>
           </div>
@@ -184,6 +191,7 @@
               <aside class="order-detail-side">
                 <section class="order-detail-panel order-detail-summary">
                   <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-file-invoice"></i></span><div><h3>Payment summary</h3><p>Order charges at a glance</p></div></div>
+                  <div class="order-detail-summary-row order-detail-payment-method"><span>Payment method</span><strong>{{ selectedOrder?.cart?.payment?.title || 'Not specified' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Subtotal</span><strong>₱{{ selectedOrder?.summary?.sub_total || '0.00' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Delivery fee</span><strong>₱{{ selectedOrder?.summary?.delivery_fee || '0.00' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Discount</span><strong>− ₱{{ selectedOrder?.summary?.discount || '0.00' }}</strong></div>
@@ -327,10 +335,14 @@
             if (Number(statusId) === 8) return 'is-danger';
             return 'is-progress';
           },
-          statusClass: function(status) {
-            if (this.activeList === 'completed') return 'is-success';
-            if (this.activeList === 'cancelled') return 'is-danger';
-            return status && Number(status.id) >= 5 ? 'is-warning' : '';
+          statusBadgeClass: function(statusId) {
+            statusId = Number(statusId);
+
+            if (statusId === 7) return 'is-success';
+            if (statusId === 8) return 'is-danger';
+            if (statusId === 1 || statusId >= 4) return 'is-warning';
+
+            return '';
           },
           proofMethodLabel: function(method) {
             const labels = {

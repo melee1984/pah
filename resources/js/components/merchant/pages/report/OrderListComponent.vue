@@ -64,22 +64,23 @@
                     <th nowrap="">Delivery Fee</th>
                     <th>Total</th>
                     <th>Rider</th>
-                    <th>Status</th>
+                    <th>Order Status</th>
+                    <th>Delivery Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="!hasLoaded && isRefreshing">
-                    <td colspan="9" class="dashboard-table-empty">
+                    <td colspan="10" class="dashboard-table-empty">
                       Loading orders…
                     </td>
                   </tr>
                   <tr v-else-if="!hasLoaded && refreshError">
-                    <td colspan="9" class="dashboard-table-empty merchant-order-load-error">
+                    <td colspan="10" class="dashboard-table-empty merchant-order-load-error">
                       Unable to load orders. Retrying automatically.
                     </td>
                   </tr>
                   <tr v-else-if="displayedOrders.length === 0">
-                    <td colspan="9" class="dashboard-table-empty">
+                    <td colspan="10" class="dashboard-table-empty">
                       No {{ activeListLabel.toLowerCase() }} orders found.
                     </td>
                   </tr>
@@ -109,7 +110,14 @@
                     <td width="10%">
                       <span v-if="order.order_status">
                         <span class="dashboard-status-pill" :class="statusBadgeClass(order.order_status_id)">{{ order.order_status.title }}</span>
-                       </span>
+                      </span>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                    <td width="10%">
+                      <span v-if="order.status">
+                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
+                      </span>
+                      <span v-else class="text-muted">—</span>
                     </td>
 
                   </tr>
@@ -131,7 +139,10 @@
               <p>Placed {{ selectedOrder?.submitted_date || selectedOrder?.cart?.processed_at || 'Date unavailable' }}</p>
             </div>
             <div class="order-detail-header-actions">
-              <span v-if="selectedOrder?.order_status?.title" class="order-detail-status" :class="statusClassForModal(selectedOrder?.order_status_id)">{{ selectedOrder?.order_status?.title }}</span>
+              <div class="order-detail-statuses">
+                <span v-if="selectedOrder?.order_status" class="order-detail-status" :class="statusClassForModal(selectedOrder.order_status.id)"><small>Order</small>{{ selectedOrder.order_status.title }}</span>
+                <span v-if="selectedOrder?.status" class="order-detail-status" :class="statusClassForModal(selectedOrder.status.id)"><small>Delivery</small>{{ selectedOrder.status.title }}</span>
+              </div>
               <button type="button" class="order-detail-close" @click="closeOrderDetails" aria-label="Close order details"><i class="fas fa-times"></i></button>
             </div>
           </div>
@@ -184,6 +195,7 @@
               <aside class="order-detail-side">
                 <section class="order-detail-panel order-detail-summary">
                   <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-file-invoice"></i></span><div><h3>Payment summary</h3><p>Order charges at a glance</p></div></div>
+                  <div class="order-detail-summary-row order-detail-payment-method"><span>Payment method</span><strong>{{ selectedOrder?.cart?.payment?.title || 'Not specified' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Subtotal</span><strong>₱{{ selectedOrder?.summary?.sub_total || '0.00' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Delivery fee</span><strong>₱{{ selectedOrder?.summary?.delivery_fee || '0.00' }}</strong></div>
                   <div class="order-detail-summary-row"><span>Discount</span><strong>− ₱{{ selectedOrder?.summary?.discount || '0.00' }}</strong></div>
