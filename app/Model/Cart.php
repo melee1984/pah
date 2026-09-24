@@ -69,38 +69,17 @@ class Cart extends Model
   public function cartItemSummary()
   {
 
-    $qty = "";
-    $sub_total = 0;
-    $delivery_fee = 0;
-    $discount = 0;
-    $total = 0;
-    $qty = 0;
-    $total_com = 0;
-
-    $discountAmount = 0;
-    $delivery_fee = $this->delivery_fee;
-    $discountAmount = $this->discount_amount;
-
-    foreach ($this->details as $item) {
-      $qty = $qty + (int) $item->qty;
-      $sub_total = $sub_total + (int) $item->qty * ((float) $item->price + (float) $item->variance_total);
-      $total_com = $total_com + (int) $item->qty * ((float) $item->price_comm_total + (float) $item->variance_total_comm_total);
-
-      $discountAmount = $discountAmount + (int) $item->qty * (float) $item->discount_amount;
-    }
-
-    // discountAmount = 0;
-
-    $discount = $discountAmount;
-    $total = ($sub_total + $delivery_fee) - $discount;
+    $amounts = $this->cartItemAmounts();
 
     $summary = array(
-      'sub_total' => number_format($sub_total, 2),
-      'delivery_fee' => number_format($delivery_fee, 2),
-      'discount' => number_format($discount, 2),
-      'total' => number_format($total, 2),
-      'qty' => $qty,
-      'total_comm' => number_format($total_com, 2),
+      'sub_total' => number_format($amounts['sub_total'], 2),
+      'delivery_fee' => number_format($amounts['delivery_fee'], 2),
+      'convenience_fee' => number_format($amounts['convenience_fee'], 2),
+      'vat_amount' => number_format($amounts['vat_amount'], 2),
+      'discount' => number_format($amounts['discount'], 2),
+      'total' => number_format($amounts['total'], 2),
+      'qty' => $amounts['qty'],
+      'total_comm' => number_format($amounts['total_comm'], 2),
       'currency' => "₱",
     );
 
@@ -346,42 +325,40 @@ class Cart extends Model
 
   public function cartItemTotal()
   {
+    return $this->cartItemAmounts()['total'];
+  }
 
-    $qty = "";
-    $sub_total = 0;
-    $delivery_fee = 0;
-    $discount = 0;
-    $total = 0;
+  private function cartItemAmounts(): array
+  {
     $qty = 0;
+    $subTotal = 0;
+    $totalCommission = 0;
+    $discount = (float) $this->discount_amount;
+    $deliveryFee = (float) $this->delivery_fee;
+    $items = $this->relationLoaded('details')
+      ? $this->getRelation('details')
+      : CartItem::query()->where('cart_id', $this->getKey())->get();
 
-    $discountAmount = 0;
-
-    $delivery_fee = $this->delivery_fee;
-    $discountAmount = $this->discount_amount;
-
-    foreach ($this->details as $item) {
-
-      $qty = $qty + (int) $item->qty;
-      $sub_total = $sub_total + (int) $item->qty * ((float) $item->price + (float) $item->variance_total);
-
-      $discountAmount = $discountAmount + (int) $item->qty * (float) $item->discount_amount;
-
+    foreach ($items as $item) {
+      $qty += (int) $item->qty;
+      $subTotal += (int) $item->qty * ((float) $item->price + (float) $item->variance_total);
+      $totalCommission += (int) $item->qty * ((float) $item->price_comm_total + (float) $item->variance_total_comm_total);
+      $discount += (int) $item->qty * (float) $item->discount_amount;
     }
 
-    // discountAmount = 0;
+    $convenienceFee = round($subTotal * (float) config('checkout.convenience_fee_rate', 0.05), 2);
+    $vatAmount = round($convenienceFee * ((float) config('checkout.vat_rate', 0) / 100), 2);
 
-    $discount = $discountAmount;
-    $total = ($sub_total + $delivery_fee) - $discount;
-
-    // $summary = array(
-    //     'sub_total' => number_format($sub_total, 2),
-    //     'delivery_fee' => number_format($delivery_fee,2),
-    //     'discount' => number_format($discount,2),
-    //     'total' => number_format($total, 2),
-    //     'qty' => $qty,
-    //   );
-
-    return $total;
+    return [
+      'qty' => $qty,
+      'sub_total' => $subTotal,
+      'delivery_fee' => $deliveryFee,
+      'convenience_fee' => $convenienceFee,
+      'vat_amount' => $vatAmount,
+      'discount' => $discount,
+      'total' => max(0, $subTotal + $deliveryFee + $convenienceFee + $vatAmount - $discount),
+      'total_comm' => $totalCommission,
+    ];
   }
 
   public function isEmpty(): bool

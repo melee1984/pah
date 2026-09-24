@@ -357,20 +357,7 @@ class CheckoutController extends Controller
 
 	private function checkoutSummary(Cart $cart): array
 	{
-		$items = DB::table('cart_details')->where('cart_id', $cart->id)->get();
-		$subtotal = (float) $items->sum(fn ($item) => (int) $item->qty * ((float) $item->price + (float) $item->variance_total));
-		$itemDiscount = (float) $items->sum(fn ($item) => (int) $item->qty * (float) $item->discount_amount);
-		$discount = $itemDiscount + (float) $cart->discount_amount;
-		$deliveryFee = (float) $cart->delivery_fee;
-
-		return [
-			'sub_total' => number_format($subtotal, 2),
-			'delivery_fee' => number_format($deliveryFee, 2),
-			'discount' => number_format($discount, 2),
-			'total' => number_format(max(0, $subtotal + $deliveryFee - $discount), 2),
-			'qty' => (int) $items->sum('qty'),
-			'currency' => '₱',
-		];
+		return $cart->cartItemSummary();
 	}
 
 	private function couponPayload(Coupon $coupon): array

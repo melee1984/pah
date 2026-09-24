@@ -41,10 +41,22 @@
     				 <div class="col-xs-7 col-sm-7 col-md-7 col-lg-7 text-left">
     				  <span>Delivery Fee</span>
     				</div>
-    				<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 text-right">
-    				  <span>{{ summary.delivery_fee }}</span>
-    				</div>
-    			   <div class="col-xs-7 col-sm-7 col-md-7 col-lg-7 text-left">
+				<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 text-right">
+				  <span>{{ summary.delivery_fee }}</span>
+				</div>
+				<div class="col-xs-7 col-sm-7 col-md-7 col-lg-7 text-left">
+				  <span>Convenience Fee</span>
+				</div>
+				<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 text-right">
+				  <span>{{ summary.convenience_fee }}</span>
+				</div>
+				<div class="col-xs-7 col-sm-7 col-md-7 col-lg-7 text-left">
+				  <span>VAT</span>
+				</div>
+				<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 text-right">
+				  <span>{{ summary.vat_amount }}</span>
+				</div>
+			   <div class="col-xs-7 col-sm-7 col-md-7 col-lg-7 text-left">
     			    <span>Discount</span>
     			  </div>
     			  <div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 text-right">
@@ -54,7 +66,7 @@
     		</div>
     		<div class="row total mb-4 mt-3">
     			 <div class="col-xs-7 col-sm-7 col-md-7 col-lg-7 text-left">
-    			  <span>Total (incl. VAT)</span>
+			  <span>Total</span>
     			</div>
     			<div class="col-xs-5 col-sm-5 col-md-5 col-lg-5 text-right">
     			  <span>{{ summary.total }}</span>
