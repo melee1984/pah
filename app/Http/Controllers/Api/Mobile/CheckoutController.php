@@ -199,6 +199,9 @@ class CheckoutController extends Controller
             ], 200);
         }
 
+
+        \Log::info(['request checkout process' => $request->all()]);
+
         $session_id = $request->input('session_id');
         $user = $request->user();
 
