@@ -37,6 +37,9 @@ class CheckoutController extends Controller
     
     public function checkout(Request $request) {
 
+            \Log::info(['request checkout checkout' => $request->all()]);
+
+
     	$session_id = $request->input('session_id');
 
         $cart = Cart::whereSessionId($session_id)->first();
