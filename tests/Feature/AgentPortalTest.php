@@ -36,13 +36,6 @@ class AgentPortalTest extends TestCase
     {
         parent::setUp();
 
-        // Production adds these fields with database/sql/agent_application_review.sql.
-        Schema::table('agents', function (Blueprint $table) {
-            $table->string('review_status', 20)->nullable()->index();
-            $table->text('review_message')->nullable();
-            $table->timestamp('reviewed_at')->nullable();
-        });
-
         Schema::create('partners', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id')->nullable()->index();
