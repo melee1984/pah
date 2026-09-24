@@ -159,6 +159,9 @@ class CheckoutController extends Controller
 
     public function process(Request $request) {
 
+        \Log::info(['request checkout process' => $request->all()]);
+
+
         if ($request->has('deliveryPaymentId')) {
             $deliveryPaymentId = PaymentMethod::resolveCheckoutId(
                 $request->input('deliveryPaymentId')
@@ -200,7 +203,6 @@ class CheckoutController extends Controller
         }
 
 
-        \Log::info(['request checkout process' => $request->all()]);
 
         $session_id = $request->input('session_id');
         $user = $request->user();
