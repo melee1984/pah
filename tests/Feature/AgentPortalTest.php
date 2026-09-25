@@ -172,6 +172,7 @@ class AgentPortalTest extends TestCase
     public function test_agent_help_page_explains_enrollment_and_earnings(): void
     {
         $agent = $this->agent();
+        $commissionTiers = config('agent.commission_tiers');
 
         $this->actingAs($agent, 'agent')->get(route('agent.help'))
             ->assertOk()
@@ -180,9 +181,17 @@ class AgentPortalTest extends TestCase
             ->assertSee('Restaurant approval guide')
             ->assertSee('Save document review')
             ->assertSee('How is my commission calculated?')
+            ->assertSee('How do commission tiers work?')
+            ->assertSee('Approval determines the count')
+            ->assertSee('Recorded commissions stay unchanged')
+            ->assertSee('Can my tier go down?')
+            ->assertSee('data-agent-tier-styles', false)
+            ->assertSee('agent-tier-card is-current', false)
             ->assertSee('Contact agent support')
             ->assertSee('mailto:info@pahatud.com?subject=Agent%20support%20request', false)
             ->assertSee(route('agent.restaurants.create'));
+
+        $this->assertSame($commissionTiers, config('agent.commission_tiers'));
     }
 
     public function test_admin_can_create_an_agent_and_email_a_temporary_password(): void
@@ -194,20 +203,46 @@ class AgentPortalTest extends TestCase
             'name' => 'New Agent',
             'email' => 'new-agent@example.com',
             'mobile' => '09171234567',
-            'commission_percentage' => 10,
         ])->assertRedirect(route('dashboard.agents.index'));
 
         $agent = Agent::query()->where('email', 'new-agent@example.com')->firstOrFail();
         $this->assertTrue($agent->active);
         $this->assertTrue($agent->must_change_password);
         $this->assertNotNull($agent->temporary_password_created_at);
-        $this->assertSame('10.00', $agent->commission_percentage);
+        $this->assertSame(number_format(config('agent.commission_tiers.0'), 2, '.', ''), $agent->commission_percentage);
+        $this->assertSame((float) config('agent.commission_tiers.0'), $agent->commissionPercentage());
 
         Mail::assertSent(AgentTemporaryPasswordMail::class, function ($mail) use ($agent) {
             $this->assertTrue(Hash::check($mail->temporaryPassword, $agent->password));
+            $this->assertStringContainsString('0–34 approved restaurants', $mail->render());
 
             return $mail->hasTo('new-agent@example.com');
         });
+    }
+
+    public function test_agent_commission_rate_cannot_be_overridden_manually(): void
+    {
+        $agent = $this->agent('automatic-tier@example.com');
+
+        $this->artisan('agent:set-rate', [
+            'email' => $agent->email,
+            'percentage' => 99,
+        ])->expectsOutputToContain('Agent rates are assigned automatically')
+            ->assertExitCode(1);
+
+        $this->assertSame('30.00', $agent->fresh()->commission_percentage);
+        $this->assertSame((float) config('agent.commission_tiers.0'), $agent->commissionPercentage());
+    }
+
+    public function test_agent_registration_page_explains_the_commission_tiers(): void
+    {
+        $this->get(route('agent.register'))
+            ->assertOk()
+            ->assertSee('0–34')
+            ->assertSee('35–49')
+            ->assertSee('50 or more')
+            ->assertSee('What does “approved restaurant” mean for my tier?', false)
+            ->assertSee('Existing commission entries keep the rate originally recorded');
     }
 
     public function test_admin_agent_page_lists_registered_agents(): void
@@ -227,7 +262,8 @@ class AgentPortalTest extends TestCase
             ->assertOk()
             ->assertSee('First Listed Agent')
             ->assertSee('Second Listed Agent')
-            ->assertSee('Add new agent');
+            ->assertSee('Add new agent')
+            ->assertDontSee('name="commission_percentage"', false);
     }
 
     public function test_admin_can_view_each_agents_details_and_restaurants(): void
@@ -376,7 +412,10 @@ class AgentPortalTest extends TestCase
 
         $response = $this->actingAs($agent, 'agent')->get(route('agent.restaurants.index'));
 
-        $response->assertOk()->assertSee($own->restaurant_name)->assertDontSee($other->restaurant_name);
+        $response->assertOk()
+            ->assertSee($own->restaurant_name)
+            ->assertSee('Tier reminder:')
+            ->assertDontSee($other->restaurant_name);
     }
 
     public function test_enrollment_automatically_links_the_restaurant_to_the_agent(): void
@@ -838,6 +877,7 @@ class AgentPortalTest extends TestCase
             ->assertSee('agent-commission-table', false)
             ->assertSee('agent-order-breakdown', false)
             ->assertSee('Own Restaurant')
+            ->assertSee('Why rates can differ between rows:')
             ->assertDontSee('Hidden Restaurant')
             ->assertSee('₱30.00')
             ->assertDontSee('₱60.00');
@@ -912,20 +952,68 @@ class AgentPortalTest extends TestCase
             'total_amount' => 115,
             'pahatud_commission_percentage' => 20,
             'pahatud_commission_amount' => 20,
-            'commission_percentage' => 30,
-            'commission_amount' => 6,
+            'commission_percentage' => config('agent.commission_tiers.0'),
+            'commission_amount' => round(20 * config('agent.commission_tiers.0') / 100, 2),
             'status' => AgentCommission::STATUS_PENDING,
         ]);
 
         $agent->update(['commission_percentage' => 40]);
         $order->touch();
-        $this->assertSame('30.00', $order->agentCommission()->first()->commission_percentage);
+        $this->assertSame(number_format(config('agent.commission_tiers.0'), 2, '.', ''), $order->agentCommission()->first()->commission_percentage);
 
         $order->update(['order_status_id' => LibraryStatus::STATUS_CANCELLED]);
         $this->assertDatabaseHas('agent_commissions', [
             'order_id' => $order->id,
             'status' => AgentCommission::STATUS_REVERSED,
         ]);
+    }
+
+    public function test_commission_tiers_count_only_approved_restaurants_and_apply_to_future_network_orders(): void
+    {
+        $agent = $this->agent('tiered-agent@example.com');
+        $orderRestaurant = $this->restaurant($agent, 'Original Restaurant', 'original-tier@example.com');
+
+        for ($number = 1; $number <= 34; $number++) {
+            $this->restaurant($agent, 'Approved Restaurant '.$number, "approved-{$number}@example.com")
+                ->update(['application_status' => 'approved']);
+        }
+
+        $this->restaurant($agent, 'Pending Restaurant', 'pending-tier@example.com')
+            ->update(['application_status' => 'pending_review']);
+        $this->restaurant($agent, 'Declined Restaurant', 'declined-tier@example.com')
+            ->update(['application_status' => 'declined']);
+
+        $this->assertSame(34, $agent->approvedRestaurantCount());
+        $this->assertSame((float) config('agent.commission_tiers.0'), $agent->commissionPercentage());
+
+        $this->restaurant($agent, 'Approved Restaurant 35', 'approved-35@example.com')
+            ->update(['application_status' => 'approved']);
+
+        $this->assertSame(35, $agent->approvedRestaurantCount());
+        $this->assertSame((float) config('agent.commission_tiers.35'), $agent->commissionPercentage());
+
+        $firstTierOrder = $this->deliveredOrder($orderRestaurant, 100);
+        $this->assertDatabaseHas('agent_commissions', [
+            'order_id' => $firstTierOrder->id,
+            'commission_percentage' => config('agent.commission_tiers.35'),
+            'commission_amount' => round(config('agent.pahatud_commission_percentage') * config('agent.commission_tiers.35') / 100, 2),
+        ]);
+
+        for ($number = 36; $number <= 50; $number++) {
+            $this->restaurant($agent, 'Approved Restaurant '.$number, "approved-{$number}@example.com")
+                ->update(['application_status' => 'approved']);
+        }
+
+        $this->assertSame(50, $agent->approvedRestaurantCount());
+        $this->assertSame((float) config('agent.commission_tiers.50'), $agent->commissionPercentage());
+
+        $highestTierOrder = $this->deliveredOrder($orderRestaurant, 100);
+        $this->assertDatabaseHas('agent_commissions', [
+            'order_id' => $highestTierOrder->id,
+            'commission_percentage' => config('agent.commission_tiers.50'),
+            'commission_amount' => round(config('agent.pahatud_commission_percentage') * config('agent.commission_tiers.50') / 100, 2),
+        ]);
+        $this->assertSame(number_format(config('agent.commission_tiers.35'), 2, '.', ''), $firstTierOrder->agentCommission()->first()->commission_percentage);
     }
 
     private function agent(string $email = 'agent@example.com'): Agent
@@ -981,5 +1069,35 @@ class AgentPortalTest extends TestCase
             'active' => true,
             'verified_at' => now(),
         ]);
+    }
+
+    private function deliveredOrder(Partners $restaurant, float $subtotal): Orders
+    {
+        $cart = Cart::query()->create([
+            'partner_id' => $restaurant->id,
+            'delivery_fee' => 0,
+            'discount_amount' => 0,
+        ]);
+        CartItem::query()->create([
+            'cart_id' => $cart->id,
+            'qty' => 1,
+            'price' => $subtotal,
+            'variance_total' => 0,
+            'price_comm_total' => 0,
+            'variance_total_comm_total' => 0,
+            'discount_amount' => 0,
+        ]);
+        $order = Orders::query()->create([
+            'cart_id' => $cart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+        ]);
+        $order->update([
+            'order_status_id' => LibraryStatus::STATUS_DELIVERED,
+            'delivered_at' => now(),
+        ]);
+
+        return $order;
     }
 }

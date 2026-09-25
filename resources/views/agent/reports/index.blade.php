@@ -11,6 +11,8 @@
         </div>
     </div>
 
+    <div class="agent-tier-note"><strong>Why rates can differ between rows:</strong> each commission entry keeps the tier rate that applied when that order qualified. Reaching a new tier changes future qualifying orders across your restaurant network; it does not recalculate entries already shown in this ledger. <a class="agent-text-link" href="{{ route('agent.help') }}#earnings">Read the tier guide →</a></div>
+
     <section class="agent-card">
         <form class="agent-filter" method="GET" action="{{ route('agent.reports.index') }}">
             <div class="agent-field"><label for="from">From</label><input class="agent-input" id="from" name="from" type="date" value="{{ request('from', $from->toDateString()) }}"></div>

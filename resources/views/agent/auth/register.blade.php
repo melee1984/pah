@@ -25,18 +25,18 @@
             <div class="agent-program-trust"><span>No application fee</span><span>Transparent commission ledger</span><span>Local restaurant impact</span></div>
         </div>
         <aside class="agent-earning-preview" aria-label="Commission example">
-            <span class="agent-earning-label">Current agent share</span>
+            <span class="agent-earning-label">Starting agent share</span>
             <strong>{{ number_format($commissionPercentage, 2) }}%</strong>
-            <p>of Pahatud's commission from each successful order placed with a restaurant you enrolled.</p>
+            <p>of Pahatud's commission from each successful order placed with a restaurant you enrolled. Your share grows with your approved restaurant network.</p>
             <div class="agent-earning-equation"><span>₱1,000 qualifying order</span><b>Pahatud: {{ number_format($pahatudCommissionPercentage, 0) }}% = ₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100), 2) }}</b><strong>Agent: {{ number_format($commissionPercentage, 0) }}% = ₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100) * ($commissionPercentage / 100), 2) }}</strong></div>
-            <small>At the default rates, the agent's effective earnings equal {{ number_format($pahatudCommissionPercentage * ($commissionPercentage / 100), 2) }}% of the eligible order value.</small>
+            <small>At the starting tier, the agent's effective earnings equal {{ number_format($pahatudCommissionPercentage * ($commissionPercentage / 100), 2) }}% of the eligible order value.</small>
         </aside>
     </section>
 
     <section class="agent-program-section agent-benefit-section">
         <div class="agent-program-heading"><p class="agent-eyebrow">Built for growth</p><h2>What you get as a Pahatud agent</h2><p>A clear way to grow a restaurant network and see the value it creates.</p></div>
         <div class="agent-benefit-grid">
-            <article><span>01</span><h3>Commission opportunities</h3><p>Earn {{ number_format($commissionPercentage, 0) }}% of Pahatud's commission from qualifying successful orders placed with restaurants assigned to you.</p></article>
+            <article><span>01</span><h3>Commission opportunities</h3><p>Earn {{ number_format($commissionTiers[0], 0) }}%–{{ number_format($commissionTiers[50], 0) }}% of Pahatud's commission from qualifying successful orders placed with restaurants assigned to you.</p></article>
             <article><span>02</span><h3>Your restaurant network</h3><p>Enroll restaurants from your portal and monitor every partner connected to your agent account.</p></article>
             <article><span>03</span><h3>Order visibility</h3><p>See submitted restaurant orders and the sales amount connected to your commission activity.</p></article>
             <article><span>04</span><h3>Transparent reporting</h3><p>Review pending, approved, paid, or reversed commissions with restaurant and order references.</p></article>
@@ -55,17 +55,17 @@
     </section>
 
     <section class="agent-program-section agent-commission-section" id="earnings">
-        <div class="agent-program-heading"><p class="agent-eyebrow">Clear calculations</p><h2>Understand every peso you earn</h2><p>Pahatud first receives {{ number_format($pahatudCommissionPercentage, 2) }}% of the eligible order value. Your agent share is then calculated from Pahatud's commission—not from the full order total.</p></div>
+        <div class="agent-program-heading"><p class="agent-eyebrow">Clear calculations</p><h2>Grow your share with every approved restaurant</h2><p>Pahatud first receives {{ number_format($pahatudCommissionPercentage, 2) }}% of the eligible order value. Your tiered agent share is then calculated from Pahatud's commission—not from the full order total.</p></div>
         <div class="agent-commission-layout">
             <div class="agent-formula-card"><span>Commission formula</span><strong>Order value × Pahatud rate × Agent share = Agent commission</strong><p>Example: ₱1,000 × {{ number_format($pahatudCommissionPercentage, 0) }}% × {{ number_format($commissionPercentage, 0) }}% = ₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100) * ($commissionPercentage / 100), 2) }}. Cancelled, refunded, or failed orders do not qualify.</p></div>
             <div class="agent-example-table">
-                <div class="agent-example-row agent-example-head"><span>Order</span><span>Pahatud earns</span><span>Agent share</span><span>You earn</span></div>
-                @foreach ([500, 1000, 2500] as $amount)
-                    <div class="agent-example-row"><span>₱{{ number_format($amount, 2) }}</span><span>₱{{ number_format($amount * ($pahatudCommissionPercentage / 100), 2) }}</span><span>{{ number_format($commissionPercentage, 2) }}%</span><strong>₱{{ number_format($amount * ($pahatudCommissionPercentage / 100) * ($commissionPercentage / 100), 2) }}</strong></div>
+                <div class="agent-example-row agent-example-head"><span>Approved restaurants</span><span>Agent share</span><span>₱1,000 order</span><span>You earn</span></div>
+                @foreach ([['label' => '0–34', 'rate' => $commissionTiers[0]], ['label' => '35–49', 'rate' => $commissionTiers[35]], ['label' => '50 or more', 'rate' => $commissionTiers[50]]] as $tier)
+                    <div class="agent-example-row"><span>{{ $tier['label'] }}</span><span>{{ number_format($tier['rate'], 2) }}%</span><span>₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100), 2) }} Pahatud commission</span><strong>₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100) * ($tier['rate'] / 100), 2) }}</strong></div>
                 @endforeach
             </div>
         </div>
-        <p class="agent-program-disclaimer">Examples use Pahatud's {{ number_format($pahatudCommissionPercentage, 2) }}% commission and the default agent share of {{ number_format($commissionPercentage, 2) }}%. This produces an effective agent earning of {{ number_format($pahatudCommissionPercentage * ($commissionPercentage / 100), 2) }}% of the eligible order value. Your confirmed share is shown in the Agent Dashboard and stored with every commission entry.</p>
+        <p class="agent-program-disclaimer">Only approved restaurants count toward a tier. A newly reached tier applies to future qualifying orders from every restaurant assigned to the agent. Existing commission entries keep the rate originally recorded for their order.</p>
     </section>
 
     <section class="agent-program-section agent-payout-section">
@@ -81,9 +81,10 @@
     <section class="agent-program-section agent-faq-section" id="faq">
         <div class="agent-program-heading"><p class="agent-eyebrow">Questions, answered</p><h2>Frequently asked questions</h2></div>
         <div class="agent-faq-list">
-            <details open><summary>When do I start earning commission?</summary><p>After your account is approved and a restaurant you enrolled completes a qualifying delivered order. Applications and restaurant enrollments alone do not generate commission.</p></details>
+            <details open><summary>When do I start earning commission?</summary><p>After your account is approved and a restaurant assigned to you completes a qualifying delivered order. You begin at a {{ number_format($commissionTiers[0], 0) }}% share of Pahatud’s commission. Applications and restaurant enrollments alone do not generate commission.</p></details>
+            <details><summary>What does “approved restaurant” mean for my tier?</summary><p>The restaurant must receive final application approval from Pahatud. A submitted application, accepted invitation, or individually approved document is not enough. Pending Review and Declined restaurants do not count. If a restaurant later returns to review, it stops counting until reapproved.</p></details>
             <details><summary>Is the commission based on every restaurant order?</summary><p>It applies only to qualifying successful orders from restaurants assigned to your agent account. Cancelled, refunded, failed, or reversed orders are excluded.</p></details>
-            <details><summary>Can my agent share change?</summary><p>Yes. Pahatud assigns your percentage share of Pahatud's commission and may change it for future qualifying orders. Each recorded commission keeps the agent share used for that specific order.</p></details>
+            <details><summary>Can my agent share change?</summary><p>Yes. Your share is {{ number_format($commissionTiers[0], 0) }}% with 0–34 approved restaurants, {{ number_format($commissionTiers[35], 0) }}% with 35–49, and {{ number_format($commissionTiers[50], 0) }}% with 50 or more. The system checks your approved count when an order qualifies. A new tier then applies to future qualifying orders across your entire assigned restaurant network, while every existing commission keeps its original rate and amount.</p></details>
             <details><summary>How does restaurant enrollment work?</summary><p>You submit the restaurant details from your approved Agent Dashboard. The restaurant receives a private invitation, creates its merchant login, and remains under review until activated.</p></details>
             <details><summary>What can I track in the Agent Dashboard?</summary><p>Your restaurants, their submitted orders, qualifying sales, total and monthly commission, and individual ledger entries with pending, approved, paid, or reversed status.</p></details>
             <details><summary>Can I withdraw money directly from the dashboard?</summary><p>Not currently. The dashboard tracks your commission balance and status. Pahatud operations coordinates approved payouts and marks entries as paid.</p></details>
@@ -106,7 +107,7 @@
                 <div class="agent-field"><label for="mobile">Mobile number <span class="agent-required">*</span></label><input class="agent-input @error('mobile') agent-input-error @enderror" id="mobile" name="mobile" value="{{ old('mobile') }}" maxlength="30" autocomplete="tel" placeholder="09XX XXX XXXX" required>@error('mobile')<span class="agent-error">{{ $message }}</span>@enderror</div>
                 <div class="agent-form-grid agent-registration-passwords"><div class="agent-field"><label for="password">Password <span class="agent-required">*</span></label><input class="agent-input @error('password') agent-input-error @enderror" id="password" name="password" type="password" minlength="8" autocomplete="new-password" required></div><div class="agent-field"><label for="password_confirmation">Confirm password <span class="agent-required">*</span></label><input class="agent-input" id="password_confirmation" name="password_confirmation" type="password" minlength="8" autocomplete="new-password" required></div></div>
                 @error('password')<span class="agent-error">{{ $message }}</span>@enderror
-                <label class="agent-checkbox agent-terms"><input name="terms" type="checkbox" value="1" required><span>I understand that registration requires approval, earnings are based only on qualifying successful orders, and payout is coordinated by Pahatud operations.</span></label>
+                <label class="agent-checkbox agent-terms"><input name="terms" type="checkbox" value="1" required><span>I understand that registration requires approval; commission tiers are based only on currently approved restaurants; earnings come only from qualifying successful orders; and payout is coordinated by Pahatud operations.</span></label>
                 @error('terms')<span class="agent-error">{{ $message }}</span>@enderror
                 @include('components.turnstile', ['action' => 'agent_register'])
                 <button class="agent-button agent-button-primary agent-login-submit" type="submit">Submit agent application</button>

@@ -18,7 +18,7 @@
             </a>
 
             <h1>Welcome back</h1>
-            <p class="agent-login-intro">Sign in to enroll restaurants, monitor qualifying orders, and track your commissions.</p>
+            <p class="agent-login-intro">Sign in to enroll restaurants, monitor approvals, grow your automatic {{ number_format(config('agent.commission_tiers.0'), 0) }}%–{{ number_format(config('agent.commission_tiers.50'), 0) }}% commission tier, and track every qualifying order.</p>
 
             @if ($errors->any())
                 <div class="agent-alert agent-alert-error" role="alert">{{ $errors->first() }}</div>
@@ -49,7 +49,7 @@
         <div class="agent-login-visual-copy">
             <span class="agent-login-kicker">Partner. Grow. Earn.</span>
             <h2>Help local restaurants move forward.</h2>
-            <p>Bring great restaurants onto Pahatud and see the value you create—from their first order to every commission earned.</p>
+            <p>Bring great restaurants onto Pahatud and grow your share of Pahatud’s commission: {{ number_format(config('agent.commission_tiers.0'), 0) }}% below 35 approved restaurants, {{ number_format(config('agent.commission_tiers.35'), 0) }}% at 35, and {{ number_format(config('agent.commission_tiers.50'), 0) }}% at 50.</p>
         </div>
         <div class="agent-login-flow">
             <div><span>01</span><strong>Enroll a restaurant</strong></div>

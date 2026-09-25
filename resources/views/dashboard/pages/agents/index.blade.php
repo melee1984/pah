@@ -8,7 +8,7 @@
                 <div>
                     <span class="admin-eyebrow">Agent management</span>
                     <h1>Agents</h1>
-                    <p>Manage Agent Portal access, restaurant networks, and each agent's share of Pahatud commission.</p>
+                    <p>Manage Agent Portal access, approved restaurant networks, and automatic commission tiers.</p>
                 </div>
                 <button class="btn admin-btn-primary" type="button" data-toggle="modal" data-target="#addAgentModal">
                     <i class="fas fa-plus mr-2"></i>Add new agent
@@ -48,15 +48,15 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
-                            <thead><tr><th>Date/Timer</th><th>Agent</th><th>Contact</th><th>Restaurants</th><th>Agent share</th><th>Commission earned</th><th>Account</th><th>Last login</th><th>Action</th></tr></thead>
+                            <thead><tr><th>Date/Timer</th><th>Agent</th><th>Contact</th><th>Approved restaurants</th><th>Current share</th><th>Commission earned</th><th>Account</th><th>Last login</th><th>Action</th></tr></thead>
                             <tbody>
                             @foreach ($agents as $agent)
                                 <tr>
                                     <td><strong>{{  $agent->created_at?->format('M d, Y · g:i A') ?? '—'  }}</strong></td>
                                     <td><div class="admin-agent-cell"><span>{{ mb_strtoupper(mb_substr($agent->name, 0, 1)) }}</span><div><strong><a href="{{ route('dashboard.agents.show', $agent) }}">{{ $agent->name }}</a></strong><small>Agent #{{ $agent->id }}</small></div></div></td>
                                     <td><strong>{{ $agent->email }}</strong><small>{{ $agent->mobile ?: 'No mobile number' }}</small></td>
-                                    <td><span class="admin-number-pill">{{ number_format($agent->restaurants_count) }}</span></td>
-                                    <td><strong>{{ number_format($agent->commission_percentage, 2) }}%</strong></td>
+                                    <td><span class="admin-number-pill">{{ number_format($agent->approved_restaurants_count) }}</span><small>{{ number_format($agent->restaurants_count) }} total enrolled</small></td>
+                                    <td><strong>{{ number_format($agent->commissionPercentage($agent->approved_restaurants_count), 2) }}%</strong></td>
                                     <td><strong class="admin-money">₱{{ number_format($agent->commission_total ?? 0, 2) }}</strong></td>
                                     <td>
                                         @if ($agent->review_status === 'declined')
@@ -98,10 +98,8 @@
                     <div class="admin-form-note"><i class="fas fa-envelope"></i><span>A secure temporary password will be generated and emailed automatically. The agent must replace it on first login.</span></div>
                     <div class="form-group"><label for="agent_name">Full name</label><input class="form-control" id="agent_name" name="name" value="{{ old('name') }}" maxlength="255" required></div>
                     <div class="form-group"><label for="agent_email">Email address</label><input class="form-control" id="agent_email" name="email" type="email" value="{{ old('email') }}" required></div>
-                    <div class="form-row">
-                        <div class="form-group col-md-7"><label for="agent_mobile">Mobile number <small>(optional)</small></label><input class="form-control" id="agent_mobile" name="mobile" value="{{ old('mobile') }}" maxlength="30"></div>
-                        <div class="form-group col-md-5"><label for="agent_rate">Share of Pahatud commission</label><div class="input-group"><input class="form-control" id="agent_rate" name="commission_percentage" type="number" min="0" max="100" step="0.01" value="{{ old('commission_percentage', config('agent.default_commission_percentage')) }}" required><div class="input-group-append"><span class="input-group-text">%</span></div></div></div>
-                    </div>
+                    <div class="form-group"><label for="agent_mobile">Mobile number <small>(optional)</small></label><input class="form-control" id="agent_mobile" name="mobile" value="{{ old('mobile') }}" maxlength="30"></div>
+                    <div class="admin-form-note"><i class="fas fa-chart-line"></i><span>The agent starts at {{ number_format(config('agent.commission_tiers.0'), 0) }}%. Their share automatically becomes {{ number_format(config('agent.commission_tiers.35'), 0) }}% at 35 approved restaurants and {{ number_format(config('agent.commission_tiers.50'), 0) }}% at 50 approved restaurants.</span></div>
                 </div>
                 <div class="modal-footer"><button type="button" class="btn admin-btn-secondary" data-dismiss="modal">Cancel</button><button type="submit" class="btn admin-btn-primary"><i class="fas fa-paper-plane mr-2"></i>Create and email password</button></div>
             </form>
@@ -109,7 +107,7 @@
     </div>
 </div>
 
-@if ($errors->any() && (old('name') || old('email') || old('commission_percentage')))
+@if ($errors->any() && (old('name') || old('email')))
 <script>document.addEventListener('DOMContentLoaded', function () { $('#addAgentModal').modal('show'); });</script>
 @endif
 @endsection
