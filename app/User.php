@@ -119,6 +119,11 @@ class User extends Authenticatable
     public function addresses() {
         return $this->hasMany('App\Model\User\UserAddress');     
     }   
+
+    public function rewards()
+    {
+        return $this->hasMany(UserReward::class);
+    }
     
 
     public function rider() {

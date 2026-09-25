@@ -51,6 +51,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.report.favorites') }}" class="nav-link {{ Request::is('data/dashboard/report/favorites') ? 'active' : '' }}"><i class="nav-icon fas fa-heart"></i><p>Merchant favorites</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.user-rewards') }}" class="nav-link {{ Request::is('data/dashboard/report/user-rewards') ? 'active' : '' }}"><i class="nav-icon fas fa-star"></i><p>User reward points</p></a>
+    </li>
 
     <li class="nav-header">System</li>
     <li class="nav-item">

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Mobile\HomeController as MobileHomeController;
 use App\Http\Controllers\Api\Mobile\OrderController as MobileOrderController;
 use App\Http\Controllers\Api\Mobile\ResourcesController;
 use App\Http\Controllers\Api\Mobile\RestaurantReviewController;
+use App\Http\Controllers\Api\Mobile\RewardController;
 use App\Http\Controllers\Api\Mobile\Rider\OrderController as RiderOrderController;
 use App\Http\Controllers\Api\Mobile\UserController as MobileUserController;
 use App\Http\Controllers\Api\User\AccessController;
@@ -69,6 +70,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('order/{order}', [MobileOrderController::class, 'index']);
             Route::get('getorders', [MobileOrderController::class, 'orders']);
             Route::get('getorder/{order}', [MobileOrderController::class, 'getOrderById']);
+            Route::get('rewards', [RewardController::class, 'index']);
 
             Route::post('address/add/submit', [MobileCheckoutController::class, 'addAddress']);
             Route::get('address/list', [MobileUserController::class, 'getAddresses']);

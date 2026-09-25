@@ -13,6 +13,7 @@ use App\Services\AgentCommissionService;
 use App\Services\RiderApiService;
 use App\Services\RiderCommissionService;
 use App\Services\RiderOfferDispatcher;
+use App\Services\UserRewardService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -1612,6 +1613,7 @@ class DeliveryController extends Controller
 
                 if ($order = Orders::query()->find($delivery->legacy_order_id)) {
                     app(AgentCommissionService::class)->sync($order);
+                    app(UserRewardService::class)->sync($order);
                 }
             }
         }
