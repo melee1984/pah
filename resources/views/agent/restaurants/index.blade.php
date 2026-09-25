@@ -12,6 +12,8 @@
         <a class="agent-button agent-button-primary" href="{{ route('agent.restaurants.create') }}"><span>＋</span> Enroll restaurant</a>
     </div>
 
+    <div class="agent-tier-note"><strong>Tier reminder:</strong> only restaurants with a final <em>Approved</em> enrollment status count toward your commission tier. Pending Review and Declined restaurants remain linked to you but do not raise the tier. <a class="agent-text-link" href="{{ route('agent.help') }}#earnings">See how tiers work →</a></div>
+
     <section class="agent-card">
         <div class="agent-card-header">
             <div><h2>Restaurant directory</h2><p>{{ number_format($restaurants->total()) }} {{ Str::plural('restaurant', $restaurants->total()) }} enrolled by you.</p></div>

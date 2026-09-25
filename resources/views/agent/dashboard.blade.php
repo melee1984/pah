@@ -45,6 +45,21 @@
         </article>
     </section>
 
+    <section class="agent-tier-panel" aria-labelledby="commission-tier-title">
+        <div class="agent-tier-panel-head">
+            <div><p class="agent-eyebrow">Automatic commission tiers</p><h2 id="commission-tier-title">How your approved restaurant count sets your rate</h2><p>Your current rate is selected automatically whenever a future order qualifies for commission.</p></div>
+            <div class="agent-tier-progress">
+                <strong>{{ number_format($metrics['approved_restaurants']) }} approved {{ Str::plural('restaurant', $metrics['approved_restaurants']) }}</strong><br>
+                @if ($metrics['next_commission_tier'])
+                    {{ number_format($metrics['next_commission_tier']['minimum_restaurants'] - $metrics['approved_restaurants']) }} more to unlock {{ number_format($metrics['next_commission_tier']['percentage'], 2) }}%.
+                @else
+                    Highest tier reached. Future qualifying orders use {{ number_format(config('agent.commission_tiers.50'), 2) }}%.
+                @endif
+            </div>
+        </div>
+        @include('agent.partials.commission-tier-guide', ['approvedRestaurantCount' => $metrics['approved_restaurants']])
+    </section>
+
     <section class="agent-card">
         <div class="agent-card-header">
             <div><h2>Recent commission activity</h2><p>Latest qualifying and reversed order commissions.</p></div>
@@ -75,8 +90,8 @@
             $exampleEarnings = $exampleOrder * $examplePahatudRate / 100 * $exampleAgentRate / 100;
         @endphp
         <div class="agent-guide-bottom">
-            <div class="agent-guide-example"><h3>How your commission is calculated</h3><p>Your current share is <strong>{{ number_format($exampleAgentRate, 2) }}% of Pahatud’s commission</strong> from qualifying orders, not of the full order value.</p><div class="agent-guide-equation"><span>₱{{ number_format($exampleOrder, 2) }} order</span><b>× {{ number_format($examplePahatudRate, 2) }}% Pahatud commission</b><b>× {{ number_format($exampleAgentRate, 2) }}% agent share</b><strong>= ₱{{ number_format($exampleEarnings, 2) }}</strong></div><small>Example only. The restaurant’s commission rate and the rate saved on each order determine actual earnings.</small>@if ($metrics['next_commission_tier'])<p>You need {{ number_format($metrics['next_commission_tier']['minimum_restaurants'] - $metrics['approved_restaurants']) }} more approved {{ Str::plural('restaurant', $metrics['next_commission_tier']['minimum_restaurants'] - $metrics['approved_restaurants']) }} to reach the {{ number_format($metrics['next_commission_tier']['percentage'], 2) }}% tier.</p>@else<p>You have reached the highest commission tier.</p>@endif</div>
-            <div class="agent-guide-notes"><h3>Good to know</h3><ul><li>Only approved restaurants count toward your tier: 15% below 35, 20% from 35–49, and 30% from 50 onward.</li><li>When you reach a tier, its rate applies to future qualifying orders from all restaurants assigned to you. Existing commission entries do not change.</li><li>Cancelled or reversed orders do not count toward earned commission.</li><li>Restaurants can update details and replace documents from their account. Changes return an approved application to review.</li><li>Reports show pending, approved, paid, and reversed entries. Pahatud operations coordinates payouts.</li></ul></div>
+            <div class="agent-guide-example"><h3>How your commission is calculated</h3><p>Your current share is <strong>{{ number_format($exampleAgentRate, 2) }}% of Pahatud’s commission</strong> from qualifying orders, not of the full order value.</p><div class="agent-guide-equation"><span>₱{{ number_format($exampleOrder, 2) }} eligible subtotal</span><b>× {{ number_format($examplePahatudRate, 2) }}% Pahatud rate</b><b>× {{ number_format($exampleAgentRate, 2) }}% tier share</b><strong>= ₱{{ number_format($exampleEarnings, 2) }}</strong></div><small>Example only. Delivery fees are not included in the commission base. The restaurant’s Pahatud rate and your tier at the time the delivered order qualifies are saved with that commission entry.</small></div>
+            <div class="agent-guide-notes"><h3>Good to know</h3><ul><li>Only approved restaurants count toward your tier: {{ number_format(config('agent.commission_tiers.0'), 0) }}% below 35, {{ number_format(config('agent.commission_tiers.35'), 0) }}% from 35–49, and {{ number_format(config('agent.commission_tiers.50'), 0) }}% from 50 onward.</li><li>When you reach a tier, its rate applies to future qualifying orders from all restaurants assigned to you. Existing commission entries do not change.</li><li>Cancelled or reversed orders do not count toward earned commission.</li><li>Restaurants can update details and replace documents from their account. Changes return an approved application to review.</li><li>Reports show pending, approved, paid, and reversed entries. Pahatud operations coordinates payouts.</li></ul></div>
         </div>
         <a class="agent-guide-more" href="{{ route('agent.help') }}">More questions? Visit Help &amp; FAQ <span aria-hidden="true">→</span></a>
     </section>

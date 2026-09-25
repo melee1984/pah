@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="{{ asset('css/restaurant-file-preview.css') }}">
 </head>
 <body class="agent-body">
+@php
+    $portalAgent = auth('agent')->user();
+    $portalApprovedRestaurantCount = $portalAgent->approvedRestaurantCount();
+@endphp
 <div class="agent-shell">
     <aside class="agent-sidebar">
         <a class="agent-brand" href="{{ route('agent.dashboard') }}">
@@ -47,10 +51,10 @@
     <main class="agent-main">
         <header class="agent-topbar">
             <span class="agent-mobile-brand">Pahatud <span style="color:#ef3b35">Agent</span></span>
-            <span class="agent-topbar-note">Grow local businesses. Earn on every qualifying order.</span>
+            <span class="agent-topbar-note">Only approved restaurants count toward your automatic commission tier.</span>
             <div class="agent-profile">
-                <span class="agent-avatar">{{ mb_strtoupper(mb_substr(auth('agent')->user()->name, 0, 1)) }}</span>
-                <div><strong>{{ auth('agent')->user()->name }}</strong><span>{{ number_format(auth('agent')->user()->commissionPercentage(), 2) }}% of Pahatud commission</span></div>
+                <span class="agent-avatar">{{ mb_strtoupper(mb_substr($portalAgent->name, 0, 1)) }}</span>
+                <div><strong>{{ $portalAgent->name }}</strong><span>{{ number_format($portalAgent->commissionPercentage($portalApprovedRestaurantCount), 2) }}% share · {{ number_format($portalApprovedRestaurantCount) }} approved</span></div>
             </div>
         </header>
 
