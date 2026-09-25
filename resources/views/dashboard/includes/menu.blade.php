@@ -48,6 +48,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.report.agents') }}" class="nav-link {{ Request::is('data/dashboard/report/agent') ? 'active' : '' }}"><i class="nav-icon fas fa-hand-holding-usd"></i><p>Agent commissions</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.favorites') }}" class="nav-link {{ Request::is('data/dashboard/report/favorites') ? 'active' : '' }}"><i class="nav-icon fas fa-heart"></i><p>Merchant favorites</p></a>
+    </li>
 
     <li class="nav-header">System</li>
     <li class="nav-item">

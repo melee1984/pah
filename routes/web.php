@@ -248,6 +248,7 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
     Route::get('data/dashboard/report/riders', \App\Http\Controllers\Admin\RiderCommissionReportController::class)->name('dashboard.report.riders');
     Route::get('data/dashboard/report/agent', \App\Http\Controllers\Admin\AgentCommissionReportController::class)->name('dashboard.report.agents');
+    Route::get('data/dashboard/report/favorites', \App\Http\Controllers\Admin\FavoriteReportController::class)->name('dashboard.report.favorites');
 
     // Auto-login as merchant
     Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request) {

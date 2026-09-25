@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Mobile\Booking\AddressesController as MobileBooking
 use App\Http\Controllers\Api\Mobile\Booking\BookingController as MobileBookingController;
 use App\Http\Controllers\Api\Mobile\CartController as MobileCartController;
 use App\Http\Controllers\Api\Mobile\CheckoutController as MobileCheckoutController;
+use App\Http\Controllers\Api\Mobile\FavoriteController;
 use App\Http\Controllers\Api\Mobile\HomeController as MobileHomeController;
 use App\Http\Controllers\Api\Mobile\OrderController as MobileOrderController;
 use App\Http\Controllers\Api\Mobile\ResourcesController;
@@ -49,6 +50,8 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('account/logout', [AccessController::class, 'postLogout']);
             Route::post('restaurant/review/submit', [RestaurantReviewController::class, 'store']);
             Route::post('user/coordinates', [ResourcesController::class, 'updateUserCoordinates']);
+            Route::get('favorites', [FavoriteController::class, 'index']);
+            Route::post('favorites/submit', [FavoriteController::class, 'store']);
 
             Route::post('item/add-cart', [MobileCartController::class, 'addCart']);
             Route::post('item/{status?}/add-cart', [MobileCartController::class, 'addCart']);
