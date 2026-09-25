@@ -19,10 +19,10 @@
 
         <div class="agent-success-next">
             <h2>What happens next?</h2>
-            <div><span>1</span><p><strong>Check your inbox</strong>Your confirmation email contains your submitted account details and starting agent share.</p></div>
+            <div><span>1</span><p><strong>Check your inbox</strong>Your confirmation email contains your submitted account details and {{ number_format(config('agent.commission_tiers.0'), 0) }}% starting share of Pahatud’s commission.</p></div>
             <div><span>2</span><p><strong>Application review</strong>The Pahatud operations team will review your application before enabling portal access.</p></div>
             <div><span>3</span><p><strong>Receive approval</strong>We will email you when your account is approved and ready to access.</p></div>
-            <div><span>4</span><p><strong>Start enrolling</strong>Sign in to your Agent Dashboard and begin enrolling restaurant partners.</p></div>
+            <div><span>4</span><p><strong>Start enrolling and grow your tier</strong>Approved restaurants count toward your tier: {{ number_format(config('agent.commission_tiers.0'), 0) }}% for 0–34, {{ number_format(config('agent.commission_tiers.35'), 0) }}% for 35–49, and {{ number_format(config('agent.commission_tiers.50'), 0) }}% for 50 or more.</p></div>
         </div>
 
         <div class="agent-success-actions"><a class="agent-button agent-button-primary" href="{{ route('agent.login') }}">Go to Agent Login</a><a class="agent-button agent-button-secondary" href="{{ route('home') }}">Return to Pahatud</a></div>
