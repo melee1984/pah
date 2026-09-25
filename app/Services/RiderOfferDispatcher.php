@@ -13,6 +13,7 @@ class RiderOfferDispatcher
 {
     public function dispatchOrder(Orders $order): ?string
     {
+
         if (! $this->tablesAvailable()) {
             return null;
         }
@@ -73,9 +74,7 @@ class RiderOfferDispatcher
 
         if (! $delivery->rider_id && $delivery->current_state === 'offered') {
             foreach ($this->nearbyRiderIds($delivery) as $riderId) {
-
                 \Log::info("Dispatching delivery {$delivery->id} to rider {$riderId}");
-
                 $this->offerDeliveryToRider($delivery->id, $riderId);
             }
         }

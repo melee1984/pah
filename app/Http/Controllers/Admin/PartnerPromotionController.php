@@ -121,7 +121,7 @@ class PartnerPromotionController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'cta_label' => ['nullable', 'string', 'max:100'],
             'link_url' => ['nullable', 'url:http,https', 'max:2048'],
-            'image' => [Rule::requiredIf(! $promotion), 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'image' => [Rule::requiredIf(! $promotion), 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:1023'],
             'active' => ['nullable', 'boolean'],
             'sort_order' => ['required', 'integer', 'min:0', 'max:65535'],
             'starts_at' => ['nullable', 'date'],

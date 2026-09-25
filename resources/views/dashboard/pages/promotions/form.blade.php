@@ -27,10 +27,10 @@
                         @csrf
                         @if ($promotion->exists) @method('PUT') @endif
 
-                        <div class="admin-form-note"><i class="fas fa-image"></i><span>Recommended banner ratio: 2:1 or wider. Accepted formats are JPG, PNG, and WebP up to 5 MB.</span></div>
+                        <div class="admin-form-note"><i class="fas fa-image"></i><span><strong>Promotional banner — 1600 × 800 px.</strong> Use a 2:1 JPG, PNG, or WebP image. File must be under 1 MB.</span></div>
 
                         @if ($promotion->exists)
-                            <div class="form-group"><img src="{{ $promotion->image_url }}" alt="Current banner" style="max-width: 520px; width: 100%; max-height: 240px; object-fit: cover; border-radius: 10px;"></div>
+                            <div class="form-group"><img src="{{ $promotion->image_url }}" alt="Current banner" style="aspect-ratio: 2 / 1; max-width: 520px; width: 100%; object-fit: contain; border-radius: 10px;"></div>
                         @endif
 
                         <div class="row">
@@ -51,7 +51,7 @@
                             <div class="col-md-6 form-group"><label for="ends_at">Ends at</label><input class="form-control" id="ends_at" name="ends_at" type="datetime-local" value="{{ old('ends_at', $promotion->ends_at?->format('Y-m-d\\TH:i')) }}"></div>
                         </div>
 
-                        <div class="form-group"><label for="image">{{ $promotion->exists ? 'Replace banner image' : 'Banner image' }}</label><input class="form-control-file" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" {{ $promotion->exists ? '' : 'required' }}></div>
+                        <div class="form-group"><label for="image">{{ $promotion->exists ? 'Replace promotional banner' : 'Promotional banner' }} — 1600 × 800 px, under 1 MB</label><input class="form-control-file" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" {{ $promotion->exists ? '' : 'required' }}></div>
                         <div class="form-group form-check"><input type="hidden" name="active" value="0"><input class="form-check-input" id="active" name="active" type="checkbox" value="1" @checked((bool) old('active', $promotion->active))><label class="form-check-label" for="active">Active and eligible to display</label></div>
 
                         <div class="d-flex justify-content-end mt-4 promotion-form-actions">

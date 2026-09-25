@@ -43,10 +43,10 @@
                                 <div class="form-group"><label for="starts_at">Starts at <small>(optional)</small></label><input class="form-control" id="starts_at" name="starts_at" type="datetime-local" value="{{ old('starts_at', $promotion->starts_at?->format('Y-m-d\\TH:i')) }}"></div>
                                 <div class="form-group"><label for="ends_at">Ends at <small>(optional)</small></label><input class="form-control" id="ends_at" name="ends_at" type="datetime-local" value="{{ old('ends_at', $promotion->ends_at?->format('Y-m-d\\TH:i')) }}"></div>
                                 <div class="form-group merchant-form-span">
-                                    <label for="image">{{ $promotion->exists ? 'Replace banner image' : 'Banner image' }}</label>
+                                    <label for="image">{{ $promotion->exists ? 'Replace promotional banner' : 'Promotional banner' }} — 1600 × 800 px</label>
                                     @if ($promotion->exists)<div class="merchant-media-preview merchant-banner-preview merchant-promotion-preview"><img src="{{ $promotion->image_url }}" alt="Current promotion banner"></div>@endif
                                     <div class="custom-file"><input class="custom-file-input" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" {{ $promotion->exists ? '' : 'required' }} onchange="this.nextElementSibling.textContent = this.files.length ? this.files[0].name : 'Choose banner image'"><label class="custom-file-label" for="image">Choose banner image</label></div>
-                                    <small class="merchant-field-help">JPG, PNG, or WebP up to 5 MB. A wide 2:1 image works best.</small>
+                                    <small class="merchant-field-help">Use a 2:1 JPG, PNG, or WebP image. File must be under 1 MB.</small>
                                 </div>
                             </div>
 

@@ -51,10 +51,9 @@ class ImageController extends Controller
     if (isset($sizes[$size])) {
         [$width, $height] = $sizes[$size];
 
-        $image->resize($width, $height, function ($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
+        // Intervention Image v3's resize() stretches to the exact dimensions.
+        // Crop to the requested preview ratio instead so images are never distorted.
+        $image->coverDown($width, $height);
     }
 
     return response($image->toJpeg(), 200, [

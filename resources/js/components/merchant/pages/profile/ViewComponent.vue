@@ -44,12 +44,12 @@
         <div class="tab-content">
           <div id="profile-image" class="tab-pane active">
             <div class="merchant-media-preview merchant-logo-preview"><img v-if="field.img" :src="field.img" alt="Current store logo"><span v-else><i class="fas fa-store"></i>No logo uploaded</span></div>
-            <div class="admin-form-note"><i class="fas fa-info-circle"></i><span>Use a square 500 × 500 JPG, JPEG, or PNG image for the clearest result.</span></div>
+            <div class="admin-form-note"><i class="fas fa-info-circle"></i><span><strong>Merchant logo — 800 × 800 px.</strong> Use a transparent PNG for the best result. File must be under 1 MB.</span></div>
             <div class="merchant-upload-control"><div class="custom-file"><input id="profile-logo-file" type="file" class="custom-file-input" accept="image/jpeg,image/png" @change="onFileSelected"><label class="custom-file-label" for="profile-logo-file">Choose logo</label></div><button type="button" class="btn admin-btn-primary" @click="onUploadImage">{{ uploadStatus }}</button></div>
           </div>
           <div id="profile-banner" class="tab-pane">
             <div class="merchant-media-preview merchant-banner-preview"><img v-if="field.banner" :src="field.banner" alt="Current store banner"><span v-else><i class="fas fa-image"></i>No banner uploaded</span></div>
-            <div class="admin-form-note"><i class="fas fa-info-circle"></i><span>Use a 1920 × 600 JPG, JPEG, or PNG image so the banner stays sharp on wide screens.</span></div>
+            <div class="admin-form-note"><i class="fas fa-info-circle"></i><span><strong>Merchant banner — 1600 × 900 px.</strong> Use JPG or PNG. File must be under 1 MB.</span></div>
             <div class="merchant-upload-control"><div class="custom-file"><input id="profile-banner-file" type="file" class="custom-file-input" accept="image/jpeg,image/png" @change="onFileSelectedBanner"><label class="custom-file-label" for="profile-banner-file">Choose banner</label></div><button type="button" class="btn admin-btn-primary" @click="onUploadImageBanner">{{ uploadStatusBanner }}</button></div>
           </div>
           <div id="profile-tags" class="tab-pane">
@@ -84,6 +84,8 @@
                 profile:[],
                 uploadStatus: 'Upload',
                 uploadStatusBanner: "Upload",
+                fileImage: null,
+                fileImageBanner: null,
                 timings: {},
                 sectors: {},
             }
@@ -108,10 +110,28 @@
             });
         },
         onFileSelected: function(e) {
-          this.fileImage = e.target.files[0];
+          const file = e.target.files[0];
+          if (file && file.size >= 1024 * 1024) {
+            this.fileImage = null;
+            e.target.value = '';
+            e.target.nextElementSibling.textContent = 'Choose logo';
+            toastr.error('Merchant logo must be under 1 MB.');
+            return;
+          }
+          this.fileImage = file;
+          e.target.nextElementSibling.textContent = file ? file.name : 'Choose logo';
         },
         onFileSelectedBanner: function(e) {
-          this.fileImageBanner = e.target.files[0];
+          const file = e.target.files[0];
+          if (file && file.size >= 1024 * 1024) {
+            this.fileImageBanner = null;
+            e.target.value = '';
+            e.target.nextElementSibling.textContent = 'Choose banner';
+            toastr.error('Merchant banner must be under 1 MB.');
+            return;
+          }
+          this.fileImageBanner = file;
+          e.target.nextElementSibling.textContent = file ? file.name : 'Choose banner';
         },
         onUploadImageBanner: function() {
             var self = this;

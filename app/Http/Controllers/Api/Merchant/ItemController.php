@@ -233,7 +233,7 @@ class ItemController extends Controller
     public function uploadImage(Request $request, Products $product) {
 
     	request()->validate([
-			'file' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+			'file' => 'required|image|mimes:jpeg,png,jpg|max:1023',
         ]);
 
     	$data = array();

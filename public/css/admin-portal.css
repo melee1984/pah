@@ -366,8 +366,8 @@ body.pahatud-admin {
 .merchant-promotion-identity img { border-radius: 9px; flex: 0 0 104px; height: 54px; object-fit: cover; width: 104px; }
 .merchant-promotion-identity strong, .merchant-promotions-table td:nth-child(2) strong { color: var(--admin-ink); display: block; font-size: 12px; }
 .merchant-promotion-identity small, .merchant-promotions-table td:nth-child(2) small { color: var(--admin-muted); display: block; font-size: 9px; margin-top: 3px; }
-.merchant-promotion-preview { margin-top: 2px; min-height: 180px; }
-.merchant-promotion-preview img { max-height: 260px; object-fit: cover; }
+.merchant-promotion-preview { aspect-ratio: 2 / 1; margin-top: 2px; min-height: 0; }
+.merchant-promotion-preview img { object-fit: contain; }
 .merchant-settings-row { cursor: pointer; }
 .merchant-settings-row td:first-child strong { color: var(--admin-ink); display: block; font-size: 13px; }
 .merchant-settings-row td:first-child small { color: var(--admin-muted); display: block; font-size: 10px; margin-top: 3px; }
@@ -409,11 +409,12 @@ body.pahatud-admin {
 .merchant-profile-tabs { border-bottom: 1px solid var(--admin-line); padding: 13px 18px; }
 .merchant-media-body { min-height: 410px; padding: 22px; }
 .merchant-media-preview { align-items: center; background: #f7f5f2; border: 1px dashed #d9d3cd; border-radius: 12px; display: flex; justify-content: center; margin-bottom: 15px; min-height: 235px; overflow: hidden; }
-.merchant-media-preview img { display: block; height: 100%; max-height: 280px; object-fit: contain; width: 100%; }
+.merchant-media-preview img { display: block; height: 100%; object-fit: contain; width: 100%; }
 .merchant-media-preview > span { align-items: center; color: #8b9295; display: flex; flex-direction: column; font-size: 11px; font-weight: 700; gap: 9px; }
 .merchant-media-preview > span i { color: #c0b7b1; font-size: 28px; }
-.merchant-logo-preview img { height: 235px; width: 235px; }
-.merchant-banner-preview { min-height: 190px; }
+.merchant-logo-preview { aspect-ratio: 1 / 1; margin-left: auto; margin-right: auto; max-width: 360px; min-height: 0; }
+.merchant-banner-preview { aspect-ratio: 16 / 9; min-height: 0; }
+.merchant-promotion-preview { aspect-ratio: 2 / 1; max-width: none; }
 .merchant-upload-control { align-items: stretch; display: flex; gap: 9px; }
 .merchant-upload-control .custom-file { min-width: 0; }
 .merchant-upload-control .custom-file-label { border-color: #dcd7d2; border-radius: 8px; font-size: 12px; height: 43px; line-height: 28px; }
