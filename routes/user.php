@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Api\Mobile\AccountSummaryController;
 use App\Http\Controllers\Api\Mobile\Booking\AddressesController as MobileBookingAddressesController;
 use App\Http\Controllers\Api\Mobile\Booking\BookingController as MobileBookingController;
 use App\Http\Controllers\Api\Mobile\CartController as MobileCartController;
@@ -49,6 +50,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::group(['middleware' => ['auth:api']], function () {
             //
             Route::post('account/logout', [AccessController::class, 'postLogout']);
+            Route::get('account/summary', AccountSummaryController::class);
             Route::post('restaurant/review/submit', [RestaurantReviewController::class, 'store']);
             Route::post('user/coordinates', [ResourcesController::class, 'updateUserCoordinates']);
             Route::get('favorites', [FavoriteController::class, 'index']);
@@ -96,7 +98,6 @@ Route::group(['middleware' => 'isRequest'], function () {
 
             Route::post('checkout/coupon/submit', [MobileCheckoutController::class, 'couponCode']);
             Route::get('checkout/coupons', [MobileCheckoutController::class, 'availableCoupons']);
-
 
         });
 
