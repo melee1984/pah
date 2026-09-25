@@ -132,30 +132,6 @@ button, input, select, textarea { font: inherit; }
 .agent-alert-success { background: #eaf8ef; border: 1px solid #c9ead5; color: #1c6b3a; }
 .agent-alert-warning { background: #fff5dc; border: 1px solid #f1d99e; color: #805112; }
 .agent-alert-error { background: #fff0ef; border: 1px solid #ffd9d5; color: #a92924; }
-.agent-tier-panel { background: #fff; border: 1px solid var(--agent-line); border-radius: 16px; box-shadow: 0 8px 30px rgba(23, 27, 29, .04); margin-bottom: 26px; padding: 24px; }
-.agent-tier-panel-head { align-items: flex-end; display: flex; gap: 24px; justify-content: space-between; margin-bottom: 18px; }
-.agent-tier-panel-head h2 { font-family: 'Manrope', sans-serif; font-size: 20px; margin: 0; }
-.agent-tier-panel-head p { color: var(--agent-muted); font-size: 13px; line-height: 1.6; margin: 6px 0 0; }
-.agent-tier-progress { background: #fff7f5; border: 1px solid #f3ded9; border-radius: 11px; color: #675e5c; flex: 0 0 auto; font-size: 12px; max-width: 330px; padding: 12px 14px; }
-.agent-tier-progress strong { color: var(--agent-red); }
-.agent-tier-grid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.agent-tier-card { background: #fbfaf9; border: 1px solid var(--agent-line); border-radius: 14px; min-width: 0; padding: 20px; position: relative; }
-.agent-tier-card.is-current { background: #fff7f5; border-color: #efaaa6; box-shadow: inset 0 0 0 1px #efaaa6; }
-.agent-tier-current { background: var(--agent-red); border-radius: 99px; color: #fff; font-size: 9px; font-weight: 800; padding: 5px 8px; position: absolute; right: 14px; text-transform: uppercase; top: 14px; }
-.agent-tier-card > small { color: var(--agent-muted); display: block; font-size: 10px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
-.agent-tier-card > strong { display: block; font-family: 'Manrope', sans-serif; font-size: 22px; margin: 9px 0 18px; }
-.agent-tier-card > div { align-items: baseline; display: flex; flex-wrap: wrap; gap: 7px; }
-.agent-tier-card > div b { color: var(--agent-red); font-family: 'Manrope', sans-serif; font-size: 27px; }
-.agent-tier-card > div span { color: var(--agent-muted); font-size: 11px; }
-.agent-tier-card > p { border-top: 1px solid var(--agent-line); color: var(--agent-muted); font-size: 11px; line-height: 1.55; margin: 16px 0 0; padding-top: 14px; }
-.agent-tier-card > p strong { color: var(--agent-green); }
-.agent-tier-rules { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
-.agent-tier-rules article { align-items: flex-start; background: #fff; border: 1px solid var(--agent-line); border-radius: 11px; display: grid; gap: 11px; grid-template-columns: 30px 1fr; padding: 14px; }
-.agent-tier-rules article > span { align-items: center; background: #fff0ee; border-radius: 8px; color: var(--agent-red); display: flex; font-size: 11px; font-weight: 800; height: 30px; justify-content: center; width: 30px; }
-.agent-tier-rules strong { display: block; font-size: 12px; margin-bottom: 4px; }
-.agent-tier-rules p { color: var(--agent-muted); font-size: 11px; line-height: 1.55; margin: 0; }
-.agent-tier-note { background: #fff7f5; border-left: 3px solid var(--agent-red); border-radius: 9px; color: #675e5c; font-size: 12px; line-height: 1.65; margin-bottom: 20px; padding: 14px 16px; }
-
 .agent-form-card { max-width: 960px; }
 .agent-form { padding: 25px; }
 .agent-form-grid { display: grid; gap: 20px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -340,7 +316,6 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
     .agent-step-grid { grid-template-columns: repeat(2, 1fr); }
     .agent-commission-layout, .agent-program-apply { grid-template-columns: 1fr; }
     .agent-program-apply { gap: 35px; }
-    .agent-tier-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 680px) {
@@ -383,9 +358,6 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
     .agent-registration-passwords { grid-template-columns: 1fr; }
     .agent-registration-success-card { padding: 32px 20px; }
     .agent-success-actions { align-items: stretch; flex-direction: column; }
-    .agent-tier-panel-head { align-items: stretch; flex-direction: column; }
-    .agent-tier-progress { max-width: none; }
-    .agent-tier-rules { grid-template-columns: 1fr; }
 }
 
 .agent-guide { margin-top: 28px; }
@@ -421,10 +393,6 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 .agent-help-section-head h2 { font-family: 'Manrope', sans-serif; font-size: 18px; margin: 0; }
 .agent-help-section-head p { color: var(--agent-muted); font-size: 12px; margin: 4px 0 0; }
 .agent-help-questions { padding: 0 24px; }
-.agent-help-tier-guide { background: #fbfaf9; border-bottom: 1px solid var(--agent-line); padding: 24px; }
-.agent-help-tier-guide > h3 { font-family: 'Manrope', sans-serif; font-size: 16px; margin: 0 0 7px; }
-.agent-help-tier-guide > p { color: var(--agent-muted); font-size: 13px; line-height: 1.65; margin: 0 0 18px; }
-.agent-help-tier-guide > p strong { color: var(--agent-ink); }
 .agent-help-questions details + details { border-top: 1px solid var(--agent-line); }
 .agent-help-questions summary { color: var(--agent-ink); cursor: pointer; font-size: 14px; font-weight: 800; list-style: none; padding: 18px 25px 18px 0; position: relative; }
 .agent-help-questions summary::-webkit-details-marker { display: none; }
@@ -443,4 +411,4 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 .agent-help-aside p { color: #ffe2df; font-size: 13px; line-height: 1.6; margin: 0 0 18px; }
 .agent-help-aside a { border-top: 1px solid rgba(255,255,255,.22); color: #fff; display: block; font-size: 13px; font-weight: 800; padding: 12px 0; }
 @media (max-width: 950px) { .agent-help-layout { grid-template-columns: 1fr; } .agent-help-aside { position: static; } }
-@media (max-width: 680px) { .agent-help-section-head { padding: 18px; } .agent-help-questions { padding: 0 18px; } .agent-help-tier-guide { padding: 18px; } }
+@media (max-width: 680px) { .agent-help-section-head { padding: 18px; } .agent-help-questions { padding: 0 18px; } }
