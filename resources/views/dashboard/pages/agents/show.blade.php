@@ -12,8 +12,8 @@
         @if ($errors->any()) <div class="alert admin-alert-error">{{ $errors->first() }}</div> @endif
 
         <div class="admin-stat-grid">
-            <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-store"></i></span><div><small>Restaurants</small><strong>{{ number_format($agent->restaurants_count) }}</strong></div></article>
-            <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-percent"></i></span><div><small>Agent share</small><strong>{{ number_format($agent->commission_percentage, 2) }}%</strong></div></article>
+            <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-store"></i></span><div><small>Approved restaurants</small><strong>{{ number_format($agent->approved_restaurants_count) }}</strong><small>{{ number_format($agent->restaurants_count) }} total enrolled</small></div></article>
+            <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-percent"></i></span><div><small>Current tier share</small><strong>{{ number_format($agent->commissionPercentage($agent->approved_restaurants_count), 2) }}%</strong></div></article>
             <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-wallet"></i></span><div><small>Commission earned</small><strong>₱{{ number_format($agent->commission_total ?? 0, 2) }}</strong></div></article>
         </div>
 

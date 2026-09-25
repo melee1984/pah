@@ -29,6 +29,7 @@ class AgentController extends Controller
         $search = trim($validated['search'] ?? '');
         $agents = Agent::query()
             ->withCount('restaurants')
+            ->withCount('approvedRestaurants')
             ->withSum(['commissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -54,6 +55,7 @@ class AgentController extends Controller
     public function show(Agent $agent): View
     {
         $agent->loadCount('restaurants')
+            ->loadCount('approvedRestaurants')
             ->loadSum(['commissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount');
 
         $restaurants = $agent->restaurants()
@@ -69,7 +71,6 @@ class AgentController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('agents', 'email')],
             'mobile' => ['nullable', 'string', 'max:30'],
-            'commission_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
         ]);
 
         try {
@@ -77,6 +78,7 @@ class AgentController extends Controller
                 $temporaryPassword = Str::password(12, symbols: false);
                 $agent = Agent::query()->create([
                     ...$validated,
+                    'commission_percentage' => config('agent.commission_tiers.0', 15),
                     'password' => $temporaryPassword,
                     'active' => true,
                     'must_change_password' => true,

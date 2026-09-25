@@ -11,8 +11,7 @@ class CreateAgent extends Command
     protected $signature = 'agent:create
         {name : Agent full name}
         {email : Agent email address}
-        {--mobile= : Mobile number}
-        {--commission= : Agent share of Pahatud commission for future qualifying orders}';
+        {--mobile= : Mobile number}';
 
     protected $description = 'Create an active Pahatud Agent Portal account';
 
@@ -22,7 +21,7 @@ class CreateAgent extends Command
             'name' => $this->argument('name'),
             'email' => $this->argument('email'),
             'mobile' => $this->option('mobile'),
-            'commission_percentage' => $this->option('commission') ?? config('agent.default_commission_percentage'),
+            'commission_percentage' => config('agent.commission_tiers.0', 15),
             'password' => $this->secret('Password (minimum 8 characters)'),
         ];
 
@@ -30,7 +29,6 @@ class CreateAgent extends Command
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:agents,email'],
             'mobile' => ['nullable', 'string', 'max:30'],
-            'commission_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'password' => ['required', 'string', 'min:8'],
         ]);
 
@@ -44,7 +42,7 @@ class CreateAgent extends Command
 
         $agent = Agent::query()->create([...$validator->validated(), 'active' => true]);
 
-        $this->info("Agent {$agent->email} created with a {$agent->commission_percentage}% share of Pahatud commission.");
+        $this->info("Agent {$agent->email} created with a {$agent->commissionPercentage()}% starting share of Pahatud commission.");
 
         return self::SUCCESS;
     }

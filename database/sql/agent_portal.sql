@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `agents` (
     `email` VARCHAR(255) NOT NULL,
     `mobile` VARCHAR(30) NULL,
     `password` VARCHAR(255) NOT NULL,
-    `commission_percentage` DECIMAL(5, 2) NOT NULL DEFAULT 30.00,
+    `commission_percentage` DECIMAL(5, 2) NOT NULL DEFAULT 15.00,
     `active` TINYINT(1) NOT NULL DEFAULT 1,
     `must_change_password` TINYINT(1) NOT NULL DEFAULT 0,
     `temporary_password_created_at` TIMESTAMP NULL DEFAULT NULL,
@@ -29,6 +29,12 @@ CREATE TABLE IF NOT EXISTS `agents` (
     KEY `agents_active_index` (`active`),
     KEY `agents_must_change_password_index` (`must_change_password`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- The column is retained for compatibility, but future commission rates are
+-- calculated from approved-restaurant tiers. Existing commission ledger rows
+-- are intentionally not changed.
+ALTER TABLE `agents`
+    MODIFY COLUMN `commission_percentage` DECIMAL(5, 2) NOT NULL DEFAULT 15.00;
 
 -- CREATE TABLE IF NOT EXISTS does not add new columns to an existing table.
 -- These guarded statements safely upgrade an Agent Portal installed earlier.

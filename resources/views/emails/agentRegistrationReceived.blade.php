@@ -8,7 +8,7 @@ Thank you for applying to the Pahatud Agent Program. Your application is now awa
 Your account cannot sign in until it is approved. We will email you again with the review decision.
 
 **Registered email:** {{ $agent->email }}  
-**Starting agent share:** {{ number_format($agent->commission_percentage, 2) }}% of Pahatud's commission from each qualifying order
+**Starting agent share:** {{ number_format($agent->commissionPercentage(), 2) }}% of Pahatud's commission from each qualifying order. Your share increases automatically as more of your enrolled restaurants are approved.
 
 Thanks,  
 The Pahatud Team
