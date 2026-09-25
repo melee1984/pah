@@ -14,9 +14,13 @@ class DashboardController extends Controller
         $agent = $request->user('agent');
         $restaurantIds = $agent->restaurants()->pluck('id');
         $earned = $agent->commissions()->earned();
+        $approvedRestaurantCount = $agent->approvedRestaurantCount();
 
         $metrics = [
             'restaurants' => $restaurantIds->count(),
+            'approved_restaurants' => $approvedRestaurantCount,
+            'commission_percentage' => $agent->commissionPercentage($approvedRestaurantCount),
+            'next_commission_tier' => $agent->nextCommissionTier($approvedRestaurantCount),
             'orders' => $restaurantIds->isEmpty()
                 ? 0
                 : Orders::query()->whereIn('partner_id', $restaurantIds)->whereNotNull('submitted_at')->count(),

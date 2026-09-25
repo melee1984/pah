@@ -15,8 +15,13 @@
     <section class="agent-metrics" aria-label="Agent performance metrics">
         <article class="agent-metric">
             <span class="agent-metric-icon">▦</span>
-            <span>Enrolled restaurants</span>
-            <strong>{{ number_format($metrics['restaurants']) }}</strong>
+            <span>Approved restaurants</span>
+            <strong>{{ number_format($metrics['approved_restaurants']) }}</strong>
+        </article>
+        <article class="agent-metric">
+            <span class="agent-metric-icon">%</span>
+            <span>Current commission share</span>
+            <strong>{{ number_format($metrics['commission_percentage'], 2) }}%</strong>
         </article>
         <article class="agent-metric">
             <span class="agent-metric-icon">◫</span>
@@ -66,12 +71,12 @@
         @php
             $exampleOrder = 1000;
             $examplePahatudRate = (float) config('agent.pahatud_commission_percentage');
-            $exampleAgentRate = (float) $agent->commission_percentage;
+            $exampleAgentRate = (float) $metrics['commission_percentage'];
             $exampleEarnings = $exampleOrder * $examplePahatudRate / 100 * $exampleAgentRate / 100;
         @endphp
         <div class="agent-guide-bottom">
-            <div class="agent-guide-example"><h3>How your commission is calculated</h3><p>Your current share is <strong>{{ number_format($exampleAgentRate, 2) }}% of Pahatud’s commission</strong> from qualifying orders, not of the full order value.</p><div class="agent-guide-equation"><span>₱{{ number_format($exampleOrder, 2) }} order</span><b>× {{ number_format($examplePahatudRate, 2) }}% Pahatud commission</b><b>× {{ number_format($exampleAgentRate, 2) }}% agent share</b><strong>= ₱{{ number_format($exampleEarnings, 2) }}</strong></div><small>Example only. The restaurant’s commission rate and the rate saved on each order determine actual earnings.</small></div>
-            <div class="agent-guide-notes"><h3>Good to know</h3><ul><li>Submitting an application or enrolling a restaurant does not itself earn commission.</li><li>Cancelled or reversed orders do not count toward earned commission.</li><li>Restaurants can update details and replace documents from their account. Changes return an approved application to review.</li><li>Reports show pending, approved, paid, and reversed entries. Pahatud operations coordinates payouts.</li></ul></div>
+            <div class="agent-guide-example"><h3>How your commission is calculated</h3><p>Your current share is <strong>{{ number_format($exampleAgentRate, 2) }}% of Pahatud’s commission</strong> from qualifying orders, not of the full order value.</p><div class="agent-guide-equation"><span>₱{{ number_format($exampleOrder, 2) }} order</span><b>× {{ number_format($examplePahatudRate, 2) }}% Pahatud commission</b><b>× {{ number_format($exampleAgentRate, 2) }}% agent share</b><strong>= ₱{{ number_format($exampleEarnings, 2) }}</strong></div><small>Example only. The restaurant’s commission rate and the rate saved on each order determine actual earnings.</small>@if ($metrics['next_commission_tier'])<p>You need {{ number_format($metrics['next_commission_tier']['minimum_restaurants'] - $metrics['approved_restaurants']) }} more approved {{ Str::plural('restaurant', $metrics['next_commission_tier']['minimum_restaurants'] - $metrics['approved_restaurants']) }} to reach the {{ number_format($metrics['next_commission_tier']['percentage'], 2) }}% tier.</p>@else<p>You have reached the highest commission tier.</p>@endif</div>
+            <div class="agent-guide-notes"><h3>Good to know</h3><ul><li>Only approved restaurants count toward your tier: 15% below 35, 20% from 35–49, and 30% from 50 onward.</li><li>When you reach a tier, its rate applies to future qualifying orders from all restaurants assigned to you. Existing commission entries do not change.</li><li>Cancelled or reversed orders do not count toward earned commission.</li><li>Restaurants can update details and replace documents from their account. Changes return an approved application to review.</li><li>Reports show pending, approved, paid, and reversed entries. Pahatud operations coordinates payouts.</li></ul></div>
         </div>
         <a class="agent-guide-more" href="{{ route('agent.help') }}">More questions? Visit Help &amp; FAQ <span aria-hidden="true">→</span></a>
     </section>

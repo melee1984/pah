@@ -7,20 +7,12 @@ use Illuminate\Console\Command;
 
 class SetAgentCommissionRate extends Command
 {
-    protected $signature = 'agent:set-rate {email : Agent email address} {percentage : Agent share of Pahatud commission, from 0 to 100}';
+    protected $signature = 'agent:set-rate {email : Agent email address} {percentage? : Deprecated and ignored}';
 
-    protected $description = 'Change an agent share of Pahatud commission for future qualifying orders';
+    protected $description = 'Show the automatic tiered commission rate for an agent';
 
     public function handle(): int
     {
-        $percentage = filter_var($this->argument('percentage'), FILTER_VALIDATE_FLOAT);
-
-        if ($percentage === false || $percentage < 0 || $percentage > 100) {
-            $this->error('The percentage must be a number from 0 to 100.');
-
-            return self::FAILURE;
-        }
-
         $agent = Agent::query()->where('email', $this->argument('email'))->first();
 
         if (! $agent) {
@@ -29,10 +21,11 @@ class SetAgentCommissionRate extends Command
             return self::FAILURE;
         }
 
-        $agent->update(['commission_percentage' => round($percentage, 2)]);
-        $this->info("Future qualifying orders for {$agent->email} will use a {$agent->commission_percentage}% share of Pahatud commission.");
-        $this->line('Existing commission transactions were not changed.');
+        $approvedRestaurantCount = $agent->approvedRestaurantCount();
+        $this->error('Agent rates are assigned automatically and cannot be changed manually.');
+        $this->line("{$agent->email} has {$approvedRestaurantCount} approved restaurants and a {$agent->commissionPercentage($approvedRestaurantCount)}% share.");
+        $this->line('Any percentage argument is ignored, and existing commission transactions are not changed.');
 
-        return self::SUCCESS;
+        return self::FAILURE;
     }
 }

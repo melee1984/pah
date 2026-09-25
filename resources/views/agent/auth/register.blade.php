@@ -25,18 +25,18 @@
             <div class="agent-program-trust"><span>No application fee</span><span>Transparent commission ledger</span><span>Local restaurant impact</span></div>
         </div>
         <aside class="agent-earning-preview" aria-label="Commission example">
-            <span class="agent-earning-label">Current agent share</span>
+            <span class="agent-earning-label">Starting agent share</span>
             <strong>{{ number_format($commissionPercentage, 2) }}%</strong>
-            <p>of Pahatud's commission from each successful order placed with a restaurant you enrolled.</p>
+            <p>of Pahatud's commission from each successful order placed with a restaurant you enrolled. Your share grows with your approved restaurant network.</p>
             <div class="agent-earning-equation"><span>₱1,000 qualifying order</span><b>Pahatud: {{ number_format($pahatudCommissionPercentage, 0) }}% = ₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100), 2) }}</b><strong>Agent: {{ number_format($commissionPercentage, 0) }}% = ₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100) * ($commissionPercentage / 100), 2) }}</strong></div>
-            <small>At the default rates, the agent's effective earnings equal {{ number_format($pahatudCommissionPercentage * ($commissionPercentage / 100), 2) }}% of the eligible order value.</small>
+            <small>At the starting tier, the agent's effective earnings equal {{ number_format($pahatudCommissionPercentage * ($commissionPercentage / 100), 2) }}% of the eligible order value.</small>
         </aside>
     </section>
 
     <section class="agent-program-section agent-benefit-section">
         <div class="agent-program-heading"><p class="agent-eyebrow">Built for growth</p><h2>What you get as a Pahatud agent</h2><p>A clear way to grow a restaurant network and see the value it creates.</p></div>
         <div class="agent-benefit-grid">
-            <article><span>01</span><h3>Commission opportunities</h3><p>Earn {{ number_format($commissionPercentage, 0) }}% of Pahatud's commission from qualifying successful orders placed with restaurants assigned to you.</p></article>
+            <article><span>01</span><h3>Commission opportunities</h3><p>Earn 15%–30% of Pahatud's commission from qualifying successful orders placed with restaurants assigned to you.</p></article>
             <article><span>02</span><h3>Your restaurant network</h3><p>Enroll restaurants from your portal and monitor every partner connected to your agent account.</p></article>
             <article><span>03</span><h3>Order visibility</h3><p>See submitted restaurant orders and the sales amount connected to your commission activity.</p></article>
             <article><span>04</span><h3>Transparent reporting</h3><p>Review pending, approved, paid, or reversed commissions with restaurant and order references.</p></article>
@@ -55,17 +55,17 @@
     </section>
 
     <section class="agent-program-section agent-commission-section" id="earnings">
-        <div class="agent-program-heading"><p class="agent-eyebrow">Clear calculations</p><h2>Understand every peso you earn</h2><p>Pahatud first receives {{ number_format($pahatudCommissionPercentage, 2) }}% of the eligible order value. Your agent share is then calculated from Pahatud's commission—not from the full order total.</p></div>
+        <div class="agent-program-heading"><p class="agent-eyebrow">Clear calculations</p><h2>Grow your share with every approved restaurant</h2><p>Pahatud first receives {{ number_format($pahatudCommissionPercentage, 2) }}% of the eligible order value. Your tiered agent share is then calculated from Pahatud's commission—not from the full order total.</p></div>
         <div class="agent-commission-layout">
             <div class="agent-formula-card"><span>Commission formula</span><strong>Order value × Pahatud rate × Agent share = Agent commission</strong><p>Example: ₱1,000 × {{ number_format($pahatudCommissionPercentage, 0) }}% × {{ number_format($commissionPercentage, 0) }}% = ₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100) * ($commissionPercentage / 100), 2) }}. Cancelled, refunded, or failed orders do not qualify.</p></div>
             <div class="agent-example-table">
-                <div class="agent-example-row agent-example-head"><span>Order</span><span>Pahatud earns</span><span>Agent share</span><span>You earn</span></div>
-                @foreach ([500, 1000, 2500] as $amount)
-                    <div class="agent-example-row"><span>₱{{ number_format($amount, 2) }}</span><span>₱{{ number_format($amount * ($pahatudCommissionPercentage / 100), 2) }}</span><span>{{ number_format($commissionPercentage, 2) }}%</span><strong>₱{{ number_format($amount * ($pahatudCommissionPercentage / 100) * ($commissionPercentage / 100), 2) }}</strong></div>
+                <div class="agent-example-row agent-example-head"><span>Approved restaurants</span><span>Agent share</span><span>₱1,000 order</span><span>You earn</span></div>
+                @foreach ([['label' => '0–34', 'rate' => $commissionTiers[0]], ['label' => '35–49', 'rate' => $commissionTiers[35]], ['label' => '50 or more', 'rate' => $commissionTiers[50]]] as $tier)
+                    <div class="agent-example-row"><span>{{ $tier['label'] }}</span><span>{{ number_format($tier['rate'], 2) }}%</span><span>₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100), 2) }} Pahatud commission</span><strong>₱{{ number_format(1000 * ($pahatudCommissionPercentage / 100) * ($tier['rate'] / 100), 2) }}</strong></div>
                 @endforeach
             </div>
         </div>
-        <p class="agent-program-disclaimer">Examples use Pahatud's {{ number_format($pahatudCommissionPercentage, 2) }}% commission and the default agent share of {{ number_format($commissionPercentage, 2) }}%. This produces an effective agent earning of {{ number_format($pahatudCommissionPercentage * ($commissionPercentage / 100), 2) }}% of the eligible order value. Your confirmed share is shown in the Agent Dashboard and stored with every commission entry.</p>
+        <p class="agent-program-disclaimer">Only approved restaurants count toward a tier. A newly reached tier applies to future qualifying orders from every restaurant assigned to the agent. Existing commission entries keep the rate originally recorded for their order.</p>
     </section>
 
     <section class="agent-program-section agent-payout-section">
@@ -83,7 +83,7 @@
         <div class="agent-faq-list">
             <details open><summary>When do I start earning commission?</summary><p>After your account is approved and a restaurant you enrolled completes a qualifying delivered order. Applications and restaurant enrollments alone do not generate commission.</p></details>
             <details><summary>Is the commission based on every restaurant order?</summary><p>It applies only to qualifying successful orders from restaurants assigned to your agent account. Cancelled, refunded, failed, or reversed orders are excluded.</p></details>
-            <details><summary>Can my agent share change?</summary><p>Yes. Pahatud assigns your percentage share of Pahatud's commission and may change it for future qualifying orders. Each recorded commission keeps the agent share used for that specific order.</p></details>
+            <details><summary>Can my agent share change?</summary><p>Yes. Your share is 15% with 0–34 approved restaurants, 20% with 35–49, and 30% with 50 or more. A higher tier applies automatically to future qualifying orders across your restaurant network. Each recorded commission keeps the rate used for that specific order.</p></details>
             <details><summary>How does restaurant enrollment work?</summary><p>You submit the restaurant details from your approved Agent Dashboard. The restaurant receives a private invitation, creates its merchant login, and remains under review until activated.</p></details>
             <details><summary>What can I track in the Agent Dashboard?</summary><p>Your restaurants, their submitted orders, qualifying sales, total and monthly commission, and individual ledger entries with pending, approved, paid, or reversed status.</p></details>
             <details><summary>Can I withdraw money directly from the dashboard?</summary><p>Not currently. The dashboard tracks your commission balance and status. Pahatud operations coordinates approved payouts and marks entries as paid.</p></details>

@@ -19,7 +19,8 @@ class RegistrationController extends Controller
     public function create(): View
     {
         return view('agent.auth.register', [
-            'commissionPercentage' => (float) config('agent.default_commission_percentage'),
+            'commissionPercentage' => (float) config('agent.commission_tiers.0', 15),
+            'commissionTiers' => config('agent.commission_tiers'),
             'pahatudCommissionPercentage' => (float) config('agent.pahatud_commission_percentage'),
         ]);
     }
@@ -41,7 +42,7 @@ class RegistrationController extends Controller
                     'email' => $validated['email'],
                     'mobile' => $validated['mobile'],
                     'password' => $validated['password'],
-                    'commission_percentage' => config('agent.default_commission_percentage'),
+                    'commission_percentage' => config('agent.commission_tiers.0', 15),
                     'active' => false,
                     'must_change_password' => false,
                     'password_changed_at' => now(),

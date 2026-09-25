@@ -15,7 +15,7 @@ Your Pahatud Agent application has been approved. You can now sign in using the 
 Open Agent Dashboard
 </x-mail::button>
 
-Your current agent share is **{{ number_format($agent->commission_percentage, 2) }}% of Pahatud's commission** from each qualifying successful restaurant order.
+Your current agent share is **{{ number_format($agent->commissionPercentage(), 2) }}% of Pahatud's commission** from each qualifying successful restaurant order. Your share increases automatically at 35 and 50 approved restaurants.
 
 Thanks,  
 The Pahatud Team

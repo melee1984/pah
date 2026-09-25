@@ -50,7 +50,7 @@
             <span class="agent-topbar-note">Grow local businesses. Earn on every qualifying order.</span>
             <div class="agent-profile">
                 <span class="agent-avatar">{{ mb_strtoupper(mb_substr(auth('agent')->user()->name, 0, 1)) }}</span>
-                <div><strong>{{ auth('agent')->user()->name }}</strong><span>{{ number_format(auth('agent')->user()->commission_percentage, 2) }}% of Pahatud commission</span></div>
+                <div><strong>{{ auth('agent')->user()->name }}</strong><span>{{ number_format(auth('agent')->user()->commissionPercentage(), 2) }}% of Pahatud commission</span></div>
             </div>
         </header>
 
