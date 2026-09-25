@@ -19,3 +19,7 @@
 @elseif (is_file(resource_path('css/agent.css')))
     <style>{!! file_get_contents(resource_path('css/agent.css')) !!}</style>
 @endif
+
+@if (is_file(resource_path('css/agent-tier.css')))
+    <style data-agent-tier-styles>{!! file_get_contents(resource_path('css/agent-tier.css')) !!}</style>
+@endif

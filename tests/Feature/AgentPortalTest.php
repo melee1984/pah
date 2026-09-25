@@ -185,6 +185,8 @@ class AgentPortalTest extends TestCase
             ->assertSee('Approval determines the count')
             ->assertSee('Recorded commissions stay unchanged')
             ->assertSee('Can my tier go down?')
+            ->assertSee('data-agent-tier-styles', false)
+            ->assertSee('agent-tier-card is-current', false)
             ->assertSee('Contact agent support')
             ->assertSee('mailto:info@pahatud.com?subject=Agent%20support%20request', false)
             ->assertSee(route('agent.restaurants.create'));

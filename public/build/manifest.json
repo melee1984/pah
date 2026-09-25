@@ -1,21 +1,25 @@
 {
   "_TurnstileWidget-!~{007}~.js": {
-    "file": "assets/TurnstileWidget-DM57teS5.css",
+    "file": "assets/TurnstileWidget-BU9rbAKu.css",
     "src": "_TurnstileWidget-!~{007}~.js"
   },
-  "_TurnstileWidget-B7fOB_8s.js": {
-    "file": "assets/TurnstileWidget-B7fOB_8s.js",
+  "_TurnstileWidget-CAMrOyXY.js": {
+    "file": "assets/TurnstileWidget-CAMrOyXY.js",
     "name": "TurnstileWidget",
     "imports": [
-      "__plugin-vue2_normalizer-CevmZA-b.js"
+      "__plugin-vue2_normalizer-cdZwRg5X.js"
     ],
     "css": [
-      "assets/TurnstileWidget-DM57teS5.css"
+      "assets/TurnstileWidget-BU9rbAKu.css"
     ]
   },
-  "__plugin-vue2_normalizer-CevmZA-b.js": {
-    "file": "assets/_plugin-vue2_normalizer-CevmZA-b.js",
+  "__plugin-vue2_normalizer-cdZwRg5X.js": {
+    "file": "assets/_plugin-vue2_normalizer-cdZwRg5X.js",
     "name": "_plugin-vue2_normalizer"
+  },
+  "_order-details-!~{00a}~.js": {
+    "file": "assets/order-details-DVCcvjvv.css",
+    "src": "_order-details-!~{00a}~.js"
   },
   "node_modules/leaflet/dist/images/layers-2x.png": {
     "file": "assets/layers-2x-Bpkbi35X.png",
@@ -40,18 +44,18 @@
     "src": "node_modules/leaflet/dist/leaflet.css"
   },
   "resources/css/agent.css": {
-    "file": "assets/agent-DzaDc1Gy.css",
+    "file": "assets/agent-DR4tG26I.css",
     "src": "resources/css/agent.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-BHOMIztX.js",
+    "file": "assets/app-B4zTqC9_.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "imports": [
-      "__plugin-vue2_normalizer-CevmZA-b.js",
-      "_TurnstileWidget-B7fOB_8s.js"
+      "__plugin-vue2_normalizer-cdZwRg5X.js",
+      "_TurnstileWidget-CAMrOyXY.js"
     ],
     "css": [
       "assets/app-CH0jHzKs.css",
@@ -59,31 +63,32 @@
     ]
   },
   "resources/js/dashboard.js": {
-    "file": "assets/dashboard-5mxEBR7S.js",
+    "file": "assets/dashboard-BAxTIsXV.js",
     "name": "dashboard",
     "src": "resources/js/dashboard.js",
     "isEntry": true,
     "imports": [
-      "__plugin-vue2_normalizer-CevmZA-b.js"
+      "__plugin-vue2_normalizer-cdZwRg5X.js"
     ],
     "css": [
-      "assets/dashboard--BoqoG2-.css"
+      "assets/order-details-DVCcvjvv.css"
     ]
   },
   "resources/js/merchant.js": {
-    "file": "assets/merchant-BgvcCtr5.js",
+    "file": "assets/merchant-J3vxYQLg.js",
     "name": "merchant",
     "src": "resources/js/merchant.js",
     "isEntry": true,
     "imports": [
-      "__plugin-vue2_normalizer-CevmZA-b.js",
-      "_TurnstileWidget-B7fOB_8s.js"
+      "__plugin-vue2_normalizer-cdZwRg5X.js",
+      "_TurnstileWidget-CAMrOyXY.js"
     ],
     "dynamicImports": [
       "node_modules/leaflet/dist/leaflet-src.esm.js"
     ],
     "css": [
-      "assets/merchant-D0yTWASw.css"
+      "assets/merchant-BKbBV6PY.css",
+      "assets/order-details-DVCcvjvv.css"
     ]
   },
   "resources/scss/_pahatud.scss": {
