@@ -179,6 +179,9 @@ Route::middleware('admin')->group(function () {
         'data/dashboard/orders/deliveries/{delivery}/proofs/{proof}',
         [\App\Http\Controllers\Api\Admin\OrderController::class, 'viewDeliveryProof']
     )->name('dashboard.orders.delivery-proof');
+    Route::get('data/dashboard/orders/{order}', [\App\Http\Controllers\OrderDetailsController::class, 'admin'])
+        ->whereNumber('order')
+        ->name('dashboard.orders.show');
     Route::get('data/dashboard/bookings', [DashboardController::class, 'bookings'])->name('dashboard.bookings');
 
     Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
@@ -310,6 +313,9 @@ Route::middleware('merchant')->group(function () {
         'merchant/orders/deliveries/{delivery}/proofs/{proof}',
         [\App\Http\Controllers\Api\Merchant\OrderController::class, 'viewDeliveryProof']
     )->name('merchant.orders.delivery-proof');
+    Route::get('merchant/orders/{order}', [\App\Http\Controllers\OrderDetailsController::class, 'merchant'])
+        ->whereNumber('order')
+        ->name('merchant.orders.show');
     Route::get('merchant/previous-orders', [\App\Http\Controllers\Merchant\OrderController::class, 'previous'])->name('merchant.dashboard.previous-order');
 
     // Settings

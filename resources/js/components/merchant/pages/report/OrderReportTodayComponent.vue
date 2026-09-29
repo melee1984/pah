@@ -40,7 +40,7 @@
             <tr v-if="orders.length === 0"><td colspan="14" class="dashboard-table-empty">No completed sales were found for this period.</td></tr>
             <tr v-for="order in orders" :key="order.id">
               <td><strong>{{ order.completed_date }}</strong><small>Completion time</small></td>
-              <td><strong>#{{ order.cart.order_no }}</strong><small>{{ order.cart.fullname || 'Customer not available' }}</small></td>
+              <td><a class="dashboard-order-link" :href="orderDetailsUrl(order)"><i class="fas fa-receipt"></i> #{{ order.cart.order_no }}</a><small>{{ order.cart.fullname || 'Customer not available' }}</small></td>
               <td><span class="order-option-badge" :class="'is-' + fulfillmentTypeFor(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(order) }}</span></td>
               <td><span class="admin-number-pill">{{ order.summary.qty }}</span></td>
               <td><span class="dashboard-money">{{ money(order.summary.sub_total) }}</span></td>
@@ -84,6 +84,9 @@ export default {
     this.searchToday();
   },
   methods: {
+    orderDetailsUrl(order) {
+      return `/merchant/orders/${order.id}`;
+    },
     emptySummary() {
       return { qty: 0, sub_total: 0, convenience_fee: 0, vat_amount: 0, discount: 0, fee: 0, total: 0, total_comm: 0, total_net: 0 };
     },

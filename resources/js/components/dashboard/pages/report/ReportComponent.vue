@@ -19,7 +19,7 @@
           <tr v-for="order in paginatedOrders" :key="order.id">
             <td>{{ order.submitted_date }}</td>
             <td><strong>{{ order.partner ? order.partner.restaurant_name : 'Unavailable' }}</strong></td>
-            <td><strong>Order #{{ order.cart.order_no }}</strong><small>{{ order.cart.fullname }}</small></td>
+            <td><a class="dashboard-order-link" :href="orderDetailsUrl(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</a><small>{{ order.cart.fullname }}</small></td>
             <td><span class="order-option-badge" :class="'is-' + fulfillmentTypeFor(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(order) }}</span></td>
             <td>{{ order.summary.qty }}</td>
             <td><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
@@ -72,6 +72,9 @@ export default {
     this.searchToday();
   },
   methods: {
+    orderDetailsUrl(order) {
+      return `/data/dashboard/orders/${order.id}`;
+    },
     setPage(page) {
       this.currentPage = page;
     },

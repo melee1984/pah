@@ -1,4 +1,6 @@
 .order-detail-modal .modal-dialog { max-width: 1040px; margin: 1.5rem auto; }
+.order-detail-page { max-width: 1180px; margin: 0 auto 2rem; overflow: hidden; border-radius: 20px; background: #f7f8fb; box-shadow: 0 16px 42px rgba(24, 32, 48, .1); }
+.order-detail-page .order-detail-body { max-height: none; overflow: visible; }
 .order-detail-modal .modal-content { overflow: hidden; border: 0; border-radius: 20px; background: #f7f8fb; box-shadow: 0 28px 80px rgba(24, 32, 48, .22); }
 .order-detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 30px 34px; border: 0; color: #fff; background: linear-gradient(115deg, #25354c, #374b64); }
 .order-detail-heading { min-width: 0; }
