@@ -198,6 +198,7 @@ class CheckoutController extends Controller
             'deliveryTime'=>'required',
             'deliveryAddressId' => 'nullable|integer',
             'deliveryPaymentId' => 'required|integer',
+            'partnerOrderOptionId' => ['nullable', 'integer'],
             'fulfillment_type' => ['sometimes', Rule::in(Cart::FULFILLMENT_TYPES)],
             'dining_table_id' => ['nullable', 'integer'],
         ];
@@ -236,6 +237,25 @@ class CheckoutController extends Controller
             'fulfillment_type',
             $cart->fulfillment_type ?: Cart::FULFILLMENT_DELIVERY
         );
+
+        // The mobile app submits the selected location option by its database ID.
+        // Resolve it here so pickup and dine-in orders do not fall back to delivery.
+        if ($request->filled('partnerOrderOptionId')) {
+            $checkoutOption = PartnerLocationCheckoutOption::query()
+                ->whereKey($request->integer('partnerOrderOptionId'))
+                ->where('partner_location_id', $cart->partner_location_address_id)
+                ->where('active', true)
+                ->first();
+
+            if (! $checkoutOption) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected checkout option is invalid.',
+                ], 200);
+            }
+
+            $fulfillmentType = $checkoutOption->type;
+        }
 
         if (! $cart->partner_location_address_id
             || ! PartnerLocationCheckoutOption::enabledForLocation(

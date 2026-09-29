@@ -96,4 +96,30 @@ class MerchantDiningTableTest extends TestCase
         )->assertUnprocessable()
             ->assertJsonValidationErrors('name');
     }
+
+    public function test_each_branch_returns_only_its_own_tables(): void
+    {
+        $partnerId = DB::table('partner_location')->where('id', $this->locationId)->value('partner_id');
+        $secondLocationId = DB::table('partner_location')->insertGetId([
+            'partner_id' => $partnerId,
+            'active' => true,
+        ]);
+
+        DB::table('partner_location_tables')->insert([
+            ['partner_location_id' => $this->locationId, 'name' => 'Main Table', 'capacity' => 4, 'active' => true, 'is_available' => true],
+            ['partner_location_id' => $secondLocationId, 'name' => 'Branch Table', 'capacity' => 2, 'active' => true, 'is_available' => true],
+        ]);
+
+        $this->actingAs($this->merchantUser)
+            ->getJson("/api/merchant/location/{$this->locationId}/tables")
+            ->assertOk()
+            ->assertJsonCount(1, 'tables')
+            ->assertJsonPath('tables.0.name', 'Main Table');
+
+        $this->actingAs($this->merchantUser)
+            ->getJson("/api/merchant/location/{$secondLocationId}/tables")
+            ->assertOk()
+            ->assertJsonCount(1, 'tables')
+            ->assertJsonPath('tables.0.name', 'Branch Table');
+    }
 }
