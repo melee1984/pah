@@ -51,6 +51,7 @@
 </ul>
 
 <div class="merchant-sidebar-footer">
+  <p class="merchant-sidebar-section-label">Support &amp; account</p>
   <a href="{{ route('merchant.help') }}" class="nav-link {{ request()->routeIs('merchant.help') ? 'active' : '' }}">
     <i class="nav-icon fas fa-question-circle"></i><p>Help &amp; documentation</p>
   </a>
