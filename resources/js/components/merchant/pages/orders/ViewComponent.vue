@@ -247,9 +247,16 @@
               backdrop: "static", // optional
               keyboard: true,
             });
+            document.addEventListener('keydown', this.handleEscapeKey);
         },
         beforeDestroy() {
             window.clearInterval(this.refreshTimer);
+            document.removeEventListener('keydown', this.handleEscapeKey);
+
+            if (this.modalInstance) {
+              this.modalInstance.dispose();
+              this.modalInstance = null;
+            }
         },
         methods: {
           startTimer: function () {
@@ -320,6 +327,18 @@
           closeModal() {
             if (this.modalInstance) {
               this.modalInstance.hide();
+            }
+          },
+          handleEscapeKey(event) {
+            if (event.key !== 'Escape' && event.key !== 'Esc' && event.keyCode !== 27) {
+              return;
+            }
+
+            const modalEl = document.getElementById('orderDetails');
+
+            if (modalEl && modalEl.classList.contains('show')) {
+              event.preventDefault();
+              this.closeModal();
             }
           },
           

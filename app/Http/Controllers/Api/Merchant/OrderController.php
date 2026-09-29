@@ -130,6 +130,7 @@ class OrderController extends Controller
 
         $request->validate([
             'dateFilter' => ['sometimes', 'string', 'max:100'],
+            'fulfillment_type' => ['nullable', 'in:delivery,pickup,dine_in'],
         ]);
 
         $totalSummary = array();
@@ -167,6 +168,20 @@ class OrderController extends Controller
             $query->whereBetween($completedAt, [$start, $end]);
         } else {
             $query->whereBetween($completedAt, [now()->startOfDay(), now()->endOfDay()]);
+        }
+
+        if ($request->filled('fulfillment_type')) {
+            $fulfillmentType = $request->input('fulfillment_type');
+
+            $query->whereHas('cart', function ($cartQuery) use ($fulfillmentType) {
+                $cartQuery->where(function ($typeQuery) use ($fulfillmentType) {
+                    $typeQuery->where('fulfillment_type', $fulfillmentType);
+
+                    if ($fulfillmentType === Cart::FULFILLMENT_DELIVERY) {
+                        $typeQuery->orWhereNull('fulfillment_type');
+                    }
+                });
+            });
         }
 
         $orders = $query->orderByDesc($completedAt)->get();

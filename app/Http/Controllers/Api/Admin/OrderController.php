@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use App\Model\Orders\Orders;
 use App\Model\Cart;
 use App\Model\Riders;
-use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Partners;
 use Auth;
@@ -28,7 +27,7 @@ class OrderController extends Controller
    
     public function getList() 
     {	 
-         $orders = Orders::with('cart.payment')->with('orderStatus')
+         $orders = Orders::with(['cart.payment', 'cart.diningTable', 'orderStatus'])
                 ->whereNotNull('submitted_at') 
                 ->with(['partner', 'rider', 'status'])
                 ->orderBy('created_at', 'desc')->get();
@@ -94,8 +93,10 @@ class OrderController extends Controller
             LibraryStatus::STATUS_CANCELLED,
         ])->values();
 
-        $data['completedOrders'] = $orders->where('booking_status_id', BookingStatus::STATUS_BOOKING_DELIVERED)->where('order_status_id', '=', LibraryStatus::STATUS_DELIVERED)->values();
-        $data['cancelledOrders'] = $orders->where('booking_status_id', BookingStatus::STATUS_BOOKING_CANCELLED)->where('order_status_id', '!=', LibraryStatus::STATUS_CANCELLED)->values();
+        // Pickup and dine-in orders do not move through the rider booking statuses,
+        // so the order status is the shared source of truth for every option.
+        $data['completedOrders'] = $orders->where('order_status_id', LibraryStatus::STATUS_DELIVERED)->values();
+        $data['cancelledOrders'] = $orders->where('order_status_id', LibraryStatus::STATUS_CANCELLED)->values();
 
         $data['riders'] = Riders::active()->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
@@ -161,9 +162,15 @@ class OrderController extends Controller
 
      public function getListwithFilter(Request $request) {
 
+        $request->validate([
+            'fulfillment_type' => ['nullable', 'in:delivery,pickup,dine_in'],
+        ]);
+
         $totalSummary = array();
         $qty =0;
         $fee =0;
+        $convenienceFee = 0;
+        $vat = 0;
         $sub_total =0;
         $total =0;
         $discount =0;
@@ -207,8 +214,23 @@ class OrderController extends Controller
             }
         }
 
+        if ($request->filled('fulfillment_type')) {
+            $fulfillmentType = $request->input('fulfillment_type');
+
+            $query->whereHas('cart', function ($cartQuery) use ($fulfillmentType) {
+                $cartQuery->where(function ($typeQuery) use ($fulfillmentType) {
+                    $typeQuery->where('fulfillment_type', $fulfillmentType);
+
+                    if ($fulfillmentType === Cart::FULFILLMENT_DELIVERY) {
+                        $typeQuery->orWhereNull('fulfillment_type');
+                    }
+                });
+            });
+        }
+
 
         $orders = $query->orderByDesc($completedAt)->get();
+        $number = fn ($value) => (float) str_replace(',', '', (string) $value);
 
 
         if (!$orders) return response()->json($data, 200);
@@ -227,18 +249,22 @@ class OrderController extends Controller
             $order->cart->cartItemVariance();
 
             $qty+= (int)$summary['qty'];
-            $fee+= number_format((float)$summary['delivery_fee'],2);
-            $sub_total+= number_format((float)$summary['sub_total'],2);
-            $total+= number_format((float)$summary['total'],2);
-            $discount+= number_format((float)$summary['discount'],2);
-            $total_comm += number_format((float)$summary['total_comm'],2);
-            $total_net += number_format((float)$summary['total'] - (float)$summary['total_comm'],2);
+            $fee += $number($summary['delivery_fee']);
+            $convenienceFee += $number($summary['convenience_fee']);
+            $vat += $number($summary['vat_amount']);
+            $sub_total += $number($summary['sub_total']);
+            $total += $number($summary['total']);
+            $discount += $number($summary['discount']);
+            $total_comm += $number($summary['total_comm']);
+            $total_net += $number($summary['total']) - $number($summary['total_comm']);
 
             $order->summary = $summary;
         }
 
         $totalSummary['qty'] = $qty;
         $totalSummary['fee'] = number_format($fee,2);
+        $totalSummary['convenience_fee'] = number_format($convenienceFee, 2);
+        $totalSummary['vat_amount'] = number_format($vat, 2);
         $totalSummary['discount'] = number_format($discount,2);
         $totalSummary['sub_total'] = number_format($sub_total,2);
         $totalSummary['total'] = number_format($total,2);

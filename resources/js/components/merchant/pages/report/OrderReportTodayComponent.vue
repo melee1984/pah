@@ -16,6 +16,10 @@
           <label for="reservationtime">Date and time range</label>
           <div class="merchant-date-input"><i class="far fa-calendar-alt"></i><input id="reservationtime" type="text" class="form-control" aria-label="Sales report date and time range"></div>
         </div>
+        <div class="form-group">
+          <label for="merchant-report-order-option">Order option</label>
+          <select id="merchant-report-order-option" v-model="fulfillmentType" class="form-control"><option value="">All order options</option><option value="delivery">Delivery</option><option value="pickup">Pickup</option><option value="dine_in">Dine-in</option></select>
+        </div>
         <div class="merchant-sales-filter-actions">
           <button type="button" class="btn admin-btn-secondary" :disabled="isLoading" @click="searchToday"><i class="fas fa-calendar-day mr-2"></i>Today</button>
           <button type="button" class="btn admin-btn-primary" :disabled="isLoading" @click="searchSubmit"><i class="fas fa-search mr-2"></i>{{ isLoading ? 'Loading…' : 'Run report' }}</button>
@@ -31,25 +35,26 @@
       <div v-if="isLoading" class="dashboard-loading"><i class="fas fa-circle-notch fa-spin"></i>Loading completed sales…</div>
       <div v-else class="card-body table-responsive p-0">
         <table class="table dashboard-data-table merchant-sales-table">
-          <thead><tr><th>Completed</th><th>Order</th><th>Items</th><th>Subtotal</th><th>Delivery fee</th><th>Discount</th><th>Gross total</th><th>Commission</th><th>Net earnings</th><th>Rider</th><th>Status</th></tr></thead>
+          <thead><tr><th>Completed</th><th>Order</th><th>Order option</th><th>Items</th><th>Subtotal</th><th>Delivery fee</th><th>Discount</th><th>Gross total</th><th>Commission</th><th>Net earnings</th><th>Rider</th><th>Status</th></tr></thead>
           <tbody>
-            <tr v-if="orders.length === 0"><td colspan="11" class="dashboard-table-empty">No completed sales were found for this period.</td></tr>
+            <tr v-if="orders.length === 0"><td colspan="12" class="dashboard-table-empty">No completed sales were found for this period.</td></tr>
             <tr v-for="order in orders" :key="order.id">
               <td><strong>{{ order.completed_date }}</strong><small>Completion time</small></td>
               <td><strong>#{{ order.cart.order_no }}</strong><small>{{ order.cart.fullname || 'Customer not available' }}</small></td>
+              <td><span class="order-option-badge" :class="'is-' + fulfillmentTypeFor(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(order) }}</span></td>
               <td><span class="admin-number-pill">{{ order.summary.qty }}</span></td>
               <td><span class="dashboard-money">{{ money(order.summary.sub_total) }}</span></td>
-              <td><span class="dashboard-money">{{ money(order.summary.delivery_fee) }}</span></td>
+              <td><span v-if="fulfillmentTypeFor(order) === 'delivery'" class="dashboard-money">{{ money(order.summary.delivery_fee) }}</span><span v-else class="text-muted">—</span></td>
               <td><span class="merchant-sales-discount">{{ number(order.summary.discount) > 0 ? money(order.summary.discount) : '—' }}</span></td>
               <td><span class="dashboard-money">{{ money(order.summary.total) }}</span></td>
               <td><span class="merchant-sales-commission">{{ money(order.summary.total_comm) }}</span></td>
               <td><strong class="merchant-sales-net">{{ money(order.summary.net) }}</strong></td>
-              <td><strong v-if="order.rider">{{ order.rider.name }}</strong><span v-else class="text-muted">Not assigned</span></td>
+              <td><template v-if="fulfillmentTypeFor(order) === 'delivery'"><strong v-if="order.rider">{{ order.rider.name }}</strong><span v-else class="text-muted">Not assigned</span></template><span v-else class="text-muted">Not required</span></td>
               <td><span v-if="order.status" class="dashboard-status-pill is-success"><i class="fas fa-check mr-1"></i>{{ order.status.title }}</span></td>
             </tr>
           </tbody>
           <tfoot v-if="orders.length">
-            <tr><td colspan="2">Report totals</td><td>{{ integer(summary.qty) }}</td><td>{{ money(summary.sub_total) }}</td><td>{{ money(summary.fee) }}</td><td>{{ money(summary.discount) }}</td><td>{{ money(summary.total) }}</td><td>{{ money(summary.total_comm) }}</td><td>{{ money(summary.total_net) }}</td><td colspan="2"></td></tr>
+            <tr><td colspan="3">Report totals</td><td>{{ integer(summary.qty) }}</td><td>{{ money(summary.sub_total) }}</td><td>{{ money(summary.fee) }}</td><td>{{ money(summary.discount) }}</td><td>{{ money(summary.total) }}</td><td>{{ money(summary.total_comm) }}</td><td>{{ money(summary.total_net) }}</td><td colspan="2"></td></tr>
           </tfoot>
         </table>
       </div>
@@ -65,6 +70,7 @@ export default {
       summary: this.emptySummary(),
       isLoading: false,
       reportTitle: "Today's completed sales",
+      fulfillmentType: '',
     };
   },
   computed: {
@@ -82,6 +88,7 @@ export default {
     loadReport(dateFilter) {
       this.isLoading = true;
       const payload = dateFilter ? { dateFilter } : {};
+      payload.fulfillment_type = this.fulfillmentType;
 
       axios.post(`/api/merchant/order/search/list?api_token=${api_token}`, payload)
         .then((response) => {
@@ -105,6 +112,15 @@ export default {
     searchToday() {
       this.reportTitle = "Today's completed sales";
       this.loadReport();
+    },
+    fulfillmentTypeFor(order) {
+      return order?.cart?.fulfillment_type || 'delivery';
+    },
+    fulfillmentLabel(order) {
+      return { delivery: 'Delivery', pickup: 'Pickup', dine_in: 'Dine-in' }[this.fulfillmentTypeFor(order)] || 'Delivery';
+    },
+    fulfillmentIcon(order) {
+      return { delivery: 'fas fa-motorcycle', pickup: 'fas fa-shopping-bag', dine_in: 'fas fa-utensils' }[this.fulfillmentTypeFor(order)] || 'fas fa-motorcycle';
     },
     number(value) {
       const parsed = Number(String(value ?? 0).replace(/,/g, ''));
