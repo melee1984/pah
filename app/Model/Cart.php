@@ -18,7 +18,19 @@ use Symfony\Component\HttpFoundation\Session\Session;
 class Cart extends Model
 {
   protected $table = 'cart';
-  protected $fillable = array('user_id', 'session_id', 'active', 'ip_address', 'partner_id', 'address_id', 'payment_id', 'user_long', 'user_lat', 'delivery_date', 'delivery_time', 'sms_code_validated_at', 'partner_location_address_id', 'delivery_fee', 'distance_rate', 'duration', 'origin', 'destination', 'discount_amount', 'discount_code');
+  public const FULFILLMENT_DELIVERY = 'delivery';
+
+  public const FULFILLMENT_PICKUP = 'pickup';
+
+  public const FULFILLMENT_DINE_IN = 'dine_in';
+
+  public const FULFILLMENT_TYPES = [
+    self::FULFILLMENT_DELIVERY,
+    self::FULFILLMENT_PICKUP,
+    self::FULFILLMENT_DINE_IN,
+  ];
+
+  protected $fillable = array('user_id', 'session_id', 'active', 'ip_address', 'partner_id', 'address_id', 'payment_id', 'user_long', 'user_lat', 'delivery_date', 'delivery_time', 'sms_code_validated_at', 'partner_location_address_id', 'fulfillment_type', 'dining_table_id', 'delivery_fee', 'distance_rate', 'duration', 'origin', 'destination', 'discount_amount', 'discount_code');
   protected $hidden = array('created_at', 'updated_at', 'processed_at', 'user_id', 'ip_address');
 
   public $timestamps = true;
@@ -60,6 +72,16 @@ class Cart extends Model
   public function partnerlocation()
   {
     return $this->hasOne('App\PartnerLocation', 'id', 'partner_location_address_id');
+  }
+
+  public function diningTable()
+  {
+    return $this->belongsTo('App\PartnerLocationTable', 'dining_table_id');
+  }
+
+  public function requiresDelivery(): bool
+  {
+    return ($this->fulfillment_type ?: self::FULFILLMENT_DELIVERY) === self::FULFILLMENT_DELIVERY;
   }
 
   /**

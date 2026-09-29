@@ -16,7 +16,8 @@ class OrderController extends Controller
 
     	$data = array();	
 
-    	$order->cart;
+        $order->cart;
+        $order->cart->diningTable;
     	$order->status;
     	$data['order'] = $order;
 
@@ -45,6 +46,7 @@ class OrderController extends Controller
         $order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
         $order->cart->address;
         $order->cart->payment;
+        $order->cart->diningTable;
         $order->status;  
         $order->load('rider.location');
         $order->logs = $order->getActionLogs();
@@ -66,6 +68,7 @@ class OrderController extends Controller
     	foreach($orders as $order) {
 
             if (!$order->cart->option_id) {
+                $order->cart->diningTable;
                 $order->summary = $order->cart->cartItemSummary();
                 $product_items = $order->cart->cartItemList();    
                 $order->cart_total = $order->cart->cartItemTotal();

@@ -26,6 +26,8 @@ use App\SmsNotification;
 use App\PushNotification;
 use App\Events\SendPushNotificationEvent;
 use Exception;
+use App\PartnerLocationTable;
+use App\PartnerLocationCheckoutOption;
 
 class CartController extends Controller
 {
@@ -42,6 +44,7 @@ class CartController extends Controller
         if ($cart) {
 
             $cart->partnerlocation;
+            $cart->diningTable;
             $product_items = $cart->cartItemList();
 
             // Just to clear delivery fee 
@@ -103,6 +106,7 @@ class CartController extends Controller
 
             $user->addresses;
             $cart->partnerlocation;
+            $cart->diningTable;
 
             try {
                 foreach ($product_items as $list) {
@@ -481,6 +485,50 @@ class CartController extends Controller
             $cart = Cart::whereSessionId($session_id)
                 ->whereUserId(Auth::User()->id)->first();
 
+            if (! $cart) {
+                return response()->json(['status' => 0, 'message' => 'Cart not found.'], 404);
+            }
+
+            $fulfillmentType = $cart->fulfillment_type ?: Cart::FULFILLMENT_DELIVERY;
+            if (! $cart->partner_location_address_id
+                || ! PartnerLocationCheckoutOption::enabledForLocation(
+                    (int) $cart->partner_location_address_id,
+                    $fulfillmentType
+                )) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected checkout option is no longer available at this merchant location.',
+                ], 422);
+            }
+
+            if ($fulfillmentType === Cart::FULFILLMENT_DINE_IN) {
+                $tableAvailable = PartnerLocationTable::query()
+                    ->whereKey($cart->dining_table_id)
+                    ->where('partner_location_id', $cart->partner_location_address_id)
+                    ->where('active', true)
+                    ->where('is_available', true)
+                    ->exists();
+
+                if (! $tableAvailable) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'The selected table is no longer available. Please select another table.',
+                    ], 422);
+                }
+            }
+
+            $userAddress = null;
+            if ($cart->requiresDelivery()) {
+                $userAddress = UserAddress::whereUserId($cart->user_id)->find($cart->address_id);
+
+                if (! $userAddress) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'Please select a valid delivery address.',
+                    ], 422);
+                }
+            }
+
             if ($cart?->discount_code) {
                 $coupon = Coupon::appliedToCart($cart);
 
@@ -521,30 +569,29 @@ class CartController extends Controller
 
                         $cart_id = $cart->id;
 
-                        // copy selected address 
-                        $userAddress = UserAddress::find($cart->address_id);
-
-                        $cartUserAddress = CartUserAddress::updateOrCreate(
-                            [
-                                'cart_id' => $cart_id,
-                                'user_id' => $cart->user_id,
-                            ],
-                            array(
-                                'cart_id' => $cart_id,
-                                'user_id' => $cart->user_id,
-                                'address_1' => $userAddress->address_1,
-                                'address_2' => $userAddress->address_2,
-                                'zip_code' => $userAddress->zip_code,
-                                'mobile' => $userAddress->mobile,
-                                'landmark' => $userAddress->landmark,
-                                'country_id' => $userAddress->country_id,
-                                'province_id' => $userAddress->province_id,
-                                'city_id' => $userAddress->city_id,
-                                'barangay_id' => $userAddress->barangay_id,
-                                'lat' => $userAddress->lat,
-                                'long' => $userAddress->long,
-                            )
-                        );
+                        if ($cart->requiresDelivery()) {
+                            CartUserAddress::updateOrCreate(
+                                [
+                                    'cart_id' => $cart_id,
+                                    'user_id' => $cart->user_id,
+                                ],
+                                array(
+                                    'cart_id' => $cart_id,
+                                    'user_id' => $cart->user_id,
+                                    'address_1' => $userAddress->address_1,
+                                    'address_2' => $userAddress->address_2,
+                                    'zip_code' => $userAddress->zip_code,
+                                    'mobile' => $userAddress->mobile,
+                                    'landmark' => $userAddress->landmark,
+                                    'country_id' => $userAddress->country_id,
+                                    'province_id' => $userAddress->province_id,
+                                    'city_id' => $userAddress->city_id,
+                                    'barangay_id' => $userAddress->barangay_id,
+                                    'lat' => $userAddress->lat,
+                                    'long' => $userAddress->long,
+                                )
+                            );
+                        }
 
                         try {
 

@@ -32,6 +32,7 @@ class OrderController extends Controller
                 'cart.payment',
                 'cart.address',
                 'cart.partnerlocation',
+                'cart.diningTable',
                 'partner',
                 'orderStatus',
                 'status',
@@ -140,7 +141,7 @@ class OrderController extends Controller
         $total_comm = 0;
         $total_net = 0;
         $completedAt = DB::raw('COALESCE(delivered_at, submitted_at)');
-        $query = Orders::with(['cart', 'cart.address', 'partner', 'rider', 'status'])
+        $query = Orders::with(['cart', 'cart.address', 'cart.diningTable', 'partner', 'rider', 'status'])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at')
             ->where('order_status_id', LibraryStatus::STATUS_DELIVERED);

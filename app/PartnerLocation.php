@@ -26,4 +26,14 @@ class PartnerLocation extends Model
     {
         return $this->belongsTo(Partners::class, 'partner_id');
     }
+
+    public function diningTables()
+    {
+        return $this->hasMany(PartnerLocationTable::class, 'partner_location_id');
+    }
+
+    public function checkoutOptions()
+    {
+        return $this->hasMany(PartnerLocationCheckoutOption::class, 'partner_location_id');
+    }
 }

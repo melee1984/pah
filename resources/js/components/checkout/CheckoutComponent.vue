@@ -6,7 +6,29 @@
               <div class="col-lg-8">
                 <div class="card mb-3 checkout-box">
                   <div class="card-body">
-                    <h2 class="mb-3">Delivery Information</h2>
+                    <h2 class="mb-3">Order Information</h2>
+                    <label class="form-label mb-2">How would you like your order?</label>
+                    <div class="row g-2 mb-3">
+                      <div class="col-md-4" v-for="option in fulfillmentOptions" :key="option.value">
+                        <label class="list-group-item h-100" :class="{ active: fulfillmentType === option.value }">
+                          <input class="form-check-input me-2" type="radio" name="fulfillment_type" :value="option.value" v-model="fulfillmentType" @change="selectFulfillment">
+                          <strong>{{ option.label }}</strong>
+                          <small class="d-block">{{ option.description }}</small>
+                        </label>
+                      </div>
+                    </div>
+                    <p class="text-muted" v-if="fulfillmentOptions.length === 0">This branch does not currently offer online checkout.</p>
+                    <div class="mb-3" v-if="fulfillmentType === 'dine_in'">
+                      <label for="diningTable" class="form-label mb-0">Available table</label>
+                      <select id="diningTable" class="form-control" v-model="selectedDiningTableId" @change="saveDiningTable">
+                        <option value="">Select a table</option>
+                        <option v-for="table in availableTables" :key="table.id" :value="table.id">
+                          {{ table.name }} (up to {{ table.capacity }} guests)
+                        </option>
+                      </select>
+                      <small class="text-muted" v-if="loadingTables">Checking available tables…</small>
+                      <small class="text-muted" v-else-if="availableTables.length === 0">No tables are currently available at this location.</small>
+                    </div>
                      <div class="row">
                        <div class="mb-3 col-6">
                           <label for="pickupLocation" class="form-label mb-0">Date</label>
@@ -24,7 +46,7 @@
                         </div>
                      </div>
                     <!-- Address -->
-                    <user-Address v-bind:addresses="customer.addresses" v-bind:selectedaddressid="cart.address_id"  @onDelete="removeAddress" @onUpdateCartAddress="updateCartAddress" @onUpdateCustomer="updateCustomer"></user-Address>
+                    <user-Address v-if="fulfillmentType === 'delivery'" v-bind:addresses="customer.addresses" v-bind:selectedaddressid="cart.address_id"  @onDelete="removeAddress" @onUpdateCartAddress="updateCartAddress" @onUpdateCustomer="updateCustomer"></user-Address>
                     <!-- End of the Address --> 
                   </div>
                 </div>
@@ -139,7 +161,12 @@
               pickup: {
                 date: "",
                 time: "",
-              }, 
+              },
+              fulfillmentType: 'delivery',
+              selectedDiningTableId: '',
+              availableTables: [],
+              loadingTables: false,
+              fulfillmentOptions: [],
               modalSMSInstance: null,
           }
         },
@@ -161,11 +188,17 @@
         },
         computed: {
             formOkay: function () {
-              if (!this.cart.payment_id)  {
+              if (!this.fulfillmentType || this.fulfillmentOptions.length === 0) {
                 return false;
               }
-              else if(!this.cart.address_id) {
+              else if (!this.cart.payment_id)  {
+                return false;
+              }
+              else if(this.fulfillmentType === 'delivery' && !this.cart.address_id) {
                return false;
+              }
+              else if(this.fulfillmentType === 'dine_in' && !this.selectedDiningTableId) {
+                return false;
               }
               else if(!this.pickup.date) {
                 return false;
@@ -227,6 +260,8 @@
                   self.customer = response.data.customer;
                   self.addresses = response.data.customer.addresses;
                   self.cart = response.data.cart;
+                  self.fulfillmentType = self.cart.fulfillment_type || 'delivery';
+                  self.selectedDiningTableId = self.cart.dining_table_id || '';
                   self.summary = response.data.summary;
                   self.payments = response.data.payment;
                   // not sure we have this. but maybe we have that avialable. 
@@ -247,11 +282,13 @@
                   }
                   
                   if (self.cart.delivery_time) {
-                    self.pickup.date = self.cart.delivery_time;
+                    self.pickup.time = self.cart.delivery_time;
                   }
                   else {
                     self.pickup.time = self.timingsArray[0].time; // but default should be now. 
                   }
+
+                  self.fetchCheckoutOptions();
                   
               })
               .catch(function (error) {
@@ -295,6 +332,87 @@
                     toastr.error(errors);
                 }); 
             },
+            selectFulfillment: function() {
+              this.selectedDiningTableId = '';
+
+              if (this.fulfillmentType === 'dine_in') {
+                this.fetchAvailableTables();
+                return;
+              }
+
+              this.updateFulfillment();
+            },
+            fetchCheckoutOptions: function() {
+              if (!this.cart.partner_location_address_id) {
+                this.fulfillmentOptions = [];
+                return;
+              }
+
+              axios.get('/api/merchant-locations/' + this.cart.partner_location_address_id + '/checkout-options')
+                .then((response) => {
+                  this.fulfillmentOptions = (response.data.options || []).map((option) => ({
+                    value: option.type,
+                    label: option.label,
+                    description: option.description,
+                  }));
+
+                  const selectedIsAvailable = this.fulfillmentOptions.some(
+                    (option) => option.value === this.fulfillmentType
+                  );
+
+                  if (!selectedIsAvailable) {
+                    this.fulfillmentType = this.fulfillmentOptions[0]?.value || '';
+                    this.selectedDiningTableId = '';
+
+                    if (this.fulfillmentType && this.fulfillmentType !== 'dine_in') {
+                      this.updateFulfillment();
+                    }
+                  }
+
+                  if (this.fulfillmentType === 'dine_in') {
+                    this.fetchAvailableTables();
+                  }
+                })
+                .catch(() => {
+                  this.fulfillmentOptions = [];
+                  toastr.error('Unable to load checkout options for this branch.');
+                });
+            },
+            fetchAvailableTables: function() {
+              if (!this.cart.partner_location_address_id) {
+                this.availableTables = [];
+                return;
+              }
+
+              this.loadingTables = true;
+              axios.get('/api/merchant-locations/' + this.cart.partner_location_address_id + '/available-tables')
+                .then((response) => {
+                  this.availableTables = response.data.tables || [];
+                })
+                .catch(() => {
+                  this.availableTables = [];
+                  toastr.error('Unable to load available tables.');
+                })
+                .finally(() => {
+                  this.loadingTables = false;
+                });
+            },
+            saveDiningTable: function() {
+              if (this.selectedDiningTableId) {
+                this.updateFulfillment();
+              }
+            },
+            updateFulfillment: function() {
+              axios.post('/api/checkout/fulfillment/update/submit?api_token=' + api_token, {
+                fulfillment_type: this.fulfillmentType,
+                dining_table_id: this.selectedDiningTableId || null,
+              }).then((response) => {
+                this.cart = response.data.cart;
+                this.summary = response.data.summary;
+              }).catch((error) => {
+                toastr.error(error.response?.data?.message || 'Unable to update the order option.');
+              });
+            },
             proceed: function() {
                 let formData = new FormData();
                 formData.append('smsCode', this.smsCode)
@@ -335,4 +453,3 @@
     }
 
 </script>
-

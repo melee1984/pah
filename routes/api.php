@@ -28,6 +28,8 @@ use App\Http\Controllers\Map\DistanceController;
 use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\RegisterController;
 use App\Http\Controllers\Api\Mobile\ResourcesController;
+use App\Http\Controllers\Api\PartnerLocationTableController;
+use App\Http\Controllers\Api\PartnerLocationCheckoutOptionController;
 
 // -------------------------------------------------------------
 // PUBLIC ROUTES
@@ -69,6 +71,8 @@ Route::middleware(['web'])->group(function () {
 // Restaurants
 Route::get('restaurants', [RestaurantPageController::class, 'list']);
 Route::get('flowerstore', [FlowerstorePageController::class, 'list']);
+Route::get('merchant-locations/{partnerLocation}/available-tables', [PartnerLocationTableController::class, 'available']);
+Route::get('merchant-locations/{partnerLocation}/checkout-options', [PartnerLocationCheckoutOptionController::class, 'available']);
 
 // Partner & Register
 Route::post('partner/submit', [PartnerController::class, 'store']);
@@ -97,6 +101,7 @@ Route::group(['middleware' => ['api', 'web']], function () {
     Route::post('checkout/address/update/{userAddress}/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'updateAddress']);
     Route::post('checkout/address/update/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'updateAddressSelected']);
     Route::post('checkout/address/add/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'addAddress']);
+    Route::post('checkout/fulfillment/update/submit', [\App\Http\Controllers\Api\User\Cart\CheckoutController::class, 'updateFulfillment']);
 
     Route::post('checkout/payment/update/submit', [CartController::class, 'updatePaymentGateway']);
     Route::post('checkout/submit', [CartController::class, 'process']);

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Merchant\VariantController as MerchantVariantContro
 use App\Http\Controllers\Api\Merchant\VoucherController as MerchantVoucherController;
 use App\Http\Controllers\Api\Mobile\Store\OrderController as StoreOrderController;
 use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PartnerLocationCheckoutOptionController;
 use App\Http\Controllers\Api\User\AccessController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,7 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
     Route::post('location/submit', [MerchantLocationController::class, 'store']);
     Route::put('location/{location}/submit', [MerchantLocationController::class, 'update']);
     Route::delete('location/{location}/delete', [MerchantLocationController::class, 'destroy']);
+    Route::put('location/{partnerLocation}/checkout-options', [PartnerLocationCheckoutOptionController::class, 'update']);
 
     // Merchant Voucher
     Route::get('voucher/list', [MerchantVoucherController::class, 'getList']);

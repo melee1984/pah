@@ -43,6 +43,7 @@ class OrderController extends Controller
 			$order->cart->address;
 			$order->cart->payment;
 			$order->cart->partnerlocation;
+			$order->cart->diningTable;
 			$product_items = $order->cart->cartItemList();    
 			$order->cart_total = $order->cart->cartItemTotal();
 			
@@ -83,6 +84,7 @@ class OrderController extends Controller
 			$order->cart->address;
 			$order->cart->payment;
 			$order->cart->partnerlocation;
+			$order->cart->diningTable;
 			$product_items = $order->cart->cartItemList();    
 			$order->cart_total = $order->cart->cartItemTotal();
 			foreach($product_items as $list) {
@@ -125,6 +127,7 @@ class OrderController extends Controller
 			$order->cart->address;
 			$order->cart->payment;
 			$order->cart->partnerlocation;
+			$order->cart->diningTable;
 			$product_items = $order->cart->cartItemList();    
 			$order->cart_total = $order->cart->cartItemTotal();
 			foreach($product_items as $list) {
@@ -167,6 +170,7 @@ class OrderController extends Controller
 					
 		
 		foreach($orders as $order) {
+			$order->cart->diningTable;
 
 			if (!$order->cart->option_id) {
 				$order->summary = $order->cart->cartItemSummary();
@@ -348,17 +352,19 @@ class OrderController extends Controller
 
         $riderDeliveryReference = null;
         $pickupCode = null;
-        try {
-            $dispatcher = app(RiderOfferDispatcher::class);
-            $riderDeliveryReference = $dispatcher->dispatchOrder($result['order']);
-            if ($riderDeliveryReference) {
-                $pickupCode = $dispatcher->pickupCode((int) $result['order']->id);
+        if ($result['order']->cart->requiresDelivery()) {
+            try {
+                $dispatcher = app(RiderOfferDispatcher::class);
+                $riderDeliveryReference = $dispatcher->dispatchOrder($result['order']);
+                if ($riderDeliveryReference) {
+                    $pickupCode = $dispatcher->pickupCode((int) $result['order']->id);
+                }
+            } catch (\Throwable $exception) {
+                Log::error('Order accepted, but rider dispatch failed.', [
+                    'order_id' => $result['order']->id,
+                    'exception' => $exception->getMessage(),
+                ]);
             }
-        } catch (\Throwable $exception) {
-            Log::error('Order accepted, but rider dispatch failed.', [
-                'order_id' => $result['order']->id,
-                'exception' => $exception->getMessage(),
-            ]);
         }
 
         if (! $result['already_accepted']) {

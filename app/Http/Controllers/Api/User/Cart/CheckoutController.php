@@ -14,6 +14,9 @@ use App\Model\User\UserAddress;
 
 use App\Model\Cart;
 use App\Coupon;
+use App\PartnerLocationTable;
+use App\PartnerLocationCheckoutOption;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
@@ -122,6 +125,81 @@ class CheckoutController extends Controller
 			'addresses' => $address ? $userAddress : null,
 		], 200);
 	}
+
+    public function updateFulfillment(Request $request)
+    {
+        $validated = $request->validate([
+            'fulfillment_type' => ['required', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'dining_table_id' => ['nullable', 'integer'],
+        ]);
+
+        $cart = Cart::query()
+            ->whereSessionId(Session::getId())
+            ->whereUserId(Auth::id())
+            ->first();
+
+        if (! $cart) {
+            return response()->json(['status' => 0, 'message' => 'Cart not found.'], 404);
+        }
+
+        if (! $cart->partner_location_address_id
+            || ! PartnerLocationCheckoutOption::enabledForLocation(
+                (int) $cart->partner_location_address_id,
+                $validated['fulfillment_type']
+            )) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'This checkout option is not available at the selected merchant location.',
+            ], 422);
+        }
+
+        $table = null;
+        if ($validated['fulfillment_type'] === Cart::FULFILLMENT_DINE_IN) {
+            if (! isset($validated['dining_table_id'])) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Please select an available table for dine-in.',
+                    'errors' => ['dining_table_id' => ['A dining table is required for dine-in.']],
+                ], 422);
+            }
+
+            $table = PartnerLocationTable::query()
+                ->whereKey($validated['dining_table_id'])
+                ->where('partner_location_id', $cart->partner_location_address_id)
+                ->where('active', true)
+                ->where('is_available', true)
+                ->first();
+
+            if (! $table) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected table is not available at this merchant location.',
+                ], 422);
+            }
+        }
+
+        $cart->fulfillment_type = $validated['fulfillment_type'];
+        $cart->dining_table_id = $table?->id;
+        $cart->save();
+
+        if ($cart->requiresDelivery()) {
+            $cart->deliveryRate($cart->partner_location_address_id);
+        } else {
+            $cart->delivery_fee = 0;
+            $cart->distance_rate = 0;
+            $cart->duration = null;
+            $cart->origin = null;
+            $cart->destination = null;
+            $cart->save();
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Order option updated.',
+            'cart' => $cart->fresh(['diningTable']),
+            'summary' => $cart->fresh()->cartItemSummary(),
+        ]);
+    }
 
     /**
      * [updateAddress description]

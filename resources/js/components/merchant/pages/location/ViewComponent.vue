@@ -13,11 +13,12 @@
       </div>
       <div class="card-body table-responsive p-0">
         <table class="table dashboard-data-table merchant-settings-table merchant-location-table">
-          <thead><tr><th>Branch</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
+          <thead><tr><th>Branch</th><th>Checkout options</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
           <tbody>
-            <tr v-if="searchFilter.length === 0"><td colspan="5" class="dashboard-table-empty">{{ search ? 'No branches match your search.' : 'No store branches have been added yet.' }}</td></tr>
+            <tr v-if="searchFilter.length === 0"><td colspan="6" class="dashboard-table-empty">{{ search ? 'No branches match your search.' : 'No store branches have been added yet.' }}</td></tr>
             <tr v-for="location in searchFilter" :key="location.id" class="merchant-settings-row" @click="editAction(location)">
               <td><strong>{{ location.address_1 }}</strong><small>{{ [location.address_2, location.city, location.zip_code].filter(Boolean).join(', ') || 'No additional address details' }}</small></td>
+              <td><span v-for="option in enabledCheckoutOptions(location)" :key="option.type" class="merchant-option-badge">{{ option.label }}</span><small v-if="enabledCheckoutOptions(location).length === 0">None enabled</small></td>
               <td>{{ location.telephone || '—' }}</td>
               <td>{{ location.mobile || '—' }}</td>
               <td><strong>{{ location.latitude || '—' }}</strong><small>Lat · {{ location.longtitude || '—' }} Long</small></td>
@@ -41,9 +42,19 @@
           <button v-if="actionStatus === 'edit'" type="button" class="btn merchant-danger-button" @click="onDelete"><i class="fas fa-trash-alt mr-2"></i>Delete</button>
         </div>
         <form class="merchant-settings-form" @submit.prevent="onSubmit">
+          <div v-if="errors.length" class="alert alert-danger" role="alert"><div v-for="error in errors" :key="error">{{ error }}</div></div>
           <div class="merchant-toggle-panel">
             <div><strong>Branch availability</strong><small>Active branches can receive customer orders.</small></div>
             <label class="merchant-toggle" for="active"><input id="active" v-model="field.active" type="checkbox"><span><i></i></span><strong>{{ field.active ? 'Active' : 'Hidden' }}</strong></label>
+          </div>
+          <div class="merchant-checkout-options">
+            <div><strong>Checkout options</strong><small>Select at least one option customers can use at this branch.</small></div>
+            <div class="merchant-checkout-option-grid">
+              <label v-for="option in checkoutOptionChoices" :key="option.type" class="merchant-checkout-option" :class="{ selected: field.checkout_options.includes(option.type) }">
+                <input v-model="field.checkout_options" type="checkbox" :value="option.type">
+                <span><strong>{{ option.label }}</strong><small>{{ option.description }}</small></span>
+              </label>
+            </div>
           </div>
           <div class="merchant-form-grid">
             <div class="form-group merchant-form-span"><label for="address_1">Address line 1</label><input id="address_1" v-model.trim="field.address_1" type="text" class="form-control" placeholder="Street, building, or unit"></div>
@@ -102,6 +113,7 @@ const emptyLocation = () => ({
   telephone: '',
   latitude: '',
   longtitude: '',
+  checkout_options: ['delivery'],
 });
 
      export default {
@@ -120,6 +132,11 @@ const emptyLocation = () => ({
                 locationMarker: null,
                 isLocating: false,
                 locationMessage: 'Choose a point on the map or use your device location.',
+                checkoutOptionChoices: [
+                  { type: 'delivery', label: 'Delivery', description: 'Deliver orders to customers' },
+                  { type: 'pickup', label: 'Pickup', description: 'Customers collect their order' },
+                  { type: 'dine_in', label: 'Dine in', description: 'Customers select an available table' },
+                ],
             }
         },
         mounted() {
@@ -175,8 +192,20 @@ const emptyLocation = () => ({
             }
           },
           editAction: function(location) {
-            this.field = { ...location };
+            this.field = {
+              ...location,
+              checkout_options: (location.checkout_options || [])
+                .filter(option => option.active)
+                .map(option => option.type),
+            };
             this.action('edit');
+          },
+          enabledCheckoutOptions: function(location) {
+            const enabledTypes = (location.checkout_options || [])
+              .filter(option => option.active)
+              .map(option => option.type);
+
+            return this.checkoutOptionChoices.filter(option => enabledTypes.includes(option.type));
           },
           cancel: function() {
             this.action('view');
@@ -393,6 +422,7 @@ const emptyLocation = () => ({
                         latitude: this.field.latitude,
                         longtitude: this.field.longtitude,
                         active: this.field.active,
+                        checkout_options: this.field.checkout_options,
 
                       }).then((response) => {
                         if (response.data.status) {
@@ -420,6 +450,7 @@ const emptyLocation = () => ({
                         latitude: this.field.latitude,
                         longtitude: this.field.longtitude,
                         active: this.field.active,
+                        checkout_options: this.field.checkout_options,
 
                     }).then((response) => {
                       if (response.data.status) {
@@ -486,6 +517,9 @@ const emptyLocation = () => ({
                   this.errors.push("A valid longitude is required.");
                   $('#longtitude').addClass('is-invalid ding');
                 }
+                if (!Array.isArray(this.field.checkout_options) || this.field.checkout_options.length === 0) {
+                  this.errors.push("Select at least one checkout option.");
+                }
               
                 if (!this.errors.length) {
                   return true;
@@ -511,6 +545,65 @@ const emptyLocation = () => ({
   border: 1px solid #e5dfd9;
   border-radius: 12px;
   padding: 16px;
+}
+
+.merchant-checkout-options {
+  background: #faf9f7;
+  border: 1px solid #e5dfd9;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+}
+
+.merchant-checkout-options > div:first-child strong,
+.merchant-checkout-options > div:first-child small,
+.merchant-checkout-option strong,
+.merchant-checkout-option small {
+  display: block;
+}
+
+.merchant-checkout-options > div:first-child small,
+.merchant-checkout-option small {
+  color: #697277;
+  font-size: 11px;
+}
+
+.merchant-checkout-option-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.merchant-checkout-option {
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #ddd5ce;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+}
+
+.merchant-checkout-option.selected {
+  border-color: #d5322f;
+  box-shadow: 0 0 0 1px #d5322f;
+}
+
+.merchant-checkout-option input {
+  margin-top: 4px;
+}
+
+.merchant-option-badge {
+  background: #f4eeea;
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  margin: 2px 4px 2px 0;
+  padding: 4px 8px;
 }
 
 .merchant-location-picker-header {

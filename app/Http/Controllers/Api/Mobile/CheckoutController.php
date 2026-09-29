@@ -31,6 +31,9 @@ use URL;
 
 use App\PushNotification;
 use App\Events\SendPushNotificationEvent;
+use App\PartnerLocationTable;
+use App\PartnerLocationCheckoutOption;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {	
@@ -64,6 +67,7 @@ class CheckoutController extends Controller
             }
             
             $cart->partnerlocation;
+            $cart->diningTable;
             $cart->payment;
 
             try {
@@ -191,8 +195,10 @@ class CheckoutController extends Controller
             'session_id' => 'required|string',
             'deliveryDate'=>'required',
             'deliveryTime'=>'required',
-            'deliveryAddressId' => 'required|integer',
+            'deliveryAddressId' => 'nullable|integer',
             'deliveryPaymentId' => 'required|integer',
+            'fulfillment_type' => ['sometimes', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'dining_table_id' => ['nullable', 'integer'],
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -216,12 +222,28 @@ class CheckoutController extends Controller
         $cart = Cart::whereSessionId($session_id)
                         ->whereUserId($user->id)->first();
 
-        $cart->payment;
-
         if (!$cart) {
             return response()->json([
                 'status' => 0,
                 'message' => 'Cart not found for this user and session.',
+            ], 200);
+        }
+
+        $cart->payment;
+
+        $fulfillmentType = $request->input(
+            'fulfillment_type',
+            $cart->fulfillment_type ?: Cart::FULFILLMENT_DELIVERY
+        );
+
+        if (! $cart->partner_location_address_id
+            || ! PartnerLocationCheckoutOption::enabledForLocation(
+                (int) $cart->partner_location_address_id,
+                $fulfillmentType
+            )) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'This checkout option is not available at the selected merchant location.',
             ], 200);
         }
 
@@ -238,16 +260,36 @@ class CheckoutController extends Controller
 
         \Log::info('checkout input data: ' . json_encode($request->all()));
 
-        $userAddress = UserAddress::where('id', $request->input('deliveryAddressId'))
-            ->whereUserId($user->id)
-            ->where('active', 1)
-            ->first();
+        $userAddress = null;
+        if ($fulfillmentType === Cart::FULFILLMENT_DELIVERY) {
+            $userAddress = UserAddress::where('id', $request->input('deliveryAddressId'))
+                ->whereUserId($user->id)
+                ->where('active', 1)
+                ->first();
 
-        if (!$userAddress) {
-            return response()->json([
-                'status' => 0,
-                'message' => 'The selected delivery address is invalid.',
-            ], 200);
+            if (!$userAddress) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected delivery address is invalid.',
+                ], 200);
+            }
+        }
+
+        $diningTable = null;
+        if ($fulfillmentType === Cart::FULFILLMENT_DINE_IN) {
+            $diningTable = PartnerLocationTable::query()
+                ->whereKey($request->input('dining_table_id'))
+                ->where('partner_location_id', $cart->partner_location_address_id)
+                ->where('active', true)
+                ->where('is_available', true)
+                ->first();
+
+            if (! $diningTable) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected table is not available at this merchant location.',
+                ], 200);
+            }
         }
 
         $paymentMethod = PaymentMethod::where('id', $request->input('deliveryPaymentId'))
@@ -281,8 +323,18 @@ class CheckoutController extends Controller
                 $cart->email = $user->email;
                 $cart->delivery_date = $deliveryDate;
                 $cart->delivery_time = $request->input('deliveryTime');
-                $cart->address_id = $request->input('deliveryAddressId'); // address of the user  
+                $cart->address_id = $userAddress?->id;
                 $cart->payment_id = $request->input('deliveryPaymentId');
+                $cart->fulfillment_type = $fulfillmentType;
+                $cart->dining_table_id = $diningTable?->id;
+
+                if ($fulfillmentType !== Cart::FULFILLMENT_DELIVERY) {
+                    $cart->delivery_fee = 0;
+                    $cart->distance_rate = 0;
+                    $cart->duration = null;
+                    $cart->origin = null;
+                    $cart->destination = null;
+                }
 
                 $cart->order_no = $cart->generateOrderNo();
                 $cart->sms_code = "";
@@ -294,27 +346,27 @@ class CheckoutController extends Controller
 
                     $cart_id = $cart->id;
 
-                    // copy selected address 
-                    $cartUserAddress = CartUserAddress::updateOrCreate([
-                        'cart_id' => $cart_id, 
-                        'user_id' => $cart->user_id,],
-                        array(
-                                'cart_id' => $cart_id, 
-                                'user_id' => $cart->user_id, 
-                                'title' => $userAddress->title ?? null, 
-                                'address_1' => $userAddress->address_1 ?? null,  
-                                'address_2' => $userAddress->address_2 ?? null,  
-                                'zip_code' => $userAddress->zip_code ?? null,  
-                                'mobile' => $userAddress->mobile ?? null,  
-                                'landmark' => $userAddress->landmark ?? null,   
-                                'country_id'=> $userAddress->country_id ?? null,   
-                                'province_id'=> $userAddress->province_id ?? null,   
-                                'city_id' => $userAddress->city_id ?? null,  
-                                'barangay_id'=> $userAddress->barangay_id ?? null,   
-                                'lat' => $userAddress->lat ?? null,  
-                                'long' => $userAddress->long ?? null,  
-                        )
-                    );
+                    if ($userAddress) {
+                        CartUserAddress::updateOrCreate([
+                            'cart_id' => $cart_id,
+                            'user_id' => $cart->user_id,
+                        ], [
+                            'cart_id' => $cart_id,
+                            'user_id' => $cart->user_id,
+                            'title' => $userAddress->title,
+                            'address_1' => $userAddress->address_1,
+                            'address_2' => $userAddress->address_2,
+                            'zip_code' => $userAddress->zip_code,
+                            'mobile' => $userAddress->mobile,
+                            'landmark' => $userAddress->landmark,
+                            'country_id'=> $userAddress->country_id,
+                            'province_id'=> $userAddress->province_id,
+                            'city_id' => $userAddress->city_id,
+                            'barangay_id'=> $userAddress->barangay_id,
+                            'lat' => $userAddress->lat,
+                            'long' => $userAddress->long,
+                        ]);
+                    }
 
                     try {
                         

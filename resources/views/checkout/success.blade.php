@@ -7,11 +7,23 @@
 	  <h1 class="display-4">Thank You!</h1>
 	  <p class="lead">You have successfully placed your order.</p>
 	  <hr class="my-4">
-	  <h4 class="text-danger">Your Food is on the way now</h4><br>
+	  <h4 class="text-danger">
+	    @if($cart->requiresDelivery())
+	      Your food is on the way
+	    @elseif($cart->fulfillment_type === \App\Model\Cart::FULFILLMENT_DINE_IN)
+	      Your dine-in order is confirmed
+	    @else
+	      Your pickup order is confirmed
+	    @endif
+	  </h4><br>
 	  Order No: <a class="" href="{{ route('profile.orders.view', $cart) }}" role="button">{{ $cart->order_no }}</a> <br>
 
 	  Restaurant: <a href="{{ route('restaurant.view', $cart->partner) }}">{{ $cart->partner->restaurant_name }} - {{ $cart->partnerlocation?$cart->partnerlocation->address_1:''}}</a> <br>
-	  Delivery Date: {{ $cart->delivery_date }} @ {{ $cart->delivery_time }} <br>
+	  Order Option: {{ \Illuminate\Support\Str::headline($cart->fulfillment_type ?: 'delivery') }} <br>
+	  @if($cart->fulfillment_type === \App\Model\Cart::FULFILLMENT_DINE_IN && $cart->diningTable)
+	  Table: {{ $cart->diningTable->name }} (up to {{ $cart->diningTable->capacity }} guests) <br>
+	  @endif
+	  Date: {{ $cart->delivery_date }} @ {{ $cart->delivery_time }} <br>
 	  Amount: {{ $cart->cartItemSummary()['total'] }} <br>
 	  Payment: {{ $cart->payment->title }} <br>
 	  @if ($cart->duration)
@@ -29,5 +41,3 @@
 </div>
 
 @endsection
-
-
