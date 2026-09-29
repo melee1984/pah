@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Merchant;
 
 use App\Http\Controllers\Controller;
+use App\Services\MerchantSetupChecklist;
 use Illuminate\Http\Request;
 use Auth;
 use DB;
@@ -118,9 +119,15 @@ class DashboardController extends Controller
      * Index Dashboard Page 
      * @return [type] [description]
      */
-    public function index() 
+    public function index(MerchantSetupChecklist $setupChecklist)
     {
-     	return view('merchant.pages.dashboard');
+        $merchant = Auth::user()->merchant;
+
+        abort_unless($merchant, 404);
+
+        return view('merchant.pages.dashboard', [
+            'merchantSetup' => $setupChecklist->for($merchant),
+        ]);
     }
 
     public function help()
