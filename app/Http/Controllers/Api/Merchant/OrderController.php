@@ -136,6 +136,8 @@ class OrderController extends Controller
         $totalSummary = array();
         $qty =0;
         $fee =0;
+        $convenienceFee = 0;
+        $vat = 0;
         $sub_total =0;
         $total =0;
         $discount =0;
@@ -198,6 +200,8 @@ class OrderController extends Controller
 
             $qty+= (int)$summary['qty'];
             $fee += $number($summary['delivery_fee']);
+            $convenienceFee += $number($summary['convenience_fee']);
+            $vat += $number($summary['vat_amount']);
             $sub_total += $number($summary['sub_total']);
             $total += $number($summary['total']);
             $discount += $number($summary['discount']);
@@ -210,6 +214,8 @@ class OrderController extends Controller
 
         $totalSummary['qty'] = $qty;
         $totalSummary['fee'] = number_format($fee,2);
+        $totalSummary['convenience_fee'] = number_format($convenienceFee, 2);
+        $totalSummary['vat_amount'] = number_format($vat, 2);
         $totalSummary['discount'] = number_format($discount,2);
         $totalSummary['sub_total'] = number_format($sub_total,2);
         $totalSummary['total'] = number_format($total,2);

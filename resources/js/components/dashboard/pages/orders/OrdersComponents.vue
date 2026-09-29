@@ -70,6 +70,8 @@
                     <th>Order Information</th>
                     <th>Qty</th>
                     <th nowrap="">Sub Total</th>
+                    <th nowrap="">Convenience Fee</th>
+                    <th nowrap="">VAT</th>
                     <th nowrap="">Discount</th>
                     <th v-if="activeFulfillment === 'delivery'" nowrap="">Delivery Fee</th>
                     <th>Total</th>
@@ -102,6 +104,8 @@
                     </td>
                     <td width="5%">{{ order.summary.qty }}</td>
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.convenience_fee || '0.00' }}</span></td>
+                    <td width="5%"><span class="dashboard-money">₱{{ order.summary.vat_amount || '0.00' }}</span></td>
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
                     <td v-if="activeFulfillment === 'delivery'" width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
                     <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
@@ -135,7 +139,7 @@
                     </td>
                   </tr>
                   <tr v-if="displayedOrders.length === 0">
-                    <td :colspan="activeFulfillment === 'delivery' ? 10 : 7" class="dashboard-table-empty">
+                    <td :colspan="activeFulfillment === 'delivery' ? 12 : 9" class="dashboard-table-empty">
                       No {{ activeListLabel.toLowerCase() }} {{ fulfillmentLabel(activeFulfillment).toLowerCase() }} orders found.
                     </td>
                   </tr>
