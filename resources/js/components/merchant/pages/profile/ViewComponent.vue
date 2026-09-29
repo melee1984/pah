@@ -92,6 +92,7 @@
         },
         mounted() {
             this.fetchData();
+            this.openRequestedTab();
         },
         computed: {
           searchFilter: function() {
@@ -99,6 +100,17 @@
           }
         },
         methods: {
+        openRequestedTab: function() {
+            const allowedTabs = ['#profile-image', '#profile-banner', '#profile-tags'];
+
+            if (!allowedTabs.includes(window.location.hash)) return;
+
+            this.$nextTick(function() {
+              const tab = document.querySelector(`a[href="${window.location.hash}"]`);
+
+              if (tab && window.jQuery) window.jQuery(tab).tab('show');
+            });
+        },
         fetchData: function() {
             var self = this;
             axios.get('/api/merchant/profile').then(function (response) {

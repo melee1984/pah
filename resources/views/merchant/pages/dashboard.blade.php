@@ -11,6 +11,7 @@
     </div></section>
     <section class="content">
       <div class="container-fluid">
+        @include('merchant.partials.setup-banner')
         <order-summary-view></order-summary-view>
         <div class="admin-section-heading"><div><span class="admin-eyebrow">Live operations</span><h2>Recent and incoming orders</h2></div><p>Order activity refreshes automatically.</p></div>
         <order-listing-view></order-listing-view>

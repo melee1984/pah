@@ -15,6 +15,7 @@ use App\Mail\RestaurantInvitationMail;
 use App\Model\Cart;
 use App\Model\CartItem;
 use App\Model\Orders\Orders;
+use App\PartnerPromotion;
 use App\Partners;
 use App\RestaurantEnrollmentDocument;
 use App\User;
@@ -49,6 +50,8 @@ class AgentPortalTest extends TestCase
             $table->string('city')->nullable();
             $table->string('slug')->nullable();
             $table->text('search_string')->nullable();
+            $table->string('img')->nullable();
+            $table->string('banner')->nullable();
             $table->decimal('percentage', 5, 2)->nullable();
             $table->boolean('active')->default(false);
             $table->unsignedInteger('account_type_id')->nullable();
@@ -64,6 +67,15 @@ class AgentPortalTest extends TestCase
             $table->timestamp('verified_at')->nullable();
             $table->unsignedBigInteger('verified_by')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->string('title');
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('partner_location', function (Blueprint $table) {
@@ -599,6 +611,73 @@ class AgentPortalTest extends TestCase
             ->assertOk()
             ->assertSee('Merchant documentation')
             ->assertSee(route('merchant.help'));
+    }
+
+    public function test_merchant_dashboard_guides_an_incomplete_store_through_setup(): void
+    {
+        $contact = User::query()->forceCreate([
+            'name' => 'New Merchant',
+            'email' => 'new-merchant@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $restaurant = $this->restaurant($this->agent(), 'New Merchant Cafe', 'new-merchant@example.com');
+        $restaurant->forceFill(['user_id' => $contact->id, 'application_status' => 'pending_review'])->save();
+
+        $this->actingAs($contact)
+            ->get(route('merchant.dashboard.index'))
+            ->assertOk()
+            ->assertSee('Finish setting up your store')
+            ->assertSee('<strong>0</strong> of 5 complete', false)
+            ->assertSee('Upload your logo')
+            ->assertSee('Upload your main banner')
+            ->assertSee('Add a promotional banner')
+            ->assertSee('Add your first products')
+            ->assertSee('Complete your application and documents')
+            ->assertSee(route('merchant.dashboard.settings').'#profile-banner', false)
+            ->assertSee(route('merchant.dashboard.product', ['setup' => 'add-product']), false)
+            ->assertSee(route('merchant.application.show'), false);
+    }
+
+    public function test_merchant_setup_banner_disappears_after_every_step_is_submitted(): void
+    {
+        Storage::fake('local');
+
+        $contact = User::query()->forceCreate([
+            'name' => 'Ready Merchant',
+            'email' => 'ready-merchant@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $restaurant = $this->restaurant($this->agent(), 'Ready Merchant Cafe', 'ready-merchant@example.com');
+        $restaurant->forceFill([
+            'user_id' => $contact->id,
+            'img' => 'logo.png',
+            'banner' => 'banner.jpg',
+            'application_status' => 'pending_review',
+        ])->save();
+
+        foreach (RestaurantEnrollmentDocument::REQUIRED_TYPES as $type) {
+            $path = 'restaurant-enrollment/'.$restaurant->id.'/'.$type.'.pdf';
+            Storage::disk('local')->put($path, 'document');
+            $restaurant->enrollmentDocuments()->create([
+                'document_type' => $type,
+                'file_path' => $path,
+                'original_name' => $type.'.pdf',
+                'status' => 'pending_verification',
+            ]);
+        }
+
+        PartnerPromotion::query()->create([
+            'partner_id' => $restaurant->id,
+            'name' => 'Opening offer',
+            'image_path' => 'uploads/promotions/opening-offer.jpg',
+            'approval_status' => PartnerPromotion::APPROVAL_PENDING,
+        ]);
+        $restaurant->products()->create(['title' => 'House specialty']);
+
+        $this->actingAs($contact)
+            ->get(route('merchant.dashboard.index'))
+            ->assertOk()
+            ->assertDontSee('Finish setting up your store');
     }
 
     public function test_agent_can_view_and_update_only_their_restaurant_application(): void
