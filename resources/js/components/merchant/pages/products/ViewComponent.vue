@@ -204,6 +204,10 @@ export default {
   },
   mounted() {
     this.fetchData(1);
+
+    if (new URLSearchParams(window.location.search).get('setup') === 'add-product') {
+      this.actionProduct('add');
+    }
   },
   computed: {
     filteredList() {
