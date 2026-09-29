@@ -88,6 +88,7 @@ class CheckoutController extends Controller
 
         $data['summary'] = $cart_summary;
         $data['customer'] = $user;
+        $data['partner_order_options'] = $cart->partnerlocation->checkoutOptions ?? [];
         $data['cart'] = $cart;
         $data['payment'] = PaymentMethod::active();
         $data['delivery_time'] = $delivery_timings;
