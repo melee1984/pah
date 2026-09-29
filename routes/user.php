@@ -61,6 +61,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('cart/{cartItem}/action/{status?}/submit', [MobileCartController::class, 'modifyCartItem']);
 
             Route::post('checkout/submit', [MobileCheckoutController::class, 'process']);
+            Route::post('checkout/order-option/update/submit', [MobileCheckoutController::class, 'updateOrderOption']);
             Route::post('shopping-cart', [MobileCartController::class, 'getCart']);
             Route::get('checkout', [MobileCheckoutController::class, 'checkout']);
 

@@ -456,6 +456,105 @@ class CheckoutController extends Controller
         return response()->json($data, 200);
     }
 
+    public function updateOrderOption(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'session_id' => ['required', 'string'],
+            'partnerOrderOptionId' => ['required', 'integer'],
+            'deliveryAddressId' => ['nullable', 'integer'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 0,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 200);
+        }
+
+        $user = $request->user();
+        $cart = Cart::query()
+            ->whereSessionId($request->input('session_id'))
+            ->whereUserId($user->id)
+            ->first();
+
+        if (! $cart) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Cart not found for this user and session.',
+            ], 200);
+        }
+
+        $checkoutOption = PartnerLocationCheckoutOption::query()
+            ->whereKey($request->integer('partnerOrderOptionId'))
+            ->where('partner_location_id', $cart->partner_location_address_id)
+            ->where('active', true)
+            ->first();
+
+        if (! $checkoutOption) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'The selected checkout option is invalid.',
+            ], 200);
+        }
+
+        $userAddress = null;
+        if ($checkoutOption->type === Cart::FULFILLMENT_DELIVERY) {
+            $userAddress = UserAddress::query()
+                ->whereKey($request->input('deliveryAddressId'))
+                ->whereUserId($user->id)
+                ->where('active', true)
+                ->first();
+
+            if (! $userAddress) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Please select a valid delivery address.',
+                    'errors' => [
+                        'deliveryAddressId' => ['A delivery address is required for delivery.'],
+                    ],
+                ], 200);
+            }
+        }
+
+        $cart->fulfillment_type = $checkoutOption->type;
+        $cart->dining_table_id = null;
+
+        if ($userAddress) {
+            $cart->address_id = $userAddress->id;
+            $cart->user_lat = $userAddress->lat;
+            $cart->user_long = $userAddress->long;
+        }
+
+        $cart->save();
+
+        if ($cart->requiresDelivery()) {
+            if (! $cart->deliveryRate($cart->partner_location_address_id)) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Unable to calculate the delivery fee. Please try again.',
+                ], 200);
+            }
+        } else {
+            $cart->delivery_fee = 0;
+            $cart->distance_rate = 0;
+            $cart->duration = null;
+            $cart->origin = null;
+            $cart->destination = null;
+            $cart->save();
+        }
+
+        $cart = $cart->fresh(['diningTable']);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Order option updated.',
+            'partner_order_option' => $checkoutOption,
+            'cart' => $cart,
+            'summary' => $cart->cartItemSummary(),
+        ], 200);
+    }
+
     public function smsSending(Request $request) {
 
         $session_id = $request->input('session_id');
