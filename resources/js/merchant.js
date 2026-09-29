@@ -32,6 +32,7 @@ import productsEditForm from '@/components/merchant/pages/products/EditComponent
 // Categories, Locations, Vouchers
 import CategoryViewForm from '@/components/merchant/pages/category/ViewComponent.vue';
 import LocationViewForm from '@/components/merchant/pages/location/ViewComponent.vue';
+import TablesViewForm from '@/components/merchant/pages/tables/ViewComponent.vue';
 import VoucherViewForm from '@/components/merchant/pages/voucher/ViewComponent.vue';
 
 // Orders & Summary
@@ -66,6 +67,7 @@ Vue.component('order-listing-view', OrderListing);
 // Category 
 Vue.component('merchant-category-view', CategoryViewForm);
 Vue.component('merchant-location-view', LocationViewForm);
+Vue.component('merchant-tables-view', TablesViewForm);
 Vue.component('merchant-voucher-view', VoucherViewForm);
 Vue.component('merchant-profile-view', ProfileViewForm);
 Vue.component('order-summary-view', OrderSummary);
@@ -83,5 +85,4 @@ Vue.component('today-report', TodayReport);
 const app = new Vue({
     el: '#app',
 });
-
 

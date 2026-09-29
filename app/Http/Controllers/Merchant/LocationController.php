@@ -15,4 +15,9 @@ class LocationController extends Controller
     {	
 		return view('merchant.pages.location.view');        
     }
+
+    public function tables()
+    {
+        return view('merchant.pages.tables.view');
+    }
 }

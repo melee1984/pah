@@ -314,6 +314,7 @@ Route::middleware('merchant')->group(function () {
 
     // Settings
     Route::get('merchant/location', [\App\Http\Controllers\Merchant\LocationController::class, 'index'])->name('merchant.dashboard.location');
+    Route::get('merchant/tables', [\App\Http\Controllers\Merchant\LocationController::class, 'tables'])->name('merchant.dashboard.tables');
     Route::get('merchant/category', [\App\Http\Controllers\Merchant\CategoryController::class, 'index'])->name('merchant.dashboard.category');
     Route::get('merchant/settings', [\App\Http\Controllers\Merchant\SettingsController::class, 'index'])->name('merchant.dashboard.settings');
     Route::get('merchant/voucher', [\App\Http\Controllers\Merchant\VoucherController::class, 'index'])->name('merchant.dashboard.voucher');

@@ -34,6 +34,11 @@
     </a>
   </li>
   <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.tables') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.tables') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-chair"></i><p>Manage Tables</p>
+    </a>
+  </li>
+  <li class="nav-item">
     <a href="{{ route('merchant.dashboard.category') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.category') ? 'active' : '' }}">
       <i class="nav-icon fas fa-layer-group"></i><p>Category</p>
     </a>

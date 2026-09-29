@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Merchant\CategoryController as MerchantCategoryController;
+use App\Http\Controllers\Api\Merchant\DiningTableController as MerchantDiningTableController;
 use App\Http\Controllers\Api\Merchant\ItemController as MerchantItemController;
 use App\Http\Controllers\Api\Merchant\LocationController as MerchantLocationController;
 use App\Http\Controllers\Api\Merchant\OrderController as MerchantOrderController;
@@ -57,6 +58,10 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
     Route::put('location/{location}/submit', [MerchantLocationController::class, 'update']);
     Route::delete('location/{location}/delete', [MerchantLocationController::class, 'destroy']);
     Route::put('location/{partnerLocation}/checkout-options', [PartnerLocationCheckoutOptionController::class, 'update']);
+    Route::get('location/{partnerLocation}/tables', [MerchantDiningTableController::class, 'index']);
+    Route::post('location/{partnerLocation}/tables', [MerchantDiningTableController::class, 'store']);
+    Route::put('location/{partnerLocation}/tables/{diningTable}', [MerchantDiningTableController::class, 'update']);
+    Route::delete('location/{partnerLocation}/tables/{diningTable}', [MerchantDiningTableController::class, 'destroy']);
 
     // Merchant Voucher
     Route::get('voucher/list', [MerchantVoucherController::class, 'getList']);

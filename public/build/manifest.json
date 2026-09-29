@@ -75,7 +75,7 @@
     ]
   },
   "resources/js/merchant.js": {
-    "file": "assets/merchant-BsVkrXVG.js",
+    "file": "assets/merchant-CTaSLa9c.js",
     "name": "merchant",
     "src": "resources/js/merchant.js",
     "isEntry": true,
@@ -87,7 +87,7 @@
       "node_modules/leaflet/dist/leaflet-src.esm.js"
     ],
     "css": [
-      "assets/merchant-C1dHVyrT.css",
+      "assets/merchant-CvB0nm7F.css",
       "assets/order-details-DVCcvjvv.css"
     ]
   },

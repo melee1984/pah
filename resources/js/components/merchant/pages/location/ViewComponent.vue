@@ -18,7 +18,7 @@
             <tr v-if="searchFilter.length === 0"><td colspan="6" class="dashboard-table-empty">{{ search ? 'No branches match your search.' : 'No store branches have been added yet.' }}</td></tr>
             <tr v-for="location in searchFilter" :key="location.id" class="merchant-settings-row" @click="editAction(location)">
               <td><strong>{{ location.address_1 }}</strong><small>{{ [location.address_2, location.city, location.zip_code].filter(Boolean).join(', ') || 'No additional address details' }}</small></td>
-              <td><span v-for="option in enabledCheckoutOptions(location)" :key="option.type" class="merchant-option-badge">{{ option.label }}</span><small v-if="enabledCheckoutOptions(location).length === 0">None enabled</small></td>
+              <td><span v-for="option in enabledCheckoutOptions(location)" :key="option.type" class="merchant-option-badge">{{ option.label }}</span><small v-if="enabledCheckoutOptions(location).length === 0">None enabled</small><small v-else-if="enabledCheckoutOptions(location).some(option => option.type === 'dine_in')">{{ (location.dining_tables || []).length }} dining {{ (location.dining_tables || []).length === 1 ? 'table' : 'tables' }}</small></td>
               <td>{{ location.telephone || '—' }}</td>
               <td>{{ location.mobile || '—' }}</td>
               <td><strong>{{ location.latitude || '—' }}</strong><small>Lat · {{ location.longtitude || '—' }} Long</small></td>
@@ -77,6 +77,30 @@
             <div class="form-group"><label for="latitude">Latitude</label><input id="latitude" v-model.trim="field.latitude" type="number" step="any" min="-90" max="90" class="form-control" placeholder="e.g. 10.3157"><small class="merchant-field-help">A value from -90 to 90.</small></div>
             <div class="form-group"><label for="longtitude">Longitude</label><input id="longtitude" v-model.trim="field.longtitude" type="number" step="any" min="-180" max="180" class="form-control" placeholder="e.g. 123.8854"><small class="merchant-field-help">A value from -180 to 180.</small></div>
           </div>
+          <div v-if="field.checkout_options.includes('dine_in') && actionStatus === 'add'" class="merchant-table-notice"><i class="fas fa-info-circle" aria-hidden="true"></i><span>Save this branch first, then edit it to add and manage its dining tables.</span></div>
+          <section v-if="field.checkout_options.includes('dine_in') && actionStatus === 'edit'" class="merchant-table-manager">
+            <div class="merchant-table-manager-header"><div><strong>Dining tables</strong><small>Add the tables customers can select for dine-in orders at this branch.</small></div><span>{{ (field.dining_tables || []).length }} total</span></div>
+            <div class="merchant-table-add">
+              <div class="form-group"><label for="new_table_name">Table name or number</label><input id="new_table_name" v-model.trim="newDiningTable.name" type="text" maxlength="100" class="form-control" placeholder="e.g. Table 1"></div>
+              <div class="form-group"><label for="new_table_capacity">Guest capacity</label><input id="new_table_capacity" v-model.number="newDiningTable.capacity" type="number" min="1" max="100" class="form-control"></div>
+              <button type="button" class="btn admin-btn-primary" :disabled="tableRequestPending" @click="addDiningTable"><i class="fas fa-plus mr-2"></i>Add table</button>
+            </div>
+            <div v-if="!field.dining_tables || field.dining_tables.length === 0" class="merchant-table-empty">No dining tables have been added to this branch.</div>
+            <div v-else class="table-responsive">
+              <table class="table merchant-dining-table-list">
+                <thead><tr><th>Table</th><th>Capacity</th><th>Enabled</th><th>Available now</th><th class="text-right">Actions</th></tr></thead>
+                <tbody>
+                  <tr v-for="table in field.dining_tables" :key="table.id">
+                    <td><input v-model.trim="table.name" type="text" maxlength="100" class="form-control" aria-label="Table name"></td>
+                    <td><input v-model.number="table.capacity" type="number" min="1" max="100" class="form-control merchant-table-capacity" aria-label="Table capacity"></td>
+                    <td><label class="merchant-table-checkbox"><input v-model="table.active" type="checkbox"><span>{{ table.active ? 'Enabled' : 'Hidden' }}</span></label></td>
+                    <td><label class="merchant-table-checkbox"><input v-model="table.is_available" type="checkbox"><span>{{ table.is_available ? 'Available' : 'Occupied' }}</span></label></td>
+                    <td class="text-right"><button type="button" class="btn btn-sm admin-btn-secondary mr-2" :disabled="tableRequestPending" @click="saveDiningTable(table)">Save</button><button type="button" class="btn btn-sm merchant-danger-button" :disabled="tableRequestPending" @click="deleteDiningTable(table)">Delete</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
           <div class="merchant-form-actions"><button type="button" class="btn admin-btn-secondary" @click="cancel">Cancel</button><button type="submit" class="btn admin-btn-primary">{{ actionStatus === 'add' ? 'Add branch' : 'Save changes' }}</button></div>
         </form>
       </div>
@@ -137,6 +161,8 @@ const emptyLocation = () => ({
                   { type: 'pickup', label: 'Pickup', description: 'Customers collect their order' },
                   { type: 'dine_in', label: 'Dine in', description: 'Customers select an available table' },
                 ],
+                newDiningTable: { name: '', capacity: 2 },
+                tableRequestPending: false,
             }
         },
         mounted() {
@@ -179,6 +205,7 @@ const emptyLocation = () => ({
           action: function(action) {
             if (action === 'add') {
               this.field = emptyLocation();
+              this.newDiningTable = { name: '', capacity: 2 };
             }
 
             if (action === 'view') {
@@ -197,7 +224,9 @@ const emptyLocation = () => ({
               checkout_options: (location.checkout_options || [])
                 .filter(option => option.active)
                 .map(option => option.type),
+              dining_tables: (location.dining_tables || []).map(table => ({ ...table })),
             };
+            this.newDiningTable = { name: '', capacity: 2 };
             this.action('edit');
           },
           enabledCheckoutOptions: function(location) {
@@ -206,6 +235,63 @@ const emptyLocation = () => ({
               .map(option => option.type);
 
             return this.checkoutOptionChoices.filter(option => enabledTypes.includes(option.type));
+          },
+          addDiningTable: function() {
+            if (!this.newDiningTable.name || !this.validTableCapacity(this.newDiningTable.capacity)) {
+              toastr.error('Enter a table name and a capacity from 1 to 100.');
+              return;
+            }
+
+            this.tableRequestPending = true;
+            axios.post('/api/merchant/location/' + this.field.id + '/tables', {
+              name: this.newDiningTable.name,
+              capacity: this.newDiningTable.capacity,
+              active: true,
+              is_available: true,
+            }).then((response) => {
+              this.field.dining_tables = response.data.tables;
+              this.newDiningTable = { name: '', capacity: 2 };
+              toastr.success(response.data.message);
+            }).catch((error) => this.showTableError(error))
+              .finally(() => { this.tableRequestPending = false; });
+          },
+          saveDiningTable: function(table) {
+            if (!table.name || !this.validTableCapacity(table.capacity)) {
+              toastr.error('Enter a table name and a capacity from 1 to 100.');
+              return;
+            }
+
+            this.tableRequestPending = true;
+            axios.put('/api/merchant/location/' + this.field.id + '/tables/' + table.id, {
+              name: table.name,
+              capacity: table.capacity,
+              active: Boolean(table.active),
+              is_available: Boolean(table.is_available),
+            }).then((response) => {
+              this.field.dining_tables = response.data.tables;
+              toastr.success(response.data.message);
+            }).catch((error) => this.showTableError(error))
+              .finally(() => { this.tableRequestPending = false; });
+          },
+          deleteDiningTable: function(table) {
+            if (!confirm('Delete ' + table.name + '?')) {
+              return;
+            }
+
+            this.tableRequestPending = true;
+            axios.delete('/api/merchant/location/' + this.field.id + '/tables/' + table.id)
+              .then((response) => {
+                this.field.dining_tables = response.data.tables;
+                toastr.success(response.data.message);
+              }).catch((error) => this.showTableError(error))
+              .finally(() => { this.tableRequestPending = false; });
+          },
+          validTableCapacity: function(capacity) {
+            const value = Number(capacity);
+            return Number.isInteger(value) && value >= 1 && value <= 100;
+          },
+          showTableError: function(error) {
+            toastr.error(error.response?.data?.message || 'Unable to update the dining table.');
           },
           cancel: function() {
             this.action('view');
@@ -606,6 +692,84 @@ const emptyLocation = () => ({
   padding: 4px 8px;
 }
 
+.merchant-table-notice,
+.merchant-table-empty {
+  align-items: center;
+  background: #fff8e8;
+  border: 1px solid #f0d99d;
+  border-radius: 10px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 14px;
+}
+
+.merchant-table-manager {
+  border: 1px solid #e5dfd9;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.merchant-table-manager-header {
+  align-items: center;
+  background: #faf9f7;
+  display: flex;
+  justify-content: space-between;
+  padding: 16px;
+}
+
+.merchant-table-manager-header strong,
+.merchant-table-manager-header small {
+  display: block;
+}
+
+.merchant-table-manager-header small,
+.merchant-table-manager-header > span {
+  color: #697277;
+  font-size: 11px;
+}
+
+.merchant-table-add {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(180px, 1fr) 150px auto;
+  padding: 16px;
+}
+
+.merchant-table-add .form-group {
+  margin: 0;
+}
+
+.merchant-table-empty {
+  background: #faf9f7;
+  border: 0;
+  border-radius: 0;
+  color: #697277;
+  margin: 0;
+}
+
+.merchant-dining-table-list {
+  margin: 0;
+}
+
+.merchant-dining-table-list td {
+  vertical-align: middle;
+}
+
+.merchant-table-capacity {
+  max-width: 100px;
+}
+
+.merchant-table-checkbox {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  margin: 0;
+  white-space: nowrap;
+}
+
 .merchant-location-picker-header {
   align-items: center;
   display: flex;
@@ -649,6 +813,11 @@ const emptyLocation = () => ({
 }
 
 @media (max-width: 767px) {
+  .merchant-checkout-option-grid,
+  .merchant-table-add {
+    grid-template-columns: 1fr;
+  }
+
   .merchant-location-picker-header {
     align-items: stretch;
     flex-direction: column;

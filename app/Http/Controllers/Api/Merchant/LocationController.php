@@ -20,7 +20,9 @@ class LocationController extends Controller
     {	
     	$data = array();
 
-		$location = PartnerLocation::with('checkoutOptions')
+		$location = PartnerLocation::with(['checkoutOptions', 'diningTables' => function ($query) {
+							$query->orderBy('name');
+						}])
 						->wherePartnerId(Auth::User()->merchant->id)
     					->orderby('address_1','asc')
     					->paginate(50);
