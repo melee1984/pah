@@ -299,7 +299,7 @@ class CheckoutController extends Controller
         $diningTable = null;
         if ($fulfillmentType === Cart::FULFILLMENT_DINE_IN) {
             $diningTable = PartnerLocationTable::query()
-                ->whereKey($request->input('dining_table_id'))
+                ->whereKey($request->input('diningTableId'))
                 ->where('partner_location_id', $cart->partner_location_address_id)
                 ->where('active', true)
                 ->where('is_available', true)
