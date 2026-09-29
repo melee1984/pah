@@ -589,6 +589,7 @@ class AgentPortalTest extends TestCase
                 'Category',
                 'Profile',
                 'Sales',
+                'Support &amp; account',
                 'Help &amp; documentation',
                 'Logout',
             ], false)
