@@ -95,6 +95,11 @@
                                     $pahatudPercentage = (float) ($commission->pahatud_commission_percentage ?? $commission->restaurant?->percentage ?? config('agent.pahatud_commission_percentage'));
                                     $pahatudAmount = (float) ($commission->report_pahatud_commission_amount ?? $commission->pahatud_commission_amount ?? round($subtotal * ($pahatudPercentage / 100), 2));
                                     $agentCommissionAmount = (float) ($commission->report_commission_amount ?? $commission->commission_amount);
+                                    $orderType = match ($commission->order?->cart?->fulfillment_type) {
+                                        \App\Model\Cart::FULFILLMENT_PICKUP => 'Pickup',
+                                        \App\Model\Cart::FULFILLMENT_DINE_IN => 'Dine-in',
+                                        default => 'Delivery',
+                                    };
                                 @endphp
                                 <tr>
                                     <td><strong>{{ $commission->qualified_at->format('M d, Y') }}</strong><small>{{ $commission->qualified_at->format('g:i A') }}</small></td>
@@ -103,6 +108,7 @@
                                         <strong>{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}</strong>
                                         <small>Order ID #{{ $commission->order_id }}</small>
                                         <small>{{ $commission->order?->cart?->order_no ? 'Order number: '.$commission->order->cart->order_no : 'Order number unavailable' }}</small>
+                                        <small>Order type: {{ $orderType }}</small>
                                     </td>
                                     <td>
                                         <div class="agent-order-breakdown">

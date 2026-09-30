@@ -47,10 +47,12 @@ class AgentCommissionReportController extends Controller
 
         $baseQuery = AgentCommission::query()
             ->whereBetween('qualified_at', [$from, $to])
-            // ->whereHas('order', fn (Builder $query) => $query->where(function (Builder $statusQuery) {
-            //     $statusQuery
-            //        ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
-            // }))
+            ->whereHas('order', fn (Builder $query) => $query->where(function (Builder $statusQuery) {
+                $statusQuery
+                    ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES)
+                    ->orWhere('booking_status_id', BookingStatus::STATUS_BOOKING_DELIVERED)
+                    ->orWhereNotNull('delivered_at');
+            }))
             ->when($selectedAgentId, fn ($query) => $query->where('agent_id', $selectedAgentId))
             ->when($selectedRestaurantId, fn ($query) => $query->where('restaurant_id', $selectedRestaurantId))
             ->when($selectedStatus, fn ($query) => $query->where('status', $selectedStatus));
@@ -64,7 +66,7 @@ class AgentCommissionReportController extends Controller
                 'agent:id,name,email',
                 'restaurant:id,restaurant_name,agent_id,percentage',
                 'order:id,cart_id',
-                'order.cart:id,order_no',
+                'order.cart:id,order_no,fulfillment_type',
                 'order.cart.details:id,cart_id,qty,price_comm_total,variance_total_comm_total',
             ])
             ->latest('qualified_at')

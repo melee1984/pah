@@ -89,6 +89,7 @@ class AgentPortalTest extends TestCase
             $table->id();
             $table->unsignedBigInteger('partner_id');
             $table->string('order_no')->nullable();
+            $table->string('fulfillment_type')->nullable();
             $table->decimal('delivery_fee', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->timestamps();
@@ -374,6 +375,7 @@ class AgentPortalTest extends TestCase
         $cart = Cart::query()->forceCreate([
             'partner_id' => $restaurant->id,
             'order_no' => 'PAH-AGENT-0042',
+            'fulfillment_type' => Cart::FULFILLMENT_DELIVERY,
         ]);
         CartItem::query()->create([
             'cart_id' => $cart->id,
@@ -411,6 +413,7 @@ class AgentPortalTest extends TestCase
         $completedCart = Cart::query()->forceCreate([
             'partner_id' => $restaurant->id,
             'order_no' => 'PAH-COMPLETED-0043',
+            'fulfillment_type' => Cart::FULFILLMENT_PICKUP,
         ]);
         $completedOrder = Orders::query()->create([
             'cart_id' => $completedCart->id,
@@ -456,6 +459,29 @@ class AgentPortalTest extends TestCase
             'delivered_at' => now(),
         ]);
 
+        $dineInCart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-DINEIN-0046',
+            'fulfillment_type' => Cart::FULFILLMENT_DINE_IN,
+        ]);
+        $dineInOrder = Orders::query()->create([
+            'cart_id' => $dineInCart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+        ]);
+        AgentCommission::query()->create([
+            'order_id' => $dineInOrder->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 80,
+            'commission_percentage' => 30,
+            'commission_amount' => 4.80,
+            'status' => AgentCommission::STATUS_PENDING,
+            'qualified_at' => now(),
+        ]);
+        $dineInOrder->updateQuietly(['order_status_id' => LibraryStatus::STATUS_COMPLETED]);
+
         $processingCart = Cart::query()->forceCreate([
             'partner_id' => $restaurant->id,
             'order_no' => 'PAH-PROCESSING-0044',
@@ -489,13 +515,18 @@ class AgentPortalTest extends TestCase
             ->assertOk()
             ->assertSeeText('Agent Commission Report')
             ->assertSeeText('Commission Report Restaurant')
-            ->assertSeeText('3 entries')
+            ->assertSeeText('4 entries')
             ->assertSeeText('Order ID #'.$order->id)
             ->assertSeeText('Order number: PAH-AGENT-0042')
             ->assertSeeText('Order ID #'.$completedOrder->id)
             ->assertSeeText('Order number: PAH-COMPLETED-0043')
             ->assertSeeText('Order ID #'.$legacyDeliveryOrder->id)
             ->assertSeeText('Order number: PAH-DELIVERED-0045')
+            ->assertSeeText('Order ID #'.$dineInOrder->id)
+            ->assertSeeText('Order number: PAH-DINEIN-0046')
+            ->assertSeeText('Order type: Delivery')
+            ->assertSeeText('Order type: Pickup')
+            ->assertSeeText('Order type: Dine-in')
             ->assertDontSeeText('Order ID #'.$processingOrder->id)
             ->assertDontSeeText('Order number: PAH-PROCESSING-0044')
             ->assertSeeText('Subtotal')
