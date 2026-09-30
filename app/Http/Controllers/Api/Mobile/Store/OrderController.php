@@ -10,6 +10,7 @@ use Validator;
 
 use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
+use App\Model\Cart;
 use App\PartnerLocation;
 use Carbon\Carbon;
 use App\Products;
@@ -274,6 +275,10 @@ class OrderController extends Controller
             return $this->markOrderReadyForPickup($order, $request);
         }
 
+        if ($request->input('action') === 'complete') {
+            return $this->completeOrder($order, $request);
+        }
+
         if ($request->input('action') === 'cancel') {
             return $this->cancelOrder($order, $request);
         }
@@ -329,15 +334,17 @@ class OrderController extends Controller
             $order->accepted_by_store_id = $order->cart->partner_location_address_id; // This should update the accepted_by_store_id to the partner location address id instead of the merchant id
             $order->store_accepted_at = now();
             $requiresDelivery = $order->cart->requiresDelivery();
+            $isPickup = $order->cart->fulfillment_type === Cart::FULFILLMENT_PICKUP;
+            $usesProcessing = $requiresDelivery || $isPickup;
             $order->booking_status_id = $requiresDelivery
                 ? BookingStatus::STATUS_BOOKING_PLACED
                 : null;
-            $order->order_status_id = $requiresDelivery
+            $order->order_status_id = $usesProcessing
                 ? LibraryStatus::STATUS_PROCESSING
                 : LibraryStatus::STATUS_ORDER_ACCEPTED;
             $order->save();
 
-            $acceptedStatuses = $requiresDelivery
+            $acceptedStatuses = $usesProcessing
                 ? [LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING]
                 : [LibraryStatus::STATUS_ORDER_ACCEPTED];
 
@@ -429,9 +436,10 @@ class OrderController extends Controller
             }
 
             $requiresDelivery = $order->cart->requiresDelivery();
-            $completedStatus = $requiresDelivery
-                ? LibraryStatus::STATUS_READY_FOR_PICKUP
-                : LibraryStatus::STATUS_COMPLETED;
+            $isDineIn = $order->cart->fulfillment_type === Cart::FULFILLMENT_DINE_IN;
+            $completedStatus = $isDineIn
+                ? LibraryStatus::STATUS_COMPLETED
+                : LibraryStatus::STATUS_READY_FOR_PICKUP;
 
             if ((int) $order->order_status_id === $completedStatus
                 && $order->store_accepted_at
@@ -442,9 +450,9 @@ class OrderController extends Controller
                 ];
             }
 
-            $allowedStatuses = $requiresDelivery
-                ? [LibraryStatus::STATUS_PROCESSING]
-                : [LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING];
+            $allowedStatuses = $isDineIn
+                ? [LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING]
+                : [LibraryStatus::STATUS_PROCESSING];
 
             if (! $order->store_accepted_at
                 || (int) $order->accepted_by_store_id !== (int) $request->store_location_id
@@ -460,9 +468,9 @@ class OrderController extends Controller
 
                 return ['response' => response()->json([
                     'status' => 0,
-                    'message' => $requiresDelivery
-                        ? 'Only processing orders can be marked ready for pickup.'
-                        : 'Only accepted orders can be completed.',
+                    'message' => $isDineIn
+                        ? 'Only accepted orders can be completed.'
+                        : 'Only processing orders can be marked ready for pickup.',
                 ], 409)];
             }
 
@@ -482,7 +490,7 @@ class OrderController extends Controller
             return [
                 'order' => $order,
                 'already_ready' => false,
-                'requires_delivery' => $requiresDelivery,
+                'is_dine_in' => $isDineIn,
             ];
         });
 
@@ -493,12 +501,95 @@ class OrderController extends Controller
         return response()->json([
             'status' => 1,
             'message' => $result['already_ready']
-                ? ($result['order']->cart->requiresDelivery()
-                    ? 'Order was already ready for pickup.'
-                    : 'Order was already completed.')
-                : ($result['requires_delivery']
-                    ? 'Order is ready for pickup.'
-                    : 'Order completed successfully.'),
+                ? ($result['order']->cart->fulfillment_type === Cart::FULFILLMENT_DINE_IN
+                    ? 'Order was already completed.'
+                    : 'Order was already ready for pickup.')
+                : ($result['is_dine_in']
+                    ? 'Order completed successfully.'
+                    : 'Order is ready for pickup.'),
+            'order_id' => $result['order']->id,
+            'order_status_id' => $result['order']->order_status_id,
+            'action' => $result['order']->getAction(),
+        ]);
+    }
+
+    public function completeOrder(Orders $order, Request $request)
+    {
+        $user = $request->user();
+        $merchant = $user?->merchant;
+
+        if (! $merchant) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant account not found.',
+            ], 403);
+        }
+
+        $result = DB::transaction(function () use ($merchant, $order, $request, $user) {
+            $order = Orders::query()
+                ->whereKey($order->getKey())
+                ->where('partner_id', $merchant->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $order) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Order not found.',
+                ], 404)];
+            }
+
+            if ($order->cart->fulfillment_type !== Cart::FULFILLMENT_PICKUP) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Only pickup orders can be completed by the merchant.',
+                ], 409)];
+            }
+
+            if ((int) $order->order_status_id === LibraryStatus::STATUS_COMPLETED
+                && $order->store_accepted_at
+                && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
+                return [
+                    'order' => $order,
+                    'already_completed' => true,
+                ];
+            }
+
+            if (! $order->store_accepted_at
+                || (int) $order->accepted_by_store_id !== (int) $request->store_location_id
+                || (int) $order->order_status_id !== LibraryStatus::STATUS_READY_FOR_PICKUP) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Only pickup orders that are ready for pickup can be completed.',
+                ], 409)];
+            }
+
+            $order->order_status_id = LibraryStatus::STATUS_COMPLETED;
+            $order->booking_status_id = null;
+            $order->save();
+
+            OrderProcess::updateOrCreate([
+                'status_id' => LibraryStatus::STATUS_COMPLETED,
+                'order_id' => $order->id,
+            ], [
+                'user_id' => $user->id,
+            ]);
+
+            return [
+                'order' => $order,
+                'already_completed' => false,
+            ];
+        });
+
+        if (isset($result['response'])) {
+            return $result['response'];
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => $result['already_completed']
+                ? 'Order was already completed.'
+                : 'Order completed successfully.',
             'order_id' => $result['order']->id,
             'order_status_id' => $result['order']->order_status_id,
             'action' => $result['order']->getAction(),

@@ -109,7 +109,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         ]);
     }
 
-    public function test_pickup_order_is_accepted_without_a_delivery_status(): void
+    public function test_pickup_order_moves_to_processing_without_a_delivery_status(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
 
@@ -118,15 +118,15 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
-            'order_status_id' => LibraryStatus::STATUS_ORDER_ACCEPTED,
+            'order_status_id' => LibraryStatus::STATUS_PROCESSING,
             'booking_status_id' => null,
             'accepted_by_store_id' => 200,
         ]);
-        $this->assertSame('Ready to Serve', $response->getData(true)['action']['button']['label']);
+        $this->assertSame('Ready For Pickup', $response->getData(true)['action']['button']['label']);
         $this->assertFalse($response->getData(true)['action']['send_to_rider']);
     }
 
-    public function test_pickup_order_becomes_completed_when_ready_to_serve(): void
+    public function test_pickup_order_moves_to_ready_for_pickup_before_completion(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
         $controller = new OrderController;
@@ -136,17 +136,41 @@ class MerchantOrderAcceptanceTest extends TestCase
         $response = $controller->markOrderReadyForPickup($order, $request);
 
         $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('Order is ready for pickup.', $response->getData(true)['message']);
+        $this->assertSame('Ready for Customer Pickup', $response->getData(true)['action']['label']);
+        $this->assertSame('Complete Order', $response->getData(true)['action']['button']['label']);
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'order_status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
+            'booking_status_id' => null,
+        ]);
+        $this->assertDatabaseHas('order_process', [
+            'order_id' => $order->id,
+            'status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
+            'user_id' => 10,
+        ]);
+    }
+
+    public function test_merchant_completes_pickup_after_customer_collects_it(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $controller = new OrderController;
+        $request = $this->merchantRequest();
+        $controller->acceptOrder($order, $request);
+        $controller->markOrderReadyForPickup($order, $request);
+
+        $response = $controller->acceptOrder(
+            $order,
+            $this->merchantRequest(action: 'complete'),
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('Order completed successfully.', $response->getData(true)['message']);
         $this->assertSame('Order Completed', $response->getData(true)['action']['label']);
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
             'order_status_id' => LibraryStatus::STATUS_COMPLETED,
             'booking_status_id' => null,
-        ]);
-        $this->assertDatabaseHas('order_process', [
-            'order_id' => $order->id,
-            'status_id' => LibraryStatus::STATUS_COMPLETED,
-            'user_id' => 10,
         ]);
     }
 
@@ -187,19 +211,57 @@ class MerchantOrderAcceptanceTest extends TestCase
         ]);
     }
 
-    public function test_completing_a_non_delivery_order_is_idempotent(): void
+    public function test_delivery_order_cannot_use_pickup_completion(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_DELIVERY);
+        $controller = new OrderController;
+        $request = $this->merchantRequest();
+        $controller->acceptOrder($order, $request);
+        $controller->markOrderReadyForPickup($order, $request);
+
+        $response = $controller->completeOrder($order, $request);
+
+        $this->assertSame(409, $response->getStatusCode());
+        $this->assertSame(
+            'Only pickup orders can be completed by the merchant.',
+            $response->getData(true)['message'],
+        );
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'order_status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
+        ]);
+    }
+
+    public function test_completing_a_pickup_order_is_idempotent(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
         $controller = new OrderController;
         $request = $this->merchantRequest();
         $controller->acceptOrder($order, $request);
         $controller->markOrderReadyForPickup($order, $request);
+        $controller->completeOrder($order, $request);
 
-        $response = $controller->markOrderReadyForPickup($order, $request);
+        $response = $controller->completeOrder($order, $request);
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('Order was already completed.', $response->getData(true)['message']);
-        $this->assertDatabaseCount('order_process', 2);
+        $this->assertDatabaseCount('order_process', 4);
+    }
+
+    public function test_pickup_order_cannot_be_completed_before_it_is_ready(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $controller = new OrderController;
+        $request = $this->merchantRequest();
+        $controller->acceptOrder($order, $request);
+
+        $response = $controller->completeOrder($order, $request);
+
+        $this->assertSame(409, $response->getStatusCode());
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'order_status_id' => LibraryStatus::STATUS_PROCESSING,
+        ]);
     }
 
     public function test_pending_order_cannot_skip_acceptance(): void

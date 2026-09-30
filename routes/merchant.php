@@ -107,6 +107,7 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::get('orders/{order}/rider-offers', [StoreOrderController::class, 'riderOffers'])->name('merchant.orders.rider-offers');
             Route::post('orders/{order}/accept', [StoreOrderController::class, 'acceptOrder'])->name('merchant.orders.accept');
             Route::post('orders/{order}/ready-for-pickup', [StoreOrderController::class, 'markOrderReadyForPickup'])->name('merchant.orders.ready-for-pickup');
+            Route::post('orders/{order}/complete', [StoreOrderController::class, 'completeOrder'])->name('merchant.orders.complete');
             Route::post('orders/{order}/cancel', [StoreOrderController::class, 'cancelOrder'])->name('merchant.orders.cancel');
             // Route::get('bookings', [StoreOrderController::class, 'bookings']);
             Route::get('accepted/bookings', [StoreOrderController::class, 'getAcceptedBooking']);

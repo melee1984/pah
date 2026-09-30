@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use DB;
 use App\Model\Orders\OrderProcess;
 use App\Model\Bookings\BookingStatus;
+use App\Model\Cart;
 use App\Model\Rider\RiderDeclineOrder;
 use App\LibraryStatus;
 use App\Model\Rider\Rider;
@@ -143,6 +144,7 @@ class Orders extends Model
     public function getAction()
     {
         $requiresDelivery = $this->cart?->requiresDelivery() ?? true;
+        $isPickup = $this->cart?->fulfillment_type === Cart::FULFILLMENT_PICKUP;
 
         return match ((int) $this->order_status_id) {
             LibraryStatus::STATUS_ORDER_PLACED => [
@@ -158,9 +160,9 @@ class Orders extends Model
                 'send_to_rider' => false,
             ],
             LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING => [
-                'label' => $requiresDelivery ? 'Order Processing' : 'Order Accepted',
+                'label' => ($requiresDelivery || $isPickup) ? 'Order Processing' : 'Order Accepted',
                 'button' => [
-                    'label' => $requiresDelivery ? 'Ready For Pickup' : 'Ready to Serve',
+                    'label' => ($requiresDelivery || $isPickup) ? 'Ready For Pickup' : 'Ready to Serve',
                     'action' => 'ready-for-pickup',
                 ],
                 'cancel' => [
@@ -170,8 +172,11 @@ class Orders extends Model
                 'send_to_rider' => $requiresDelivery,
             ],
             LibraryStatus::STATUS_READY_FOR_PICKUP => [
-                'label' => 'Waiting for Rider to Pickup',
-                'button' => null,
+                'label' => $isPickup ? 'Ready for Customer Pickup' : 'Waiting for Rider to Pickup',
+                'button' => $isPickup ? [
+                    'label' => 'Complete Order',
+                    'action' => 'complete',
+                ] : null,
                 'cancel' => [
                     'label' => 'Cancel Order',
                     'action' => 'cancel',
