@@ -378,7 +378,7 @@ class Cart extends Model
       'convenience_fee' => $convenienceFee,
       'vat_amount' => $vatAmount,
       'discount' => $discount,
-      'total' => max(0, $subTotal + $deliveryFee + $convenienceFee + $vatAmount - $discount),
+      'total' => max(0, ($subTotal + $deliveryFee + ($convenienceFee - $vatAmount)) - $discount),
       'total_comm' => $totalCommission,
     ];
   }
