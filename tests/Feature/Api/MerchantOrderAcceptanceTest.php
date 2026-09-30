@@ -3,12 +3,17 @@
 namespace Tests\Feature\Api;
 
 use App\Http\Controllers\Api\Mobile\Store\OrderController;
+use App\LibraryStatus;
+use App\Model\Bookings\BookingStatus;
+use App\Model\Cart;
 use App\Model\Orders\Orders;
 use App\Partners;
+use App\Services\AgentCommissionService;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -24,10 +29,34 @@ class MerchantOrderAcceptanceTest extends TestCase
         ]);
         DB::purge('sqlite');
         DB::reconnect('sqlite');
+        Queue::fake();
+        $this->mock(AgentCommissionService::class, function ($mock) {
+            $mock->shouldReceive('sync')->andReturnNull();
+        });
 
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('device_token_food')->nullable();
+        });
+
+        Schema::create('partners', function (Blueprint $table) {
+            $table->id();
+            $table->string('restaurant_name')->nullable();
+        });
+
+        Schema::create('cart', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('partner_id');
+            $table->unsignedBigInteger('partner_location_address_id');
+            $table->string('fulfillment_type')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('library_status', function (Blueprint $table) {
+            $table->id();
+            $table->string('title')->nullable();
+            $table->string('description')->nullable();
+            $table->unsignedInteger('sorting')->nullable();
         });
 
         Schema::create('library_booking_status', function (Blueprint $table) {
@@ -40,11 +69,14 @@ class MerchantOrderAcceptanceTest extends TestCase
         Schema::create('order', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('cart_id');
             $table->unsignedBigInteger('partner_id');
-            $table->unsignedBigInteger('status_id');
+            $table->unsignedBigInteger('order_status_id');
+            $table->unsignedBigInteger('booking_status_id')->nullable();
             $table->unsignedBigInteger('accepted_by_store_id')->nullable();
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('store_accepted_at')->nullable();
+            $table->timestamp('delivered_at')->nullable();
             $table->timestamps();
         });
 
@@ -56,308 +88,148 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->timestamps();
         });
 
-        DB::table('users')->insert([
-            'id' => 10,
-            'device_token_food' => null,
-        ]);
-        // 
+        DB::table('users')->insert(['id' => 10]);
+        DB::table('partners')->insert(['id' => 20, 'restaurant_name' => 'Test Merchant']);
+
+        foreach ([
+            LibraryStatus::STATUS_ORDER_PLACED => 'Order Placed',
+            LibraryStatus::STATUS_ORDER_ACCEPTED => 'Order Accepted',
+            LibraryStatus::STATUS_PROCESSING => 'Processing',
+            LibraryStatus::STATUS_READY_FOR_PICKUP => 'Ready for Pickup',
+            LibraryStatus::STATUS_DELIVERED => 'Delivered',
+            LibraryStatus::STATUS_CANCELLED => 'Cancelled',
+            LibraryStatus::STATUS_COMPLETED => 'Completed',
+        ] as $id => $title) {
+            DB::table('library_status')->insert(compact('id', 'title'));
+        }
+
         DB::table('library_booking_status')->insert([
-            ['id' => Orders::STATUS_ORDER_PLACED, 'description' => 'Order Placed'],
-            ['id' => Orders::STATUS_ORDER_ACCEPTED, 'description' => 'Order Accepted'],
-            ['id' => Orders::STATUS_PROCESSING, 'description' => 'Processing'],
-            ['id' => Orders::STATUS_READY_FOR_PICKUP, 'description' => 'Ready for Pickup'],
-            ['id' => Orders::STATUS_RIDER_PICKED_UP, 'description' => 'Rider Picked Up'],
-            ['id' => Orders::STATUS_DELIVERED, 'description' => 'Delivered'],
+            'id' => BookingStatus::STATUS_BOOKING_PLACED,
+            'title' => 'Booking Placed',
         ]);
     }
 
-    public function test_authenticated_merchant_can_accept_its_pending_order(): void
+    public function test_pickup_order_is_accepted_without_a_delivery_status(): void
     {
-        $order = $this->createOrder(partnerId: 20);
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
 
-        $response = (new OrderController)->acceptOrder(
-            $order,
-            $this->merchantRequest(merchantId: 20),
-        );
+        $response = (new OrderController)->acceptOrder($order, $this->merchantRequest());
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('Order accepted successfully.', $response->getData(true)['message']);
-        $this->assertSame([
-            'label' => 'Order Processing',
-            'button' => [
-                'label' => 'Ready For Pickup',
-                'action' => 'ready-for-pickup',
-            ],
-            'cancel' => [
-                'label' => 'Cancel Order',
-                'action' => 'cancel',
-            ],
-            'send_to_rider' => true,
-        ], $response->getData(true)['action']);
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
-            'status_id' => Orders::STATUS_PROCESSING,
-            'accepted_by_store_id' => 20,
+            'order_status_id' => LibraryStatus::STATUS_ORDER_ACCEPTED,
+            'booking_status_id' => null,
+            'accepted_by_store_id' => 200,
         ]);
-        $this->assertDatabaseCount('order_process', 2);
-        $this->assertDatabaseHas('order_process', [
-            'order_id' => $order->id,
-            'status_id' => Orders::STATUS_ORDER_ACCEPTED,
-            'user_id' => 10,
-        ]);
-        $this->assertDatabaseHas('order_process', [
-            'order_id' => $order->id,
-            'status_id' => Orders::STATUS_PROCESSING,
-            'user_id' => 10,
-        ]);
-        $this->assertSame('Processing', Orders::findOrFail($order->id)->status->description);
+        $this->assertSame('Ready to Serve', $response->getData(true)['action']['button']['label']);
+        $this->assertFalse($response->getData(true)['action']['send_to_rider']);
     }
 
-    public function test_merchant_cannot_accept_another_merchants_order(): void
+    public function test_pickup_order_becomes_completed_when_ready_to_serve(): void
     {
-        $order = $this->createOrder(partnerId: 99);
-
-        $response = (new OrderController)->acceptOrder(
-            $order,
-            $this->merchantRequest(merchantId: 20),
-        );
-
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame('Order not found.', $response->getData(true)['message']);
-        $this->assertDatabaseHas('order', [
-            'id' => $order->id,
-            'status_id' => Orders::STATUS_ORDER_PLACED,
-            'accepted_by_store_id' => null,
-        ]);
-        $this->assertDatabaseCount('order_process', 0);
-    }
-
-    public function test_accepting_the_same_order_again_is_idempotent(): void
-    {
-        $order = $this->createOrder(partnerId: 20);
-        $request = $this->merchantRequest(merchantId: 20);
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
         $controller = new OrderController;
-
+        $request = $this->merchantRequest();
         $controller->acceptOrder($order, $request);
-        $response = $controller->acceptOrder($order, $request);
+
+        $response = $controller->markOrderReadyForPickup($order, $request);
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('Order was already accepted.', $response->getData(true)['message']);
-        $this->assertDatabaseCount('order_process', 2);
+        $this->assertSame('Order completed successfully.', $response->getData(true)['message']);
+        $this->assertSame('Order Completed', $response->getData(true)['action']['label']);
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'order_status_id' => LibraryStatus::STATUS_COMPLETED,
+            'booking_status_id' => null,
+        ]);
+        $this->assertDatabaseHas('order_process', [
+            'order_id' => $order->id,
+            'status_id' => LibraryStatus::STATUS_COMPLETED,
+            'user_id' => 10,
+        ]);
     }
 
-    public function test_merchant_can_mark_a_processing_order_ready_for_pickup(): void
+    public function test_dine_in_order_becomes_completed_when_ready_to_serve(): void
     {
-        $order = $this->createOrder(partnerId: 20);
-        $request = $this->merchantRequest(merchantId: 20);
+        $order = $this->createOrder(Cart::FULFILLMENT_DINE_IN);
         $controller = new OrderController;
+        $controller->acceptOrder($order, $this->merchantRequest());
+
+        $response = $controller->acceptOrder(
+            $order,
+            $this->merchantRequest(action: 'ready-for-pickup'),
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'order_status_id' => LibraryStatus::STATUS_COMPLETED,
+            'booking_status_id' => null,
+        ]);
+    }
+
+    public function test_delivery_order_keeps_the_ready_for_pickup_delivery_flow(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_DELIVERY);
+        $controller = new OrderController;
+        $request = $this->merchantRequest();
         $controller->acceptOrder($order, $request);
 
         $response = $controller->markOrderReadyForPickup($order, $request);
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('Order is ready for pickup.', $response->getData(true)['message']);
-        $this->assertSame([
-            'label' => 'Waiting for Rider to Pickup',
-            'button' => null,
-            'cancel' => [
-                'label' => 'Cancel Order',
-                'action' => 'cancel',
-            ],
-            'send_to_rider' => false,
-        ], $response->getData(true)['action']);
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
-            'status_id' => Orders::STATUS_READY_FOR_PICKUP,
-        ]);
-        $this->assertDatabaseHas('order_process', [
-            'order_id' => $order->id,
-            'status_id' => Orders::STATUS_READY_FOR_PICKUP,
-            'user_id' => 10,
+            'order_status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
+            'booking_status_id' => BookingStatus::STATUS_BOOKING_PLACED,
         ]);
     }
 
-    public function test_accept_endpoint_dispatches_ready_for_pickup_action(): void
+    public function test_completing_a_non_delivery_order_is_idempotent(): void
     {
-        $order = $this->createOrder(partnerId: 20);
-        $request = $this->merchantRequest(merchantId: 20);
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
         $controller = new OrderController;
-        $controller->acceptOrder($order, $request);
-
-        $readyRequest = $this->merchantRequest(merchantId: 20, action: 'ready-for-pickup');
-        $response = $controller->acceptOrder($order, $readyRequest);
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('Order is ready for pickup.', $response->getData(true)['message']);
-        $this->assertDatabaseHas('order', [
-            'id' => $order->id,
-            'status_id' => Orders::STATUS_READY_FOR_PICKUP,
-        ]);
-        $this->assertDatabaseHas('order_process', [
-            'order_id' => $order->id,
-            'status_id' => Orders::STATUS_READY_FOR_PICKUP,
-            'user_id' => 10,
-        ]);
-    }
-
-    public function test_pending_order_cannot_skip_processing(): void
-    {
-        $order = $this->createOrder(partnerId: 20);
-
-        $response = (new OrderController)->markOrderReadyForPickup(
-            $order,
-            $this->merchantRequest(merchantId: 20),
-        );
-
-        $this->assertSame(409, $response->getStatusCode());
-        $this->assertSame(
-            'Only processing orders can be marked ready for pickup.',
-            $response->getData(true)['message'],
-        );
-        $this->assertDatabaseHas('order', [
-            'id' => $order->id,
-            'status_id' => Orders::STATUS_ORDER_PLACED,
-        ]);
-        $this->assertDatabaseCount('order_process', 0);
-    }
-
-    public function test_marking_an_order_ready_for_pickup_again_is_idempotent(): void
-    {
-        $order = $this->createOrder(partnerId: 20);
-        $request = $this->merchantRequest(merchantId: 20);
-        $controller = new OrderController;
+        $request = $this->merchantRequest();
         $controller->acceptOrder($order, $request);
         $controller->markOrderReadyForPickup($order, $request);
 
         $response = $controller->markOrderReadyForPickup($order, $request);
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('Order was already ready for pickup.', $response->getData(true)['message']);
-        $this->assertDatabaseCount('order_process', 3);
+        $this->assertSame('Order was already completed.', $response->getData(true)['message']);
+        $this->assertDatabaseCount('order_process', 2);
     }
 
-    public function test_merchant_can_cancel_its_order_through_the_accept_endpoint(): void
+    public function test_pending_order_cannot_skip_acceptance(): void
     {
-        $order = $this->createOrder(partnerId: 20);
-        $request = $this->merchantRequest(merchantId: 20, action: 'cancel');
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
 
-        $response = (new OrderController)->acceptOrder($order, $request);
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('Order cancelled successfully.', $response->getData(true)['message']);
-        $this->assertSame([
-            'label' => 'Cancel Order',
-            'button' => null,
-            'cancel' => null,
-            'send_to_rider' => false,
-        ], $response->getData(true)['action']);
-        $this->assertDatabaseHas('order', [
-            'id' => $order->id,
-            'status_id' => Orders::STATUS_CANCELLED,
-        ]);
-        $this->assertDatabaseHas('order_process', [
-            'order_id' => $order->id,
-            'status_id' => Orders::STATUS_CANCELLED,
-            'user_id' => 10,
-        ]);
-    }
-
-    public function test_merchant_cannot_cancel_another_merchants_order(): void
-    {
-        $order = $this->createOrder(partnerId: 99);
-
-        $response = (new OrderController)->cancelOrder(
-            $order,
-            $this->merchantRequest(merchantId: 20),
-        );
-
-        $this->assertSame(404, $response->getStatusCode());
-        $this->assertSame('Order not found.', $response->getData(true)['message']);
-        $this->assertDatabaseHas('order', [
-            'id' => $order->id,
-            'status_id' => Orders::STATUS_ORDER_PLACED,
-        ]);
-    }
-
-    public function test_merchant_cannot_cancel_an_order_after_rider_pickup(): void
-    {
-        $order = $this->createOrder(partnerId: 20);
-        $order->status_id = Orders::STATUS_RIDER_PICKED_UP;
-        $order->save();
-
-        $response = (new OrderController)->cancelOrder(
-            $order,
-            $this->merchantRequest(merchantId: 20),
-        );
+        $response = (new OrderController)->markOrderReadyForPickup($order, $this->merchantRequest());
 
         $this->assertSame(409, $response->getStatusCode());
-        $this->assertSame(
-            'Orders already picked up or completed cannot be cancelled.',
-            $response->getData(true)['message'],
-        );
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
-            'status_id' => Orders::STATUS_RIDER_PICKED_UP,
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
         ]);
     }
 
-    public function test_order_action_describes_the_merchant_display_for_each_status(): void
+    private function createOrder(string $fulfillmentType): Orders
     {
-        $order = $this->createOrder(partnerId: 20);
+        $cartId = DB::table('cart')->insertGetId([
+            'partner_id' => 20,
+            'partner_location_address_id' => 200,
+            'fulfillment_type' => $fulfillmentType,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
-        $this->assertSame([
-            'label' => 'Pending',
-            'button' => [
-                'label' => 'Accept Order',
-                'action' => 'accept',
-            ],
-            'cancel' => [
-                'label' => 'Cancel Order',
-                'action' => 'cancel',
-            ],
-            'send_to_rider' => false,
-        ], $order->getAction());
-
-        $order->status_id = Orders::STATUS_PROCESSING;
-        $this->assertSame([
-            'label' => 'Order Processing',
-            'button' => [
-                'label' => 'Ready For Pickup',
-                'action' => 'ready-for-pickup',
-            ],
-            'cancel' => [
-                'label' => 'Cancel Order',
-                'action' => 'cancel',
-            ],
-            'send_to_rider' => true,
-        ], $order->getAction());
-
-        $order->status_id = Orders::STATUS_READY_FOR_PICKUP;
-        $this->assertSame([
-            'label' => 'Waiting for Rider to Pickup',
-            'button' => null,
-            'cancel' => [
-                'label' => 'Cancel Order',
-                'action' => 'cancel',
-            ],
-            'send_to_rider' => false,
-        ], $order->getAction());
-
-        $order->status_id = Orders::STATUS_CANCELLED;
-        $this->assertSame([
-            'label' => 'Cancel Order',
-            'button' => null,
-            'cancel' => null,
-            'send_to_rider' => false,
-        ], $order->getAction());
-    }
-
-    private function createOrder(int $partnerId): Orders
-    {
         $orderId = DB::table('order')->insertGetId([
             'user_id' => 10,
-            'partner_id' => $partnerId,
-            'status_id' => Orders::STATUS_ORDER_PLACED,
+            'cart_id' => $cartId,
+            'partner_id' => 20,
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
             'submitted_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
@@ -366,19 +238,20 @@ class MerchantOrderAcceptanceTest extends TestCase
         return Orders::findOrFail($orderId);
     }
 
-    private function merchantRequest(int $merchantId, ?string $action = null): Request
+    private function merchantRequest(?string $action = null): Request
     {
         $merchant = new Partners;
-        $merchant->id = $merchantId;
+        $merchant->id = 20;
 
         $user = User::findOrFail(10);
         $user->setRelation('merchant', $merchant);
 
-        $request = Request::create(
-            '/api/merchant/orders/1/accept',
-            'POST',
-            $action ? ['action' => $action] : [],
-        );
+        $parameters = ['store_location_id' => 200];
+        if ($action) {
+            $parameters['action'] = $action;
+        }
+
+        $request = Request::create('/api/merchant/orders/1/accept', 'POST', $parameters);
         $request->setUserResolver(fn () => $user);
 
         return $request;

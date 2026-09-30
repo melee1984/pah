@@ -285,7 +285,7 @@
             });
           },
           completedOrders: function() {
-            return this.orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment && Number(order.order_status_id) === 7);
+            return this.orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment && [7, 9].includes(Number(order.order_status_id)));
           },
           cancelledOrders: function() {
             return this.orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment && Number(order.order_status_id) === 8);
@@ -313,7 +313,7 @@
             return 'Pending';
           },
           selectedOrderIsCompleted: function() {
-            return this.selectedOrder && Number(this.selectedOrder.order_status_id) === 7;
+            return this.selectedOrder && [7, 9].includes(Number(this.selectedOrder.order_status_id));
           },
           refreshIndicatorClass: function() {
             return {

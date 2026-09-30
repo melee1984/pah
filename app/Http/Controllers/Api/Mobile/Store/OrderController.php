@@ -187,7 +187,8 @@ class OrderController extends Controller
 				$order->submitted_at_ = date("d-m-Y G:ia", strtotime($order->submitted_at));
 				$order->formated_submitted_at_ = date("D, d M G:ia", strtotime($order->submitted_at));
 				$order->cart->address;
-				$order->status;  
+				$order->status;
+				$order->orderStatus;
 				$order->user;
 				$order->logs = $order->getActionLogs();
 				$order->action = $order->getAction();
@@ -327,11 +328,20 @@ class OrderController extends Controller
 
             $order->accepted_by_store_id = $order->cart->partner_location_address_id; // This should update the accepted_by_store_id to the partner location address id instead of the merchant id
             $order->store_accepted_at = now();
-            $order->booking_status_id = BookingStatus::STATUS_BOOKING_PLACED;
-            $order->order_status_id = LibraryStatus::STATUS_PROCESSING;
+            $requiresDelivery = $order->cart->requiresDelivery();
+            $order->booking_status_id = $requiresDelivery
+                ? BookingStatus::STATUS_BOOKING_PLACED
+                : null;
+            $order->order_status_id = $requiresDelivery
+                ? LibraryStatus::STATUS_PROCESSING
+                : LibraryStatus::STATUS_ORDER_ACCEPTED;
             $order->save();
 
-            foreach ([LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING] as $statusId) {
+            $acceptedStatuses = $requiresDelivery
+                ? [LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING]
+                : [LibraryStatus::STATUS_ORDER_ACCEPTED];
+
+            foreach ($acceptedStatuses as $statusId) {
                 OrderProcess::updateOrCreate([
                     'status_id' => $statusId,
                     'order_id' => $order->id,
@@ -418,7 +428,12 @@ class OrderController extends Controller
                 ], 404)];
             }
 
-            if ((int) $order->order_status_id === LibraryStatus::STATUS_READY_FOR_PICKUP
+            $requiresDelivery = $order->cart->requiresDelivery();
+            $completedStatus = $requiresDelivery
+                ? LibraryStatus::STATUS_READY_FOR_PICKUP
+                : LibraryStatus::STATUS_COMPLETED;
+
+            if ((int) $order->order_status_id === $completedStatus
                 && $order->store_accepted_at
                 && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
                 return [
@@ -427,9 +442,13 @@ class OrderController extends Controller
                 ];
             }
 
+            $allowedStatuses = $requiresDelivery
+                ? [LibraryStatus::STATUS_PROCESSING]
+                : [LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING];
+
             if (! $order->store_accepted_at
                 || (int) $order->accepted_by_store_id !== (int) $request->store_location_id
-                || (int) $order->order_status_id !== LibraryStatus::STATUS_PROCESSING) {
+                || ! in_array((int) $order->order_status_id, $allowedStatuses, true)) {
 
                 \Log::info(['Order not ready for pickup' => [
                     'order_id' => $order->id,
@@ -441,16 +460,20 @@ class OrderController extends Controller
 
                 return ['response' => response()->json([
                     'status' => 0,
-                    'message' => 'Only processing orders can be marked ready for pickup.',
+                    'message' => $requiresDelivery
+                        ? 'Only processing orders can be marked ready for pickup.'
+                        : 'Only accepted orders can be completed.',
                 ], 409)];
             }
 
-            $order->order_status_id = LibraryStatus::STATUS_READY_FOR_PICKUP;
-            $order->booking_status_id = BookingStatus::STATUS_BOOKING_PLACED;
+            $order->order_status_id = $completedStatus;
+            $order->booking_status_id = $requiresDelivery
+                ? BookingStatus::STATUS_BOOKING_PLACED
+                : null;
             $order->save();
 
             OrderProcess::updateOrCreate([
-                'status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
+                'status_id' => $completedStatus,
                 'order_id' => $order->id,
             ], [
                 'user_id' => $user->id,
@@ -459,6 +482,7 @@ class OrderController extends Controller
             return [
                 'order' => $order,
                 'already_ready' => false,
+                'requires_delivery' => $requiresDelivery,
             ];
         });
 
@@ -469,8 +493,12 @@ class OrderController extends Controller
         return response()->json([
             'status' => 1,
             'message' => $result['already_ready']
-                ? 'Order was already ready for pickup.'
-                : 'Order is ready for pickup.',
+                ? ($result['order']->cart->requiresDelivery()
+                    ? 'Order was already ready for pickup.'
+                    : 'Order was already completed.')
+                : ($result['requires_delivery']
+                    ? 'Order is ready for pickup.'
+                    : 'Order completed successfully.'),
             'order_id' => $result['order']->id,
             'order_status_id' => $result['order']->order_status_id,
             'action' => $result['order']->getAction(),
@@ -523,7 +551,9 @@ class OrderController extends Controller
             }
 
             $order->order_status_id = LibraryStatus::STATUS_CANCELLED;
-            $order->booking_status_id = 8; // cancelled
+            $order->booking_status_id = $order->cart->requiresDelivery()
+                ? BookingStatus::STATUS_BOOKING_CANCELLED
+                : null;
             $order->save();
 
             OrderProcess::updateOrCreate([

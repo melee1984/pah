@@ -143,11 +143,11 @@ class OrderController extends Controller
         $discount =0;
         $total_comm = 0;
         $total_net = 0;
-        $completedAt = DB::raw('COALESCE(delivered_at, submitted_at)');
+        $completedAt = DB::raw('COALESCE(delivered_at, updated_at, submitted_at)');
         $query = Orders::with(['cart', 'cart.address', 'cart.diningTable', 'partner', 'rider', 'status'])
             ->wherePartnerId(Auth::User()->merchant->id)
             ->whereNotNull('submitted_at')
-            ->where('order_status_id', LibraryStatus::STATUS_DELIVERED);
+            ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
 
         if ($request->filled('dateFilter')) {
             $dateFilter = explode(' - ', $request->input('dateFilter'), 2);
@@ -192,7 +192,7 @@ class OrderController extends Controller
 
         foreach($orders as $order) {
 
-            $completedDate = $order->delivered_at ?: $order->submitted_at;
+            $completedDate = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
             $order->completed_date = Carbon::parse($completedDate)->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
@@ -246,11 +246,11 @@ class OrderController extends Controller
             $order->dashboard_commission = (float) str_replace(',', '', (string) ($summary['total_comm'] ?? 0));
         });
 
-        $completed = $orders->where('order_status_id', LibraryStatus::STATUS_DELIVERED);
+        $completed = $orders->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
         $now = now();
         $salesForPeriod = function (Carbon $start) use ($completed, $now) {
             return $completed->filter(function ($order) use ($start, $now) {
-                $date = $order->delivered_at ?: $order->submitted_at;
+                $date = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
 
                 return $date && Carbon::parse($date)->between($start, $now);
             })->sum('dashboard_total');
@@ -259,7 +259,7 @@ class OrderController extends Controller
         $salesTrend = collect(range(6, 0))->map(function ($daysAgo) use ($completed, $now) {
             $date = $now->copy()->subDays($daysAgo);
             $sales = $completed->filter(function ($order) use ($date) {
-                $completedAt = $order->delivered_at ?: $order->submitted_at;
+                $completedAt = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
 
                 return $completedAt && Carbon::parse($completedAt)->isSameDay($date);
             })->sum('dashboard_total');

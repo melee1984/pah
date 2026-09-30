@@ -142,6 +142,8 @@ class Orders extends Model
     // order action for merchant 
     public function getAction()
     {
+        $requiresDelivery = $this->cart?->requiresDelivery() ?? true;
+
         return match ((int) $this->order_status_id) {
             LibraryStatus::STATUS_ORDER_PLACED => [
                 'label' => 'Pending',
@@ -156,16 +158,16 @@ class Orders extends Model
                 'send_to_rider' => false,
             ],
             LibraryStatus::STATUS_ORDER_ACCEPTED, LibraryStatus::STATUS_PROCESSING => [
-                'label' => 'Order Processing',
+                'label' => $requiresDelivery ? 'Order Processing' : 'Order Accepted',
                 'button' => [
-                    'label' => 'Ready For Pickup',
+                    'label' => $requiresDelivery ? 'Ready For Pickup' : 'Ready to Serve',
                     'action' => 'ready-for-pickup',
                 ],
                 'cancel' => [
                     'label' => 'Cancel Order',
                     'action' => 'cancel',
                 ],
-                'send_to_rider' => true,
+                'send_to_rider' => $requiresDelivery,
             ],
             LibraryStatus::STATUS_READY_FOR_PICKUP => [
                 'label' => 'Waiting for Rider to Pickup',
@@ -178,6 +180,12 @@ class Orders extends Model
             ],
             LibraryStatus::STATUS_DELIVERED => [
                 'label' => 'Order Delivered',
+                'button' => null,
+                'cancel' => null,
+                'send_to_rider' => false,
+            ],
+            LibraryStatus::STATUS_COMPLETED => [
+                'label' => 'Order Completed',
                 'button' => null,
                 'cancel' => null,
                 'send_to_rider' => false,

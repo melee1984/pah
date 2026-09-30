@@ -92,14 +92,17 @@ class DashboardController extends Controller
             $order->dashboard_commission = $this->moneyValue($summary['total_comm'] ?? 0);
         });
 
-        $completedOrders = $orders->where('dashboard_status_id', LibraryStatus::STATUS_DELIVERED);
+        $completedOrders = $orders->whereIn('dashboard_status_id', LibraryStatus::COMPLETED_STATUSES);
         $incomingOrders = $orders
-            ->whereNotIn('dashboard_status_id', [LibraryStatus::STATUS_DELIVERED, LibraryStatus::STATUS_CANCELLED]);
+            ->whereNotIn('dashboard_status_id', [
+                ...LibraryStatus::COMPLETED_STATUSES,
+                LibraryStatus::STATUS_CANCELLED,
+            ]);
 
         $salesForPeriod = function (Carbon $start) use ($completedOrders, $now) {
             return $completedOrders
                 ->filter(function ($order) use ($start, $now) {
-                    $date = $order->delivered_at ?: $order->submitted_at;
+                    $date = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
 
                     return $date && Carbon::parse($date)->between($start, $now);
                 })
@@ -152,7 +155,7 @@ class DashboardController extends Controller
             $date = $now->copy()->subDays($daysAgo);
             $sales = $completedOrders
                 ->filter(function ($order) use ($date) {
-                    $completedAt = $order->delivered_at ?: $order->submitted_at;
+                    $completedAt = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
 
                     return $completedAt && Carbon::parse($completedAt)->isSameDay($date);
                 })

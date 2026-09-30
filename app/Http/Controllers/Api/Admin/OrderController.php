@@ -89,13 +89,13 @@ class OrderController extends Controller
         }
 
         $data['orders'] = $orders->whereNotIn('order_status_id', [
-            LibraryStatus::STATUS_DELIVERED,
+            ...LibraryStatus::COMPLETED_STATUSES,
             LibraryStatus::STATUS_CANCELLED,
         ])->values();
 
         // Pickup and dine-in orders do not move through the rider booking statuses,
         // so the order status is the shared source of truth for every option.
-        $data['completedOrders'] = $orders->where('order_status_id', LibraryStatus::STATUS_DELIVERED)->values();
+        $data['completedOrders'] = $orders->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES)->values();
         $data['cancelledOrders'] = $orders->where('order_status_id', LibraryStatus::STATUS_CANCELLED)->values();
 
         $data['riders'] = Riders::active()->get();
@@ -180,10 +180,10 @@ class OrderController extends Controller
 
         $merchant = "";
 
-        $completedAt = DB::raw('COALESCE(delivered_at, submitted_at)');
+        $completedAt = DB::raw('COALESCE(delivered_at, updated_at, submitted_at)');
         $query = Orders::with(['cart', 'partner'])
             ->whereNotNull('submitted_at')
-            ->where('order_status_id', LibraryStatus::STATUS_DELIVERED);
+            ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
      
         if ($request->has('dateFilter')) {
 
@@ -242,7 +242,7 @@ class OrderController extends Controller
             $order->status;
             $order->cart->address;
 
-            $completedDate = $order->delivered_at ?: $order->submitted_at;
+            $completedDate = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
             $order->submitted_date = Carbon::parse($completedDate)->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             

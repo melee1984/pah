@@ -14,6 +14,12 @@ class LibraryStatus extends Model
     public const STATUS_ARRIVAL_AT_CUSTOMER = 6; // it should have a combination here PICKUP and BOOKING_STATUS_ON_WAY
     public const STATUS_DELIVERED = 7;
     public const STATUS_CANCELLED = 8;
+    public const STATUS_COMPLETED = 9;
+
+    public const COMPLETED_STATUSES = [
+        self::STATUS_DELIVERED,
+        self::STATUS_COMPLETED,
+    ];
 
     protected $table = 'library_status';
 	protected $fillable = array('title');

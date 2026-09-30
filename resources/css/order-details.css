@@ -84,9 +84,9 @@
 }
 .order-filter-section {
     margin-bottom: 1.15rem;
-    padding: 1.15rem;
+    padding: 1.5rem;
     border: 1px solid #e7ebf1;
-    border-radius: 1rem;
+    border-radius: 1.15rem;
     background: linear-gradient(145deg, #fbfcfe, #f5f7fa);
 }
 
@@ -95,13 +95,13 @@
     display: flex;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 0.9rem;
+    margin-bottom: 1.2rem;
 }
 
 .order-filter-eyebrow {
     color: #e25445;
     display: block;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.12em;
     margin-bottom: 0.15rem;
@@ -110,20 +110,20 @@
 
 .order-filter-heading h3 {
     color: #26374d;
-    font-size: 1rem;
+    font-size: 1.25rem;
     font-weight: 800;
     margin: 0;
 }
 
 .order-filter-heading > small {
     color: #7b8798;
-    font-size: 0.75rem;
+    font-size: 0.85rem;
 }
 
 .order-option-filter {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
 .order-option-filter__button {
@@ -135,9 +135,9 @@
     box-shadow: 0 3px 10px rgba(38, 55, 77, 0.035);
     color: #475569;
     display: flex;
-    gap: 0.7rem;
-    min-height: 4.4rem;
-    padding: 0.75rem;
+    gap: 0.9rem;
+    min-height: 6.25rem;
+    padding: 1.1rem;
     position: relative;
     text-align: left;
     transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
@@ -164,12 +164,13 @@
 .order-option-filter__icon {
     align-items: center;
     background: currentColor;
-    border-radius: 0.75rem;
+    border-radius: 0.9rem;
     color: #fff;
     display: inline-flex;
-    flex: 0 0 2.65rem;
-    height: 2.65rem;
+    flex: 0 0 3.4rem;
+    height: 3.4rem;
     justify-content: center;
+    font-size: 1.2rem;
 }
 
 .order-option-filter__copy {
@@ -180,14 +181,14 @@
 
 .order-option-filter__copy strong {
     color: #2d3b50;
-    font-size: 0.88rem;
+    font-size: 1.05rem;
     line-height: 1.2;
 }
 
 .order-option-filter__copy small {
     color: #8490a0;
-    font-size: 0.7rem;
-    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    margin-top: 0.3rem;
     white-space: nowrap;
 }
 
@@ -200,14 +201,14 @@
 
 .order-option-filter__count strong {
     color: currentColor;
-    font-size: 1.05rem;
+    font-size: 1.4rem;
     line-height: 1;
 }
 
 .order-option-filter__count small {
     color: #9aa4b1;
-    font-size: 0.62rem;
-    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    margin-top: 0.3rem;
 }
 
 .order-status-filter-label {
@@ -259,8 +260,8 @@
 
 @media (max-width: 767px) {
     .order-detail-highlights { grid-template-columns: 1fr 1fr; }
-    .order-filter-section { padding: 0.9rem; }
+    .order-filter-section { padding: 1rem; }
     .order-filter-heading { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
     .order-option-filter { grid-template-columns: 1fr; }
-    .order-option-filter__button { min-height: 4rem; }
+    .order-option-filter__button { min-height: 5.25rem; }
 }

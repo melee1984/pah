@@ -81,7 +81,7 @@ class AgentCommissionService
 
     private function isDelivered(Orders $order): bool
     {
-        return (int) $order->order_status_id === LibraryStatus::STATUS_DELIVERED
+        return in_array((int) $order->order_status_id, LibraryStatus::COMPLETED_STATUSES, true)
             || $order->delivered_at !== null;
     }
 
