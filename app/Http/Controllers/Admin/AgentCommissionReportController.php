@@ -47,6 +47,10 @@ class AgentCommissionReportController extends Controller
 
         $baseQuery = AgentCommission::query()
             ->whereBetween('qualified_at', [$from, $to])
+            // ->whereHas('order', fn (Builder $query) => $query->where(function (Builder $statusQuery) {
+            //     $statusQuery
+            //        ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
+            // }))
             ->when($selectedAgentId, fn ($query) => $query->where('agent_id', $selectedAgentId))
             ->when($selectedRestaurantId, fn ($query) => $query->where('restaurant_id', $selectedRestaurantId))
             ->when($selectedStatus, fn ($query) => $query->where('status', $selectedStatus));
