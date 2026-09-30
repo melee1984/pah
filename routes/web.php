@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PartnerPromotionController;
+use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Booking\RequestController;
 use App\Http\Controllers\Flower\FlowerstoreController;
@@ -228,6 +229,22 @@ Route::middleware('admin')->group(function () {
     Route::resource('data/dashboard/coupons', CouponController::class)
         ->except('show')
         ->names('dashboard.coupons');
+    Route::get('data/dashboard/push-notifications', [PushNotificationController::class, 'index'])
+        ->name('dashboard.push-notifications.index');
+    Route::get('data/dashboard/push-notifications/create', [PushNotificationController::class, 'create'])
+        ->name('dashboard.push-notifications.create');
+    Route::post('data/dashboard/push-notifications/preview', [PushNotificationController::class, 'storePreview'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.push-notifications.store-preview');
+    Route::get('data/dashboard/push-notifications/{notification}/preview', [PushNotificationController::class, 'preview'])
+        ->name('dashboard.push-notifications.preview');
+    Route::post('data/dashboard/push-notifications/{notification}/confirm', [PushNotificationController::class, 'confirm'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.push-notifications.confirm');
+    Route::delete('data/dashboard/push-notifications/{notification}/draft', [PushNotificationController::class, 'destroyDraft'])
+        ->name('dashboard.push-notifications.destroy-draft');
+    Route::get('data/dashboard/push-notifications/{notification}', [PushNotificationController::class, 'show'])
+        ->name('dashboard.push-notifications.show');
     Route::get('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'show'])->name('dashboard.merchant.application.show');
     Route::post('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'application'])->name('dashboard.merchant.application.review');
     Route::post('data/dashboard/merchant/{restaurant:id}/documents/{document}/review', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'document'])->name('dashboard.merchant.documents.review');
