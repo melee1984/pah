@@ -1,0 +1,204 @@
+{"kind":"deck","id":"pr/boaupy","name":"Deck"}
+{"kind":"layout","layoutId":"3ccaf21b-e520-4b85-b0cc-7f1f306aeae8","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"3110c4d6-1311-462d-b5af-42c8b3819230","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/dso951","slide":1,"title":"What Pahatud Really Is","textShapes":3}
+{"kind":"shape","id":"sh/jylsvixk","slide":1,"bbox":[716,-168,760,982]}
+{"kind":"shape","id":"sh/kzu9one5","slide":1,"bbox":[868,34,300,640]}
+{"kind":"textbox","id":"sh/bulsryxo","slide":1,"text":"What Pahatud Really Is","textPreview":"What Pahatud Really Is","textChars":22,"textLines":1,"bbox":[66,210,690,104]}
+{"kind":"textbox","id":"sh/wvu9k3e9","slide":1,"text":"A customer and investor overview of Pahatud's local commerce and delivery platform.","textPreview":"A customer and investor overview of Pahatud's local commerce and delivery platform.","textChars":83,"textLines":1,"bbox":[70,352,622,105]}
+{"kind":"textbox","id":"sh/m5sretw7","slide":1,"text":"READY, SET, DELIVERED","textPreview":"READY, SET, DELIVERED","textChars":21,"textLines":1,"bbox":[518,601,254,42]}
+{"kind":"image","id":"im/sjm1kfuh","slide":1,"name":"","alt":"PahatudFood mobile app home screen","bbox":[891,57,254,594]}
+{"kind":"image","id":"im/fmdkfut8","slide":1,"name":"","alt":"Pahatud Delivery Services logo","bbox":[66,52,288,96]}
+{"kind":"image","id":"im/gnm1ozut","slide":1,"name":"","alt":"Pahatud delivery rider illustration","bbox":[82,508,402,164]}
+{"kind":"notes","id":"nt/dso951","slide":1,"text":"Sources: resources/views/pages/about.blade.php and resources/views/pages/home.blade.php. Assets: public/images/logo-big.png, public/images/motor.png, public/images/app-preview/home.png."}
+{"kind":"slide","id":"sl/icdu58","slide":2,"title":"A local delivery marketplace","textShapes":15}
+{"kind":"shape","id":"sh/crehcn2t","slide":2,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/bq5g3i18","slide":2,"text":"A local delivery marketplace","textPreview":"A local delivery marketplace","textChars":28,"textLines":1,"bbox":[96,44,656,66]}
+{"kind":"textbox","id":"sh/qpwzadkn","slide":2,"text":"Pahatud connects customers with neighborhood restaurants and merchants, then coordinates the people and tools needed to complete delivery.","textPreview":"Pahatud connects customers with neighborhood restaurants and merchants, then coordinates the people and tools needed to complete delivery.","textChars":138,"textLines":1,"bbox":[96,118,656,82]}
+{"kind":"textbox","id":"sh/lwni9sja","slide":2,"text":"Pahatud means “to request to deliver.”","textPreview":"Pahatud means “to request to deliver.”","textChars":38,"textLines":1,"bbox":[76,224,610,56]}
+{"kind":"textbox","id":"sh/0vehgn25","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,316,48,28]}
+{"kind":"textbox","id":"sh/zu507i1k","slide":2,"text":"For customers","textPreview":"For customers","textChars":13,"textLines":1,"bbox":[138,312,548,34]}
+{"kind":"textbox","id":"sh/ytwzedkz","slide":2,"text":"Discover local choices, place orders, use discounts, and follow delivery from the mobile experience.","textPreview":"Discover local choices, place orders, use discounts, and follow delivery from the mobile experience.","textChars":100,"textLines":1,"bbox":[138,354,548,70]}
+{"kind":"textbox","id":"sh/103yxoj6","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,445,48,28]}
+{"kind":"textbox","id":"sh/gzuh432l","slide":2,"text":"For local businesses","textPreview":"For local businesses","textChars":20,"textLines":1,"bbox":[138,441,548,34]}
+{"kind":"textbox","id":"sh/qdsb658j","slide":2,"text":"Publish products, manage locations and orders, run promotions, and review sales and commission.","textPreview":"Publish products, manage locations and orders, run promotions, and review sales and commission.","textChars":95,"textLines":1,"bbox":[138,483,548,70]}
+{"kind":"textbox","id":"sh/be1cfa94","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,574,48,28]}
+{"kind":"textbox","id":"sh/cfut8fqp","slide":2,"text":"For the local network","textPreview":"For the local network","textChars":21,"textLines":1,"bbox":[138,570,548,34]}
+{"kind":"textbox","id":"sh/d03uh0ra","slide":2,"text":"Coordinate riders, agents, merchant applications, support, and operational reporting.","textPreview":"Coordinate riders, agents, merchant applications, support, and operational reporting.","textChars":85,"textLines":1,"bbox":[138,612,548,70]}
+{"kind":"shape","id":"sh/y1cba58v","slide":2,"bbox":[760,58,448,586]}
+{"kind":"textbox","id":"sh/03utcfql","slide":2,"text":"Davao-born","textPreview":"Davao-born","textChars":10,"textLines":1,"bbox":[812,398,320,48]}
+{"kind":"textbox","id":"sh/l43ulkr6","slide":2,"text":"Built around the daily needs of Davao customers, restaurants, merchants, riders, and local entrepreneurs.","textPreview":"Built around the daily needs of Davao customers, restaurants, merchants, riders, and local entrepreneurs.","textChars":105,"textLines":1,"bbox":[812,458,332,122]}
+{"kind":"textbox","id":"sh/m5cbep8r","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"image","id":"im/onids7i1","slide":2,"name":"","alt":"Pahatud Delivery Services brand with rider graphic","bbox":[786,96,396,264]}
+{"kind":"notes","id":"nt/icdu58","slide":2,"text":"Sources: resources/views/pages/about.blade.php; resources/views/pages/home.blade.php; AGENTS.md platform summary. Brand image: public/images/pahatud-logo-with-motor.jpg."}
+{"kind":"slide","id":"sl/k012m8","slide":3,"title":"The customer experience","textShapes":16}
+{"kind":"shape","id":"sh/dknyx0fy","slide":3,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/qhwzmlw7","slide":3,"text":"The customer experience","textPreview":"The customer experience","textChars":23,"textLines":1,"bbox":[96,44,1112,66]}
+{"kind":"textbox","id":"sh/ri5gvqxs","slide":3,"text":"One simple journey from local discovery to delivery at the door.","textPreview":"One simple journey from local discovery to delivery at the door.","textChars":64,"textLines":1,"bbox":[96,118,1112,55]}
+{"kind":"shape","id":"sh/4fuhkve1","slide":3,"bbox":[76,172,332,482]}
+{"kind":"textbox","id":"sh/itczilwb","slide":3,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[488,198,58,36]}
+{"kind":"textbox","id":"sh/3elgrqxg","slide":3,"text":"Choose","textPreview":"Choose","textChars":6,"textLines":1,"bbox":[572,196,164,38]}
+{"kind":"textbox","id":"sh/gruhgbe5","slide":3,"text":"Browse nearby restaurants and see delivery estimates and fees.","textPreview":"Browse nearby restaurants and see delivery estimates and fees.","textChars":62,"textLines":1,"bbox":[744,197,440,62]}
+{"kind":"shape","id":"sh/hs3ypgfq","slide":3,"bbox":[518,241,0,63]}
+{"kind":"textbox","id":"sh/l0vmhg3y","slide":3,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[488,310,58,36]}
+{"kind":"textbox","id":"sh/kzm58b2d","slide":3,"text":"Order","textPreview":"Order","textChars":5,"textLines":1,"bbox":[572,308,164,38]}
+{"kind":"textbox","id":"sh/zyd4f6ls","slide":3,"text":"Select products, quantities, add-ons, address, and payment method.","textPreview":"Select products, quantities, add-ons, address, and payment method.","textChars":66,"textLines":1,"bbox":[744,309,440,62]}
+{"kind":"shape","id":"sh/yx436lk7","slide":3,"bbox":[518,353,0,63]}
+{"kind":"textbox","id":"sh/xwvmdg3m","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[488,422,58,36]}
+{"kind":"textbox","id":"sh/cvml4b21","slide":3,"text":"Save","textPreview":"Save","textChars":4,"textLines":1,"bbox":[572,420,164,38]}
+{"kind":"textbox","id":"sh/but4b6lg","slide":3,"text":"Apply available coupon discounts when an order qualifies.","textPreview":"Apply available coupon discounts when an order qualifies.","textChars":57,"textLines":1,"bbox":[744,421,440,62]}
+{"kind":"shape","id":"sh/atk321kb","slide":3,"bbox":[518,465,0,63]}
+{"kind":"textbox","id":"sh/psbm9w3q","slide":3,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[488,534,58,36]}
+{"kind":"textbox","id":"sh/o72l0r25","slide":3,"text":"Track","textPreview":"Track","textChars":5,"textLines":1,"bbox":[572,532,164,38]}
+{"kind":"textbox","id":"sh/gb65wba1","slide":3,"text":"Follow the order and delivery status until it reaches the customer.","textPreview":"Follow the order and delivery status until it reaches the customer.","textChars":67,"textLines":1,"bbox":[744,533,440,62]}
+{"kind":"textbox","id":"sh/1cfmpwbm","slide":3,"text":"Convenient cash on delivery is promoted in the current customer experience.","textPreview":"Convenient cash on delivery is promoted in the current customer experience.","textChars":75,"textLines":1,"bbox":[488,626,696,28]}
+{"kind":"textbox","id":"sh/e9o3u1sv","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"image","id":"im/w7uhcbyp","slide":3,"name":"","alt":"Nearby restaurants in the PahatudFood app","bbox":[133,193,218,439]}
+{"kind":"notes","id":"nt/k012m8","slide":3,"text":"Sources: resources/views/pages/home.blade.php; routes/api.php checkout coupon routes; app/Http/Controllers/Api/User/Cart/CheckoutController.php. Screenshot: public/images/app-preview/restaurants.png."}
+{"kind":"slide","id":"sl/adv5b2","slide":4,"title":"More than restaurant ordering","textShapes":9}
+{"kind":"shape","id":"sh/u1o72pwf","slide":4,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/hofqx4vq","slide":4,"text":"More than restaurant ordering","textPreview":"More than restaurant ordering","textChars":29,"textLines":1,"bbox":[96,44,1112,66]}
+{"kind":"textbox","id":"sh/gn6p4zel","slide":4,"text":"The platform already supports several ways for local customers to request products and delivery.","textPreview":"The platform already supports several ways for local customers to request products and delivery.","textChars":96,"textLines":1,"bbox":[96,118,1112,55]}
+{"kind":"shape","id":"sh/3qx8zudw","slide":4,"bbox":[72,176,332,274]}
+{"kind":"textbox","id":"sh/pszq14v2","slide":4,"text":"Food and restaurants","textPreview":"Food and restaurants","textChars":20,"textLines":1,"bbox":[72,478,332,42]}
+{"kind":"textbox","id":"sh/4rq98zeh","slide":4,"text":"Local restaurant discovery, menu ordering, cart, checkout, discounts, and order history.","textPreview":"Local restaurant discovery, menu ordering, cart, checkout, discounts, and order history.","textChars":88,"textLines":1,"bbox":[72,532,332,106]}
+{"kind":"shape","id":"sh/ruh83ed8","slide":4,"bbox":[444,176,332,274]}
+{"kind":"textbox","id":"sh/gvix8fip","slide":4,"text":"Flowers and gifts","textPreview":"Flowers and gifts","textChars":17,"textLines":1,"bbox":[444,478,332,42]}
+{"kind":"textbox","id":"sh/hwbe1kza","slide":4,"text":"A dedicated flower-store experience supports local florists and same-day delivery offers.","textPreview":"A dedicated flower-store experience supports local florists and same-day delivery offers.","textChars":89,"textLines":1,"bbox":[444,532,332,106]}
+{"kind":"shape","id":"sh/ut0f650j","slide":4,"bbox":[816,176,332,274]}
+{"kind":"textbox","id":"sh/4j2xcfyl","slide":4,"text":"Delivery requests","textPreview":"Delivery requests","textChars":17,"textLines":1,"bbox":[816,478,332,42]}
+{"kind":"textbox","id":"sh/5kbe5kz6","slide":4,"text":"Booking routes and rider workflows support customer requests beyond standard restaurant orders.","textPreview":"Booking routes and rider workflows support customer requests beyond standard restaurant orders.","textChars":95,"textLines":1,"bbox":[816,532,332,106]}
+{"kind":"textbox","id":"sh/ixkfapgv","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"image","id":"im/jupsbixc","slide":4,"name":"","geometry":"roundRect","alt":"Restaurant burger product listed in Pahatud","bbox":[84,188,308,250]}
+{"kind":"image","id":"im/b6ps7yxg","slide":4,"name":"","geometry":"roundRect","alt":"Flower bouquet offered through the Pahatud flower store","bbox":[456,188,308,250]}
+{"kind":"image","id":"im/8bmh4z2d","slide":4,"name":"","geometry":"roundRect","alt":"Booking and request delivery illustration","bbox":[828,188,308,250]}
+{"kind":"notes","id":"nt/adv5b2","slide":4,"text":"Sources: routes/web.php restaurant, flower-store, and booking routes; resources/views/pages/flower/view.blade.php; resources/views/pages/booking/view.blade.php; checkout and customer profile routes. Assets are existing Pahatud files under public/uploads and public/images."}
+{"kind":"slide","id":"sl/cjgbn2","slide":5,"title":"A practical operating system for merchants","textShapes":15}
+{"kind":"shape","id":"sh/qhw32xob","slide":5,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/dknmdsnm","slide":5,"text":"A practical operating system for merchants","textPreview":"A practical operating system for merchants","textChars":42,"textLines":1,"bbox":[96,44,1126,66]}
+{"kind":"textbox","id":"sh/cjel4nm1","slide":5,"text":"Pahatud gives restaurants a way to join the marketplace and run daily commerce from one dashboard.","textPreview":"Pahatud gives restaurants a way to join the marketplace and run daily commerce from one dashboard.","textChars":98,"textLines":1,"bbox":[96,118,1126,55]}
+{"kind":"shape","id":"sh/z6p4f25s","slide":5,"bbox":[72,174,384,486]}
+{"kind":"textbox","id":"sh/187mhcny","slide":5,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[520,212,42,26]}
+{"kind":"textbox","id":"sh/07yl87md","slide":5,"text":"Get ready","textPreview":"Get ready","textChars":9,"textLines":1,"bbox":[520,248,294,38]}
+{"kind":"textbox","id":"sh/valk3i5o","slide":5,"text":"Maintain business profile, branch addresses, contacts, and payout details.","textPreview":"Maintain business profile, branch addresses, contacts, and payout details.","textChars":74,"textLines":1,"bbox":[520,299,300,112]}
+{"kind":"textbox","id":"sh/upc3udo3","slide":5,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[868,212,42,26]}
+{"kind":"textbox","id":"sh/kvy9crmt","slide":5,"text":"Build the menu","textPreview":"Build the menu","textChars":14,"textLines":1,"bbox":[868,248,294,38]}
+{"kind":"textbox","id":"sh/lg7alwne","slide":5,"text":"Add products, prices, categories, availability, and add-ons.","textPreview":"Add products, prices, categories, availability, and add-ons.","textChars":60,"textLines":1,"bbox":[868,299,300,112]}
+{"kind":"textbox","id":"sh/ytgrah4n","slide":5,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[520,432,42,26]}
+{"kind":"textbox","id":"sh/jupsjm58","slide":5,"text":"Run orders","textPreview":"Run orders","textChars":10,"textLines":1,"bbox":[520,468,294,38]}
+{"kind":"textbox","id":"sh/8ji9gbmp","slide":5,"text":"Review new orders, prepare items, and follow delivery status.","textPreview":"Review new orders, prepare items, and follow delivery status.","textChars":61,"textLines":1,"bbox":[520,519,300,112]}
+{"kind":"textbox","id":"sh/tkrapwna","slide":5,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[868,432,42,26]}
+{"kind":"textbox","id":"sh/6hgre14j","slide":5,"text":"Learn and improve","textPreview":"Learn and improve","textChars":17,"textLines":1,"bbox":[868,468,294,38]}
+{"kind":"textbox","id":"sh/7ipsn654","slide":5,"text":"Review sales, commission, discounts, net amount, vouchers, and coupons.","textPreview":"Review sales, commission, discounts, net amount, vouchers, and coupons.","textChars":71,"textLines":1,"bbox":[868,519,300,112]}
+{"kind":"textbox","id":"sh/one947ml","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"image","id":"im/ry50fq9c","slide":5,"name":"","alt":"Pahatud merchant partnership illustration","bbox":[100,192,328,450]}
+{"kind":"notes","id":"nt/cjgbn2","slide":5,"text":"Source: resources/views/merchant/partials/documentation.blade.php and merchant routes in routes/web.php. Illustration: public/images/partner-with-us.jpg."}
+{"kind":"slide","id":"sl/8fm1kw","slide":6,"title":"The operating network behind each order","textShapes":9}
+{"kind":"shape","id":"sh/orexw32h","slide":6,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/n65w3i1c","slide":6,"text":"The operating network behind each order","textPreview":"The operating network behind each order","textChars":39,"textLines":1,"bbox":[96,44,1112,66]}
+{"kind":"textbox","id":"sh/m5wfudkr","slide":6,"text":"Riders, agents, and Pahatud operations turn marketplace demand into completed local delivery.","textPreview":"Riders, agents, and Pahatud operations turn marketplace demand into completed local delivery.","textChars":93,"textLines":1,"bbox":[96,118,1112,55]}
+{"kind":"textbox","id":"sh/xw7e9sje","slide":6,"text":"Rider operations","textPreview":"Rider operations","textChars":16,"textLines":1,"bbox":[76,190,316,42]}
+{"kind":"textbox","id":"sh/wvex0n2t","slide":6,"text":"Nearby job offers\nRoute and delivery events\nPickup and customer verification\nCOD, proof, wallet, and earnings tools","textPreview":"Nearby job offers | Route and delivery events | Pickup and customer verification | COD, proof, wallet, and earnings tools","textChars":115,"textLines":4,"bbox":[76,252,354,188]}
+{"kind":"shape","id":"sh/bu5w7i18","slide":6,"bbox":[76,463,354,0]}
+{"kind":"textbox","id":"sh/atwfydkn","slide":6,"text":"Agent growth program","textPreview":"Agent growth program","textChars":20,"textLines":1,"bbox":[76,488,338,42]}
+{"kind":"textbox","id":"sh/l07edsja","slide":6,"text":"Agents enroll restaurants, help complete document review, monitor approval, and earn a share of Pahatud's commission on qualifying delivered orders.","textPreview":"Agents enroll restaurants, help complete document review, monitor approval, and earn a share of Pahatud's commission on qualifying delive...","textChars":148,"textLines":1,"bbox":[76,548,368,108]}
+{"kind":"shape","id":"sh/kzyx4n2p","slide":6,"bbox":[520,164,334,498]}
+{"kind":"shape","id":"sh/netwrm54","slide":6,"bbox":[904,214,304,352]}
+{"kind":"textbox","id":"sh/of2dkrmp","slide":6,"text":"Pahatud operations","textPreview":"Pahatud operations","textChars":18,"textLines":1,"bbox":[940,252,232,72]}
+{"kind":"textbox","id":"sh/pgbetwna","slide":6,"text":"Approves applications\nCoordinates support\nMonitors orders and bookings\nReviews reports and payouts","textPreview":"Approves applications | Coordinates support | Monitors orders and bookings | Reviews reports and payouts","textChars":98,"textLines":4,"bbox":[940,352,232,150]}
+{"kind":"textbox","id":"sh/ahkvm14f","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"image","id":"im/98nydk3y","slide":6,"name":"","alt":"Pahatud order tracking screen","bbox":[574,184,226,454]}
+{"kind":"notes","id":"nt/8fm1kw","slide":6,"text":"Sources: routes/rider.php; app/Services/RiderOfferDispatcher.php; resources/views/agent/dashboard.blade.php; app/Services/AgentCommissionService.php; admin routes in routes/web.php. Screenshot: public/images/app-preview/order-tracking.png."}
+{"kind":"slide","id":"sl/c44wut","slide":7,"title":"A stronger network creates more value","textShapes":13}
+{"kind":"shape","id":"sh/bq1wbexo","slide":7,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/crad4je9","slide":7,"text":"A stronger network creates more value","textPreview":"A stronger network creates more value","textChars":37,"textLines":1,"bbox":[96,44,1112,66]}
+{"kind":"textbox","id":"sh/dsjedofu","slide":7,"text":"More local supply creates more customer choice. More orders create more value for merchants, riders, agents, and Pahatud.","textPreview":"More local supply creates more customer choice. More orders create more value for merchants, riders, agents, and Pahatud.","textChars":121,"textLines":1,"bbox":[96,118,1112,55]}
+{"kind":"shape","id":"sh/2l8ve9w7","slide":7,"bbox":[554,271,172,172]}
+{"kind":"textbox","id":"sh/3mhw7exs","slide":7,"text":"PAHATUD","textPreview":"PAHATUD","textChars":7,"textLines":1,"bbox":[570,322,140,42]}
+{"kind":"shape","id":"sh/onqdgjed","slide":7,"bbox":[86,196,308,138]}
+{"kind":"textbox","id":"sh/poze9ofy","slide":7,"text":"CUSTOMERS","textPreview":"CUSTOMERS","textChars":9,"textLines":1,"bbox":[112,222,256,26]}
+{"kind":"textbox","id":"sh/exovapwb","slide":7,"text":"Choice, convenience, discounts, and delivery tracking","textPreview":"Choice, convenience, discounts, and delivery tracking","textChars":53,"textLines":1,"bbox":[112,258,256,62]}
+{"kind":"shape","id":"sh/fyhw3uxw","slide":7,"bbox":[86,454,308,138]}
+{"kind":"textbox","id":"sh/fut0fyd0","slide":7,"text":"MERCHANTS","textPreview":"MERCHANTS","textChars":9,"textLines":1,"bbox":[112,480,256,26]}
+{"kind":"textbox","id":"sh/e9kz6twf","slide":7,"text":"Digital storefront, orders, promotions, and reporting","textPreview":"Digital storefront, orders, promotions, and reporting","textChars":53,"textLines":1,"bbox":[112,516,256,62]}
+{"kind":"shape","id":"sh/1wbihovq","slide":7,"bbox":[886,196,308,138]}
+{"kind":"textbox","id":"sh/gv2h83e5","slide":7,"text":"RIDERS","textPreview":"RIDERS","textChars":6,"textLines":1,"bbox":[912,222,256,26]}
+{"kind":"textbox","id":"sh/nyt0jydw","slide":7,"text":"Delivery offers, routing, earnings, and service proof","textPreview":"Delivery offers, routing, earnings, and service proof","textChars":53,"textLines":1,"bbox":[912,258,256,62]}
+{"kind":"shape","id":"sh/2xkzatwb","slide":7,"bbox":[886,454,308,138]}
+{"kind":"textbox","id":"sh/p0vil8v2","slide":7,"text":"AGENTS","textPreview":"AGENTS","textChars":6,"textLines":1,"bbox":[912,480,256,26]}
+{"kind":"textbox","id":"sh/ozmhc3eh","slide":7,"text":"Merchant enrollment, guidance, and network growth","textPreview":"Merchant enrollment, guidance, and network growth","textChars":49,"textLines":1,"bbox":[912,516,256,62]}
+{"kind":"shape","id":"sh/j2907exs","slide":7,"bbox":[394,265,164,75]}
+{"kind":"shape","id":"sh/i10zy9w7","slide":7,"bbox":[394,443,164,11]}
+{"kind":"shape","id":"sh/mxo36hgv","slide":7,"bbox":[726,334,160,6]}
+{"kind":"shape","id":"sh/7yhkfmx0","slide":7,"bbox":[726,438,160,84]}
+{"kind":"textbox","id":"sh/8zql87yl","slide":7,"text":"The same platform coordinates demand, local supply, delivery, and merchant growth.","textPreview":"The same platform coordinates demand, local supply, delivery, and merchant growth.","textChars":82,"textLines":1,"bbox":[410,542,460,58]}
+{"kind":"textbox","id":"sh/9kz2hcf6","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"notes","id":"nt/c44wut","slide":7,"text":"Diagram synthesized from current customer, merchant, rider, agent, and admin capabilities in routes/web.php, routes/api.php, routes/rider.php, resources/views/pages/home.blade.php, resources/views/merchant/partials/documentation.blade.php, and resources/views/agent/dashboard.blade.php."}
+{"kind":"slide","id":"sl/y3wcjt","slide":8,"title":"How value and revenue move","textShapes":16}
+{"kind":"shape","id":"sh/utovq9cn","slide":8,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/hwze14ve","slide":8,"text":"How value and revenue move","textPreview":"How value and revenue move","textChars":26,"textLines":1,"bbox":[96,44,1112,66]}
+{"kind":"textbox","id":"sh/gvqdsjut","slide":8,"text":"Pahatud's current transaction mechanics connect revenue to completed marketplace activity.","textPreview":"Pahatud's current transaction mechanics connect revenue to completed marketplace activity.","textChars":90,"textLines":1,"bbox":[96,118,1112,55]}
+{"kind":"textbox","id":"sh/76xwvudw","slide":8,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,190,64,64]}
+{"kind":"textbox","id":"sh/65ovmpcb","slide":8,"text":"Customer transaction","textPreview":"Customer transaction","textChars":20,"textLines":1,"bbox":[174,188,292,42]}
+{"kind":"textbox","id":"sh/t8fex4v2","slide":8,"text":"The customer pays for products, applies any discount, and pays the calculated delivery fee.","textPreview":"The customer pays for products, applies any discount, and pays the calculated delivery fee.","textChars":91,"textLines":1,"bbox":[488,188,414,86]}
+{"kind":"shape","id":"sh/876dozuh","slide":8,"bbox":[936,187,272,74]}
+{"kind":"textbox","id":"sh/j2xcrud0","slide":8,"text":"ORDER VALUE + DELIVERY FEE","textPreview":"ORDER VALUE + DELIVERY FEE","textChars":26,"textLines":1,"bbox":[957,201,230,44]}
+{"kind":"textbox","id":"sh/y14vipcf","slide":8,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,332,64,64]}
+{"kind":"textbox","id":"sh/kn6tgbid","slide":8,"text":"Merchant commission","textPreview":"Merchant commission","textChars":19,"textLines":1,"bbox":[174,330,292,42]}
+{"kind":"textbox","id":"sh/lofupgjy","slide":8,"text":"Pahatud records an agreed commission percentage on the eligible product subtotal of delivered orders.","textPreview":"Pahatud records an agreed commission percentage on the eligible product subtotal of delivered orders.","textChars":101,"textLines":1,"bbox":[488,330,414,86]}
+{"kind":"shape","id":"sh/ylobe107","slide":8,"bbox":[936,329,272,74]}
+{"kind":"textbox","id":"sh/jmxcn61s","slide":8,"text":"TRANSACTION-LINKED PLATFORM REVENUE","textPreview":"TRANSACTION-LINKED PLATFORM REVENUE","textChars":35,"textLines":1,"bbox":[957,343,230,44]}
+{"kind":"textbox","id":"sh/cj6tcri1","slide":8,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,474,64,64]}
+{"kind":"textbox","id":"sh/xkfalwjm","slide":8,"text":"Delivery commission and incentives","textPreview":"Delivery commission and incentives","textChars":34,"textLines":1,"bbox":[174,472,292,42]}
+{"kind":"textbox","id":"sh/ah4ba10b","slide":8,"text":"The rider workflow records a platform commission on delivery earnings. Qualifying merchant commission can also fund agent incentives.","textPreview":"The rider workflow records a platform commission on delivery earnings. Qualifying merchant commission can also fund agent incentives.","textChars":133,"textLines":1,"bbox":[488,472,414,86]}
+{"kind":"shape","id":"sh/bixsj61w","slide":8,"bbox":[936,471,272,74]}
+{"kind":"textbox","id":"sh/gfqtovil","slide":8,"text":"DELIVERY ECONOMICS + NETWORK GROWTH","textPreview":"DELIVERY ECONOMICS + NETWORK GROWTH","textChars":35,"textLines":1,"bbox":[957,485,230,44]}
+{"kind":"textbox","id":"sh/hgzux0j6","slide":8,"text":"Rates are configurable and should be confirmed in commercial agreements. This slide explains the mechanics, not historical financial performance.","textPreview":"Rates are configurable and should be confirmed in commercial agreements. This slide explains the mechanics, not historical financial perf...","textChars":145,"textLines":1,"bbox":[76,635,1055,32]}
+{"kind":"textbox","id":"sh/pwfuh0ba","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"notes","id":"nt/y3wcjt","slide":8,"text":"Sources: app/Services/AgentCommissionService.php; app/Services/RiderCommissionService.php; app/Services/RiderOfferDispatcher.php; app/Model/Cart.php; resources/views/merchant/pages/reports/today.blade.php. No financial totals or forecasts are claimed."}
+{"kind":"slide","id":"sl/d54pb9","slide":9,"title":"The investor view","textShapes":24}
+{"kind":"shape","id":"sh/k329s7il","slide":9,"bbox":[72,50,8,50]}
+{"kind":"textbox","id":"sh/j2t8j210","slide":9,"text":"The investor view","textPreview":"The investor view","textChars":17,"textLines":1,"bbox":[96,44,1112,66]}
+{"kind":"textbox","id":"sh/yhkrqh0f","slide":9,"text":"The opportunity is to scale a working local marketplace foundation, then prove repeatable demand and healthy unit economics.","textPreview":"The opportunity is to scale a working local marketplace foundation, then prove repeatable demand and healthy unit economics.","textChars":124,"textLines":1,"bbox":[96,118,1112,55]}
+{"kind":"textbox","id":"sh/xgbqhcju","slide":9,"text":"What already exists","textPreview":"What already exists","textChars":19,"textLines":1,"bbox":[76,190,470,44]}
+{"kind":"textbox","id":"sh/wf29o729","slide":9,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,254,38,26]}
+{"kind":"textbox","id":"sh/bet8f21o","slide":9,"text":"Customer ordering and delivery tracking","textPreview":"Customer ordering and delivery tracking","textChars":39,"textLines":1,"bbox":[130,250,456,52]}
+{"kind":"textbox","id":"sh/adkrmxk3","slide":9,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,323,38,26]}
+{"kind":"textbox","id":"sh/hcfatwjy","slide":9,"text":"Merchant onboarding and operations dashboard","textPreview":"Merchant onboarding and operations dashboard","textChars":44,"textLines":1,"bbox":[130,319,456,52]}
+{"kind":"textbox","id":"sh/gb690rid","slide":9,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,392,38,26]}
+{"kind":"textbox","id":"sh/edsvedcn","slide":9,"text":"Rider onboarding, dispatch, proof, COD, and wallet flows","textPreview":"Rider onboarding, dispatch, proof, COD, and wallet flows","textChars":56,"textLines":1,"bbox":[130,388,456,52]}
+{"kind":"textbox","id":"sh/fe1c7it8","slide":9,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[76,461,38,26]}
+{"kind":"textbox","id":"sh/0fudgnut","slide":9,"text":"Agent-led restaurant acquisition and commission reporting","textPreview":"Agent-led restaurant acquisition and commission reporting","textChars":57,"textLines":1,"bbox":[130,457,456,52]}
+{"kind":"textbox","id":"sh/1g3u98be","slide":9,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[76,530,38,26]}
+{"kind":"textbox","id":"sh/qpsbatcr","slide":9,"text":"Food, flower-store, coupon, voucher, and booking capabilities","textPreview":"Food, flower-store, coupon, voucher, and booking capabilities","textChars":61,"textLines":1,"bbox":[130,526,456,52]}
+{"kind":"shape","id":"sh/rq1c3ytc","slide":9,"bbox":[660,178,548,464]}
+{"kind":"textbox","id":"sh/sbadc3ux","slide":9,"text":"Investment priorities","textPreview":"Investment priorities","textChars":21,"textLines":1,"bbox":[704,220,444,48]}
+{"kind":"shape","id":"sh/dcju58bi","slide":9,"bbox":[706,296,18,18]}
+{"kind":"textbox","id":"sh/alcvmxcv","slide":9,"text":"Merchant density","textPreview":"Merchant density","textChars":16,"textLines":1,"bbox":[744,290,190,30]}
+{"kind":"textbox","id":"sh/bm5cf2tg","slide":9,"text":"Add strong local supply in focused service areas.","textPreview":"Add strong local supply in focused service areas.","textChars":49,"textLines":1,"bbox":[950,290,212,54]}
+{"kind":"shape","id":"sh/7qxs7u9s","slide":9,"bbox":[706,374,18,18]}
+{"kind":"textbox","id":"sh/6porepsn","slide":9,"text":"Customer frequency","textPreview":"Customer frequency","textChars":18,"textLines":1,"bbox":[744,368,190,30]}
+{"kind":"textbox","id":"sh/tsfa9kry","slide":9,"text":"Improve repeat ordering, offers, and retention.","textPreview":"Improve repeat ordering, offers, and retention.","textChars":47,"textLines":1,"bbox":[950,368,212,54]}
+{"kind":"shape","id":"sh/8r69gzad","slide":9,"bbox":[706,452,18,18]}
+{"kind":"textbox","id":"sh/vuxsbu94","slide":9,"text":"Delivery reliability","textPreview":"Delivery reliability","textChars":20,"textLines":1,"bbox":[744,446,190,30]}
+{"kind":"textbox","id":"sh/utoripsj","slide":9,"text":"Strengthen rider availability, support, and service quality.","textPreview":"Strengthen rider availability, support, and service quality.","textChars":60,"textLines":1,"bbox":[950,446,212,54]}
+{"kind":"shape","id":"sh/hwzad4ra","slide":9,"bbox":[706,530,18,18]}
+{"kind":"textbox","id":"sh/gv69kzap","slide":9,"text":"Measurement","textPreview":"Measurement","textChars":11,"textLines":1,"bbox":[744,524,190,30]}
+{"kind":"textbox","id":"sh/3ihsfe90","slide":9,"text":"Track acquisition cost, order frequency, contribution margin, and cohort retention.","textPreview":"Track acquisition cost, order frequency, contribution margin, and cohort retention.","textChars":83,"textLines":1,"bbox":[950,524,212,54]}
+{"kind":"textbox","id":"sh/ih8rm9sf","slide":9,"text":"Investor diligence should add verified traction, financial history, market size, and fundraising terms.","textPreview":"Investor diligence should add verified traction, financial history, market size, and fundraising terms.","textChars":103,"textLines":1,"bbox":[76,653,1030,28]}
+{"kind":"textbox","id":"sh/0na9wjqt","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"notes","id":"nt/d54pb9","slide":9,"text":"Current-capability sources: routes/web.php, routes/api.php, routes/rider.php, resources/views/pages/home.blade.php, resources/views/merchant/partials/documentation.blade.php, resources/views/agent/dashboard.blade.php. Growth priorities are strategic opportunities, not promises or forecasts. No traction or financial metrics were supplied."}
+{"kind":"slide","id":"sl/6qdcvd","slide":10,"title":"Pahatud makes local commerce easier to discover, operate, and deliver.","textShapes":8}
+{"kind":"shape","id":"sh/bil0fqh4","slide":10,"bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/l8nilkz6","slide":10,"text":"Pahatud makes local commerce easier to discover, operate, and deliver.","textPreview":"Pahatud makes local commerce easier to discover, operate, and deliver.","textChars":70,"textLines":1,"bbox":[76,192,824,150]}
+{"kind":"textbox","id":"sh/k7ehsfyl","slide":10,"text":"For customers","textPreview":"For customers","textChars":13,"textLines":1,"bbox":[80,418,250,38]}
+{"kind":"textbox","id":"sh/zm50jah0","slide":10,"text":"Discover local favorites and order through the PahatudFood app.","textPreview":"Discover local favorites and order through the PahatudFood app.","textChars":63,"textLines":1,"bbox":[80,466,324,76]}
+{"kind":"textbox","id":"sh/ylwzq5gf","slide":10,"text":"For partners and investors","textPreview":"For partners and investors","textChars":26,"textLines":1,"bbox":[476,418,340,38]}
+{"kind":"textbox","id":"sh/tc7ipkz2","slide":10,"text":"Help build a stronger local marketplace with more merchants, reliable delivery, and measurable growth.","textPreview":"Help build a stronger local marketplace with more merchants, reliable delivery, and measurable growth.","textChars":102,"textLines":1,"bbox":[476,466,418,86]}
+{"kind":"shape","id":"sh/8be1wfyh","slide":10,"bbox":[932,420,278,160]}
+{"kind":"textbox","id":"sh/65gzi5kn","slide":10,"text":"www.pahatud.com\ninfo@pahatud.com","textPreview":"www.pahatud.com | info@pahatud.com","textChars":32,"textLines":2,"bbox":[958,462,226,72]}
+{"kind":"textbox","id":"sh/r6pgra18","slide":10,"text":"Ready, set, delivered.","textPreview":"Ready, set, delivered.","textChars":22,"textLines":1,"bbox":[80,630,430,42]}
+{"kind":"textbox","id":"sh/s7yhkf2t","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1170,678,40,18]}
+{"kind":"image","id":"im/xgrqxgbm","slide":10,"name":"","alt":"Local restaurant food available through Pahatud","bbox":[0,0,1280,720]}
+{"kind":"image","id":"im/bu98v6tg","slide":10,"name":"","alt":"Pahatud logo","bbox":[72,55,284,96]}
+{"kind":"notes","id":"nt/6qdcvd","slide":10,"text":"Sources: resources/views/pages/about.blade.php, resources/views/pages/home.blade.php, and resources/views/merchant/partials/documentation.blade.php for contact details. Background: public/uploads/user/29/banner/2021-04-10-banner-burgerjoint.jpg. Logo: public/images/logo-big.png."}

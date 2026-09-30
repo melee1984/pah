@@ -20,6 +20,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.coupons.index') }}" class="nav-link {{ Request::is('data/dashboard/coupons*') ? 'active' : '' }}"><i class="nav-icon fas fa-ticket-alt"></i><p>Discount coupons</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.push-notifications.index') }}" class="nav-link {{ Request::is('data/dashboard/push-notifications*') ? 'active' : '' }}"><i class="nav-icon fas fa-bell"></i><p>Push notifications</p></a>
+    </li>
 
     <li class="nav-header">People</li>
     <li class="nav-item">
