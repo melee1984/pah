@@ -350,7 +350,7 @@ class Cart extends Model
     return $this->cartItemAmounts()['total'];
   }
 
-  private function cartItemAmounts(): array
+  public function cartItemAmounts(): array
   {
     $qty = 0;
     $subTotal = 0;

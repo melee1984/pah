@@ -36,7 +36,7 @@
                 </div>
             </td>
             <td>
-                <div class="agent-rate-stack"><strong>{{ number_format($pahatudPercentage, 2) }}%</strong><span>₱{{ number_format($pahatudAmount, 2) }} of subtotal</span></div>
+                <div class="agent-rate-stack"><strong>{{ number_format($pahatudPercentage, 2) }}%</strong><span>₱{{ number_format($pahatudAmount, 2) }} recorded on cart</span></div>
             </td>
             <td>
                 <div class="agent-rate-stack"><strong>{{ number_format($commission->commission_percentage, 2) }}%</strong><span>of Pahatud commission</span></div>
@@ -44,7 +44,7 @@
             <td>
                 <div class="agent-commission-result {{ $commission->status !== 'reversed' ? 'is-earned' : '' }}">
                     <strong>₱{{ number_format($commission->commission_amount, 2) }}</strong>
-                    <span>₱{{ number_format($subtotal, 2) }} × {{ number_format($pahatudPercentage, 2) }}% × {{ number_format($commission->commission_percentage, 2) }}%</span>
+                    <span>₱{{ number_format($pahatudAmount, 2) }} × {{ number_format($commission->commission_percentage, 2) }}%</span>
                 </div>
             </td>
             <td><span class="agent-badge agent-badge-{{ $commission->status }}">{{ $commission->status }}</span>@if($commission->reversal_reason)<span class="agent-table-secondary">{{ $commission->reversal_reason }}</span>@endif</td>

@@ -40,7 +40,7 @@ class AgentCommissionService
             $breakdown = $this->orderBreakdown($order);
             $percentage = $agent->commissionPercentage();
             $pahatudCommissionPercentage = round((float) ($restaurant->percentage ?? config('agent.pahatud_commission_percentage')), 2);
-            $pahatudCommissionAmount = round($breakdown['subtotal'] * ($pahatudCommissionPercentage / 100), 2);
+            $pahatudCommissionAmount = $breakdown['commission'];
             $commissionAmount = round($pahatudCommissionAmount * ($percentage / 100), 2);
 
             return AgentCommission::query()->create([
@@ -86,7 +86,7 @@ class AgentCommissionService
     }
 
     /**
-     * @return array{subtotal: float, delivery_fee: float, discount: float, total: float}
+     * @return array{subtotal: float, delivery_fee: float, discount: float, total: float, commission: float}
      */
     private function orderBreakdown(Orders $order): array
     {
@@ -96,6 +96,7 @@ class AgentCommissionService
                 'delivery_fee' => 0,
                 'discount' => 0,
                 'total' => 0,
+                'commission' => 0,
             ];
         }
 
@@ -114,6 +115,7 @@ class AgentCommissionService
             'delivery_fee' => $deliveryFee,
             'discount' => $discount,
             'total' => round($subtotal + $deliveryFee - $discount, 2),
+            'commission' => round((float) $order->cart->cartItemAmounts()['total_comm'], 2),
         ];
     }
 

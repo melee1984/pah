@@ -8,7 +8,7 @@
                 <div>
                     <span class="admin-eyebrow">Partner reporting</span>
                     <h1>Agent Commission Report</h1>
-                    <p>Review each order breakdown and the commission calculated from its subtotal only.</p>
+                    <p>Review each order breakdown and the agent share calculated from the cart's recorded Pahatud commission.</p>
                 </div>
             </div>
         </div>
@@ -71,7 +71,7 @@
                         <h2>{{ $selectedAgentId ? ($agents->firstWhere('id', $selectedAgentId)?->name ?? 'Selected agent') : 'All agent commissions' }}</h2>
                         <p>{{ number_format($commissions->total()) }} {{ Str::plural('entry', $commissions->total()) }} from {{ $from->format('M d, Y') }} to {{ $to->format('M d, Y') }}</p>
                     </div>
-                    <span class="dashboard-soft-badge">{{ $selectedStatus ? ucfirst($selectedStatus) : 'All statuses' }}</span>
+                    <!-- <span class="dashboard-soft-badge">{{ $selectedStatus ? ucfirst($selectedStatus) : 'All statuses' }}</span> -->
                 </div>
 
                 @if ($commissions->isEmpty())
@@ -79,7 +79,7 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table agent-commission-table">
-                            <thead><tr><th>Date/time</th><th>Agent</th><th>Restaurant / order</th><th>Order breakdown</th><th>Pahatud commission</th><th>Agent share</th><th>Agent commission</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Date/time</th><th>Agent</th><th>Restaurant / order</th><th>Order breakdown</th><th>Pahatud commission</th><th>Agent share</th><th>Agent commission</th><!--<th>Status</th>--></tr></thead>
                             <tbody>
                             @foreach ($commissions as $commission)
                                 @php
@@ -93,12 +93,17 @@
                                     $discount = (float) ($commission->discount_amount ?? 0);
                                     $total = (float) ($commission->total_amount ?? $commission->order_amount);
                                     $pahatudPercentage = (float) ($commission->pahatud_commission_percentage ?? $commission->restaurant?->percentage ?? config('agent.pahatud_commission_percentage'));
-                                    $pahatudAmount = (float) ($commission->pahatud_commission_amount ?? round($subtotal * ($pahatudPercentage / 100), 2));
+                                    $pahatudAmount = (float) ($commission->report_pahatud_commission_amount ?? $commission->pahatud_commission_amount ?? round($subtotal * ($pahatudPercentage / 100), 2));
+                                    $agentCommissionAmount = (float) ($commission->report_commission_amount ?? $commission->commission_amount);
                                 @endphp
                                 <tr>
                                     <td><strong>{{ $commission->qualified_at->format('M d, Y') }}</strong><small>{{ $commission->qualified_at->format('g:i A') }}</small></td>
                                     <td><strong>{{ $commission->agent?->name ?? 'Agent unavailable' }}</strong><small>{{ $commission->agent?->email }}</small></td>
-                                    <td><strong>{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}</strong><small>{{ $commission->order?->cart?->order_no ? 'Order #'.$commission->order->cart->order_no : 'Order number unavailable' }}</small></td>
+                                    <td>
+                                        <strong>{{ $commission->restaurant?->restaurant_name ?? 'Restaurant unavailable' }}</strong>
+                                        <small>Order ID #{{ $commission->order_id }}</small>
+                                        <small>{{ $commission->order?->cart?->order_no ? 'Order number: '.$commission->order->cart->order_no : 'Order number unavailable' }}</small>
+                                    </td>
                                     <td>
                                         <div class="agent-order-breakdown">
                                             <span>Subtotal <strong>₱{{ number_format($subtotal, 2) }}</strong></span>
@@ -107,10 +112,10 @@
                                             <span class="is-total">Total <strong>₱{{ number_format($total, 2) }}</strong></span>
                                         </div>
                                     </td>
-                                    <td><strong>{{ number_format($pahatudPercentage, 2) }}%</strong><small>₱{{ number_format($pahatudAmount, 2) }} of subtotal</small></td>
+                                    <td><strong>{{ number_format($pahatudPercentage, 2) }}%</strong><small>₱{{ number_format($pahatudAmount, 2) }} recorded on cart</small></td>
                                     <td><strong>{{ number_format($commission->commission_percentage, 2) }}%</strong></td>
-                                    <td><strong class="admin-money">₱{{ number_format($commission->commission_amount, 2) }}</strong><small>₱{{ number_format($subtotal, 2) }} × {{ number_format($pahatudPercentage, 2) }}% × {{ number_format($commission->commission_percentage, 2) }}%</small></td>
-                                    <td><span class="dashboard-status-pill {{ $statusClass }}">{{ ucfirst($commission->status) }}</span>@if($commission->reversal_reason)<small>{{ $commission->reversal_reason }}</small>@endif</td>
+                                    <td><strong class="admin-money">₱{{ number_format($agentCommissionAmount, 2) }}</strong><small>₱{{ number_format($pahatudAmount, 2) }} × {{ number_format($commission->commission_percentage, 2) }}%</small></td>
+                                    <!-- <td><span class="dashboard-status-pill {{ $statusClass }}">{{ ucfirst($commission->status) }}</span>@if($commission->reversal_reason)<small>{{ $commission->reversal_reason }}</small>@endif</td> -->
                                 </tr>
                             @endforeach
                             </tbody>

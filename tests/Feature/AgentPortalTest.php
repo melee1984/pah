@@ -14,6 +14,7 @@ use App\Mail\RestaurantApplicationStatusMail;
 use App\Mail\RestaurantInvitationMail;
 use App\Model\Cart;
 use App\Model\CartItem;
+use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\Orders;
 use App\PartnerPromotion;
 use App\Partners;
@@ -374,10 +375,20 @@ class AgentPortalTest extends TestCase
             'partner_id' => $restaurant->id,
             'order_no' => 'PAH-AGENT-0042',
         ]);
+        CartItem::query()->create([
+            'cart_id' => $cart->id,
+            'qty' => 1,
+            'price' => 100,
+            'variance_total' => 0,
+            'price_comm_total' => 12,
+            'variance_total_comm_total' => 3,
+            'discount_amount' => 0,
+        ]);
         $order = Orders::query()->create([
             'cart_id' => $cart->id,
             'partner_id' => $restaurant->id,
             'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
         ]);
         AgentCommission::query()->create([
             'order_id' => $order->id,
@@ -395,6 +406,76 @@ class AgentPortalTest extends TestCase
             'status' => AgentCommission::STATUS_APPROVED,
             'qualified_at' => now(),
         ]);
+        $order->updateQuietly(['order_status_id' => LibraryStatus::STATUS_DELIVERED]);
+
+        $completedCart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-COMPLETED-0043',
+        ]);
+        $completedOrder = Orders::query()->create([
+            'cart_id' => $completedCart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+        ]);
+        AgentCommission::query()->create([
+            'order_id' => $completedOrder->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 50,
+            'commission_percentage' => 30,
+            'commission_amount' => 3,
+            'status' => AgentCommission::STATUS_APPROVED,
+            'qualified_at' => now(),
+        ]);
+        $completedOrder->updateQuietly(['order_status_id' => LibraryStatus::STATUS_COMPLETED]);
+
+        $legacyDeliveryCart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-DELIVERED-0045',
+        ]);
+        $legacyDeliveryOrder = Orders::query()->create([
+            'cart_id' => $legacyDeliveryCart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+        ]);
+        AgentCommission::query()->create([
+            'order_id' => $legacyDeliveryOrder->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 60,
+            'commission_percentage' => 30,
+            'commission_amount' => 3.60,
+            'status' => AgentCommission::STATUS_PENDING,
+            'qualified_at' => now(),
+        ]);
+        $legacyDeliveryOrder->updateQuietly([
+            'order_status_id' => null,
+            'booking_status_id' => BookingStatus::STATUS_BOOKING_DELIVERED,
+            'delivered_at' => now(),
+        ]);
+
+        $processingCart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-PROCESSING-0044',
+        ]);
+        $processingOrder = Orders::query()->create([
+            'cart_id' => $processingCart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_PROCESSING,
+        ]);
+        AgentCommission::query()->create([
+            'order_id' => $processingOrder->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 75,
+            'commission_percentage' => 30,
+            'commission_amount' => 4.50,
+            'status' => AgentCommission::STATUS_PENDING,
+            'qualified_at' => now(),
+        ]);
         $admin = User::query()->forceCreate([
             'name' => 'Report Admin',
             'email' => 'report-admin@example.com',
@@ -408,11 +489,19 @@ class AgentPortalTest extends TestCase
             ->assertOk()
             ->assertSeeText('Agent Commission Report')
             ->assertSeeText('Commission Report Restaurant')
-            ->assertSeeText('Order #PAH-AGENT-0042')
+            ->assertSeeText('3 entries')
+            ->assertSeeText('Order ID #'.$order->id)
+            ->assertSeeText('Order number: PAH-AGENT-0042')
+            ->assertSeeText('Order ID #'.$completedOrder->id)
+            ->assertSeeText('Order number: PAH-COMPLETED-0043')
+            ->assertSeeText('Order ID #'.$legacyDeliveryOrder->id)
+            ->assertSeeText('Order number: PAH-DELIVERED-0045')
+            ->assertDontSeeText('Order ID #'.$processingOrder->id)
+            ->assertDontSeeText('Order number: PAH-PROCESSING-0044')
             ->assertSeeText('Subtotal')
             ->assertSeeText('Delivery fee')
             ->assertSeeText('₱125.00')
-            ->assertSeeText('₱6.00');
+            ->assertSeeText('₱4.50');
     }
 
     public function test_restaurant_pages_are_scoped_to_the_logged_in_agent(): void
@@ -1009,8 +1098,8 @@ class AgentPortalTest extends TestCase
             'qty' => 1,
             'price' => 100,
             'variance_total' => 0,
-            'price_comm_total' => 0,
-            'variance_total_comm_total' => 0,
+            'price_comm_total' => 12,
+            'variance_total_comm_total' => 3,
             'discount_amount' => 0,
         ]);
         $order = Orders::query()->create([
@@ -1031,9 +1120,9 @@ class AgentPortalTest extends TestCase
             'discount_amount' => 10,
             'total_amount' => 115,
             'pahatud_commission_percentage' => 20,
-            'pahatud_commission_amount' => 20,
+            'pahatud_commission_amount' => 15,
             'commission_percentage' => config('agent.commission_tiers.0'),
-            'commission_amount' => round(20 * config('agent.commission_tiers.0') / 100, 2),
+            'commission_amount' => round(15 * config('agent.commission_tiers.0') / 100, 2),
             'status' => AgentCommission::STATUS_PENDING,
         ]);
 
@@ -1163,7 +1252,7 @@ class AgentPortalTest extends TestCase
             'qty' => 1,
             'price' => $subtotal,
             'variance_total' => 0,
-            'price_comm_total' => 0,
+            'price_comm_total' => $subtotal * ((float) config('agent.pahatud_commission_percentage') / 100),
             'variance_total_comm_total' => 0,
             'discount_amount' => 0,
         ]);
