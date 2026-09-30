@@ -1,5 +1,7 @@
 <?php
 
+use App\AdminPushNotification;
+use App\Jobs\SendAdminPushNotification;
 use App\RestaurantEnrollmentDocument;
 use App\Services\RestaurantApplicationNotifier;
 use Illuminate\Foundation\Inspiring;
@@ -32,3 +34,25 @@ Artisan::command('restaurants:expire-documents', function () {
 })->purpose('Mark expired restaurant documents and notify applicants');
 
 Schedule::command('restaurants:expire-documents')->daily();
+
+Schedule::call(function () {
+    AdminPushNotification::query()
+        ->where('status', AdminPushNotification::STATUS_SCHEDULED)
+        ->where('scheduled_at', '<=', now())
+        ->orderBy('id')
+        ->chunkById(100, function ($notifications) {
+            foreach ($notifications as $notification) {
+                $claimed = AdminPushNotification::query()
+                    ->whereKey($notification->id)
+                    ->where('status', AdminPushNotification::STATUS_SCHEDULED)
+                    ->update([
+                        'status' => AdminPushNotification::STATUS_QUEUED,
+                        'updated_at' => now(),
+                    ]);
+
+                if ($claimed === 1) {
+                    SendAdminPushNotification::dispatch($notification->id);
+                }
+            }
+        });
+})->name('push-notifications:dispatch-due')->everyMinute()->withoutOverlapping();

@@ -1,0 +1,185 @@
+{"kind":"deck","id":"pr/zatxg0","name":"Deck"}
+{"kind":"layout","layoutId":"fd1b4899-8ffd-44dc-9807-bd646cd5df94","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"509f476c-8ddc-4575-b7eb-6c5a62e95170","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/w4w08g","slide":1,"title":"PAHATUD AGENT PROGRAM","textShapes":4}
+{"kind":"shape","id":"sh/hg7ulgve","slide":1,"bbox":[748,-86,630,830]}
+{"kind":"shape","id":"sh/udgba1cn","slide":1,"bbox":[800,62,405,594]}
+{"kind":"shape","id":"sh/sret8ruh","slide":1,"bbox":[72,52,74,74]}
+{"kind":"textbox","id":"sh/6pwb61cr","slide":1,"text":"PAHATUD AGENT PROGRAM","textPreview":"PAHATUD AGENT PROGRAM","textChars":21,"textLines":1,"bbox":[164,70,410,32]}
+{"kind":"textbox","id":"sh/7q5cf6dc","slide":1,"text":"Becoming a\nPahatud Agent","textPreview":"Becoming a | Pahatud Agent","textChars":24,"textLines":2,"bbox":[74,190,630,180]}
+{"kind":"textbox","id":"sh/knet4rul","slide":1,"text":"How the role works, what you earn, and how to get started.","textPreview":"How the role works, what you earn, and how to get started.","textChars":58,"textLines":1,"bbox":[78,408,560,86]}
+{"kind":"textbox","id":"sh/5onudwv6","slide":1,"text":"SIMPLE AGENT ORIENTATION","textPreview":"SIMPLE AGENT ORIENTATION","textChars":24,"textLines":1,"bbox":[78,588,318,42]}
+{"kind":"image","id":"im/a5cv2h4n","slide":1,"name":"","alt":"Food from restaurants in the Pahatud marketplace","bbox":[824,86,357,544]}
+{"kind":"image","id":"im/o3ud076x","slide":1,"name":"","alt":"Pahatud logo","bbox":[79,59,60,60]}
+{"kind":"notes","id":"nt/w4w08g","slide":1,"text":"Program overview based on resources/views/agent/auth/register.blade.php and resources/views/agent/help.blade.php. Food artwork and logo are existing Pahatud assets from public/images."}
+{"kind":"slide","id":"sl/w8dcs2","slide":2,"title":"The Pahatud agent role","textShapes":12}
+{"kind":"shape","id":"sh/ved47qxs","slide":2,"bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/wfmlgved","slide":2,"text":"The Pahatud agent role","textPreview":"The Pahatud agent role","textChars":22,"textLines":1,"bbox":[96,50,686,66]}
+{"kind":"textbox","id":"sh/xgvm90fy","slide":2,"text":"You connect local restaurants to Pahatud and help them complete onboarding.","textPreview":"You connect local restaurants to Pahatud and help them complete onboarding.","textChars":75,"textLines":1,"bbox":[96,126,686,56]}
+{"kind":"textbox","id":"sh/iho3i5wj","slide":2,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,238,54,32]}
+{"kind":"textbox","id":"sh/jix4baxo","slide":2,"text":"Introduce","textPreview":"Introduce","textChars":9,"textLines":1,"bbox":[142,235,544,36]}
+{"kind":"textbox","id":"sh/kj6lkfe9","slide":2,"text":"Find restaurants that can benefit from online ordering and delivery.","textPreview":"Find restaurants that can benefit from online ordering and delivery.","textChars":68,"textLines":1,"bbox":[142,277,544,72]}
+{"kind":"textbox","id":"sh/54fmdkfu","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,368,54,32]}
+{"kind":"textbox","id":"sh/65o3mpwf","slide":2,"text":"Guide","textPreview":"Guide","textChars":5,"textLines":1,"bbox":[142,365,544,36]}
+{"kind":"textbox","id":"sh/76x4fax0","slide":2,"text":"Help owners submit restaurant details, documents, and corrections.","textPreview":"Help owners submit restaurant details, documents, and corrections.","textChars":66,"textLines":1,"bbox":[142,407,544,72]}
+{"kind":"textbox","id":"sh/fqt0b25w","slide":2,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,498,54,32]}
+{"kind":"textbox","id":"sh/epkz2xob","slide":2,"text":"Follow progress","textPreview":"Follow progress","textChars":15,"textLines":1,"bbox":[142,495,544,36]}
+{"kind":"textbox","id":"sh/1sbidcn2","slide":2,"text":"Track approval and the qualifying orders that create commission.","textPreview":"Track approval and the qualifying orders that create commission.","textChars":64,"textLines":1,"bbox":[142,537,544,72]}
+{"kind":"shape","id":"sh/gr21476h","slide":2,"bbox":[775,50,420,620]}
+{"kind":"textbox","id":"sh/610zydof","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"image","id":"im/wrm5svih","slide":2,"name":"","alt":"Pahatud partnership illustration","bbox":[810,86,350,548]}
+{"kind":"notes","id":"nt/w8dcs2","slide":2,"text":"Source: resources/views/agent/auth/register.blade.php, sections 'How the Agent Program works' and 'What you get as a Pahatud agent'. Illustration: public/images/partner-with-us.jpg."}
+{"kind":"slide","id":"sl/en30zb","slide":3,"title":"Benefits of being an agent","textShapes":15}
+{"kind":"shape","id":"sh/elgfu5kf","slide":3,"bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/1o7e50jq","slide":3,"text":"Benefits of being an agent","textPreview":"Benefits of being an agent","textChars":26,"textLines":1,"bbox":[96,50,1106,66]}
+{"kind":"textbox","id":"sh/0nyxwv25","slide":3,"text":"The program gives you a clear way to grow a restaurant network and see its results.","textPreview":"The program gives you a clear way to grow a restaurant network and see its results.","textChars":83,"textLines":1,"bbox":[96,126,1106,56]}
+{"kind":"shape","id":"sh/rypwzq1o","slide":3,"bbox":[72,182,344,472]}
+{"kind":"textbox","id":"sh/dk7e10ju","slide":3,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[490,208,44,26]}
+{"kind":"textbox","id":"sh/cjyxsv29","slide":3,"text":"Earn from qualifying orders","textPreview":"Earn from qualifying orders","textChars":27,"textLines":1,"bbox":[490,244,310,62]}
+{"kind":"textbox","id":"sh/bu9wbu1s","slide":3,"text":"Your share starts at 20% of Pahatud's commission and can reach 30% as your approved restaurant network grows.","textPreview":"Your share starts at 20% of Pahatud's commission and can reach 30% as your approved restaurant network grows.","textChars":109,"textLines":1,"bbox":[490,314,315,105]}
+{"kind":"textbox","id":"sh/at0f2pkn","slide":3,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[865,208,44,26]}
+{"kind":"textbox","id":"sh/0fexkj6h","slide":3,"text":"Build your own restaurant network","textPreview":"Build your own restaurant network","textChars":33,"textLines":1,"bbox":[865,244,310,62]}
+{"kind":"textbox","id":"sh/1gned472","slide":3,"text":"Enroll restaurants from the portal and monitor each application's status.","textPreview":"Enroll restaurants from the portal and monitor each application's status.","textChars":73,"textLines":1,"bbox":[865,314,315,105]}
+{"kind":"textbox","id":"sh/edcvi9ob","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[490,438,44,26]}
+{"kind":"textbox","id":"sh/fe5wbepw","slide":3,"text":"See your results","textPreview":"See your results","textChars":16,"textLines":1,"bbox":[490,474,310,62]}
+{"kind":"textbox","id":"sh/srudgz65","slide":3,"text":"Track orders, completed order value, total commission, and monthly commission.","textPreview":"Track orders, completed order value, total commission, and monthly commission.","textChars":78,"textLines":1,"bbox":[490,544,315,105]}
+{"kind":"textbox","id":"sh/dc3e947q","slide":3,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[865,438,44,26]}
+{"kind":"textbox","id":"sh/qpcvepof","slide":3,"text":"Support local businesses","textPreview":"Support local businesses","textChars":24,"textLines":1,"bbox":[865,474,310,62]}
+{"kind":"textbox","id":"sh/rqlw7upk","slide":3,"text":"Help restaurants join the marketplace and connect with delivery customers.","textPreview":"Help restaurants join the marketplace and connect with delivery customers.","textChars":74,"textLines":1,"bbox":[865,544,315,105]}
+{"kind":"textbox","id":"sh/4nudcz69","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"image","id":"im/rqxgn29k","slide":3,"name":"","alt":"Restaurants shown in the Pahatud marketplace","bbox":[148,202,192,432]}
+{"kind":"notes","id":"nt/en30zb","slide":3,"text":"Sources: resources/views/agent/auth/register.blade.php and resources/views/agent/dashboard.blade.php. Marketplace screenshot: public/images/app-preview/restaurants.png. Benefits describe portal features and commission opportunities, not guaranteed income."}
+{"kind":"slide","id":"sl/b9vyv0","slide":4,"title":"Agent application process","textShapes":16}
+{"kind":"shape","id":"sh/0ry5kbi5","slide":4,"bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/z6pob6h0","slide":4,"text":"Agent application process","textPreview":"Agent application process","textChars":25,"textLines":1,"bbox":[96,50,1112,66]}
+{"kind":"textbox","id":"sh/y5gni10f","slide":4,"text":"Registration is simple, but Pahatud approval is required before portal access.","textPreview":"Registration is simple, but Pahatud approval is required before portal access.","textChars":78,"textLines":1,"bbox":[96,126,1112,56]}
+{"kind":"textbox","id":"sh/9wr6h0z2","slide":4,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,236,88,72]}
+{"kind":"textbox","id":"sh/8vy5ovih","slide":4,"text":"Open the registration page","textPreview":"Open the registration page","textChars":26,"textLines":1,"bbox":[72,332,246,68]}
+{"kind":"textbox","id":"sh/nupofqhw","slide":4,"text":"Choose the Agent Program registration page on the Pahatud website.","textPreview":"Choose the Agent Program registration page on the Pahatud website.","textChars":66,"textLines":1,"bbox":[72,416,246,128]}
+{"kind":"textbox","id":"sh/mtgnml0b","slide":4,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[368,236,88,72]}
+{"kind":"textbox","id":"sh/h0r6l0zy","slide":4,"text":"Enter your details","textPreview":"Enter your details","textChars":18,"textLines":1,"bbox":[368,332,246,68]}
+{"kind":"textbox","id":"sh/wzi5svid","slide":4,"text":"Provide your full name, email, mobile number, and a password of at least eight characters.","textPreview":"Provide your full name, email, mobile number, and a password of at least eight characters.","textChars":90,"textLines":1,"bbox":[368,416,246,128]}
+{"kind":"textbox","id":"sh/yh0f6hcj","slide":4,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[664,236,88,72]}
+{"kind":"textbox","id":"sh/zi9gfmd4","slide":4,"text":"Submit and check email","textPreview":"Submit and check email","textChars":22,"textLines":1,"bbox":[664,332,246,68]}
+{"kind":"textbox","id":"sh/0jix8rup","slide":4,"text":"Accept the program terms and look for the registration confirmation.","textPreview":"Accept the program terms and look for the registration confirmation.","textChars":68,"textLines":1,"bbox":[664,416,246,128]}
+{"kind":"textbox","id":"sh/lkryhwva","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[960,236,88,72]}
+{"kind":"textbox","id":"sh/m5kfa1cv","slide":4,"text":"Wait for the decision","textPreview":"Wait for the decision","textChars":21,"textLines":1,"bbox":[960,332,246,68]}
+{"kind":"textbox","id":"sh/n6tgjmd0","slide":4,"text":"Pahatud emails the approval or decline decision. Approved agents can sign in.","textPreview":"Pahatud emails the approval or decline decision. Approved agents can sign in.","textChars":77,"textLines":1,"bbox":[960,416,246,128]}
+{"kind":"shape","id":"sh/872xcrul","slide":4,"bbox":[72,610,1136,58]}
+{"kind":"textbox","id":"sh/98bylwv6","slide":4,"text":"No application fee. Account access begins after approval.","textPreview":"No application fee. Account access begins after approval.","textChars":57,"textLines":1,"bbox":[98,624,1084,31]}
+{"kind":"textbox","id":"sh/29gfyxwb","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"notes","id":"nt/b9vyv0","slide":4,"text":"Sources: app/Http/Controllers/Agent/RegistrationController.php and resources/views/agent/auth/register.blade.php. Required registration fields are name, email, mobile, password, password confirmation, and accepted terms. No application fee is stated on the registration page."}
+{"kind":"slide","id":"sl/oikm8l","slide":5,"title":"Restaurant enrollment and approval","textShapes":16}
+{"kind":"shape","id":"sh/idozm90n","slide":5,"bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/5gfih4je","slide":5,"text":"Restaurant enrollment and approval","textPreview":"Restaurant enrollment and approval","textChars":34,"textLines":1,"bbox":[96,50,1112,66]}
+{"kind":"textbox","id":"sh/kf61ojit","slide":5,"text":"After your account is approved, your main job is helping restaurants complete the review.","textPreview":"After your account is approved, your main job is helping restaurants complete the review.","textChars":89,"textLines":1,"bbox":[96,126,1112,56]}
+{"kind":"textbox","id":"sh/vqd0bu1c","slide":5,"text":"What you submit","textPreview":"What you submit","textChars":15,"textLines":1,"bbox":[76,205,310,42]}
+{"kind":"textbox","id":"sh/ap4zip0r","slide":5,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[76,278,54,32]}
+{"kind":"textbox","id":"sh/xcfid4j2","slide":5,"text":"Business information","textPreview":"Business information","textChars":20,"textLines":1,"bbox":[142,275,454,36]}
+{"kind":"textbox","id":"sh/wbmhkzih","slide":5,"text":"Restaurant name, contacts, address, city, business structure, TIN, and payout details.","textPreview":"Restaurant name, contacts, address, city, business structure, TIN, and payout details.","textChars":86,"textLines":1,"bbox":[142,317,454,78]}
+{"kind":"textbox","id":"sh/nmd07u10","slide":5,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[76,408,54,32]}
+{"kind":"textbox","id":"sh/ml4zep0f","slide":5,"text":"Required documents","textPreview":"Required documents","textChars":18,"textLines":1,"bbox":[142,405,454,36]}
+{"kind":"textbox","id":"sh/onmt4vqd","slide":5,"text":"A valid government ID and the correct DTI, SEC, or CDA registration certificate.","textPreview":"A valid government ID and the correct DTI, SEC, or CDA registration certificate.","textChars":80,"textLines":1,"bbox":[142,447,454,78]}
+{"kind":"textbox","id":"sh/9ovux07y","slide":5,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[76,538,54,32]}
+{"kind":"textbox","id":"sh/ml4b2587","slide":5,"text":"Authorization when needed","textPreview":"Authorization when needed","textChars":25,"textLines":1,"bbox":[142,535,454,36]}
+{"kind":"textbox","id":"sh/nmdcvaps","slide":5,"text":"A representative must include an authorization letter, secretary's certificate, board resolution, or SPA.","textPreview":"A representative must include an authorization letter, secretary's certificate, board resolution, or SPA.","textChars":105,"textLines":1,"bbox":[142,577,454,82]}
+{"kind":"shape","id":"sh/0j2t0vqh","slide":5,"bbox":[674,195,532,434]}
+{"kind":"textbox","id":"sh/1kbut07m","slide":5,"text":"Approval rule","textPreview":"Approval rule","textChars":13,"textLines":1,"bbox":[714,236,300,42]}
+{"kind":"textbox","id":"sh/ehkbyl8b","slide":5,"text":"A restaurant counts toward your commission tier only after Pahatud gives final approval.","textPreview":"A restaurant counts toward your commission tier only after Pahatud gives final approval.","textChars":88,"textLines":1,"bbox":[714,296,438,100]}
+{"kind":"textbox","id":"sh/zitsrqpw","slide":5,"text":"Missing files may be uploaded later. Approval waits until all required information and documents are complete, approved, and current.","textPreview":"Missing files may be uploaded later. Approval waits until all required information and documents are complete, approved, and current.","textChars":133,"textLines":1,"bbox":[714,426,438,110]}
+{"kind":"shape","id":"sh/kf6tcfql","slide":5,"bbox":[738,548,90,90]}
+{"kind":"shape","id":"sh/twbupkza","slide":5,"bbox":[854,548,90,90]}
+{"kind":"shape","id":"sh/7atcnah4","slide":5,"bbox":[970,548,90,90]}
+{"kind":"textbox","id":"sh/58balkzy","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"image","id":"im/id0ne9gn","slide":5,"name":"","geometry":"ellipse","alt":"Pahatud restaurant partner logo","bbox":[744,554,78,78]}
+{"kind":"image","id":"im/7ahsfmhw","slide":5,"name":"","geometry":"ellipse","alt":"Pahatud restaurant partner logo","bbox":[860,554,78,78]}
+{"kind":"image","id":"im/twzahwz2","slide":5,"name":"","geometry":"ellipse","alt":"Pahatud restaurant partner logo","bbox":[976,554,78,78]}
+{"kind":"notes","id":"nt/oikm8l","slide":5,"text":"Sources: resources/views/agent/help.blade.php and app/Http/Controllers/Agent/RestaurantController.php. Restaurant logos are existing Pahatud partner assets in public/images/partners."}
+{"kind":"slide","id":"sl/w0lcbd","slide":6,"title":"Commission tiers","textShapes":35}
+{"kind":"shape","id":"sh/m9wv294n","slide":6,"bbox":[72,39,8,50]}
+{"kind":"textbox","id":"sh/9c7udo3e","slide":6,"text":"Commission tiers","textPreview":"Commission tiers","textChars":16,"textLines":1,"bbox":[96,35,1112,66]}
+{"kind":"textbox","id":"sh/8byd4jmt","slide":6,"text":"Your current position","textPreview":"Your current position","textChars":21,"textLines":1,"bbox":[76,105,360,34]}
+{"kind":"textbox","id":"sh/vypcfylk","slide":6,"text":"You currently have 3 approved restaurants and receive 20.00% of Pahatud’s commission on new qualifying orders.","textPreview":"You currently have 3 approved restaurants and receive 20.00% of Pahatud’s commission on new qualifying orders.","textChars":110,"textLines":1,"bbox":[76,143,1080,34]}
+{"kind":"shape","id":"sh/udgv6t4z","slide":6,"bbox":[72,188,360,246]}
+{"kind":"textbox","id":"sh/h07uho3q","slide":6,"text":"APPROVED RESTAURANTS","textPreview":"APPROVED RESTAURANTS","textChars":20,"textLines":1,"bbox":[96,214,208,20]}
+{"kind":"textbox","id":"sh/wzyd8jm5","slide":6,"text":"YOUR CURRENT TIER","textPreview":"YOUR CURRENT TIER","textChars":17,"textLines":1,"bbox":[296,207,116,28]}
+{"kind":"textbox","id":"sh/j29cjylg","slide":6,"text":"0–34","textPreview":"0–34","textChars":4,"textLines":1,"bbox":[96,247,280,40]}
+{"kind":"textbox","id":"sh/i1gvat4v","slide":6,"text":"20.00%","textPreview":"20.00%","textChars":6,"textLines":1,"bbox":[96,300,166,56]}
+{"kind":"textbox","id":"sh/s7qx8vyt","slide":6,"text":"of Pahatud’s commission","textPreview":"of Pahatud’s commission","textChars":23,"textLines":1,"bbox":[255,326,155,24]}
+{"kind":"shape","id":"sh/tszyh0fy","slide":6,"bbox":[96,365,312,0]}
+{"kind":"textbox","id":"sh/65of6lgn","slide":6,"text":"On an example ₱1,000.00 eligible subtotal at a 20.00% Pahatud rate, the agent earns","textPreview":"On an example ₱1,000.00 eligible subtotal at a 20.00% Pahatud rate, the agent earns","textChars":83,"textLines":1,"bbox":[96,382,310,42]}
+{"kind":"textbox","id":"sh/r6hgfqx8","slide":6,"text":"₱40.00","textPreview":"₱40.00","textChars":6,"textLines":1,"bbox":[330,408,78,20]}
+{"kind":"shape","id":"sh/0vqxcvyp","slide":6,"bbox":[452,188,360,246]}
+{"kind":"textbox","id":"sh/1wzyl0fa","slide":6,"text":"APPROVED RESTAURANTS","textPreview":"APPROVED RESTAURANTS","textChars":20,"textLines":1,"bbox":[476,214,208,20]}
+{"kind":"textbox","id":"sh/et8fa5gj","slide":6,"text":"35–49","textPreview":"35–49","textChars":5,"textLines":1,"bbox":[476,247,280,40]}
+{"kind":"textbox","id":"sh/fuhgjax4","slide":6,"text":"25.00%","textPreview":"25.00%","textChars":6,"textLines":1,"bbox":[476,300,166,56]}
+{"kind":"textbox","id":"sh/ozaxgfyl","slide":6,"text":"of Pahatud’s commission","textPreview":"of Pahatud’s commission","textChars":23,"textLines":1,"bbox":[635,326,155,24]}
+{"kind":"shape","id":"sh/p0jypkf6","slide":6,"bbox":[476,365,312,0]}
+{"kind":"textbox","id":"sh/xgfytk7a","slide":6,"text":"On an example ₱1,000.00 eligible subtotal at a 20.00% Pahatud rate, the agent earns","textPreview":"On an example ₱1,000.00 eligible subtotal at a 20.00% Pahatud rate, the agent earns","textChars":83,"textLines":1,"bbox":[476,382,310,42]}
+{"kind":"textbox","id":"sh/wf6x0fq5","slide":6,"text":"₱50.00","textPreview":"₱50.00","textChars":6,"textLines":1,"bbox":[710,408,78,20]}
+{"kind":"shape","id":"sh/bexgrapk","slide":6,"bbox":[832,188,360,246]}
+{"kind":"textbox","id":"sh/adofy58z","slide":6,"text":"APPROVED RESTAURANTS","textPreview":"APPROVED RESTAURANTS","textChars":20,"textLines":1,"bbox":[856,214,208,20]}
+{"kind":"textbox","id":"sh/lkzyxk7m","slide":6,"text":"50 or more","textPreview":"50 or more","textChars":10,"textLines":1,"bbox":[856,247,280,40]}
+{"kind":"textbox","id":"sh/kjqx4fq1","slide":6,"text":"30.00%","textPreview":"30.00%","textChars":6,"textLines":1,"bbox":[856,300,166,56]}
+{"kind":"textbox","id":"sh/jixgvapg","slide":6,"text":"of Pahatud’s commission","textPreview":"of Pahatud’s commission","textChars":23,"textLines":1,"bbox":[1015,326,155,24]}
+{"kind":"shape","id":"sh/yhof258v","slide":6,"bbox":[856,365,312,0]}
+{"kind":"textbox","id":"sh/1ovel07i","slide":6,"text":"On an example ₱1,000.00 eligible subtotal at a 20.00% Pahatud rate, the agent earns","textPreview":"On an example ₱1,000.00 eligible subtotal at a 20.00% Pahatud rate, the agent earns","textChars":83,"textLines":1,"bbox":[856,382,310,42]}
+{"kind":"textbox","id":"sh/0nmxsvqx","slide":6,"text":"₱60.00","textPreview":"₱60.00","textChars":6,"textLines":1,"bbox":[1090,408,78,20]}
+{"kind":"shape","id":"sh/qtkv21of","slide":6,"bbox":[72,456,558,100]}
+{"kind":"textbox","id":"sh/rutcvm50","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[88,480,36,36]}
+{"kind":"textbox","id":"sh/sv2d4r6l","slide":6,"text":"Approval determines the count","textPreview":"Approval determines the count","textChars":29,"textLines":1,"bbox":[138,473,466,25]}
+{"kind":"textbox","id":"sh/dwbuxwn6","slide":6,"text":"A restaurant counts only while its application status is Approved. Pending, under-review, declined, or expired-document applications do not count.","textPreview":"A restaurant counts only while its application status is Approved. Pending, under-review, declined, or expired-document applications do n...","textChars":146,"textLines":1,"bbox":[138,504,466,44]}
+{"kind":"shape","id":"sh/exkv61or","slide":6,"bbox":[650,456,558,100]}
+{"kind":"textbox","id":"sh/fitcz65c","slide":6,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[666,480,36,36]}
+{"kind":"textbox","id":"sh/0j2d8b6x","slide":6,"text":"The rate is checked when an order qualifies","textPreview":"The rate is checked when an order qualifies","textChars":43,"textLines":1,"bbox":[716,473,466,25]}
+{"kind":"textbox","id":"sh/1kvu1gn2","slide":6,"text":"When an assigned restaurant’s eligible order is delivered, the system checks the agent’s approved-restaurant total and selects the active tier.","textPreview":"When an assigned restaurant’s eligible order is delivered, the system checks the agent’s approved-restaurant total and selects the active...","textChars":143,"textLines":1,"bbox":[716,504,466,44]}
+{"kind":"shape","id":"sh/u10buho7","slide":6,"bbox":[72,572,558,100]}
+{"kind":"textbox","id":"sh/v29cn25s","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[88,596,36,36]}
+{"kind":"textbox","id":"sh/b6h0bedk","slide":6,"text":"The tier covers the whole network","textPreview":"The tier covers the whole network","textChars":33,"textLines":1,"bbox":[138,589,466,25]}
+{"kind":"textbox","id":"sh/a58j29cz","slide":6,"text":"After a threshold is reached, that rate applies to future qualifying orders from every restaurant assigned to the agent, including restaurants enrolled earlier.","textPreview":"After a threshold is reached, that rate applies to future qualifying orders from every restaurant assigned to the agent, including restau...","textChars":160,"textLines":1,"bbox":[138,620,466,44]}
+{"kind":"shape","id":"sh/x8z2d4vq","slide":6,"bbox":[650,572,558,100]}
+{"kind":"textbox","id":"sh/w7q14zu5","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[666,596,36,36]}
+{"kind":"textbox","id":"sh/jahkfetg","slide":6,"text":"Recorded commissions stay unchanged","textPreview":"Recorded commissions stay unchanged","textChars":35,"textLines":1,"bbox":[716,589,466,25]}
+{"kind":"textbox","id":"sh/y98j69cb","slide":6,"text":"Each commission entry saves the rate used for that order. Moving to a higher or lower tier never recalculates an existing entry.","textPreview":"Each commission entry saves the rate used for that order. Moving to a higher or lower tier never recalculates an existing entry.","textChars":128,"textLines":1,"bbox":[716,620,466,44]}
+{"kind":"textbox","id":"sh/lcj2hobm","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"notes","id":"nt/w0lcbd","slide":6,"text":"Slide recreated from the user-supplied screenshot of the Pahatud commission tier guide. Supporting sources: resources/views/agent/partials/commission-tier-guide.blade.php, resources/views/agent/help.blade.php, config/agent.php, and app/Services/AgentCommissionService.php."}
+{"kind":"slide","id":"sl/c1you1","slide":7,"title":"What the Agent Dashboard tracks","textShapes":16}
+{"kind":"shape","id":"sh/orm98bmp","slide":7,"bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/nqtsf6l4","slide":7,"text":"What the Agent Dashboard tracks","textPreview":"What the Agent Dashboard tracks","textChars":31,"textLines":1,"bbox":[96,50,724,66]}
+{"kind":"textbox","id":"sh/2pkr614j","slide":7,"text":"Your portal connects restaurant progress, order activity, and commission reporting.","textPreview":"Your portal connects restaurant progress, order activity, and commission reporting.","textChars":83,"textLines":1,"bbox":[96,126,724,56]}
+{"kind":"textbox","id":"sh/xgvalg36","slide":7,"text":"Approved restaurants","textPreview":"Approved restaurants","textChars":20,"textLines":1,"bbox":[72,205,286,56]}
+{"kind":"textbox","id":"sh/cfm9cbml","slide":7,"text":"Partners currently counted toward your tier","textPreview":"Partners currently counted toward your tier","textChars":43,"textLines":1,"bbox":[72,269,292,58]}
+{"kind":"textbox","id":"sh/bedsjqlg","slide":7,"text":"Current commission share","textPreview":"Current commission share","textChars":24,"textLines":1,"bbox":[402,205,286,56]}
+{"kind":"textbox","id":"sh/at4ral4v","slide":7,"text":"The tier rate used for new qualifying orders","textPreview":"The tier rate used for new qualifying orders","textChars":44,"textLines":1,"bbox":[402,269,292,58]}
+{"kind":"textbox","id":"sh/dkbq9w32","slide":7,"text":"Orders generated","textPreview":"Orders generated","textChars":16,"textLines":1,"bbox":[72,350,286,56]}
+{"kind":"textbox","id":"sh/sj290rmh","slide":7,"text":"Orders connected to your restaurant network","textPreview":"Orders connected to your restaurant network","textChars":43,"textLines":1,"bbox":[72,414,292,58]}
+{"kind":"textbox","id":"sh/eh0f6hoz","slide":7,"text":"Completed order value","textPreview":"Completed order value","textChars":21,"textLines":1,"bbox":[402,350,286,56]}
+{"kind":"textbox","id":"sh/zi9wf2pk","slide":7,"text":"Delivered order value recorded by the platform","textPreview":"Delivered order value recorded by the platform","textChars":46,"textLines":1,"bbox":[402,414,292,58]}
+{"kind":"textbox","id":"sh/0j2x8765","slide":7,"text":"Total commission","textPreview":"Total commission","textChars":16,"textLines":1,"bbox":[72,495,286,56]}
+{"kind":"textbox","id":"sh/14byhc7q","slide":7,"text":"Earned commission across qualifying orders","textPreview":"Earned commission across qualifying orders","textChars":42,"textLines":1,"bbox":[72,559,292,58]}
+{"kind":"textbox","id":"sh/m5kfahob","slide":7,"text":"This month's commission","textPreview":"This month's commission","textChars":23,"textLines":1,"bbox":[402,495,286,56]}
+{"kind":"textbox","id":"sh/n6tgjmpg","slide":7,"text":"Commission activity for the current month","textPreview":"Commission activity for the current month","textChars":41,"textLines":1,"bbox":[402,559,292,58]}
+{"kind":"shape","id":"sh/o72xcr61","slide":7,"bbox":[825,72,383,580]}
+{"kind":"textbox","id":"sh/a9kfe1o7","slide":7,"text":"Reports show pending, approved, paid, and reversed entries. Pahatud operations coordinates approved payouts.","textPreview":"Reports show pending, approved, paid, and reversed entries. Pahatud operations coordinates approved payouts.","textChars":108,"textLines":1,"bbox":[850,566,333,72]}
+{"kind":"textbox","id":"sh/batgnmps","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"image","id":"im/al4z250r","slide":7,"name":"","alt":"Pahatud customer marketplace home screen","bbox":[915,104,202,445]}
+{"kind":"notes","id":"nt/c1you1","slide":7,"text":"Sources: resources/views/agent/dashboard.blade.php, resources/views/agent/reports/index.blade.php, and resources/views/agent/help.blade.php. Marketplace screenshot: public/images/app-preview/home.png. The current portal tracks payout status but does not offer self-service withdrawals."}
+{"kind":"slide","id":"sl/lwutq3","slide":8,"title":"Your first actions","textShapes":13}
+{"kind":"shape","id":"sh/ud0jm947","slide":8,"bbox":[716,-28,660,776]}
+{"kind":"shape","id":"sh/hgr2x4ni","slide":8,"bbox":[72,54,74,74]}
+{"kind":"textbox","id":"sh/3i9kze5o","slide":8,"text":"Your first actions","textPreview":"Your first actions","textChars":18,"textLines":1,"bbox":[74,176,570,74]}
+{"kind":"textbox","id":"sh/2h0jq943","slide":8,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[80,288,36,34]}
+{"kind":"textbox","id":"sh/pkb21onu","slide":8,"text":"Open the Pahatud Agent Program registration page.","textPreview":"Open the Pahatud Agent Program registration page.","textChars":49,"textLines":1,"bbox":[136,290,520,42]}
+{"kind":"textbox","id":"sh/4j21sjm9","slide":8,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[80,354,36,34]}
+{"kind":"textbox","id":"sh/jmp0na5k","slide":8,"text":"Submit your details and wait for approval.","textPreview":"Submit your details and wait for approval.","textChars":42,"textLines":1,"bbox":[136,356,520,42]}
+{"kind":"textbox","id":"sh/ilgjepoz","slide":8,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[80,420,36,34]}
+{"kind":"textbox","id":"sh/cjuhoz6t","slide":8,"text":"Sign in and enroll your first restaurant.","textPreview":"Sign in and enroll your first restaurant.","textChars":41,"textLines":1,"bbox":[136,422,520,42]}
+{"kind":"textbox","id":"sh/dknyx47e","slide":8,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[80,486,36,34]}
+{"kind":"textbox","id":"sh/qhczmpon","slide":8,"text":"Check restaurant status and commission reports regularly.","textPreview":"Check restaurant status and commission reports regularly.","textChars":57,"textLines":1,"bbox":[136,488,520,42]}
+{"kind":"textbox","id":"sh/rilgvup8","slide":8,"text":"Agent support","textPreview":"Agent support","textChars":13,"textLines":1,"bbox":[78,586,140,24]}
+{"kind":"textbox","id":"sh/0nehsz6p","slide":8,"text":"info@pahatud.com","textPreview":"info@pahatud.com","textChars":16,"textLines":1,"bbox":[78,617,330,38]}
+{"kind":"textbox","id":"sh/elwzq9oz","slide":8,"text":"Approval comes first. Earnings begin only after qualifying delivered orders from approved restaurants.","textPreview":"Approval comes first. Earnings begin only after qualifying delivered orders from approved restaurants.","textChars":102,"textLines":1,"bbox":[792,548,420,86]}
+{"kind":"textbox","id":"sh/zm5gzepk","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1170,675,40,20]}
+{"kind":"image","id":"im/psfmpkza","slide":8,"name":"","alt":"Pahatud logo","bbox":[79,61,60,60]}
+{"kind":"image","id":"im/qdw3ahkf","slide":8,"name":"","alt":"Pahatud delivery rider illustration","bbox":[790,176,434,360]}
+{"kind":"notes","id":"nt/lwutq3","slide":8,"text":"Sources: routes/web.php, resources/views/agent/auth/register.blade.php, and resources/views/agent/help.blade.php. Support email: info@pahatud.com. Illustration: public/images/motor.png."}
