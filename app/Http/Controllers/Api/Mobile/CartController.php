@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Model\Cart;
 use App\Model\CartItem;
 use App\Partners;
+use App\PartnerLocation;
 use App\Products;
+use App\Support\DeliveryZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -15,6 +17,10 @@ use Validator;
 
 class CartController extends Controller
 {
+    public function __construct(private DeliveryZone $deliveryZone)
+    {
+    }
+
     /**
      * Add cart Item
      * return success response
@@ -80,6 +86,7 @@ class CartController extends Controller
             ],
             'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+            'partner_location_id' => ['nullable', 'integer'],
             'variants' => ['sometimes', 'array'],
             'variants.*.variant_id' => ['required', 'integer'],
             'variants.*.product_detail_id' => ['required', 'integer'],
@@ -160,11 +167,59 @@ class CartController extends Controller
 
         $quantity = $request->integer('quantity', 1);
 
+        $existingCart = Cart::where('session_id', $sessionId)
+            ->latest('created_at')
+            ->first();
+        $userLatitude = $request->filled('latitude')
+            ? (float) $request->input('latitude')
+            : ($existingCart && is_numeric($existingCart->user_lat) ? (float) $existingCart->user_lat : null);
+        $userLongitude = $request->filled('longitude')
+            ? (float) $request->input('longitude')
+            : ($existingCart && is_numeric($existingCart->user_long) ? (float) $existingCart->user_long : null);
+
+        if (! $this->deliveryZone->coordinatesAreValid($userLatitude, $userLongitude)) {
+            return response()->json([
+                'status' => 0,
+                'message' => "Sorry, you haven't pinned your current location.",
+                'pop' => 'map',
+            ], 200);
+        }
+
+        $merchantLocations = PartnerLocation::query()
+            ->where('partner_id', $partnerId)
+            ->where('active', 1)
+            ->when(
+                $request->filled('partner_location_id'),
+                fn ($query) => $query->whereKey($request->integer('partner_location_id')),
+            )
+            ->get();
+        $locationDistance = $this->deliveryZone->closestLocation(
+            $merchantLocations,
+            $userLatitude,
+            $userLongitude,
+        );
+
+        if (! $locationDistance) {
+            return response()->json([
+                'status' => 0,
+                'message' => $request->filled('partner_location_id')
+                    ? 'The selected merchant location is unavailable or has invalid coordinates.'
+                    : 'This merchant does not have an active location with valid coordinates.',
+            ], 200);
+        }
+
+        if (! $this->deliveryZone->isWithinRange($locationDistance['distance_km'])) {
+            return response()->json($this->outsideDeliveryZoneResponse($locationDistance['distance_km']), 200);
+        }
+
+        $partnerLocationId = (int) $locationDistance['location']->id;
+
         try {
             $cart = DB::transaction(function () use (
                 $action,
                 $item,
                 $partnerId,
+                $partnerLocationId,
                 $quantity,
                 $request,
                 $sessionId,
@@ -208,13 +263,13 @@ class CartController extends Controller
                     $cart->duration = 0;
                     $cart->origin = null;
                     $cart->destination = null;
-                    $cart->partner_location_address_id = $request->partner_location_id; // it should be set to the new location id
+                    $cart->partner_location_address_id = $partnerLocationId;
                 }
 
                 if ($cart->exists
                     && $cart->details()->exists()
                     && $cart->partner_location_address_id !== null
-                    && (int) $cart->partner_location_address_id !== $request->integer('partner_location_id')
+                    && (int) $cart->partner_location_address_id !== $partnerLocationId
                     && $action !== 'new') {
                     throw new \DomainException('Adding an item from another restaurant location requires a new cart.');
                 }
@@ -233,7 +288,7 @@ class CartController extends Controller
                 $cart->partner_id = $partnerId;
                 // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
                 // dapat makuha niya nag iyaha order if multiple location and merchant 
-                $cart->partner_location_address_id = $request->partner_location_id;
+                $cart->partner_location_address_id = $partnerLocationId;
                 $cart->active = $user ? 1 : 0;
 
                 if ($user) {
@@ -309,7 +364,7 @@ class CartController extends Controller
             try {
                 // Calculate the delivery fee for the cart
                 // This will update the cart's delivery_fee, distance_rate, and duration fields
-                $cart->deliveryRate($request->partner_location_id);
+                $cart->deliveryRate($partnerLocationId);
                 // 
             } catch (Throwable $exception) {
                 \Log::warning('Unable to calculate the mobile cart delivery fee.', [
@@ -326,6 +381,22 @@ class CartController extends Controller
             'cart_created' => $cart->wasRecentlyCreated,
             'data' => $this->cart($sessionId),
         ], 200);
+    }
+
+    private function outsideDeliveryZoneResponse(float $distanceKilometers): array
+    {
+        $maximumDistance = $this->deliveryZone->maximumDistanceKilometers();
+
+        return [
+            'status' => 0,
+            'message' => sprintf(
+                'This order is not allowed because your location is %.2f km from the merchant. The maximum delivery distance is %s km.',
+                $distanceKilometers,
+                rtrim(rtrim(number_format($maximumDistance, 2, '.', ''), '0'), '.'),
+            ),
+            'distance_km' => round($distanceKilometers, 2),
+            'max_distance_km' => $maximumDistance,
+        ];
     }
 
     public function getCart(Request $request)

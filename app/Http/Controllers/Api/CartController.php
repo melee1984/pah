@@ -28,9 +28,15 @@ use App\Events\SendPushNotificationEvent;
 use Exception;
 use App\PartnerLocationTable;
 use App\PartnerLocationCheckoutOption;
+use App\PartnerLocation;
+use App\Support\DeliveryZone;
 
 class CartController extends Controller
 {
+    public function __construct(private DeliveryZone $deliveryZone)
+    {
+    }
+
     //
     public function index()
     {
@@ -152,7 +158,7 @@ class CartController extends Controller
             // First Validation is to check if the user already set his/her location coordinates
             try {
                 if ($cart != null) {
-                    if ((!$cart->user_long) && (!$cart->user_lat)) {
+                    if (! $this->deliveryZone->coordinatesAreValid($cart->user_lat, $cart->user_long)) {
                         $data['status'] = 0;
                         $data['message'] = "Sorry, You haven't pin your current location.";
                         $data['pop'] = "Map";
@@ -170,6 +176,38 @@ class CartController extends Controller
                 $data['pop'] = "Map";
                 return response()->json($data, 200);
             }
+
+            $partnerId = $item->user?->merchant?->id;
+
+            if (! $partnerId) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The merchant for this item is not available.',
+                ], 200);
+            }
+
+            $locationDistance = $this->deliveryZone->closestLocation(
+                PartnerLocation::query()
+                    ->where('partner_id', $partnerId)
+                    ->where('active', 1)
+                    ->get(),
+                (float) $cart->user_lat,
+                (float) $cart->user_long,
+            );
+
+            if (! $locationDistance) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'This merchant does not have an active location with valid coordinates.',
+                ], 200);
+            }
+
+            if (! $this->deliveryZone->isWithinRange($locationDistance['distance_km'])) {
+                return response()->json($this->outsideDeliveryZoneResponse($locationDistance['distance_km']), 200);
+            }
+
+            $cart->partner_location_address_id = $locationDistance['location']->id;
+
             // Removing Details here
             if ($action == "new") {
                 foreach ($cart->details as $list) {
@@ -229,6 +267,11 @@ class CartController extends Controller
                     );
                 }
             }
+
+            // Keep the branch used for the distance check on the cart so checkout
+            // and delivery-fee calculations use the same merchant location.
+            $cart->partner_location_address_id = $locationDistance['location']->id;
+            $cart->save();
 
             if ($cart) {
 
@@ -297,7 +340,7 @@ class CartController extends Controller
 
                     // Validate Delivery Fee; 
                     if (($cart->delivery_fee == "")  || ($cart->delivery_fee == 0)) {
-                        $cart->deliveryRate();
+                        $cart->deliveryRate($cart->partner_location_address_id);
                     }
                 } else {
 
@@ -327,6 +370,22 @@ class CartController extends Controller
             $data['message'] = "Item not found";
         }
         return response()->json($data, 200);
+    }
+
+    private function outsideDeliveryZoneResponse(float $distanceKilometers): array
+    {
+        $maximumDistance = $this->deliveryZone->maximumDistanceKilometers();
+
+        return [
+            'status' => 0,
+            'message' => sprintf(
+                'This order is not allowed because your location is %.2f km from the merchant. The maximum delivery distance is %s km.',
+                $distanceKilometers,
+                rtrim(rtrim(number_format($maximumDistance, 2, '.', ''), '0'), '.'),
+            ),
+            'distance_km' => round($distanceKilometers, 2),
+            'max_distance_km' => $maximumDistance,
+        ];
     }
 
     public function modifyCartItem(Request $request, CartItem $cartItem, $status)
