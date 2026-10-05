@@ -444,6 +444,11 @@ class OrderController extends Controller
             if ((int) $order->order_status_id === $completedStatus
                 && $order->store_accepted_at
                 && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
+                if ($isDineIn && ! $order->delivered_at) {
+                    $order->delivered_at = now();
+                    $order->save();
+                }
+
                 return [
                     'order' => $order,
                     'already_ready' => true,
@@ -478,6 +483,9 @@ class OrderController extends Controller
             $order->booking_status_id = $requiresDelivery
                 ? BookingStatus::STATUS_BOOKING_PLACED
                 : null;
+            if ($isDineIn) {
+                $order->delivered_at = $order->delivered_at ?: now();
+            }
             $order->save();
 
             OrderProcess::updateOrCreate([
@@ -549,6 +557,11 @@ class OrderController extends Controller
             if ((int) $order->order_status_id === LibraryStatus::STATUS_COMPLETED
                 && $order->store_accepted_at
                 && (int) $order->accepted_by_store_id === (int) $request->store_location_id) {
+                if (! $order->delivered_at) {
+                    $order->delivered_at = now();
+                    $order->save();
+                }
+
                 return [
                     'order' => $order,
                     'already_completed' => true,
@@ -566,6 +579,7 @@ class OrderController extends Controller
 
             $order->order_status_id = LibraryStatus::STATUS_COMPLETED;
             $order->booking_status_id = null;
+            $order->delivered_at = $order->delivered_at ?: now();
             $order->save();
 
             OrderProcess::updateOrCreate([

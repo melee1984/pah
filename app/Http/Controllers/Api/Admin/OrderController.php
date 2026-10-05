@@ -347,7 +347,7 @@ class OrderController extends Controller
                 $order->status_id = $request->input('status_id');    
                 $order->order_status_id = $request->input('status_id');
 
-                if ((int) $request->input('status_id') === LibraryStatus::STATUS_DELIVERED) {
+                if (in_array((int) $request->input('status_id'), LibraryStatus::COMPLETED_STATUSES, true)) {
                     $order->delivered_at = $order->delivered_at ?: now();
                 }
             }

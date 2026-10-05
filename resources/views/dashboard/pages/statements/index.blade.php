@@ -30,7 +30,7 @@
                 </div>
                 <div class="table-responsive">
                     <table class="table dashboard-data-table statement-order-table">
-                        <thead><tr><th></th><th>Completed</th><th>Merchant / order</th><th>Status</th><th>Total</th><th>Pahatud commission</th><th>Delivery fee</th><th>Convenience fee</th><th>VAT</th><th>Merchant net</th></tr></thead>
+                        <thead><tr><th></th><th>Completed</th><th>Merchant / order</th><th>Order type</th><th>Status</th><th>Total</th><th>Pahatud commission</th><th>Delivery fee</th><th>Convenience fee</th><th>VAT</th><th>Merchant net</th></tr></thead>
                         <tbody>
                         @forelse ($orders as $order)
                             @php
@@ -42,6 +42,8 @@
                                 <td>@if($canSelect)<input class="statement-order-checkbox" type="checkbox" name="order_ids[]" value="{{ $order->id }}" @checked(in_array($order->id, old('order_ids', []))) aria-label="Select order {{ $order->cart?->order_no ?? $order->id }}">@else<span class="text-muted">—</span>@endif</td>
                                 <td><strong>{{ optional($order->statement_completed_at)->format('M d, Y') }}</strong><small>{{ optional($order->statement_completed_at)->format('g:i A') }}</small></td>
                                 <td><strong>{{ $order->partner?->restaurant_name ?? 'Unavailable' }}</strong><small>Order #{{ $order->cart?->order_no ?? $order->id }}</small></td>
+                                @php($orderType = $order->cart?->fulfillment_type ?: 'delivery')
+                                <td><span class="order-option-badge is-{{ $orderType }}"><i class="fas {{ $orderType === 'pickup' ? 'fa-shopping-bag' : ($orderType === 'dine_in' ? 'fa-utensils' : 'fa-motorcycle') }}" aria-hidden="true"></i>{{ $orderType === 'dine_in' ? 'Dine-in' : ucfirst($orderType) }}</span></td>
                                 <td><span class="dashboard-status-pill is-success">{{ $order->orderStatus?->title ?? 'Completed' }}</span></td>
                                 <td class="dashboard-money">₱{{ number_format($money('total'), 2) }}</td>
                                 <td class="dashboard-money">₱{{ number_format($money('total_comm'), 2) }}</td>
@@ -51,7 +53,7 @@
                                 <td class="dashboard-money"><strong>₱{{ number_format($money('total') - $money('total_comm'), 2) }}</strong></td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="dashboard-table-empty">No unprocessed completed orders match this search.</td></tr>
+                            <tr><td colspan="11" class="dashboard-table-empty">No unprocessed completed orders match this search.</td></tr>
                         @endforelse
                         </tbody>
                     </table>

@@ -172,6 +172,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             'order_status_id' => LibraryStatus::STATUS_COMPLETED,
             'booking_status_id' => null,
         ]);
+        $this->assertNotNull(Orders::find($order->id)->delivered_at);
     }
 
     public function test_dine_in_order_becomes_completed_when_ready_to_serve(): void
@@ -191,6 +192,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             'order_status_id' => LibraryStatus::STATUS_COMPLETED,
             'booking_status_id' => null,
         ]);
+        $this->assertNotNull(Orders::find($order->id)->delivered_at);
     }
 
     public function test_delivery_order_keeps_the_ready_for_pickup_delivery_flow(): void
