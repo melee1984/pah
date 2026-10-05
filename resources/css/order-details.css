@@ -228,6 +228,31 @@
 
 .order-status-filter-label small { color: #8b96a5; }
 
+.order-archive-filter {
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e5eaf0;
+    border-radius: 0.85rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin: 0.9rem 0 1rem;
+    padding: 0.9rem 1rem;
+}
+
+.order-archive-filter label {
+    color: #34445a;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.order-archive-filter small { color: #7b8798; }
+.order-archive-filter select { max-width: 260px; }
+
 .order-fulfillment-row > td:first-child {
     border-left: 3px solid #3b82f6;
 }
@@ -264,4 +289,6 @@
     .order-filter-heading { align-items: flex-start; flex-direction: column; gap: 0.25rem; }
     .order-option-filter { grid-template-columns: 1fr; }
     .order-option-filter__button { min-height: 5.25rem; }
+    .order-archive-filter { align-items: stretch; flex-direction: column; }
+    .order-archive-filter select { max-width: none; }
 }

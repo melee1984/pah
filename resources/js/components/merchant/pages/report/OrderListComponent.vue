@@ -2,7 +2,7 @@
   <div>
      <div class="card admin-card dashboard-data-card merchant-order-card">
       <div class="admin-card-header">
-        <div><h2>Order management</h2><p>Review pending, completed, and cancelled orders.</p></div>
+        <div><h2>Order management</h2><p>Review new, completed, and cancelled orders.</p></div>
         <span
           class="dashboard-reload-chip merchant-order-refresh"
           :class="refreshIndicatorClass"
@@ -17,36 +17,15 @@
         </span>
       </div>
       <div class="card-body">
-        <section class="order-filter-section">
-          <div class="order-filter-heading">
-            <div><span class="order-filter-eyebrow">Order option</span><h3>Choose a fulfilment queue</h3></div>
-            <small>Orders are grouped by how customers receive them.</small>
-          </div>
-          <div class="order-option-filter" aria-label="Filter orders by order option">
-          <button
-            v-for="option in fulfillmentOptions"
-            :key="option.value"
-            type="button"
-            class="order-option-filter__button"
-            :class="['is-' + option.value, { active: activeFulfillment === option.value }]"
-            @click="selectFulfillment(option.value)"
-          >
-            <span class="order-option-filter__icon"><i :class="option.icon" aria-hidden="true"></i></span>
-            <span class="order-option-filter__copy"><strong>{{ option.label }}</strong><small>{{ option.description }}</small></span>
-            <span class="order-option-filter__count"><strong>{{ fulfillmentCount(option.value) }}</strong><small>orders</small></span>
-          </button>
-          </div>
-        </section>
-        <div class="order-status-filter-label"><span>Status</span><small>{{ fulfillmentLabel(activeFulfillment) }} orders</small></div>
         <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
           <li class="nav-item">
             <button
               type="button"
               class="nav-link"
               :class="{ active: activeList === 'pending' }"
-              @click="activeList = 'pending'"
+              @click="selectActiveList('pending')"
             >
-              Pending <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
+              New Orders <span class="badge badge-danger ml-1">{{ pendingOrders.length }}</span>
             </button>
           </li>
           <li class="nav-item">
@@ -54,9 +33,9 @@
               type="button"
               class="nav-link"
               :class="{ active: activeList === 'completed' }"
-              @click="activeList = 'completed'"
+              @click="selectActiveList('completed')"
             >
-              Completed <span class="badge badge-success ml-1">{{ completedOrders.length }}</span>
+              Completed <span class="badge badge-success ml-1">{{ completedOrderCount }}</span>
             </button>
           </li>
           <li class="nav-item">
@@ -64,12 +43,24 @@
               type="button"
               class="nav-link"
               :class="{ active: activeList === 'cancelled' }"
-              @click="activeList = 'cancelled'"
+              @click="selectActiveList('cancelled')"
             >
-              Cancelled <span class="badge badge-secondary ml-1">{{ cancelledOrders.length }}</span>
+              Cancelled <span class="badge badge-secondary ml-1">{{ cancelledOrderCount }}</span>
             </button>
           </li>
         </ul></div>
+        <section v-if="activeList !== 'pending'" class="order-archive-filter" aria-label="Filter archived orders by order option">
+          <div>
+            <label for="merchant-order-option-filter">Order option</label>
+            <small>Filter the {{ activeListLabel.toLowerCase() }} orders in this tab.</small>
+          </div>
+          <select id="merchant-order-option-filter" v-model="activeFulfillment" class="form-control">
+            <option value="">All order options ({{ activeArchiveOrders.length }})</option>
+            <option v-for="option in fulfillmentOptions" :key="option.value" :value="option.value">
+              {{ option.label }} ({{ archiveFulfillmentCount(option.value) }})
+            </option>
+          </select>
+        </section>
         <div class="tab-content p-0">
           <!-- Morris chart - Sales -->
           <div class="chart tab-pane active" id="revenue-chart">
@@ -79,37 +70,37 @@
                   <tr>
                     <th>Date/Time</th>
                     <th>Order Information</th>
+                    <th>Order Option</th>
                     <th>Qty</th>
                     <th nowrap="">Sub Total</th>
                     <th>Discount</th>
-                    <th v-if="activeFulfillment === 'delivery'" nowrap="">Delivery Fee</th>
+                    <th nowrap="">Delivery Fee</th>
                     <th>Total</th>
-                    <th v-if="activeFulfillment === 'delivery'">Rider</th>
+                    <th>Rider</th>
                     <th>Order Status</th>
-                    <th v-if="activeFulfillment === 'delivery'">Delivery Status</th>
+                    <th>Delivery Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="!hasLoaded && isRefreshing">
-                    <td :colspan="activeFulfillment === 'delivery' ? 10 : 7" class="dashboard-table-empty">
+                    <td colspan="11" class="dashboard-table-empty">
                       Loading orders…
                     </td>
                   </tr>
                   <tr v-else-if="!hasLoaded && refreshError">
-                    <td :colspan="activeFulfillment === 'delivery' ? 10 : 7" class="dashboard-table-empty merchant-order-load-error">
+                    <td colspan="11" class="dashboard-table-empty merchant-order-load-error">
                       Unable to load orders. Retrying automatically.
                     </td>
                   </tr>
                   <tr v-else-if="displayedOrders.length === 0">
-                    <td :colspan="activeFulfillment === 'delivery' ? 10 : 7" class="dashboard-table-empty">
-                      No {{ activeListLabel.toLowerCase() }} {{ fulfillmentLabel(activeFulfillment).toLowerCase() }} orders found.
+                    <td colspan="11" class="dashboard-table-empty">
+                      No {{ activeListLabel.toLowerCase() }}<template v-if="activeFulfillment"> {{ fulfillmentLabel(activeFulfillment).toLowerCase() }}</template> orders found.
                     </td>
                   </tr>
                   <tr v-for="order in displayedOrders" :key="order.id" :class="['order-fulfillment-row', 'is-' + fulfillmentType(order)]">
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <button type="button" class="dashboard-order-link" v-on:click="displayOrderDetails(order)"><i class="fas fa-receipt"></i> Order #{{ order.cart.order_no }}</button>
-                        <span class="order-option-badge mt-2" :class="'is-' + fulfillmentType(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(fulfillmentType(order)) }}</span>
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br>
@@ -123,14 +114,16 @@
                         Mobile: {{ order.cart.mobile }} <br>
 
                     </td>
+                    <td width="8%"><span class="order-option-badge" :class="'is-' + fulfillmentType(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(fulfillmentType(order)) }}</span></td>
                     <td width="5%">{{ order.summary.qty }}</td>
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
-                    <td v-if="activeFulfillment === 'delivery'" width="8%"><span class="dashboard-money">₱{{ order.summary.delivery_fee }}</span></td>
+                    <td width="8%"><span v-if="fulfillmentType(order) === 'delivery'" class="dashboard-money">₱{{ order.summary.delivery_fee }}</span><span v-else class="text-muted">—</span></td>
                     <td width="10%"><span class="dashboard-money">₱{{ order.summary.total }}</span></td>
-                     <td v-if="activeFulfillment === 'delivery'" width="10%">
-                      <p v-if="order.rider">{{ order.rider.name }}</p>
-                      <span v-else class="text-muted">Not assigned</span>
+                     <td width="10%">
+                      <p v-if="fulfillmentType(order) === 'delivery' && order.rider">{{ order.rider.name }}</p>
+                      <span v-else-if="fulfillmentType(order) === 'delivery'" class="text-muted">Not assigned</span>
+                      <span v-else class="text-muted">—</span>
                     </td>
                     <td width="10%">
                       <span v-if="order.order_status">
@@ -138,8 +131,8 @@
                       </span>
                       <span v-else class="text-muted">—</span>
                     </td>
-                    <td v-if="activeFulfillment === 'delivery'" width="10%">
-                      <span v-if="order.status">
+                    <td width="10%">
+                      <span v-if="fulfillmentType(order) === 'delivery' && order.status">
                         <span class="dashboard-status-pill" :class="statusBadgeClass(order.status.id)">{{ order.status.title }}</span>
                       </span>
                       <span v-else class="text-muted">—</span>
@@ -257,7 +250,7 @@
                 },
                 errors: {},
                 orders: [],
-                activeFulfillment: 'delivery',
+                activeFulfillment: '',
                 fulfillmentOptions: [
                   { value: 'delivery', label: 'Delivery', description: 'Sent by a rider', icon: 'fas fa-motorcycle' },
                   { value: 'pickup', label: 'Pickup', description: 'Collected in store', icon: 'fas fa-shopping-bag' },
@@ -278,17 +271,27 @@
         },
         computed: {
           pendingOrders: function() {
-            return this.orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment).filter(order => {
+            return this.orders.filter(order => {
               const statusId = Number(order.order_status_id);
 
               return statusId >= 1 && statusId <= 6;
             });
           },
           completedOrders: function() {
-            return this.orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment && [7, 9].includes(Number(order.order_status_id)));
+            return this.filterArchivedOrders(this.orders.filter(order => [7, 9].includes(Number(order.order_status_id))));
           },
           cancelledOrders: function() {
-            return this.orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment && Number(order.order_status_id) === 8);
+            return this.filterArchivedOrders(this.orders.filter(order => Number(order.order_status_id) === 8));
+          },
+          completedOrderCount: function() {
+            return this.orders.filter(order => [7, 9].includes(Number(order.order_status_id))).length;
+          },
+          cancelledOrderCount: function() {
+            return this.orders.filter(order => Number(order.order_status_id) === 8).length;
+          },
+          activeArchiveOrders: function() {
+            const statusIds = this.activeList === 'completed' ? [7, 9] : [8];
+            return this.orders.filter(order => statusIds.includes(Number(order.order_status_id)));
           },
           displayedOrders: function() {
             if (this.activeList === 'completed') {
@@ -310,7 +313,7 @@
               return 'Cancelled';
             }
 
-            return 'Pending';
+            return 'New';
           },
           selectedOrderIsCompleted: function() {
             return this.selectedOrder && [7, 9].includes(Number(this.selectedOrder.order_status_id));
@@ -366,11 +369,19 @@
             const option = this.fulfillmentOptions.find(item => item.value === this.fulfillmentType(order));
             return option ? option.icon : 'fas fa-motorcycle';
           },
-          fulfillmentCount: function(type) {
-            return this.orders.filter(order => this.fulfillmentType(order) === type).length;
+          filterArchivedOrders: function(orders) {
+            if (!this.activeFulfillment) {
+              return orders;
+            }
+
+            return orders.filter(order => this.fulfillmentType(order) === this.activeFulfillment);
           },
-          selectFulfillment: function(type) {
-            this.activeFulfillment = type;
+          archiveFulfillmentCount: function(type) {
+            return this.activeArchiveOrders.filter(order => this.fulfillmentType(order) === type).length;
+          },
+          selectActiveList: function(list) {
+            this.activeList = list;
+            this.activeFulfillment = '';
           },
           fulfillmentScheduleLabel: function(order) {
             return this.fulfillmentType(order) === 'delivery' ? 'Delivery Date/Time' : 'Requested Date/Time';
