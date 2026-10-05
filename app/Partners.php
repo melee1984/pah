@@ -93,6 +93,11 @@ class Partners extends Model
         return $this->hasMany(AgentCommission::class, 'restaurant_id');
     }
 
+    public function statements()
+    {
+        return $this->hasMany(StatementAccount::class, 'partner_id');
+    }
+
     public function enrollmentDocuments()
     {
         return $this->hasMany(RestaurantEnrollmentDocument::class, 'partner_id');

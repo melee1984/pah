@@ -238,6 +238,11 @@ class Orders extends Model
          return $this->hasOne('App\UserReward', 'order_id');
     }
 
+    public function statementItem()
+    {
+         return $this->hasOne('App\StatementAccountItem', 'order_id');
+    }
+
      public function user() 
     {
          return $this->hasOne('App\User', 'id', 'user_id');

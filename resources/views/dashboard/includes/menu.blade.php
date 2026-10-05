@@ -58,6 +58,11 @@
         <a href="{{ route('dashboard.report.user-rewards') }}" class="nav-link {{ Request::is('data/dashboard/report/user-rewards') ? 'active' : '' }}"><i class="nav-icon fas fa-star"></i><p>User reward points</p></a>
     </li>
 
+    <li class="nav-header">Billing</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.statements.index') }}" class="nav-link {{ Request::is('data/dashboard/statements*') ? 'active' : '' }}"><i class="nav-icon fas fa-file-invoice-dollar"></i><p>Statements of account</p></a>
+    </li>
+
     <li class="nav-header">System</li>
     <li class="nav-item">
         <a href="{{ route('dashboard.settings') }}" class="nav-link {{ Request::is('data/dashboard/settings') ? 'active' : '' }}"><i class="nav-icon fas fa-cog"></i><p>Settings</p></a>

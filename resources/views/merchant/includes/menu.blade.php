@@ -42,8 +42,15 @@
 
   <li class="nav-header merchant-nav-section">Insights</li>
   <li class="nav-item">
-    <a href="{{ route('merchant.dashboard.report.salestoday') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.report.*') ? 'active' : '' }}">
+    <a href="{{ route('merchant.dashboard.report.salestoday') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.report.salestoday') || request()->routeIs('merchant.dashboard.report.report') ? 'active' : '' }}">
       <i class="nav-icon fas fa-chart-line"></i><p>Sales report</p>
+    </a>
+  </li>
+
+  <li class="nav-header merchant-nav-section">Finance</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.report.soa') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.report.soa*') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-file-invoice-dollar"></i><p>Statements of account</p>
     </a>
   </li>
 

@@ -270,6 +270,16 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/report/agent', \App\Http\Controllers\Admin\AgentCommissionReportController::class)->name('dashboard.report.agents');
     Route::get('data/dashboard/report/favorites', \App\Http\Controllers\Admin\FavoriteReportController::class)->name('dashboard.report.favorites');
     Route::get('data/dashboard/report/user-rewards', \App\Http\Controllers\Admin\UserRewardReportController::class)->name('dashboard.report.user-rewards');
+    Route::get('data/dashboard/statements', [\App\Http\Controllers\Admin\StatementAccountController::class, 'index'])->name('dashboard.statements.index');
+    Route::post('data/dashboard/statements', [\App\Http\Controllers\Admin\StatementAccountController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.statements.store');
+    Route::post('data/dashboard/statements/{statement}/publish', [\App\Http\Controllers\Admin\StatementAccountController::class, 'publish'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.statements.publish');
+    Route::delete('data/dashboard/statements/{statement}', [\App\Http\Controllers\Admin\StatementAccountController::class, 'destroy'])
+        ->name('dashboard.statements.destroy');
+    Route::get('data/dashboard/statements/{statement}', [\App\Http\Controllers\Admin\StatementAccountController::class, 'show'])->name('dashboard.statements.show');
 
     // Auto-login as merchant
     Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request) {
@@ -354,4 +364,5 @@ Route::middleware('merchant')->group(function () {
     Route::get('merchant/report-sales-for-today', [\App\Http\Controllers\Merchant\ReportController::class, 'today'])->name('merchant.dashboard.report.salestoday');
     Route::get('merchant/report-sales', [\App\Http\Controllers\Merchant\ReportController::class, 'salesReport'])->name('merchant.dashboard.report.report');
     Route::get('merchant/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('merchant.dashboard.report.soa');
+    Route::get('merchant/soa/{statement}', [\App\Http\Controllers\Merchant\ReportController::class, 'statement'])->name('merchant.dashboard.report.soa.show');
 });

@@ -621,6 +621,83 @@ body.pahatud-admin {
     .merchant-help-questions { padding: 0 17px; }
 }
 
+/* Statements of account */
+.statement-filter-bar { grid-template-columns: minmax(180px, .9fr) minmax(170px, .7fr) minmax(280px, 1.1fr) auto; }
+.statement-date-range-field .input-group-text { background: #fff; border-color: #ddd8d3; border-radius: 8px 0 0 8px; color: var(--admin-red); }
+.statement-date-range-field .form-control { border-left: 0; }
+.statement-select-all { align-items: center; color: var(--admin-ink); display: flex; font-size: 11px; gap: 7px; margin: 0; }
+.statement-order-table, .statement-detail-table { min-width: 1280px; }
+.statement-create-footer { align-items: flex-end; display: grid; gap: 18px; grid-template-columns: 1fr auto; padding: 18px 20px; }
+.statement-create-footer label { color: var(--admin-ink); display: block; font-size: 11px; font-weight: 800; margin-bottom: 6px; }
+.statement-create-footer textarea { border-color: var(--admin-line); border-radius: 9px; resize: vertical; }
+.statement-document { color: var(--admin-ink); }
+.statement-document-header { align-items: flex-start; border-bottom: 2px solid var(--admin-red); display: flex; justify-content: space-between; padding: 5px 2px 18px; }
+.statement-document-header h2 { font-family: 'Manrope', sans-serif; font-size: 25px; font-weight: 800; margin: 3px 0; }
+.statement-document-header p { color: var(--admin-muted); font-size: 11px; margin: 0; }
+.statement-parties { background: #fbfaf9; border-bottom: 1px solid var(--admin-line); display: grid; gap: 24px; grid-template-columns: 1fr 1fr; margin-bottom: 18px; padding: 20px; }
+.statement-parties small, .statement-parties strong, .statement-parties span { display: block; }
+.statement-parties small { color: var(--admin-muted); font-size: 9px; font-weight: 800; letter-spacing: .7px; margin-bottom: 5px; text-transform: uppercase; }
+.statement-parties strong { font-size: 14px; margin-bottom: 3px; }
+.statement-parties span { color: var(--admin-muted); font-size: 11px; }
+.statement-detail-table tfoot td { background: #f7f3f0; font-weight: 700; }
+.statement-note { background: #fff9ed; border: 1px solid #f0ddba; border-radius: 10px; margin-top: 18px; padding: 14px 16px; }
+.statement-note strong { font-size: 11px; }
+.statement-note p { color: #655f57; font-size: 11px; margin: 4px 0 0; white-space: pre-wrap; }
+.statement-summary-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 20px 0 4px auto; max-width: 720px; }
+.statement-summary-grid > div { background: #f8f6f3; border: 1px solid var(--admin-line); border-radius: 10px; padding: 14px 16px; }
+.statement-summary-grid small, .statement-summary-grid strong { display: block; }
+.statement-summary-grid small { color: var(--admin-muted); font-size: 9px; font-weight: 800; margin-bottom: 5px; text-transform: uppercase; }
+.statement-summary-grid strong { font-size: 17px; }
+.statement-summary-grid .is-net { background: #fff1ef; border-color: #f0cac6; }
+.statement-summary-grid .is-net strong { color: var(--admin-red); }
+.statement-read-only { border: 1px solid var(--admin-line); color: var(--admin-muted); font-size: 11px; }
+.statement-page-actions { align-items: center; display: flex; gap: 8px; }
+.statement-draft-actions { align-items: center; background: #fff8e8; border: 1px solid #efd49d; border-radius: 12px; display: flex; gap: 18px; justify-content: space-between; margin-bottom: 18px; padding: 16px 18px; }
+.statement-draft-actions > div { align-items: center; display: flex; gap: 10px; }
+.statement-draft-actions > div:first-child > i { color: #b37312; font-size: 21px; }
+.statement-draft-actions span, .statement-draft-actions strong { display: block; }
+.statement-draft-actions span { color: #6e6252; font-size: 11px; }
+.statement-draft-actions strong { color: var(--admin-ink); font-size: 12px; margin-bottom: 2px; }
+.statement-draft-actions form { margin: 0; }
+@media (max-width: 991px) {
+    .statement-filter-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .statement-filter-bar .dashboard-filter-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 575px) {
+    .statement-filter-bar, .statement-create-footer, .statement-parties, .statement-summary-grid { grid-template-columns: 1fr; }
+    .statement-page-actions { align-items: stretch; flex-direction: column; width: 100%; }
+    .statement-draft-actions, .statement-draft-actions > div { align-items: stretch; flex-direction: column; }
+    .statement-draft-actions .btn { width: 100%; }
+}
+
+@media print {
+    @page { margin: 12mm; size: landscape; }
+    .pahatud-merchant .main-header,
+    .pahatud-merchant .main-sidebar,
+    .pahatud-merchant .main-footer,
+    .pahatud-merchant .content-header,
+    .pahatud-merchant .statement-read-only,
+    .pahatud-merchant .statement-print-button { display: none !important; }
+    .pahatud-merchant .content-wrapper { background: #fff !important; margin-left: 0 !important; min-height: 0 !important; padding: 0 !important; }
+    .pahatud-merchant .content { padding: 0 !important; }
+    .pahatud-merchant .container-fluid { max-width: none !important; padding: 0 !important; width: 100% !important; }
+    .pahatud-merchant .statement-print-card { border: 0 !important; box-shadow: none !important; margin: 0 !important; }
+    .pahatud-merchant .statement-print-card > .card-body { padding: 0 !important; }
+    .pahatud-merchant .statement-document { color: #111 !important; font-size: 9pt; }
+    .pahatud-merchant .statement-document-header,
+    .pahatud-merchant .statement-parties,
+    .pahatud-merchant .statement-summary-grid,
+    .pahatud-merchant .statement-note { break-inside: avoid; }
+    .pahatud-merchant .statement-detail-table { font-size: 7.5pt; min-width: 0 !important; width: 100% !important; }
+    .pahatud-merchant .statement-detail-table thead { display: table-header-group; }
+    .pahatud-merchant .statement-detail-table tr { break-inside: avoid; }
+    .pahatud-merchant .statement-detail-table th,
+    .pahatud-merchant .statement-detail-table td { padding: 5px 4px !important; white-space: nowrap; }
+    .pahatud-merchant .table-responsive { overflow: visible !important; }
+    .pahatud-merchant .statement-summary-grid { margin-top: 12px; }
+    .pahatud-merchant .dashboard-status-pill { border: 1px solid #777 !important; color: #111 !important; }
+}
+
 /* Push notification management */
 .push-stat-grid .admin-stat-card { min-height: 96px; }
 .push-history-header { align-items: flex-end; }
