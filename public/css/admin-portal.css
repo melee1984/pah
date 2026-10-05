@@ -652,6 +652,10 @@ body.pahatud-admin {
 .statement-summary-grid .is-net strong { color: var(--admin-red); }
 .statement-read-only { border: 1px solid var(--admin-line); color: var(--admin-muted); font-size: 11px; }
 .statement-page-actions { align-items: center; display: flex; gap: 8px; }
+.statement-view-toolbar { align-items: center; background: #fff; border: 1px solid var(--admin-line); border-radius: 12px; display: flex; justify-content: space-between; margin-bottom: 14px; padding: 13px 16px; }
+.statement-view-toolbar strong, .statement-view-toolbar span { display: block; }
+.statement-view-toolbar strong { color: var(--admin-ink); font-size: 12px; }
+.statement-view-toolbar span { color: var(--admin-muted); font-size: 10px; margin-top: 2px; }
 .statement-draft-actions { align-items: center; background: #fff8e8; border: 1px solid #efd49d; border-radius: 12px; display: flex; gap: 18px; justify-content: space-between; margin-bottom: 18px; padding: 16px 18px; }
 .statement-draft-actions > div { align-items: center; display: flex; gap: 10px; }
 .statement-draft-actions > div:first-child > i { color: #b37312; font-size: 21px; }
@@ -666,6 +670,8 @@ body.pahatud-admin {
 @media (max-width: 575px) {
     .statement-filter-bar, .statement-create-footer, .statement-parties, .statement-summary-grid { grid-template-columns: 1fr; }
     .statement-page-actions { align-items: stretch; flex-direction: column; width: 100%; }
+    .statement-view-toolbar { align-items: stretch; flex-direction: column; gap: 12px; }
+    .statement-view-toolbar .btn { width: 100%; }
     .statement-draft-actions, .statement-draft-actions > div { align-items: stretch; flex-direction: column; }
     .statement-draft-actions .btn { width: 100%; }
 }
@@ -677,6 +683,7 @@ body.pahatud-admin {
     .pahatud-merchant .main-footer,
     .pahatud-merchant .content-header,
     .pahatud-merchant .statement-read-only,
+    .pahatud-merchant .statement-view-toolbar,
     .pahatud-merchant .statement-print-button { display: none !important; }
     .pahatud-merchant .content-wrapper { background: #fff !important; margin-left: 0 !important; min-height: 0 !important; padding: 0 !important; }
     .pahatud-merchant .content { padding: 0 !important; }
