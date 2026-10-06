@@ -1443,7 +1443,29 @@ class DeliveryController extends Controller
             'route_url' => url("/api/v1/rider/deliveries/{$delivery->reference}/route"),
             'legacy_order_id' => $delivery->legacy_order_id,
             'legacy_booking_id' => $delivery->legacy_booking_id,
+            'payment_method' => $this->deliveryPaymentMethod($delivery),
         ];
+    }
+
+    private function deliveryPaymentMethod(object $delivery): ?string
+    {
+        if (
+            ! $delivery->legacy_order_id
+            || ! Schema::hasTable('order')
+            || ! Schema::hasTable('cart')
+            || ! Schema::hasColumn('cart', 'payment_id')
+            || ! Schema::hasTable('payment_method')
+        ) {
+            return null;
+        }
+
+        $title = DB::table('order')
+            ->join('cart', 'cart.id', '=', 'order.cart_id')
+            ->join('payment_method', 'payment_method.id', '=', 'cart.payment_id')
+            ->where('order.id', $delivery->legacy_order_id)
+            ->value('payment_method.title');
+
+        return $title === null ? null : (string) $title;
     }
 
     /**

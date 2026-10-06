@@ -42,18 +42,18 @@ class OrderController extends Controller
                         ->whereDoesntHave('riderDeclines', function ($query) use ($request) {
                             $query->where('rider_id', $request->user()->rider->id);
                         })
-    					->whereNull('accepted_at')
-	    	 			->orderby('submitted_at','desc')
-	    	 			->with('cart')
-	    	 			->get();
+                        ->whereNull('accepted_at')
+                        ->orderby('submitted_at','desc')
+                        ->with('cart.payment')
+                        ->get();
 						
-
 		foreach($orders as $order) {
 
 			$order->job_order_format = "JO " . $order->cart->order_no;
 			$order->summary = $order->cart->cartItemSummary();
 			$order->cart->address;
 			$order->cart->payment;
+			$order->payment_method = $order->cart->payment?->title;
 			$order->cart->partnerlocation;
 			$product_items = $order->cart->cartItemList();    
 			$order->cart_total = $order->cart->cartItemTotal();

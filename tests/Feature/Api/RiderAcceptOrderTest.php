@@ -270,6 +270,44 @@ class RiderAcceptOrderTest extends TestCase
             ->assertJsonPath('deliveries.0.id', $completedReference);
     }
 
+    public function test_delivery_details_include_the_payment_method(): void
+    {
+        [$user, $riderId] = $this->createRider('delivery-payment@example.com');
+        $creditOrderId = $this->createAvailableOrder();
+        $codOrderId = $this->createAvailableOrder();
+        $creditReference = $this->createDeliveryForOrder($creditOrderId, $riderId);
+        $codReference = $this->createDeliveryForOrder($codOrderId, $riderId);
+
+        Schema::table('cart', function (Blueprint $table) {
+            $table->unsignedBigInteger('payment_id')->nullable();
+        });
+        Schema::create('payment_method', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+        });
+
+        DB::table('payment_method')->insert([
+            ['id' => 1, 'title' => 'Credit Card'],
+            ['id' => 3, 'title' => 'Cash on Delivery'],
+        ]);
+        $creditCartId = DB::table('cart')->insertGetId(['payment_id' => 1]);
+        $codCartId = DB::table('cart')->insertGetId(['payment_id' => 3]);
+        DB::table('order')->where('id', $creditOrderId)->update(['cart_id' => $creditCartId]);
+        DB::table('order')->where('id', $codOrderId)->update(['cart_id' => $codCartId]);
+
+        Sanctum::actingAs($user);
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson("/api/v1/rider/deliveries/{$creditReference}")
+            ->assertOk()
+            ->assertJsonPath('delivery.payment_method', 'Credit Card');
+
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson("/api/v1/rider/deliveries/{$codReference}")
+            ->assertOk()
+            ->assertJsonPath('delivery.payment_method', 'Cash on Delivery');
+    }
+
     public function test_delivery_list_validates_filters(): void
     {
         [$user] = $this->createRider('delivery-list-validation@example.com');

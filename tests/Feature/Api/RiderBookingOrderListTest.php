@@ -56,7 +56,13 @@ class RiderBookingOrderListTest extends TestCase
             $table->timestamps();
         });
 
-        foreach (['payment_method', 'partner_location', 'partners'] as $tableName) {
+        Schema::create('payment_method', function (Blueprint $table) {
+            $table->id();
+            $table->string('title')->nullable();
+            $table->timestamps();
+        });
+
+        foreach (['partner_location', 'partners'] as $tableName) {
             Schema::create($tableName, function (Blueprint $table) {
                 $table->id();
                 $table->timestamps();
@@ -204,6 +210,36 @@ class RiderBookingOrderListTest extends TestCase
             ->assertJsonCount(1, 'orders')
             ->assertJsonPath('orders.0.id', $orderId)
             ->assertJsonPath('orders.0.type', 'order');
+    }
+
+    public function test_legacy_rider_bookings_include_the_cart_payment_method(): void
+    {
+        [$user, $riderId] = $this->createRider();
+        DB::table('payment_method')->insert([
+            'id' => 3,
+            'title' => 'Cash on Delivery',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $cartId = DB::table('cart')->insertGetId([
+            'payment_id' => 3,
+            'order_no' => 'ORDER-1002',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('order')->insert([
+            'cart_id' => $cartId,
+            'rider_id' => $riderId,
+            'submitted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user, 'api')
+            ->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->getJson('/api/rider/bookings')
+            ->assertOk()
+            ->assertJsonPath('data.0.payment_method', 'Cash on Delivery');
     }
 
     /**
