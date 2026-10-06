@@ -3,10 +3,15 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
+use App\LibraryStatus;
+use App\Model\Bookings\BookingStatus;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 use App\Model\Orders\Orders;
 use App\Model\Orders\OrderProcess;
+use App\Services\RiderOfferDispatcher;
 
 use App\User;
 
@@ -105,50 +110,86 @@ class OrderController extends Controller
      * @param  Orders  $order   [description]
      * @return [type]           [description]
      */
-    public function updateOrderStatus(Orders $order, Request $request) {
-
+    public function updateOrderStatus(Orders $order, Request $request)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:cancel'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
         $user = $request->user();
 
-        $status_id = "";
+        $result = DB::transaction(function () use ($order, $user) {
+            $order = Orders::query()
+                ->whereKey($order->getKey())
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->first();
 
-        if ($request->input('status')!=null) {
-            
-            if ($request->input('status') =="cancel") {
-                $status_id = 8;
-                $order->order_status_id = $status_id; // Cancelled 
+            if (! $order) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Order not found.',
+                ], 404)];
             }
 
-            $status = $order->save();
-
-            if ($status) {
-                
-                OrderProcess::create([
-                    'status_id' => $order->status_id,
-                    'order_id' => $order->id,
-                    'user_id' => $user->id,
-                ]);
-                
-                $data['message'] = "We have receive your request and it was successfully changed.";
-                $data['status'] = 1;
-            }
-            else {
-                $data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
-                $data['status'] = 0;    
+            if ((int) $order->order_status_id === LibraryStatus::STATUS_CANCELLED) {
+                return [
+                    'order' => $order,
+                    'already_cancelled' => true,
+                ];
             }
 
+            if (! in_array((int) $order->order_status_id, [
+                LibraryStatus::STATUS_ORDER_PLACED,
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+                return ['response' => response()->json([
+                    'status' => 0,
+                    'message' => 'Orders already picked up or completed cannot be cancelled.',
+                ], 409)];
+            }
+
+            $order->order_status_id = LibraryStatus::STATUS_CANCELLED;
+            $order->booking_status_id = $order->cart?->requiresDelivery()
+                ? BookingStatus::STATUS_BOOKING_CANCELLED
+                : null;
+            $order->save();
+
+            OrderProcess::updateOrCreate([
+                'status_id' => LibraryStatus::STATUS_CANCELLED,
+                'order_id' => $order->id,
+            ], [
+                'user_id' => $user->id,
+            ]);
+
+            app(RiderOfferDispatcher::class)->cancelOrder((int) $order->id);
+
+            return [
+                'order' => $order,
+                'already_cancelled' => false,
+            ];
+        });
+
+        if (isset($result['response'])) {
+            return $result['response'];
         }
-        else {
-           $data['message'] = "We could not find your request. Please try agian.";
-        $data['status'] = 0;  
-        }
 
-       
+        Log::info('Customer cancelled an order.', [
+            'order_id' => $result['order']->id,
+            'user_id' => $user->id,
+            'reason' => $validated['reason'] ?? null,
+            'already_cancelled' => $result['already_cancelled'],
+        ]);
 
-        return response()->json($data, 200);
+        return response()->json([
+            'status' => 1,
+            'message' => $result['already_cancelled']
+                ? 'Order was already cancelled.'
+                : 'Order cancelled successfully.',
+            'order_id' => $result['order']->id,
+            'order_status_id' => $result['order']->order_status_id,
+        ]);
     }
-
-     
-
-   
-
 }
