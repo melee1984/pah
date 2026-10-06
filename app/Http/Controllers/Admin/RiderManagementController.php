@@ -149,6 +149,9 @@ class RiderManagementController extends Controller
         $view = $validated['view'] ?? 'active';
         $riders = Rider::query()
             ->with('wallet')
+            ->withCount([
+                'deliveries as completed_deliveries_count' => fn ($query) => $query->where('current_state', 'delivered'),
+            ])
             ->when($view === 'archived', fn ($query) => $query->whereNotNull('archived_at'))
             ->when($view === 'active', fn ($query) => $query->whereNull('archived_at'))
             ->when($search !== '', function ($query) use ($search) {
@@ -174,6 +177,9 @@ class RiderManagementController extends Controller
             'pending' => Rider::query()->whereNull('archived_at')->where(function ($query) {
                 $query->whereNull('active')->orWhere('active', false);
             })->count(),
+            'completed_deliveries' => DB::table('rider_api_deliveries')
+                ->where('current_state', 'delivered')
+                ->count(),
             'credits' => (float) DB::table('rider_api_wallets')->sum('credit_amount'),
         ];
         $pendingTopUps = DB::table('rider_api_wallet_top_ups as top_ups')
@@ -200,6 +206,18 @@ class RiderManagementController extends Controller
     {
         $rider->load('wallet');
 
+        $completedDeliveries = DB::table('rider_api_deliveries')
+            ->where('rider_id', $rider->id)
+            ->where('current_state', 'delivered');
+        $deliveryReport = [
+            'total' => (clone $completedDeliveries)->count(),
+            'today' => (clone $completedDeliveries)->whereDate('completed_at', today())->count(),
+            'this_month' => (clone $completedDeliveries)
+                ->whereBetween('completed_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->count(),
+            'last_completed_at' => (clone $completedDeliveries)->max('completed_at'),
+        ];
+
         // The legacy rider table has no application_id. Match both fields to avoid
         // showing another applicant's private details when a number is reused.
         $application = $rider->name && $rider->mobile
@@ -211,7 +229,7 @@ class RiderManagementController extends Controller
                 ->first()
             : null;
 
-        return view('dashboard.pages.riders.show', compact('rider', 'application'));
+        return view('dashboard.pages.riders.show', compact('rider', 'application', 'deliveryReport'));
     }
 
     public function applicationDocument(RiderApplication $application, RiderApplicationDocument $document): StreamedResponse
@@ -246,9 +264,9 @@ class RiderManagementController extends Controller
                 $user = User::where('email', $pendingApplication->email)->first();
 
                 \Log::info(['user' => $user]);
-            
+
                 // we just need to update the rider table to active and approved_at timestamp.
-               $rider = DB::table('rider')
+                $rider = DB::table('rider')
                     ->where('user_id', $user->id)
                     ->first();
 
@@ -276,7 +294,6 @@ class RiderManagementController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-
 
                 Mail::to($pendingApplication->email)->send(new RiderApplicationApprovedMail($pendingApplication));
             });

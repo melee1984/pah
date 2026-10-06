@@ -8,7 +8,7 @@
                 <div>
                     <span class="admin-eyebrow">Rider management / Rider #{{ $rider->id }}</span>
                     <h1>{{ $rider->name ?: 'Unnamed rider' }}</h1>
-                    <p>Account, application, and vehicle information.</p>
+                    <p>Account, application, vehicle, and delivery information.</p>
                 </div>
                 <a class="btn admin-btn-secondary" href="{{ route('dashboard.rider') }}"><i class="fas fa-arrow-left mr-2"></i>All riders</a>
             </div>
@@ -19,7 +19,21 @@
         <div class="container-fluid">
             <div class="admin-stat-grid">
                 <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-user-check"></i></span><div><small>Approval</small><strong>{{ $rider->active ? 'Approved' : 'Pending' }}</strong></div></article>
+                <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-check-circle"></i></span><div><small>Completed deliveries</small><strong>{{ number_format($deliveryReport['total']) }}</strong></div></article>
+                <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-calendar-alt"></i></span><div><small>This month</small><strong>{{ number_format($deliveryReport['this_month']) }}</strong></div></article>
                 <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-wallet"></i></span><div><small>Credit balance</small><strong>₱{{ number_format((float) ($rider->wallet?->credit_amount ?? 0), 2) }}</strong></div></article>
+            </div>
+
+            <div class="card admin-card mb-4">
+                <div class="admin-card-header"><div><h2>Delivery report</h2><p>Successfully completed deliveries assigned to this rider.</p></div></div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Completed today</dt><dd class="col-sm-8"><strong>{{ number_format($deliveryReport['today']) }}</strong></dd>
+                        <dt class="col-sm-4">Completed this month</dt><dd class="col-sm-8"><strong>{{ number_format($deliveryReport['this_month']) }}</strong></dd>
+                        <dt class="col-sm-4">Completed all time</dt><dd class="col-sm-8"><strong>{{ number_format($deliveryReport['total']) }}</strong></dd>
+                        <dt class="col-sm-4">Last completed delivery</dt><dd class="col-sm-8">{{ $deliveryReport['last_completed_at'] ? \Carbon\Carbon::parse($deliveryReport['last_completed_at'])->format('M d, Y · g:i A') : 'No completed deliveries yet' }}</dd>
+                    </dl>
+                </div>
             </div>
 
             <div class="row">

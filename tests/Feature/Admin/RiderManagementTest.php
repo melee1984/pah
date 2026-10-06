@@ -54,6 +54,9 @@ class RiderManagementTest extends TestCase
     {
         $admin = $this->createAdmin();
         $riderId = $this->createRider('Ana Rider', false, 125.50);
+        $this->createDelivery($riderId, 'delivered', now()->subDay());
+        $this->createDelivery($riderId, 'delivered', now());
+        $this->createDelivery($riderId, 'cancelled', now());
 
         $this->withoutMiddleware(isAdmin::class)
             ->actingAs($admin)
@@ -61,9 +64,33 @@ class RiderManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Rider management')
             ->assertSee('Ana Rider')
+            ->assertSee('Completed deliveries')
+            ->assertViewHas('riders', fn ($riders) => $riders->firstWhere('id', $riderId)?->completed_deliveries_count === 2)
             ->assertSee('₱125.50')
             ->assertSee(route('dashboard.riders.approve', $riderId))
             ->assertSee(route('dashboard.riders.credits', $riderId));
+    }
+
+    public function test_rider_information_page_reports_completed_deliveries_by_period(): void
+    {
+        $admin = $this->createAdmin();
+        $riderId = $this->createRider('Delivery Rider', true);
+        $this->createDelivery($riderId, 'delivered', now()->subMonth());
+        $this->createDelivery($riderId, 'delivered', now()->subDay());
+        $this->createDelivery($riderId, 'delivered', now());
+        $this->createDelivery($riderId, 'failed', now());
+
+        $this->withoutMiddleware(isAdmin::class)
+            ->actingAs($admin)
+            ->get(route('dashboard.riders.show', $riderId))
+            ->assertOk()
+            ->assertSee('Delivery report')
+            ->assertViewHas('deliveryReport', function (array $report) {
+                return $report['total'] === 3
+                    && $report['today'] === 1
+                    && $report['this_month'] === 2
+                    && $report['last_completed_at'] !== null;
+            });
     }
 
     public function test_available_riders_page_includes_ready_riders_without_push_devices(): void
@@ -387,5 +414,21 @@ class RiderManagementTest extends TestCase
         ]);
 
         return $riderId;
+    }
+
+    private function createDelivery(int $riderId, string $state, \DateTimeInterface $completedAt): void
+    {
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'current_state' => $state,
+            'earnings_centavos' => 0,
+            'cod_centavos' => 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'completed_at' => $completedAt,
+            'created_at' => $completedAt,
+            'updated_at' => $completedAt,
+        ]);
     }
 }

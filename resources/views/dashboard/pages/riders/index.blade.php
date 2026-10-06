@@ -28,6 +28,7 @@
                 <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-motorcycle"></i></span><div><small>Total riders</small><strong>{{ number_format($metrics['total']) }}</strong></div></article>
                 <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-user-check"></i></span><div><small>Approved riders</small><strong>{{ number_format($metrics['approved']) }}</strong></div></article>
                 <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-user-clock"></i></span><div><small>Awaiting approval</small><strong>{{ number_format($metrics['pending']) }}</strong></div></article>
+                <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-check-circle"></i></span><div><small>Completed deliveries</small><strong>{{ number_format($metrics['completed_deliveries']) }}</strong></div></article>
                 <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-wallet"></i></span><div><small>Total rider credits</small><strong>₱{{ number_format($metrics['credits'], 2) }}</strong></div></article>
             </div>
 
@@ -94,7 +95,7 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
-                            <thead><tr><th>Rider</th><th>Contact</th><th>Joined</th><th>Approval</th><th>Credits</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Rider</th><th>Contact</th><th>Joined</th><th>Approval</th><th>Completed deliveries</th><th>Credits</th><th>Actions</th></tr></thead>
                             <tbody>
                             @foreach ($riders as $rider)
                                 <tr>
@@ -113,6 +114,7 @@
                                             <small>Awaiting admin approval</small>
                                         @endif
                                     </td>
+                                    <td><strong>{{ number_format($rider->completed_deliveries_count) }}</strong><small>Delivered successfully</small></td>
                                     <td><strong class="admin-money">₱{{ number_format((float) ($rider->wallet?->credit_amount ?? 0), 2) }}</strong></td>
                                     <td>
                                         <div class="d-flex flex-wrap" style="gap: 7px">

@@ -30,6 +30,11 @@ class Rider extends Model
         return $this->hasMany(RiderApiLocation::class, 'rider_id');
     }
 
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(RiderApiDelivery::class, 'rider_id');
+    }
+
     public function location(): HasOne
     {
         return $this->hasOne(RiderApiLocation::class, 'rider_id')
