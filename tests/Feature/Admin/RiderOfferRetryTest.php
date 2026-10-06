@@ -93,6 +93,40 @@ class RiderOfferRetryTest extends TestCase
         $this->assertSame(409, (new OrderController)->retryRiderOffers($order, $dispatcher)->getStatusCode());
     }
 
+    public function test_retry_counts_an_expired_offer_renewed_in_place_as_a_new_offer(): void
+    {
+        $order = $this->order();
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'legacy_order_id' => $order->id,
+            'current_state' => 'offered',
+        ]);
+        DB::table('rider_api_offers')->insert([
+            'delivery_id' => $deliveryId,
+            'status' => 'pending',
+            'expires_at' => now()->subMinute(),
+        ]);
+        $dispatcher = new class($deliveryId) extends RiderOfferDispatcher
+        {
+            public function __construct(private int $deliveryId) {}
+
+            public function dispatchOrder(Orders $order): ?string
+            {
+                DB::table('rider_api_offers')->where('delivery_id', $this->deliveryId)->update([
+                    'status' => 'pending',
+                    'expires_at' => now()->addMinutes(15),
+                ]);
+
+                return 'delivery-reference';
+            }
+        };
+
+        $response = (new OrderController)->retryRiderOffers($order, $dispatcher);
+
+        $this->assertSame(1, $response->getData(true)['new_offers']);
+        $this->assertSame('Sent this order to 1 available rider(s).', $response->getData(true)['message']);
+        $this->assertDatabaseCount('rider_api_offers', 1);
+    }
+
     private function order(): Orders
     {
         $order = new Orders;

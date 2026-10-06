@@ -170,28 +170,49 @@ class RiderOfferDispatcher
                 ->where('rider_id', $riderId)
                 ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
                 ->exists();
-            if ($hasActiveDelivery || DB::table('rider_api_offers')
-                ->where('rider_id', $riderId)->where('delivery_id', $deliveryId)->exists()) {
+            if ($hasActiveDelivery) {
                 return;
             }
-            // One offer per rider and delivery. A device is optional: the rider can
-            // still see the offer in the app, while the push job safely skips riders
-            // that do not currently have a push-enabled device.
-            if (DB::table('rider_api_offers')->where('delivery_id', $deliveryId)->count()
+
+            $existingOffer = DB::table('rider_api_offers')
+                ->where('rider_id', $riderId)
+                ->where('delivery_id', $deliveryId)
+                ->lockForUpdate()
+                ->first();
+            if ($existingOffer && ($existingOffer->status !== 'expired'
+                && ! ($existingOffer->status === 'pending' && now()->greaterThanOrEqualTo($existingOffer->expires_at)))) {
+                return;
+            }
+
+            // Limit concurrent offers, not historical attempts. Expired offers are
+            // renewed in place because the schema allows one row per rider/delivery.
+            if (DB::table('rider_api_offers')->where('delivery_id', $deliveryId)
+                ->where('status', 'pending')->where('expires_at', '>', now())->count()
                 >= max(1, (int) config('rider.offer_nearby_limit', 10))) {
                 return;
             }
 
             $reference = (string) Str::uuid();
-            DB::table('rider_api_offers')->insert([
-                'rider_id' => $riderId,
-                'delivery_id' => $deliveryId,
-                'reference' => $reference,
-                'status' => 'pending',
-                'expires_at' => now()->addMinutes(15),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            if ($existingOffer) {
+                DB::table('rider_api_offers')->where('id', $existingOffer->id)->update([
+                    'reference' => $reference,
+                    'status' => 'pending',
+                    'decline_reason' => null,
+                    'expires_at' => now()->addMinutes(15),
+                    'responded_at' => null,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('rider_api_offers')->insert([
+                    'rider_id' => $riderId,
+                    'delivery_id' => $deliveryId,
+                    'reference' => $reference,
+                    'status' => 'pending',
+                    'expires_at' => now()->addMinutes(15),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             if (Schema::hasTable('rider_api_notifications')) {
                 DB::table('rider_api_notifications')->insert([
@@ -209,7 +230,7 @@ class RiderOfferDispatcher
 
             \Log::info("Dispatching delivery {$deliveryId} to rider {$riderId} with offer reference {$reference}");
             SendRiderOfferPush::dispatch($riderId, $reference)->afterCommit();
-            
+
         });
     }
 
@@ -262,7 +283,7 @@ class RiderOfferDispatcher
             ->get();
 
         \Log::info('Nearby riders for delivery '.$delivery->id.': '.implode(', ', $riders->pluck('id')->all()));
-        
+
         return $riders
             ->map(function (object $rider) use ($delivery) {
                 $rider->distance_meters = $this->distanceMeters(

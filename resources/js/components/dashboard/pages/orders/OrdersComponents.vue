@@ -111,6 +111,7 @@
                     </td>
                     <td width="10%">
                       <template v-if="fulfillmentType(order) === 'delivery' && order.status">
+                        <span v-if="order.rider_dispatch" class="dashboard-status-pill d-inline-block mb-2" :class="dispatchStatusClass(order.rider_dispatch.status)">{{ order.rider_dispatch.label }}</span>
                         <span v-if="activeList === 'orders' && order.status.id!=5">
                           <select class="form-control" v-model="order.rider_id" style="font-size:12px;" @change="updateRider(order.id, order.rider_id)">
                             <option value="0">Select Rider</option>
@@ -123,8 +124,9 @@
                         </span>
                         <div v-if="canRetryRiderOffers(order)" class="mt-2">
                           <small v-if="order.rider_dispatch.pending_offers" class="d-block text-muted mb-1">{{ order.rider_dispatch.pending_offers }} active rider offer(s)</small>
+                          <small v-else-if="order.rider_dispatch.status === 'offer_expired'" class="d-block text-danger mb-1">No rider accepted before the offer expired.</small>
                           <button type="button" class="btn btn-sm btn-outline-primary" :disabled="retryingOrderId === order.id" @click="retryRiderOffers(order)">
-                            {{ retryingOrderId === order.id ? 'Checking riders…' : 'Check available riders' }}
+                            {{ retryingOrderId === order.id ? 'Checking riders…' : (order.rider_dispatch.status === 'offer_expired' ? 'Retry rider search' : 'Check available riders') }}
                           </button>
                         </div>
                       </template>
@@ -228,6 +230,8 @@
               <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-motorcycle"></i></span><div><h3>Delivery partner</h3><p>Assigned rider for this order</p></div></div>
               <div v-if="selectedOrder.rider" class="order-detail-person"><strong>{{ selectedOrder.rider.name }}</strong><span v-if="selectedOrder.rider.mobile">{{ selectedOrder.rider.mobile }}</span></div>
               <p v-else class="order-detail-muted">No rider assigned yet.</p>
+              <span v-if="selectedOrder.rider_dispatch" class="dashboard-status-pill d-inline-block mt-2" :class="dispatchStatusClass(selectedOrder.rider_dispatch.status)">{{ selectedOrder.rider_dispatch.label }}</span>
+              <p v-if="selectedOrder.rider_dispatch?.status === 'offer_expired'" class="order-detail-muted mt-2">The rider offer expired before anyone accepted it. Retry the rider search to send a new offer.</p>
             </section>
 
             <section v-if="selectedOrderIsActive && fulfillmentType(selectedOrder) === 'delivery'" class="order-detail-panel order-detail-action">
@@ -367,6 +371,11 @@
               && Boolean(order.store_accepted_at)
               && [2, 3, 4].includes(Number(order.order_status_id))
               && !order.rider_dispatch?.assigned;
+          },
+          dispatchStatusClass: function(status) {
+            if (['assigned', 'rider_at_merchant', 'in_delivery', 'delivered'].includes(status)) return 'is-success';
+            if (status === 'offer_expired' || status === 'no_active_offers') return 'is-danger';
+            return 'is-warning';
           },
           retryRiderOffers: function(order) {
             this.retryingOrderId = order.id;

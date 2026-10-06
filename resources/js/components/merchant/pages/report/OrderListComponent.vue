@@ -124,6 +124,7 @@
                       <p v-if="fulfillmentType(order) === 'delivery' && order.rider">{{ order.rider.name }}</p>
                       <span v-else-if="fulfillmentType(order) === 'delivery'" class="text-muted">Not assigned</span>
                       <span v-else class="text-muted">—</span>
+                      <span v-if="fulfillmentType(order) === 'delivery' && order.rider_dispatch" class="dashboard-status-pill d-inline-block mt-1" :class="dispatchStatusClass(order.rider_dispatch.status)">{{ order.rider_dispatch.label }}</span>
                     </td>
                     <td width="10%">
                       <span v-if="order.order_status">
@@ -229,6 +230,8 @@
               <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-motorcycle"></i></span><div><h3>Delivery partner</h3><p>Assigned rider for this order</p></div></div>
               <div v-if="selectedOrder.rider" class="order-detail-person"><strong>{{ selectedOrder.rider.name }}</strong><span v-if="selectedOrder.rider.mobile">{{ selectedOrder.rider.mobile }}</span></div>
               <p v-else class="order-detail-muted">No rider assigned yet.</p>
+              <span v-if="selectedOrder.rider_dispatch" class="dashboard-status-pill d-inline-block mt-2" :class="dispatchStatusClass(selectedOrder.rider_dispatch.status)">{{ selectedOrder.rider_dispatch.label }}</span>
+              <p v-if="selectedOrder.rider_dispatch?.status === 'offer_expired'" class="order-detail-muted mt-2">The rider offer expired before anyone accepted it. Pahatud operations can retry the rider search.</p>
             </section>
 
               </aside>
@@ -457,6 +460,11 @@
             }
 
             return 'is-info';
+          },
+          dispatchStatusClass: function(status) {
+            if (['assigned', 'rider_at_merchant', 'in_delivery', 'delivered'].includes(status)) return 'is-success';
+            if (status === 'offer_expired' || status === 'no_active_offers') return 'is-danger';
+            return 'is-warning';
           },
           proofMethodLabel: function(method) {
             const labels = {

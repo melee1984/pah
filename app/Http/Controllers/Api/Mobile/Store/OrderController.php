@@ -17,6 +17,7 @@ use App\Products;
 use App\PushNotification;
 use App\Jobs\SendCustomerOrderAcceptedPush;
 use App\Services\RiderOfferDispatcher;
+use App\Services\RiderDispatchStatus;
 use Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -148,7 +149,7 @@ class OrderController extends Controller
     }
 
 
-	public function orders(Request $request) {
+	public function orders(Request $request, RiderDispatchStatus $dispatchStatus) {
 	
 		$data = array();	
 		$validated = $request->validate([
@@ -170,7 +171,10 @@ class OrderController extends Controller
 
 					
 		
+		$dispatchStatuses = $dispatchStatus->forOrders($orders);
+
 		foreach($orders as $order) {
+			$order->rider_dispatch = $dispatchStatuses->get($order->id);
 			$order->cart->diningTable;
 
 			if (!$order->cart->option_id) {

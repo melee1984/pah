@@ -15,6 +15,7 @@ use Validator;
 use App\User;
 use App\LibraryStatus;
 use App\Services\RiderOfferDispatcher;
+use App\Services\RiderDispatchStatus;
 use Carbon\Carbon;
 
 use App\PushNotification;
@@ -25,7 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class OrderController extends Controller
 {
    
-    public function getList() 
+    public function getList(RiderDispatchStatus $dispatchStatus)
     {	 
          $orders = Orders::with(['cart.payment', 'cart.diningTable', 'orderStatus'])
                 ->whereNotNull('submitted_at') 
@@ -36,14 +37,7 @@ class OrderController extends Controller
             ->whereIn('legacy_order_id', $orders->pluck('id'))
             ->get(['id', 'reference', 'legacy_order_id', 'rider_id', 'current_state']);
 
-        $pendingOffers = DB::table('rider_api_offers')
-            ->whereIn('delivery_id', $deliveries->pluck('id'))
-            ->where('status', 'pending')
-            ->where('expires_at', '>', now())
-            ->selectRaw('delivery_id, count(*) as total')
-            ->groupBy('delivery_id')
-            ->pluck('total', 'delivery_id');
-        $deliveriesByOrder = $deliveries->keyBy('legacy_order_id');
+        $dispatchStatuses = $dispatchStatus->forOrders($orders);
 
         $proofsByDelivery = DB::table('rider_api_delivery_proofs')
             ->whereIn('delivery_id', $deliveries->pluck('id'))
@@ -81,11 +75,7 @@ class OrderController extends Controller
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
             $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
-            $delivery = $deliveriesByOrder->get($order->id);
-            $order->rider_dispatch = [
-                'assigned' => (bool) ($order->rider_id || $delivery?->rider_id),
-                'pending_offers' => $delivery ? (int) ($pendingOffers[$delivery->id] ?? 0) : 0,
-            ];
+            $order->rider_dispatch = $dispatchStatuses->get($order->id);
         }
 
         $data['orders'] = $orders->whereNotIn('order_status_id', [
@@ -137,7 +127,8 @@ class OrderController extends Controller
         }
 
         $before = $delivery
-            ? DB::table('rider_api_offers')->where('delivery_id', $delivery->id)->count()
+            ? DB::table('rider_api_offers')->where('delivery_id', $delivery->id)
+                ->where('status', 'pending')->where('expires_at', '>', now())->count()
             : 0;
         $reference = $dispatcher->dispatchOrder($order);
         if (! $reference) {
@@ -145,9 +136,9 @@ class OrderController extends Controller
         }
 
         $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
-        $newOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)->count() - $before;
         $activeOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)
             ->where('status', 'pending')->where('expires_at', '>', now())->count();
+        $newOffers = max(0, $activeOffers - $before);
 
         return response()->json([
             'new_offers' => $newOffers,

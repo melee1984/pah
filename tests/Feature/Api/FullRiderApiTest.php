@@ -8,6 +8,7 @@ use App\Model\Rider\Rider as ApiRider;
 use App\Model\Riders;
 use App\RiderApplication;
 use App\Services\FirebaseRiderPush;
+use App\Services\RiderDispatchStatus;
 use App\Services\RiderOfferDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
@@ -684,6 +685,101 @@ class FullRiderApiTest extends TestCase
             ->assertOk()->assertJsonCount(2, 'offers');
         $this->assertDatabaseCount('rider_api_offers', 3);
         Bus::assertDispatchedTimes(SendRiderOfferPush::class, 3);
+    }
+
+    public function test_expired_offer_is_renewed_when_dispatch_is_retried(): void
+    {
+        Bus::fake([SendRiderOfferPush::class]);
+        $this->loginApprovedRider('retry-expired-offer@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        DB::table('rider_api_availability')->updateOrInsert(
+            ['rider_id' => $riderId],
+            ['state' => 'available', 'created_at' => now(), 'updated_at' => now()],
+        );
+        DB::table('rider_api_locations')->insert([
+            'rider_id' => $riderId,
+            'latitude' => 10.3157,
+            'longitude' => 123.8854,
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => 801,
+            'current_state' => 'offered',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.8854,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $expiredReference = (string) Str::uuid();
+        DB::table('rider_api_offers')->insert([
+            'reference' => $expiredReference,
+            'rider_id' => $riderId,
+            'delivery_id' => $deliveryId,
+            'status' => 'pending',
+            'expires_at' => now()->subMinute(),
+            'created_at' => now()->subMinutes(16),
+            'updated_at' => now()->subMinute(),
+        ]);
+
+        $order = new Orders;
+        $order->id = 801;
+        app(RiderOfferDispatcher::class)->dispatchOrder($order);
+
+        $renewed = DB::table('rider_api_offers')->where('delivery_id', $deliveryId)->first();
+        $this->assertDatabaseCount('rider_api_offers', 1);
+        $this->assertSame('pending', $renewed->status);
+        $this->assertNotSame($expiredReference, $renewed->reference);
+        $this->assertTrue(now()->lessThan($renewed->expires_at));
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 1);
+    }
+
+    public function test_dispatch_status_distinguishes_expired_offers_and_awaiting_pickup(): void
+    {
+        $riderId = DB::table('rider')->insertGetId([
+            'name' => 'Status Rider',
+            'active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => 802,
+            'current_state' => 'offered',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('rider_api_offers')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'delivery_id' => $deliveryId,
+            'status' => 'expired',
+            'expires_at' => now()->subMinute(),
+            'created_at' => now()->subMinutes(16),
+            'updated_at' => now(),
+        ]);
+        $order = (object) [
+            'id' => 802,
+            'rider_id' => null,
+            'accepted_by_rider_id' => null,
+            'store_accepted_at' => now(),
+            'order_status_id' => 3,
+        ];
+
+        $status = app(RiderDispatchStatus::class)->forOrders(collect([$order]))->get(802);
+        $this->assertSame('offer_expired', $status['status']);
+        $this->assertSame('Rider offer expired', $status['label']);
+
+        DB::table('rider_api_deliveries')->where('id', $deliveryId)->update([
+            'rider_id' => $riderId,
+            'current_state' => 'accepted',
+        ]);
+        $order->order_status_id = 4;
+        $status = app(RiderDispatchStatus::class)->forOrders(collect([$order]))->get(802);
+        $this->assertSame('awaiting_pickup', $status['status']);
+        $this->assertSame('Awaiting rider pickup', $status['label']);
     }
 
     public function test_accepting_one_offer_closes_the_riders_other_pending_offers(): void
