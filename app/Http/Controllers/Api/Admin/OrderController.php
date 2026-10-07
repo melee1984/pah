@@ -367,32 +367,50 @@ class OrderController extends Controller
 
         return response()->json($data, 200);
     }
-    public function updateOrderRider(Request $request, Orders $order) {
 
-        if ($request->input('rider_id')!=null) {
-            $order->rider_id = $request->input('rider_id');    
-        }
-        else {
-            $order->rider_id = "";
-        }
-        
-        $status = $order->save();
+    public function updateOrderRider(
+        Request $request,
+        Orders $order,
+        RiderOfferDispatcher $dispatcher,
+    ) {
+        $validated = $request->validate([
+            'rider_id' => ['required', 'integer', 'min:1', 'exists:rider,id'],
+        ]);
 
-        if ($status) {
-
-            // Send Push Notification to Rider 
-          
-            PushNotification::sendPushToRider($order);
-
-            $data['message'] = "Successfully updated rider";
-            $data['status'] = 1;
-        }
-        else {
-            $data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
-            $data['status'] = 0;    
+        if (! $order->submitted_at || ! $order->store_accepted_at
+            || ! in_array((int) $order->order_status_id, [
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+            return response()->json([
+                'message' => 'Only accepted delivery orders awaiting pickup can be offered to a rider.',
+            ], 409);
         }
 
-        return response()->json($data, 200);
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        if ($order->rider_id || $order->accepted_by_rider_id || $delivery?->rider_id
+            || ($delivery && $delivery->current_state !== 'offered')) {
+            return response()->json([
+                'message' => 'This order already has a rider or is no longer available.',
+            ], 409);
+        }
+
+        $riderId = (int) $validated['rider_id'];
+        if (! Riders::active()->whereKey($riderId)->exists()) {
+            return response()->json(['message' => 'The selected rider is not active.'], 422);
+        }
+
+        if (! $dispatcher->dispatchOrderToRider($order, $riderId)) {
+            return response()->json([
+                'message' => 'The selected rider is not currently eligible. Ask the rider to go online and refresh their location, then try again.',
+            ], 409);
+        }
+
+        return response()->json([
+            'message' => 'Offer sent to the selected rider.',
+            'status' => 1,
+        ]);
     }
 
     public function orderSummary() {

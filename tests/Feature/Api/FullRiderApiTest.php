@@ -129,6 +129,42 @@ class FullRiderApiTest extends TestCase
         $this->assertSame('10.3157000', ApiRider::query()->findOrFail($rider->id)->location->latitude);
     }
 
+    public function test_rider_can_send_a_heartbeat_and_batch_locations(): void
+    {
+        $token = $this->loginApprovedRider();
+
+        $this->authenticated($token)
+            ->putJson('/api/v1/rider/availability', ['state' => 'available'])
+            ->assertOk()
+            ->assertJsonPath('availability.state', 'available');
+
+        $this->authenticated($token)
+            ->postJson('/api/v1/rider/availability/heartbeat')
+            ->assertOk()
+            ->assertJsonPath('next_heartbeat_seconds', 30);
+
+        $this->authenticated($token)
+            ->postJson('/api/v1/rider/location/batch', [
+                'locations' => [
+                    [
+                        'latitude' => 10.3158,
+                        'longitude' => 123.8855,
+                        'recorded_at' => now()->subSecond()->toISOString(),
+                    ],
+                    [
+                        'latitude' => 10.3159,
+                        'longitude' => 123.8856,
+                        'recorded_at' => now()->toISOString(),
+                    ],
+                ],
+            ])
+            ->assertAccepted()
+            ->assertJsonPath('accepted_count', 2);
+
+        $this->assertDatabaseCount('rider_api_locations', 2);
+        $this->assertDatabaseHas('rider_api_availability', ['state' => 'available']);
+    }
+
     public function test_wallet_earnings_returns_delivery_fee_less_pahatud_commission(): void
     {
         $token = $this->loginApprovedRider();
@@ -475,6 +511,64 @@ class FullRiderApiTest extends TestCase
             'reference' => $secondOffer,
             'status' => 'expired',
         ]);
+    }
+
+    public function test_admin_can_target_an_offer_to_one_eligible_rider(): void
+    {
+        Bus::fake([SendRiderOfferPush::class]);
+        $selectedToken = $this->loginApprovedRider('selected-rider@example.com');
+        $selectedRiderId = DB::table('rider')->latest('id')->value('id');
+        $this->loginApprovedRider('other-rider@example.com');
+        $otherRiderId = DB::table('rider')->latest('id')->value('id');
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => 42,
+            'current_state' => 'offered',
+            'merchant_name' => 'Pahatud Test Store',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.8854,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        foreach ([$selectedRiderId, $otherRiderId] as $riderId) {
+            DB::table('rider_api_availability')->updateOrInsert(
+                ['rider_id' => $riderId],
+                ['state' => 'available', 'heartbeat_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            );
+            DB::table('rider_api_locations')->insert([
+                'rider_id' => $riderId,
+                'latitude' => 10.3157,
+                'longitude' => 123.8854,
+                'recorded_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $order = new Orders;
+        $order->id = 42;
+        $reference = app(RiderOfferDispatcher::class)->dispatchOrderToRider($order, $selectedRiderId);
+
+        $this->assertNotNull($reference);
+        $this->assertDatabaseHas('rider_api_offers', [
+            'delivery_id' => $deliveryId,
+            'rider_id' => $selectedRiderId,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseMissing('rider_api_offers', [
+            'delivery_id' => $deliveryId,
+            'rider_id' => $otherRiderId,
+        ]);
+        $offerReference = DB::table('rider_api_offers')
+            ->where('delivery_id', $deliveryId)
+            ->where('rider_id', $selectedRiderId)
+            ->value('reference');
+        $this->authenticated($selectedToken)
+            ->getJson('/api/v1/rider/offers/current')
+            ->assertOk()
+            ->assertJsonPath('offer.id', $offerReference);
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 1);
     }
 
     public function test_pending_delivery_is_offered_only_to_ten_nearest_riders_with_fresh_locations(): void

@@ -112,9 +112,9 @@
                     <td width="10%">
                       <template v-if="fulfillmentType(order) === 'delivery' && order.status">
                         <span v-if="order.rider_dispatch" class="dashboard-status-pill d-inline-block mb-2" :class="dispatchStatusClass(order.rider_dispatch.status)">{{ order.rider_dispatch.label }}</span>
-                        <span v-if="activeList === 'orders' && order.status.id!=5">
-                          <select class="form-control" v-model="order.rider_id" style="font-size:12px;" @change="updateRider(order.id, order.rider_id)">
-                            <option value="0">Select Rider</option>
+                        <span v-if="activeList === 'orders' && order.status.id!=5 && (!order.rider_dispatch || !order.rider_dispatch.assigned)">
+                          <select class="form-control" value="" style="font-size:12px;" @change="updateRider(order.id, $event.target.value)">
+                            <option value="" disabled>Send offer to rider</option>
                             <option v-for="rider in riders" :value="rider.id">{{ rider.name }}</option>
                           </select>
                         </span>
@@ -471,8 +471,9 @@
                   else {
                     toastr.error(response.data.message);
                   }
-                }).catch((errors) => {
-                    toastr.error(errors);
+                }).catch((error) => {
+                    toastr.error(error.response?.data?.message || 'Unable to send the rider offer. Please try again.');
+                    this.fetchData();
                 });
           },
             updateStatus:function(event) {

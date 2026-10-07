@@ -7,6 +7,7 @@ use App\LibraryStatus;
 use App\Model\Orders\Orders;
 use App\Services\RiderOfferDispatcher;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -41,6 +42,10 @@ class RiderOfferRetryTest extends TestCase
             $table->unsignedBigInteger('delivery_id');
             $table->string('status');
             $table->timestamp('expires_at');
+        });
+        Schema::create('rider', function (Blueprint $table) {
+            $table->id();
+            $table->boolean('active')->default(true);
         });
     }
 
@@ -125,6 +130,29 @@ class RiderOfferRetryTest extends TestCase
         $this->assertSame(1, $response->getData(true)['new_offers']);
         $this->assertSame('Sent this order to 1 available rider(s).', $response->getData(true)['message']);
         $this->assertDatabaseCount('rider_api_offers', 1);
+    }
+
+    public function test_manual_selection_sends_a_targeted_offer_without_prematurely_assigning_the_order(): void
+    {
+        $order = $this->order();
+        DB::table('rider')->insert(['id' => 5, 'active' => true]);
+        $dispatcher = new class extends RiderOfferDispatcher
+        {
+            public function dispatchOrderToRider(Orders $order, int $riderId): ?string
+            {
+                return $riderId === 5 ? 'delivery-reference' : null;
+            }
+        };
+
+        $response = (new OrderController)->updateOrderRider(
+            new Request(['rider_id' => 5]),
+            $order,
+            $dispatcher,
+        );
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('Offer sent to the selected rider.', $response->getData(true)['message']);
+        $this->assertNull($order->fresh()->rider_id);
     }
 
     private function order(): Orders

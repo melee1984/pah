@@ -144,6 +144,164 @@ class OperationsController extends Controller
         ]);
     }
 
+    public function updateAvailability(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'state' => ['required', Rule::in(RiderApiService::AVAILABILITY_STATES)],
+        ]);
+        $rider = $this->riders->rider($request);
+        $hasActiveDelivery = DB::table('rider_api_deliveries')
+            ->where('rider_id', $rider->id)
+            ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+            ->exists();
+
+        if ($hasActiveDelivery && $validated['state'] !== 'active_delivery') {
+            return response()->json([
+                'message' => 'Availability cannot change while a delivery is active.',
+            ], 409);
+        }
+
+        if (! $hasActiveDelivery && $validated['state'] === 'active_delivery') {
+            return response()->json([
+                'message' => 'The active_delivery state requires an active delivery.',
+            ], 409);
+        }
+
+        $this->riders->availability($rider->id);
+        DB::table('rider_api_availability')->where('rider_id', $rider->id)->update([
+            'state' => $validated['state'],
+            'heartbeat_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->syncOnlineStatus($rider->id, $validated['state'] !== 'offline');
+
+        if ($validated['state'] === 'available') {
+            app(RiderOfferDispatcher::class)->dispatchPendingForRider($rider->id);
+        }
+
+        return $this->availability($request);
+    }
+
+    public function heartbeat(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'state' => ['nullable', Rule::in(RiderApiService::AVAILABILITY_STATES)],
+            'battery_percent' => ['nullable', 'integer', 'between:0,100'],
+            'network_type' => ['nullable', 'string', 'max:30'],
+        ]);
+        $rider = $this->riders->rider($request);
+        $availability = $this->riders->availability($rider->id);
+        $state = $validated['state'] ?? $availability->state;
+
+        DB::table('rider_api_availability')->where('rider_id', $rider->id)->update([
+            'state' => $state,
+            'heartbeat_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->syncOnlineStatus($rider->id, $state !== 'offline');
+
+        if ($state === 'available') {
+            app(RiderOfferDispatcher::class)->dispatchPendingForRider($rider->id);
+        }
+
+        return response()->json([
+            'message' => 'Availability heartbeat recorded.',
+            'server_time' => now()->toISOString(),
+            'next_heartbeat_seconds' => 30,
+        ]);
+    }
+
+    public function schedule(Request $request): JsonResponse
+    {
+        $availability = $this->riders->availability($this->riders->rider($request)->id);
+
+        return response()->json([
+            'schedule' => $this->decode($availability->schedule, []),
+        ]);
+    }
+
+    public function updateSchedule(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'schedule' => ['required', 'array', 'max:7'],
+            'schedule.*.day' => ['required', Rule::in([
+                'monday', 'tuesday', 'wednesday', 'thursday',
+                'friday', 'saturday', 'sunday',
+            ])],
+            'schedule.*.enabled' => ['required', 'boolean'],
+            'schedule.*.start' => ['nullable', 'date_format:H:i'],
+            'schedule.*.end' => ['nullable', 'date_format:H:i'],
+        ]);
+        $rider = $this->riders->rider($request);
+        $this->riders->availability($rider->id);
+
+        DB::table('rider_api_availability')->where('rider_id', $rider->id)->update([
+            'schedule' => json_encode($validated['schedule'], JSON_THROW_ON_ERROR),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Availability schedule updated.',
+            'schedule' => $validated['schedule'],
+        ]);
+    }
+
+    public function zones(): JsonResponse
+    {
+        $zones = DB::table('rider_api_zones')
+            ->where('active', true)
+            ->orderBy('name')
+            ->get()
+            ->map(fn (object $zone) => [
+                'id' => $zone->reference,
+                'name' => $zone->name,
+                'boundary' => $this->decode($zone->boundary),
+            ]);
+
+        return response()->json(['zones' => $zones]);
+    }
+
+    public function updateZonePreferences(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'zone_ids' => ['required', 'array'],
+            'zone_ids.*' => ['uuid', Rule::exists('rider_api_zones', 'reference')->where('active', true)],
+        ]);
+        $rider = $this->riders->rider($request);
+        $this->riders->availability($rider->id);
+        $zoneIds = array_values(array_unique($validated['zone_ids']));
+
+        DB::table('rider_api_availability')->where('rider_id', $rider->id)->update([
+            'zone_preferences' => json_encode($zoneIds, JSON_THROW_ON_ERROR),
+            'updated_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Preferred delivery zones updated.',
+            'zone_ids' => $zoneIds,
+        ]);
+    }
+
+    public function alerts(Request $request): JsonResponse
+    {
+        $availability = $this->riders->availability($this->riders->rider($request)->id);
+        $alerts = [];
+
+        if (
+            in_array($availability->state, ['available', 'searching', 'active_delivery'], true)
+            && $availability->heartbeat_at
+            && now()->diffInMinutes($availability->heartbeat_at) >= 5
+        ) {
+            $alerts[] = [
+                'type' => 'connectivity',
+                'severity' => 'warning',
+                'message' => 'Rider heartbeat is overdue.',
+            ];
+        }
+
+        return response()->json(['alerts' => $alerts]);
+    }
+
     public function saveLocation(Request $request): JsonResponse
     {
         $validated = $this->validateLocation($request);
@@ -152,6 +310,32 @@ class OperationsController extends Controller
         return response()->json([
             'message' => 'Rider location recorded.',
             'recorded_at' => $validated['recorded_at'],
+        ], 202);
+    }
+
+    public function saveLocationBatch(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'locations' => ['required', 'array', 'between:1,100'],
+            'locations.*.delivery_id' => ['nullable', 'uuid'],
+            'locations.*.latitude' => ['required', 'numeric', 'between:-90,90'],
+            'locations.*.longitude' => ['required', 'numeric', 'between:-180,180'],
+            'locations.*.accuracy_meters' => ['nullable', 'numeric', 'min:0'],
+            'locations.*.heading' => ['nullable', 'numeric', 'between:0,360'],
+            'locations.*.speed_mps' => ['nullable', 'numeric', 'min:0'],
+            'locations.*.recorded_at' => ['required', 'date'],
+        ]);
+        $riderId = $this->riders->rider($request)->id;
+
+        DB::transaction(function () use ($riderId, $validated) {
+            foreach ($validated['locations'] as $location) {
+                $this->insertLocation($riderId, $location);
+            }
+        });
+
+        return response()->json([
+            'message' => 'Queued rider locations recorded.',
+            'accepted_count' => count($validated['locations']),
         ], 202);
     }
 

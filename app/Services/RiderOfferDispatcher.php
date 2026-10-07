@@ -20,64 +20,11 @@ class RiderOfferDispatcher
 
     public function dispatchOrder(Orders $order): ?string
     {
-
         if (! $this->tablesAvailable()) {
             return null;
         }
 
-        $delivery = DB::table('rider_api_deliveries')
-            ->where('legacy_order_id', $order->getKey())
-            ->first();
-
-        if (! $delivery) {
-            $order = Orders::query()
-                ->with(['cart.address', 'cart.partnerlocation', 'cart.partner', 'user'])
-                ->findOrFail($order->getKey());
-            $cart = $order->cart;
-            $partner = $cart?->partner ?? $order->partner;
-            $pickup = $cart?->partnerlocation ?? $partner?->location;
-            $dropoff = $cart?->address;
-            $reference = (string) Str::uuid();
-            $totalCentavos = $cart ? (int) round($cart->cartItemTotal() * 100) : 0;
-            $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
-                'reference' => $reference,
-                'legacy_order_id' => $order->getKey(),
-                'current_state' => 'offered',
-                'merchant_name' => $partner?->restaurant_name ?? 'Pahatud merchant',
-                'pickup_area' => $pickup?->city ?? $partner?->city,
-                'pickup_address' => $this->address($pickup?->address_1, $pickup?->address_2, $partner?->address),
-                'pickup_latitude' => $pickup?->latitude ?? $partner?->latitude,
-                'pickup_longitude' => $pickup?->longtitude ?? $partner?->longtitude,
-                'dropoff_area' => $dropoff?->address_2,
-                'dropoff_address' => $this->address($dropoff?->address_1, $dropoff?->address_2, $dropoff?->landmark),
-                'dropoff_latitude' => $dropoff?->lat ?? $cart?->user_lat,
-                'dropoff_longitude' => $dropoff?->long ?? $cart?->user_long,
-                'customer_name' => trim((string) ($order->user?->full_name ?? 'Pahatud customer')),
-                'customer_mobile' => $dropoff?->mobile ?? $order->user?->mobile,
-                'distance_meters' => $this->distanceMeters(
-                    $pickup?->latitude ?? $partner?->latitude,
-                    $pickup?->longtitude ?? $partner?->longtitude,
-                    $dropoff?->lat ?? $cart?->user_lat,
-                    $dropoff?->long ?? $cart?->user_long,
-                ),
-                'eta_seconds' => $this->etaSeconds($cart?->duration),
-                'earnings_centavos' => max(0, (int) round(((float) ($cart?->delivery_fee ?? 0)) * 100)),
-                'commission_percentage' => config('rider.pahatud_commission_percentage', 20),
-                'commission_centavos' => max(0, (int) round(
-                    ((float) ($cart?->delivery_fee ?? 0))
-                    * 100
-                    * ((float) config('rider.pahatud_commission_percentage', 20) / 100)
-                )),
-                'cod_centavos' => (int) ($cart?->payment_id) === PaymentMethod::CHECKOUT_COD ? $totalCentavos : 0,
-                'order_count' => 1,
-                'is_batched' => false,
-                'pickup_code_hash' => hash('sha256', $this->pickupCode($order->getKey())),
-                'customer_code_hash' => hash('sha256', $this->customerCode($order->getKey())),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $delivery = DB::table('rider_api_deliveries')->where('id', $deliveryId)->first();
-        }
+        $delivery = $this->deliveryForOrder($order);
 
         if (! $delivery->rider_id && $delivery->current_state === 'offered') {
             foreach ($this->nearbyRiderIds($delivery) as $riderId) {
@@ -85,6 +32,43 @@ class RiderOfferDispatcher
                 $this->offerDeliveryToRider($delivery->id, $riderId);
             }
         }
+
+        return $delivery->reference;
+    }
+
+    public function dispatchOrderToRider(Orders $order, int $riderId): ?string
+    {
+        if (! $this->tablesAvailable()) {
+            return null;
+        }
+
+        $delivery = $this->deliveryForOrder($order);
+        if ($delivery->rider_id || $delivery->current_state !== 'offered'
+            || ! in_array($riderId, $this->nearbyRiderIds($delivery), true)) {
+            return null;
+        }
+
+        $this->offerDeliveryToRider((int) $delivery->id, $riderId);
+        $offer = DB::table('rider_api_offers')
+            ->where('delivery_id', $delivery->id)
+            ->where('rider_id', $riderId)
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (! $offer) {
+            return null;
+        }
+
+        DB::table('rider_api_offers')
+            ->where('delivery_id', $delivery->id)
+            ->where('rider_id', '!=', $riderId)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'expired',
+                'responded_at' => now(),
+                'updated_at' => now(),
+            ]);
 
         return $delivery->reference;
     }
@@ -254,6 +238,65 @@ class RiderOfferDispatcher
             SendRiderOfferPush::dispatch($riderId, $reference)->afterCommit();
 
         });
+    }
+
+    private function deliveryForOrder(Orders $order): object
+    {
+        $delivery = DB::table('rider_api_deliveries')
+            ->where('legacy_order_id', $order->getKey())
+            ->first();
+
+        if ($delivery) {
+            return $delivery;
+        }
+
+        $order = Orders::query()
+            ->with(['cart.address', 'cart.partnerlocation', 'cart.partner', 'user'])
+            ->findOrFail($order->getKey());
+        $cart = $order->cart;
+        $partner = $cart?->partner ?? $order->partner;
+        $pickup = $cart?->partnerlocation ?? $partner?->location;
+        $dropoff = $cart?->address;
+        $totalCentavos = $cart ? (int) round($cart->cartItemTotal() * 100) : 0;
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => $order->getKey(),
+            'current_state' => 'offered',
+            'merchant_name' => $partner?->restaurant_name ?? 'Pahatud merchant',
+            'pickup_area' => $pickup?->city ?? $partner?->city,
+            'pickup_address' => $this->address($pickup?->address_1, $pickup?->address_2, $partner?->address),
+            'pickup_latitude' => $pickup?->latitude ?? $partner?->latitude,
+            'pickup_longitude' => $pickup?->longtitude ?? $partner?->longtitude,
+            'dropoff_area' => $dropoff?->address_2,
+            'dropoff_address' => $this->address($dropoff?->address_1, $dropoff?->address_2, $dropoff?->landmark),
+            'dropoff_latitude' => $dropoff?->lat ?? $cart?->user_lat,
+            'dropoff_longitude' => $dropoff?->long ?? $cart?->user_long,
+            'customer_name' => trim((string) ($order->user?->full_name ?? 'Pahatud customer')),
+            'customer_mobile' => $dropoff?->mobile ?? $order->user?->mobile,
+            'distance_meters' => $this->distanceMeters(
+                $pickup?->latitude ?? $partner?->latitude,
+                $pickup?->longtitude ?? $partner?->longtitude,
+                $dropoff?->lat ?? $cart?->user_lat,
+                $dropoff?->long ?? $cart?->user_long,
+            ),
+            'eta_seconds' => $this->etaSeconds($cart?->duration),
+            'earnings_centavos' => max(0, (int) round(((float) ($cart?->delivery_fee ?? 0)) * 100)),
+            'commission_percentage' => config('rider.pahatud_commission_percentage', 20),
+            'commission_centavos' => max(0, (int) round(
+                ((float) ($cart?->delivery_fee ?? 0))
+                * 100
+                * ((float) config('rider.pahatud_commission_percentage', 20) / 100)
+            )),
+            'cod_centavos' => (int) ($cart?->payment_id) === PaymentMethod::CHECKOUT_COD ? $totalCentavos : 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'pickup_code_hash' => hash('sha256', $this->pickupCode($order->getKey())),
+            'customer_code_hash' => hash('sha256', $this->customerCode($order->getKey())),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table('rider_api_deliveries')->where('id', $deliveryId)->first();
     }
 
     private function maxPendingOffersPerRider(): int
