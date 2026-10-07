@@ -16,13 +16,14 @@ use App\Model\Cart;
 use App\Coupon;
 use App\PartnerLocationTable;
 use App\PartnerLocationCheckoutOption;
+use App\Support\DeliveryZone;
 use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
-    public function __construct(){
-		//
-	}
+    public function __construct(private DeliveryZone $deliveryZone)
+    {
+    }
 	/**
 	 * Checkout process 
 	 * @return [type] [description]
@@ -81,7 +82,9 @@ class CheckoutController extends Controller
 		}
 
 		// Fetch cart
-		$cart = Cart::whereSessionId(Session::getId())->first();
+		$cart = Cart::whereSessionId(Session::getId())
+            ->whereUserId(Auth::id())
+            ->first();
 
 		if (!$cart) {
 			return response()->json([
@@ -89,6 +92,29 @@ class CheckoutController extends Controller
 				'message' => "Cart not found.",
 			], 200);
 		}
+
+        if ($cart->requiresDelivery()) {
+            $location = $cart->partnerlocation;
+            if (! $location
+                || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
+                || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Valid merchant and delivery-address map pins are required before selecting this address.',
+                ], 422);
+            }
+
+            $deliveryCheck = $this->deliveryZone->check(
+                (float) $location->latitude,
+                (float) $location->longtitude,
+                (float) $userAddress->lat,
+                (float) $userAddress->long,
+            );
+
+            if (! $deliveryCheck['allowed']) {
+                return response()->json($this->deliveryZone->failureResponse($deliveryCheck), 422);
+            }
+        }
 
 		// Prepare data for cart address
 		$data = $userAddress->only([

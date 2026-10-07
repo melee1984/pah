@@ -46,4 +46,36 @@ class DeliveryZoneTest extends TestCase
         $this->assertFalse($deliveryZone->coordinatesAreValid(91, 124.64));
         $this->assertTrue($deliveryZone->coordinatesAreValid(0, 0));
     }
+
+    public function test_it_automatically_classifies_samal_coordinates(): void
+    {
+        $deliveryZone = new DeliveryZone;
+
+        $this->assertSame('Samal Island', $deliveryZone->areaLabel(7.12, 125.72));
+        $this->assertSame('Davao mainland / standard area', $deliveryZone->areaLabel(7.10, 125.61));
+    }
+
+    public function test_it_rejects_a_short_delivery_that_crosses_the_samal_boundary(): void
+    {
+        config(['services.delivery.max_distance_km' => 20]);
+        $deliveryZone = new DeliveryZone;
+
+        $result = $deliveryZone->check(7.12, 125.72, 7.10, 125.61);
+
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('service_area', $result['reason']);
+        $this->assertSame('samal_island', $result['merchant_area']['key']);
+        $this->assertNull($result['customer_area']);
+    }
+
+    public function test_it_allows_delivery_within_the_same_samal_service_area(): void
+    {
+        config(['services.delivery.max_distance_km' => 20]);
+        $deliveryZone = new DeliveryZone;
+
+        $result = $deliveryZone->check(7.12, 125.72, 7.16, 125.73);
+
+        $this->assertTrue($result['allowed']);
+        $this->assertNull($result['reason']);
+    }
 }

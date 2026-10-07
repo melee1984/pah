@@ -193,7 +193,7 @@ class CartController extends Controller
                 fn ($query) => $query->whereKey($request->integer('partner_location_id')),
             )
             ->get();
-        $locationDistance = $this->deliveryZone->closestLocation(
+        $locationDistance = $this->deliveryZone->bestDeliveryLocation(
             $merchantLocations,
             $userLatitude,
             $userLongitude,
@@ -208,8 +208,8 @@ class CartController extends Controller
             ], 200);
         }
 
-        if (! $this->deliveryZone->isWithinRange($locationDistance['distance_km'])) {
-            return response()->json($this->outsideDeliveryZoneResponse($locationDistance['distance_km']), 200);
+        if (! $locationDistance['check']['allowed']) {
+            return response()->json($this->outsideDeliveryZoneResponse($locationDistance['check']), 200);
         }
 
         $partnerLocationId = (int) $locationDistance['location']->id;
@@ -383,20 +383,9 @@ class CartController extends Controller
         ], 200);
     }
 
-    private function outsideDeliveryZoneResponse(float $distanceKilometers): array
+    private function outsideDeliveryZoneResponse(array $check): array
     {
-        $maximumDistance = $this->deliveryZone->maximumDistanceKilometers();
-
-        return [
-            'status' => 0,
-            'message' => sprintf(
-                'This order is not allowed because your location is %.2f km from the merchant. The maximum delivery distance is %s km.',
-                $distanceKilometers,
-                rtrim(rtrim(number_format($maximumDistance, 2, '.', ''), '0'), '.'),
-            ),
-            'distance_km' => round($distanceKilometers, 2),
-            'max_distance_km' => $maximumDistance,
-        ];
+        return $this->deliveryZone->failureResponse($check);
     }
 
     public function getCart(Request $request)
