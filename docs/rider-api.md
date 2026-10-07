@@ -101,6 +101,7 @@ Exact rider coordinates are stored without ordinary application logging.
 
 ```text
 GET  /offers/current
+GET  /offers
 GET  /offers/{offerId}
 POST /offers/{offerId}/accept
 POST /offers/{offerId}/decline
@@ -136,6 +137,55 @@ current state and allowed events.
 
 Offer responses contain only approximate drop-off information. Full customer
 and address information is returned only after the offer is accepted.
+
+### Two-order batching
+
+When batching is enabled, a rider with one active delivery can receive a second
+offer only when all of these conditions remain true at dispatch and acceptance
+time:
+
+- the latest rider location is no older than the configured location age;
+- the rider has fewer than two active deliveries;
+- the second pickup is within the configured detour from the remaining route;
+- the total added distance and delay to the existing delivery are within the
+  configured limits.
+
+The route calculation preserves pickup-before-drop-off ordering for every
+delivery and selects the shortest valid stop sequence. It currently uses
+straight-line distances and a configurable average speed. A road-routing
+provider can replace that calculation later without changing the app response.
+
+An eligible offer includes:
+
+```json
+{
+  "offer_type": "add_on",
+  "route_compatible": true,
+  "route_impact": {
+    "is_add_on": true,
+    "active_order_count": 1,
+    "resulting_order_count": 2,
+    "pickup_detour_meters": 350,
+    "added_distance_meters": 2100,
+    "added_eta_seconds": 302,
+    "existing_order_delay_seconds": 180
+  }
+}
+```
+
+Exact coordinates, addresses, and the ordered stop list are withheld until the
+offer is accepted. If the rider moves and the route is no longer eligible,
+`route_compatible` becomes `false` and acceptance returns `409 Conflict`.
+
+`GET /deliveries/active` retains the legacy singular `delivery` field and now
+also returns `deliveries` and `route`. The rider app should render the
+`route.stops` array in order, highlight `route.stops[0]` as the next action,
+and show the add-on's extra time, distance, and earnings before acceptance.
+
+`GET /deliveries/{deliveryId}/route` now returns the same ordered `stops`
+array plus the backward-compatible `destination` field for the next stop.
+Completing one order keeps the rider in `active_delivery` while another order
+in the batch remains active.
 
 The delivery fee and its snapshotted Pahatud commission are returned as
 `earnings_centavos`, `commission_percentage`, and `commission_centavos`. A
@@ -221,6 +271,12 @@ Optional production integrations:
 ```dotenv
 SEMAPHORE_API_KEY=
 SEMAPHORE_SENDER_NAME=PahatudFood
+RIDER_BATCHING_ENABLED=true
+RIDER_BATCH_MAX_ACTIVE_DELIVERIES=2
+RIDER_BATCH_MAX_PICKUP_DETOUR_KM=2
+RIDER_BATCH_MAX_ADDED_DISTANCE_KM=8
+RIDER_BATCH_MAX_EXISTING_DELAY_MINUTES=10
+RIDER_BATCH_AVERAGE_SPEED_KPH=25
 RIDER_CALL_RELAY_NUMBER=
 RIDER_COD_REMITTANCE_METHOD=
 RIDER_COD_ACCOUNT_NAME=

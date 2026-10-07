@@ -11,6 +11,7 @@ use App\Model\Orders\Orders;
 use App\Model\Rider\RiderDeclineOrder;
 use App\Services\AgentCommissionService;
 use App\Services\RiderApiService;
+use App\Services\RiderBatchingService;
 use App\Services\RiderCommissionService;
 use App\Services\RiderOfferDispatcher;
 use App\Services\UserRewardService;
@@ -55,6 +56,7 @@ class DeliveryController extends Controller
         private readonly RiderApiService $riders,
         private readonly RiderOfferDispatcher $offerDispatcher,
         private readonly RiderCommissionService $riderCommissions,
+        private readonly RiderBatchingService $batching,
     ) {}
 
     public function currentOffer(Request $request): JsonResponse
@@ -111,12 +113,22 @@ class DeliveryController extends Controller
             }
             abort_if(! $delivery || $delivery->current_state !== 'offered', 409, 'This delivery offer is no longer available.');
 
-            $activeExists = DB::table('rider_api_deliveries')
+            $activeDeliveries = DB::table('rider_api_deliveries')
                 ->where('rider_id', $rider->id)
                 ->whereNotIn('current_state', self::TERMINAL_STATES)
                 ->where('id', '!=', $record->delivery_id)
-                ->exists();
-            abort_if($activeExists, 409, 'Finish the active delivery before accepting another offer.');
+                ->lockForUpdate()
+                ->get();
+            abort_if(
+                $activeDeliveries->count() >= $this->batching->maxActiveDeliveries(),
+                409,
+                'The maximum number of active deliveries has been reached.',
+            );
+            abort_if(
+                $activeDeliveries->isNotEmpty() && ! $this->batching->addOnPlan($rider->id, $delivery),
+                409,
+                'This add-on delivery no longer fits the active route.',
+            );
 
             abort_if(
                 $delivery->rider_id && (int) $delivery->rider_id !== (int) $rider->id,
@@ -164,6 +176,7 @@ class DeliveryController extends Controller
                 'accepted_at' => now(),
                 'updated_at' => now(),
             ]);
+            $this->batching->markActiveBatch($rider->id);
             DB::table('rider_api_availability')->updateOrInsert(
                 ['rider_id' => $rider->id],
                 [
@@ -226,14 +239,20 @@ class DeliveryController extends Controller
 
     public function active(Request $request): JsonResponse
     {
-        $delivery = DB::table('rider_api_deliveries')
-            ->where('rider_id', $this->riders->rider($request)->id)
+        $riderId = $this->riders->rider($request)->id;
+        $deliveries = DB::table('rider_api_deliveries')
+            ->where('rider_id', $riderId)
             ->whereNotIn('current_state', self::TERMINAL_STATES)
-            ->latest('updated_at')
-            ->first();
+            ->orderBy('accepted_at')
+            ->orderBy('id')
+            ->get()
+            ->map(fn (object $delivery) => $this->deliveryData($delivery));
 
         return response()->json([
-            'delivery' => $delivery ? $this->deliveryData($delivery) : null,
+            // Keep the singular field while older rider app versions migrate.
+            'delivery' => $deliveries->first(),
+            'deliveries' => $deliveries->values(),
+            'route' => $this->batching->routeForRider($riderId),
         ]);
     }
 
@@ -289,7 +308,7 @@ class DeliveryController extends Controller
             'next_cursor' => $paginator->nextCursor()?->encode(),
         ]);
     }
-    
+
     public function show(Request $request, string $delivery): JsonResponse
     {
         $record = $this->ownedDelivery($request, $delivery);
@@ -304,34 +323,24 @@ class DeliveryController extends Controller
     public function route(Request $request, string $delivery): JsonResponse
     {
         $record = $this->ownedDelivery($request, $delivery);
-        $pickupLeg = in_array($record->current_state, [
-            'accepted',
-            'going_to_merchant',
-            'arrived_at_merchant',
-            'going_to_customer',
-            'order_not_ready',
-            'waiting_started',
-            'pickup_verified',
-        ], true);
+        $route = $this->batching->routeForRider((int) $record->rider_id);
+        $nextStop = $route['stops'][0] ?? null;
 
         return response()->json([
             'delivery_id' => $record->reference,
-            'leg' => $pickupLeg ? 'to_pickup' : 'to_dropoff',
-            'origin' => $this->latestRiderCoordinate($record->rider_id),
-            'destination' => $pickupLeg ? [
-                'latitude' => $record->pickup_latitude,
-                'longitude' => $record->pickup_longitude,
-                'address' => $record->pickup_address,
-            ] : [
-                'latitude' => $record->dropoff_latitude,
-                'longitude' => $record->dropoff_longitude,
-                'address' => $record->dropoff_address,
-            ],
+            'leg' => $nextStop ? 'to_'.$nextStop['type'] : null,
+            'origin' => $route['origin'],
+            'destination' => $nextStop,
+            'order_count' => $route['order_count'],
+            'is_batched' => $route['is_batched'],
+            'distance_meters' => $route['distance_meters'],
+            'eta_seconds' => $route['eta_seconds'],
+            'stops' => $route['stops'],
         ]);
     }
 
     public function event(Request $request, string $delivery): JsonResponse
-    {   
+    {
         $validated = $request->validate([
             'event_id' => ['required', 'uuid'],
             'type' => ['required', Rule::in(self::EVENT_TYPES)],
@@ -452,9 +461,7 @@ class DeliveryController extends Controller
 
                 $this->riderCommissions->deductForCompletedDelivery($record);
 
-                DB::table('rider_api_availability')
-                    ->where('rider_id', $record->rider_id)
-                    ->update(['state' => 'available', 'updated_at' => now()]);
+                $this->updateAvailabilityAfterTerminal((int) $record->rider_id, (int) $record->id);
 
             } elseif (in_array($validated['type'], ['cancelled', 'failed'], true)) {
                 $updates['completed_at'] = $occurredAt;
@@ -465,12 +472,13 @@ class DeliveryController extends Controller
                     'user_id' => $userId,
                 ]);
 
-                DB::table('rider_api_availability')
-                    ->where('rider_id', $record->rider_id)
-                    ->update(['state' => 'available', 'updated_at' => now()]);
+                $this->updateAvailabilityAfterTerminal((int) $record->rider_id, (int) $record->id);
             }
 
             DB::table('rider_api_deliveries')->where('id', $record->id)->update($updates);
+            if (in_array($validated['type'], self::TERMINAL_STATES, true)) {
+                $this->batching->markActiveBatch((int) $record->rider_id);
+            }
 
             $this->syncLegacyDelivery($record, $validated['type']);
 
@@ -1096,12 +1104,22 @@ class DeliveryController extends Controller
             'This order is assigned to another rider.',
         );
 
-        $hasAnotherActiveDelivery = DB::table('rider_api_deliveries')
+        $activeDeliveries = DB::table('rider_api_deliveries')
             ->where('rider_id', $riderId)
             ->where('id', '!=', $delivery->id)
             ->whereNotIn('current_state', self::TERMINAL_STATES)
-            ->exists();
-        abort_if($hasAnotherActiveDelivery, 409, 'Finish the active delivery before accepting another order.');
+            ->lockForUpdate()
+            ->get();
+        abort_if(
+            $activeDeliveries->count() >= $this->batching->maxActiveDeliveries(),
+            409,
+            'The maximum number of active deliveries has been reached.',
+        );
+        abort_if(
+            $activeDeliveries->isNotEmpty() && ! $this->batching->addOnPlan($riderId, $delivery),
+            409,
+            'This add-on delivery no longer fits the active route.',
+        );
 
         DB::table('rider_api_deliveries')->where('id', $delivery->id)->update([
             'rider_id' => $riderId,
@@ -1109,6 +1127,7 @@ class DeliveryController extends Controller
             'accepted_at' => now(),
             'updated_at' => now(),
         ]);
+        $this->batching->markActiveBatch($riderId);
 
         DB::table('rider_api_offers')
             ->where('delivery_id', $delivery->id)
@@ -1204,12 +1223,13 @@ class DeliveryController extends Controller
 
         if (in_array($state, self::TERMINAL_STATES, true)) {
             $updates['completed_at'] = now();
-            DB::table('rider_api_availability')
-                ->where('rider_id', $riderId)
-                ->update(['state' => 'available', 'updated_at' => now()]);
+            $this->updateAvailabilityAfterTerminal($riderId, (int) $delivery->id);
         }
 
         DB::table('rider_api_deliveries')->where('id', $delivery->id)->update($updates);
+        if (in_array($state, self::TERMINAL_STATES, true)) {
+            $this->batching->markActiveBatch($riderId);
+        }
         DB::table('rider_api_delivery_events')->insert([
             'delivery_id' => $delivery->id,
             'event_id' => (string) Str::uuid(),
@@ -1376,13 +1396,13 @@ class DeliveryController extends Controller
     }
 
     private function ownedDelivery(Request $request, string $identifier): object
-    {   
+    {
 
         $riderId = $this->riders->rider($request)->id;
 
         $query = DB::table('rider_api_deliveries')
-            ->where('rider_id', (int)$riderId);
-      
+            ->where('rider_id', (int) $riderId);
+
         $delivery = ctype_digit((string) $identifier)
             ? $query->where('legacy_order_id', (int) $identifier)->first()
             : $query->where('reference', $identifier)->first();
@@ -1397,6 +1417,12 @@ class DeliveryController extends Controller
     private function offerData(object $offer): array
     {
         $delivery = DB::table('rider_api_deliveries')->where('id', $offer->delivery_id)->first();
+        $routeImpact = $this->batching->addOnPlan((int) $offer->rider_id, $delivery);
+        $isAddOn = $this->batching->activeCount((int) $offer->rider_id, (int) $delivery->id) > 0;
+        if ($routeImpact) {
+            // Do not expose exact customer coordinates or addresses before acceptance.
+            unset($routeImpact['stops']);
+        }
 
         return [
             'id' => $offer->reference,
@@ -1412,6 +1438,9 @@ class DeliveryController extends Controller
             'cod_centavos' => (int) $delivery->cod_centavos,
             'order_count' => (int) $delivery->order_count,
             'is_batched' => (bool) $delivery->is_batched,
+            'offer_type' => $isAddOn ? 'add_on' : 'standard',
+            'route_compatible' => ! $isAddOn || $routeImpact !== null,
+            'route_impact' => $routeImpact,
             'expires_at' => $offer->expires_at,
             'server_time' => now()->toISOString(),
         ];
@@ -1483,6 +1512,8 @@ class DeliveryController extends Controller
             'commission_percentage' => (float) $delivery->commission_percentage,
             'commission_centavos' => $this->riderCommissions->commissionCentavos($delivery),
             'cod_centavos' => (int) $delivery->cod_centavos,
+            'order_count' => (int) $delivery->order_count,
+            'is_batched' => (bool) $delivery->is_batched,
             'accepted_at' => $delivery->accepted_at,
             'completed_at' => $delivery->completed_at,
             'created_at' => $delivery->created_at,
@@ -1492,6 +1523,7 @@ class DeliveryController extends Controller
     private function transitionAllowed(string $currentState, string $event): bool
     {
         \Log::info(['currentState' => $currentState, 'event' => $event, 'allowedEvents' => $this->allowedEvents($currentState)]);
+
         return in_array($event, $this->allowedEvents($currentState), true);
     }
 
@@ -1580,21 +1612,20 @@ class DeliveryController extends Controller
             ->all();
     }
 
-    /**
-     * @return array<string, mixed>|null
-     */
-    private function latestRiderCoordinate(int $riderId): ?array
+    private function updateAvailabilityAfterTerminal(int $riderId, int $terminalDeliveryId): void
     {
-        $location = DB::table('rider_api_locations')
+        $hasAnotherActiveDelivery = DB::table('rider_api_deliveries')
             ->where('rider_id', $riderId)
-            ->latest('recorded_at')
-            ->first();
+            ->where('id', '!=', $terminalDeliveryId)
+            ->whereNotIn('current_state', self::TERMINAL_STATES)
+            ->exists();
 
-        return $location ? [
-            'latitude' => $location->latitude,
-            'longitude' => $location->longitude,
-            'recorded_at' => $location->recorded_at,
-        ] : null;
+        DB::table('rider_api_availability')
+            ->where('rider_id', $riderId)
+            ->update([
+                'state' => $hasAnotherActiveDelivery ? 'active_delivery' : 'available',
+                'updated_at' => now(),
+            ]);
     }
 
     private function storePrivateFile(UploadedFile $file, string $directory): string

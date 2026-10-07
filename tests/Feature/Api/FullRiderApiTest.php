@@ -824,6 +824,121 @@ class FullRiderApiTest extends TestCase
             ->assertOk()->assertJsonCount(0, 'offers');
     }
 
+    public function test_active_rider_can_accept_one_compatible_add_on_and_receive_a_multi_stop_route(): void
+    {
+        Bus::fake([SendRiderOfferPush::class]);
+        $token = $this->loginApprovedRider('batch-rider@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        DB::table('rider_api_availability')->updateOrInsert(
+            ['rider_id' => $riderId],
+            ['state' => 'active_delivery', 'created_at' => now(), 'updated_at' => now()],
+        );
+        DB::table('rider_api_locations')->insert([
+            'rider_id' => $riderId,
+            'latitude' => 10.3157,
+            'longitude' => 123.8854,
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $firstReference = (string) Str::uuid();
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => $firstReference,
+            'rider_id' => $riderId,
+            'current_state' => 'picked_up',
+            'merchant_name' => 'First Merchant',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.8854,
+            'dropoff_latitude' => 10.3157,
+            'dropoff_longitude' => 123.9254,
+            'earnings_centavos' => 0,
+            'cod_centavos' => 0,
+            'accepted_at' => now()->subMinutes(5),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $secondReference = (string) Str::uuid();
+        $secondDeliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => $secondReference,
+            'legacy_order_id' => 902,
+            'current_state' => 'offered',
+            'merchant_name' => 'Along The Way Merchant',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.9054,
+            'dropoff_latitude' => 10.3157,
+            'dropoff_longitude' => 123.9354,
+            'earnings_centavos' => 0,
+            'cod_centavos' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $order = new Orders;
+        $order->id = 902;
+        app(RiderOfferDispatcher::class)->dispatchOrder($order);
+
+        $offerReference = DB::table('rider_api_offers')
+            ->where('delivery_id', $secondDeliveryId)
+            ->where('rider_id', $riderId)
+            ->value('reference');
+        $this->assertNotNull($offerReference);
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/offers/current')
+            ->assertOk()
+            ->assertJsonPath('offer.offer_type', 'add_on')
+            ->assertJsonPath('offer.route_compatible', true)
+            ->assertJsonPath('offer.route_impact.resulting_order_count', 2)
+            ->assertJsonPath('offer.route_impact.is_add_on', true)
+            ->assertJsonMissingPath('offer.route_impact.stops');
+
+        $this->authenticated($token)
+            ->postJson("/api/v1/rider/offers/{$offerReference}/accept")
+            ->assertOk()
+            ->assertJsonPath('delivery.id', $secondReference)
+            ->assertJsonPath('delivery.is_batched', true)
+            ->assertJsonPath('delivery.order_count', 2);
+
+        $this->authenticated($token)
+            ->getJson('/api/v1/rider/deliveries/active')
+            ->assertOk()
+            ->assertJsonCount(2, 'deliveries')
+            ->assertJsonPath('route.is_batched', true)
+            ->assertJsonPath('route.order_count', 2)
+            ->assertJsonPath('route.stops.0.type', 'pickup');
+
+        $this->assertSame(2, DB::table('rider_api_deliveries')
+            ->where('rider_id', $riderId)
+            ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+            ->count());
+        $this->assertDatabaseHas('rider_api_deliveries', [
+            'reference' => $firstReference,
+            'order_count' => 2,
+            'is_batched' => true,
+        ]);
+
+        $thirdDeliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => 903,
+            'current_state' => 'offered',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.9154,
+            'dropoff_latitude' => 10.3157,
+            'dropoff_longitude' => 123.9454,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $thirdOrder = new Orders;
+        $thirdOrder->id = 903;
+        app(RiderOfferDispatcher::class)->dispatchOrder($thirdOrder);
+
+        $this->assertDatabaseMissing('rider_api_offers', [
+            'delivery_id' => $thirdDeliveryId,
+            'rider_id' => $riderId,
+        ]);
+    }
+
     public function test_rider_status_wallet_overview_and_activity_logs_are_available(): void
     {
         $token = $this->loginApprovedRider();

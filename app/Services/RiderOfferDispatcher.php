@@ -11,6 +11,13 @@ use Illuminate\Support\Str;
 
 class RiderOfferDispatcher
 {
+    private readonly RiderBatchingService $batching;
+
+    public function __construct(?RiderBatchingService $batching = null)
+    {
+        $this->batching = $batching ?? app(RiderBatchingService::class);
+    }
+
     public function dispatchOrder(Orders $order): ?string
     {
 
@@ -131,9 +138,18 @@ class RiderOfferDispatcher
                     'updated_at' => now(),
                 ]);
             if ($delivery->rider_id) {
+                $hasAnotherActiveDelivery = DB::table('rider_api_deliveries')
+                    ->where('rider_id', $delivery->rider_id)
+                    ->where('id', '!=', $delivery->id)
+                    ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+                    ->exists();
                 DB::table('rider_api_availability')
                     ->where('rider_id', $delivery->rider_id)
-                    ->update(['state' => 'available', 'updated_at' => now()]);
+                    ->update([
+                        'state' => $hasAnotherActiveDelivery ? 'active_delivery' : 'available',
+                        'updated_at' => now(),
+                    ]);
+                $this->batching->markActiveBatch((int) $delivery->rider_id);
             }
         });
     }
@@ -161,16 +177,20 @@ class RiderOfferDispatcher
                 ->where('rider_id', $riderId)
                 ->lockForUpdate()
                 ->first();
-            if (! $availability || $availability->state !== 'available'
+            if (! $availability || ! in_array($availability->state, ['available', 'active_delivery'], true)
                 || $this->pendingOfferCount($riderId) >= $this->maxPendingOffersPerRider()) {
                 return;
             }
 
-            $hasActiveDelivery = DB::table('rider_api_deliveries')
+            $activeDeliveries = DB::table('rider_api_deliveries')
                 ->where('rider_id', $riderId)
                 ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
-                ->exists();
-            if ($hasActiveDelivery) {
+                ->lockForUpdate()
+                ->get();
+            if ($activeDeliveries->count() >= $this->batching->maxActiveDeliveries()) {
+                return;
+            }
+            if ($activeDeliveries->isNotEmpty() && ! $this->batching->addOnPlan($riderId, $delivery)) {
                 return;
             }
 
@@ -215,12 +235,14 @@ class RiderOfferDispatcher
             }
 
             if (Schema::hasTable('rider_api_notifications')) {
+                $isAddOn = $activeDeliveries->isNotEmpty();
                 DB::table('rider_api_notifications')->insert([
                     'reference' => (string) Str::uuid(),
                     'rider_id' => $riderId,
                     'type' => 'delivery_offer',
-                    'title' => 'New delivery offer',
-                    'body' => 'A delivery from '.($delivery->merchant_name ?: 'a nearby merchant').' is available.',
+                    'title' => $isAddOn ? 'Add-on delivery available' : 'New delivery offer',
+                    'body' => 'A delivery from '.($delivery->merchant_name ?: 'a nearby merchant')
+                        .($isAddOn ? ' fits your current route.' : ' is available.'),
                     'deep_link' => '/app/home',
                     'data' => json_encode(['offer_id' => $reference, 'delivery_id' => $delivery->reference], JSON_THROW_ON_ERROR),
                     'created_at' => now(),
@@ -270,15 +292,9 @@ class RiderOfferDispatcher
             ->whereRaw('location.id = (SELECT latest.id FROM rider_api_locations AS latest WHERE latest.rider_id = rider.id ORDER BY latest.recorded_at DESC, latest.id DESC LIMIT 1)')
             ->where('rider.active', true)
             ->whereNull('rider.archived_at')
-            ->where('rider_api_availability.state', 'available')
+            ->whereIn('rider_api_availability.state', ['available', 'active_delivery'])
+            ->whereBetween('location.recorded_at', [now()->subMinutes($maxAgeMinutes), now()->addMinute()])
             ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = rider.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', ['pending', now(), 'offered', $maxPendingOffers])
-            ->whereNotExists(function ($query) {
-                $query->selectRaw('1')
-                    ->from('rider_api_deliveries as active_delivery')
-                    ->whereColumn('active_delivery.rider_id', 'rider.id')
-                    ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
-            })
-            // ->whereBetween('location.recorded_at', [now()->subMinutes($maxAgeMinutes), now()]) / I am removing this since we are not using the recorded_at to filter the riders, we are using the latest location of the rider instead
             ->select('rider.id', 'location.latitude', 'location.longitude')
             ->get();
 
@@ -286,6 +302,12 @@ class RiderOfferDispatcher
 
         return $riders
             ->map(function (object $rider) use ($delivery) {
+                $activeCount = $this->batching->activeCount((int) $rider->id);
+                if ($activeCount > 0) {
+                    $rider->batch_plan = $this->batching->addOnPlan((int) $rider->id, $delivery);
+
+                    return $rider;
+                }
                 $rider->distance_meters = $this->distanceMeters(
                     $delivery->pickup_latitude,
                     $delivery->pickup_longitude,
@@ -295,9 +317,12 @@ class RiderOfferDispatcher
 
                 return $rider;
             })
-            ->filter(fn (object $rider) => $rider->distance_meters !== null
-                && $rider->distance_meters <= $maxDistanceMeters)
-            ->sort(fn (object $a, object $b) => $a->distance_meters <=> $b->distance_meters ?: $a->id <=> $b->id)
+            ->filter(fn (object $rider) => property_exists($rider, 'batch_plan')
+                ? $rider->batch_plan !== null
+                : ($rider->distance_meters !== null && $rider->distance_meters <= $maxDistanceMeters))
+            ->sort(fn (object $a, object $b) => ($a->batch_plan['pickup_detour_meters'] ?? $a->distance_meters ?? PHP_INT_MAX)
+                <=> ($b->batch_plan['pickup_detour_meters'] ?? $b->distance_meters ?? PHP_INT_MAX)
+                ?: $a->id <=> $b->id)
             ->take($limit)
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
