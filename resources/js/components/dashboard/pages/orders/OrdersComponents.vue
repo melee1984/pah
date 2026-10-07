@@ -113,8 +113,8 @@
                       <template v-if="fulfillmentType(order) === 'delivery' && order.status">
                         <span v-if="order.rider_dispatch" class="dashboard-status-pill d-inline-block mb-2" :class="dispatchStatusClass(order.rider_dispatch.status)">{{ order.rider_dispatch.label }}</span>
                         <span v-if="activeList === 'orders' && order.status.id!=5 && (!order.rider_dispatch || !order.rider_dispatch.assigned)">
-                          <select class="form-control" value="" style="font-size:12px;" @change="updateRider(order.id, $event.target.value)">
-                            <option value="" disabled>Send offer to rider</option>
+                          <select class="form-control" style="font-size:12px;" @change="updateRider(order.id, $event)">
+                            <option value="" disabled selected>None — send offer to rider</option>
                             <option v-for="rider in riders" :value="rider.id">{{ rider.name }}</option>
                           </select>
                         </span>
@@ -458,7 +458,15 @@
                   console.log(error);
               });
           },
-          updateRider:function(orderid, riderId) {
+          updateRider:function(orderid, event) {
+
+             const riderId = event.target.value;
+
+             if (!riderId) {
+                return;
+             }
+
+             event.target.value = '';
 
              let formData = new FormData();
                 formData.append('rider_id', riderId)
