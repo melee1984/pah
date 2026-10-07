@@ -10,6 +10,7 @@ use App\Model\Orders\Orders;
 use App\Partners;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use User;
 
 use Auth;
@@ -167,8 +168,71 @@ class DashboardController extends Controller
 
         $recentActivity = $orders->sortByDesc('updated_at')->take(7);
 
+        $availableMerchantsQuery = Partners::query()
+            ->where('active', true)
+            ->whereNotNull('verified_at')
+            ->where('store_open', true);
+
+        $availableMerchantCount = (clone $availableMerchantsQuery)->count();
+        $availableMerchants = $availableMerchantsQuery
+            ->withCount([
+                'orders as orders_today_count' => fn ($query) => $query
+                    ->whereNotNull('submitted_at')
+                    ->whereBetween('submitted_at', [$startOfToday, $now]),
+            ])
+            ->orderByDesc('orders_today_count')
+            ->orderBy('restaurant_name')
+            ->limit(6)
+            ->get();
+
+        $maxPendingOffers = max(1, (int) config('rider.offer_max_pending_per_rider', 3));
+        $availableRidersQuery = DB::table('rider as riders')
+            ->join('rider_api_availability as availability', 'availability.rider_id', '=', 'riders.id')
+            ->where('riders.active', true)
+            ->whereNull('riders.archived_at')
+            ->where('availability.state', 'available')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_locations as location')
+                    ->whereColumn('location.rider_id', 'riders.id');
+            })
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_deliveries as active_delivery')
+                    ->whereColumn('active_delivery.rider_id', 'riders.id')
+                    ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
+            })
+            ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = riders.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', [
+                'pending', $now, 'offered', $maxPendingOffers,
+            ]);
+
+        $availableRiderCount = (clone $availableRidersQuery)->count();
+        $availableRiders = $availableRidersQuery
+            ->select([
+                'riders.id',
+                'riders.name',
+                'riders.mobile',
+                'availability.heartbeat_at',
+            ])
+            ->selectSub(function ($query) {
+                $query->from('rider_api_locations as latest_location')
+                    ->whereColumn('latest_location.rider_id', 'riders.id')
+                    ->orderByDesc('latest_location.recorded_at')
+                    ->orderByDesc('latest_location.id')
+                    ->limit(1)
+                    ->select('latest_location.recorded_at');
+            }, 'location_recorded_at')
+            ->orderByDesc('availability.heartbeat_at')
+            ->orderBy('riders.name')
+            ->limit(6)
+            ->get();
+
         return view('dashboard.pages.main', compact(
             'agentMetrics',
+            'availableMerchantCount',
+            'availableMerchants',
+            'availableRiderCount',
+            'availableRiders',
             'dashboardMetrics',
             'incomingOrders',
             'recentActivity',

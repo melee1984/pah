@@ -48,7 +48,38 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->id();
             $table->unsignedBigInteger('partner_id');
             $table->unsignedBigInteger('partner_location_address_id');
+            $table->unsignedBigInteger('payment_id')->nullable();
+            $table->string('order_no')->nullable();
             $table->string('fulfillment_type')->nullable();
+            $table->decimal('delivery_fee', 8, 2)->default(0);
+            $table->decimal('discount_amount', 8, 2)->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->softDeletes();
+            $table->timestamps();
+        });
+
+        Schema::create('cart_details', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('cart_id');
+            $table->unsignedBigInteger('item_id')->nullable();
+            $table->unsignedInteger('qty');
+            $table->decimal('price', 8, 2);
+            $table->decimal('variance_total', 8, 2)->default(0);
+            $table->decimal('price_comm_total', 8, 2)->default(0);
+            $table->decimal('variance_total_comm_total', 8, 2)->default(0);
+            $table->decimal('discount_amount', 8, 2)->default(0);
+            $table->string('instruction')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('payment_method', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
             $table->timestamps();
         });
 
@@ -90,6 +121,8 @@ class MerchantOrderAcceptanceTest extends TestCase
 
         DB::table('users')->insert(['id' => 10]);
         DB::table('partners')->insert(['id' => 20, 'restaurant_name' => 'Test Merchant']);
+        DB::table('products')->insert(['id' => 30, 'title' => 'Chicken Inasal']);
+        DB::table('payment_method')->insert(['id' => 3, 'title' => 'Cash on Delivery']);
 
         foreach ([
             LibraryStatus::STATUS_ORDER_PLACED => 'Order Placed',
@@ -124,6 +157,18 @@ class MerchantOrderAcceptanceTest extends TestCase
         ]);
         $this->assertSame('Ready For Pickup', $response->getData(true)['action']['button']['label']);
         $this->assertFalse($response->getData(true)['action']['send_to_rider']);
+
+        $printJob = $response->getData(true)['print_job'];
+        $this->assertSame('order-'.$order->id.'-accept', $printJob['id']);
+        $this->assertSame('plain_text', $printJob['format']);
+        $this->assertSame(1, $printJob['copies']);
+        $this->assertSame(3, $printJob['feed_lines']);
+        $this->assertStringContainsString('Test Merchant', $printJob['content']);
+        $this->assertStringContainsString('ORDER #TEST-100', $printJob['content']);
+        $this->assertStringContainsString('2x Chicken Inasal', $printJob['content']);
+        $this->assertStringContainsString('PHP 200.00', $printJob['content']);
+        $this->assertStringContainsString('Payment: Cash on Delivery', $printJob['content']);
+        $this->assertStringContainsString('TOTAL', $printJob['content']);
     }
 
     public function test_pickup_order_moves_to_ready_for_pickup_before_completion(): void
@@ -284,7 +329,18 @@ class MerchantOrderAcceptanceTest extends TestCase
         $cartId = DB::table('cart')->insertGetId([
             'partner_id' => 20,
             'partner_location_address_id' => 200,
+            'payment_id' => 3,
+            'order_no' => 'TEST-100',
             'fulfillment_type' => $fulfillmentType,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('cart_details')->insert([
+            'cart_id' => $cartId,
+            'item_id' => 30,
+            'qty' => 2,
+            'price' => 100,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

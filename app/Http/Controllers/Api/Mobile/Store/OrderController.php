@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use App\Products;
 use App\PushNotification;
 use App\Jobs\SendCustomerOrderAcceptedPush;
+use App\Services\MerchantOrderReceipt;
 use App\Services\RiderOfferDispatcher;
 use App\Services\RiderDispatchStatus;
 use Auth;
@@ -408,6 +409,7 @@ class OrderController extends Controller
             'order_status_id' => $result['order']->order_status_id,
             'store_accepted_at' => $result['order']->store_accepted_at,
             'action' => $result['order']->getAction(),
+            'print_job' => app(MerchantOrderReceipt::class)->printJob($result['order']),
             'rider_delivery_id' => $riderDeliveryReference,
             'pickup_code' => $pickupCode,
         ]);

@@ -278,6 +278,17 @@ body.pahatud-admin {
 .dashboard-merchant-row > div strong { display: block; font-size: 11px; }
 .dashboard-merchant-row > div small { color: var(--admin-muted); display: block; font-size: 9px; margin-top: 3px; }
 .dashboard-merchant-row > strong { color: #1b7a46; font-size: 11px; }
+.dashboard-availability-grid { align-items: start; }
+.dashboard-availability-list { padding: 7px 21px 12px; }
+.dashboard-availability-row { align-items: center; border-bottom: 1px solid #f1ede9; color: var(--admin-ink); display: grid; gap: 11px; grid-template-columns: 36px minmax(0, 1fr) auto; min-height: 64px; }
+a.dashboard-availability-row:hover { color: var(--admin-ink); text-decoration: none; }
+.dashboard-availability-row:last-child { border-bottom: 0; }
+.dashboard-availability-avatar { align-items: center; background: #fff0ee; border-radius: 9px; color: var(--admin-red); display: flex; height: 35px; justify-content: center; width: 35px; }
+.dashboard-availability-row > div > strong { display: block; font-size: 11px; }
+.dashboard-availability-row > div > small { color: var(--admin-muted); display: block; font-size: 9px; margin-top: 3px; }
+.dashboard-availability-meta { min-width: 82px; text-align: right; }
+.dashboard-availability-meta > strong { color: #1b7a46; font-family: 'Manrope', sans-serif; font-size: 17px !important; }
+.dashboard-availability-meta .admin-status { display: inline-flex; }
 .dashboard-activity-row { align-items: center; border-bottom: 1px solid #f1ede9; display: grid; gap: 11px; grid-template-columns: 35px 1fr; min-height: 60px; }
 .dashboard-activity-row > span { align-items: center; background: #fff0ee; border-radius: 9px; color: var(--admin-red); display: flex; height: 34px; justify-content: center; width: 34px; }
 .dashboard-activity-row strong { display: block; font-size: 11px; }

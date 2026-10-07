@@ -50,6 +50,38 @@
             <div><small>Average completed order</small><strong>&#8369;{{ number_format($dashboardMetrics['average_order'], 2) }}</strong></div>
         </div>
 
+        <div class="dashboard-widget-grid dashboard-availability-grid">
+            <article class="card admin-card dashboard-overview-card">
+                <div class="admin-card-header"><div><span class="admin-eyebrow">Delivery availability</span><h2>Available riders</h2><p>Dispatch-ready riders who can receive a new offer now.</p></div><a href="{{ route('dashboard.riders.available') }}" class="dashboard-card-link">View all ({{ number_format($availableRiderCount) }})</a></div>
+                <div class="dashboard-availability-list">
+                    @forelse ($availableRiders as $rider)
+                        <a href="{{ route('dashboard.riders.show', $rider->id) }}" class="dashboard-availability-row">
+                            <span class="dashboard-availability-avatar"><i class="fas fa-motorcycle"></i></span>
+                            <div><strong>{{ $rider->name ?: 'Unnamed rider' }}</strong><small>{{ $rider->mobile ?: 'No mobile number' }}</small></div>
+                            <div class="dashboard-availability-meta"><span class="admin-status admin-status-active">Ready</span><small>{{ $rider->heartbeat_at ? 'Online '.\Illuminate\Support\Carbon::parse($rider->heartbeat_at)->diffForHumans() : 'Available now' }}</small></div>
+                        </a>
+                    @empty
+                        <div class="dashboard-widget-empty">No riders are dispatch-ready right now.</div>
+                    @endforelse
+                </div>
+            </article>
+
+            <article class="card admin-card dashboard-overview-card">
+                <div class="admin-card-header"><div><span class="admin-eyebrow">Store availability</span><h2>Available merchants</h2><p>Active, verified merchants whose stores are open now.</p></div><a href="{{ route('dashboard.merchant') }}" class="dashboard-card-link">View all ({{ number_format($availableMerchantCount) }})</a></div>
+                <div class="dashboard-availability-list">
+                    @forelse ($availableMerchants as $merchant)
+                        <div class="dashboard-availability-row">
+                            <span class="dashboard-availability-avatar"><i class="fas fa-store"></i></span>
+                            <div><strong>{{ $merchant->restaurant_name ?: 'Unnamed merchant' }}</strong><small>{{ $merchant->city ?: 'Location unavailable' }}</small></div>
+                            <div class="dashboard-availability-meta"><strong>{{ number_format($merchant->orders_today_count) }}</strong><small>{{ Str::plural('order', $merchant->orders_today_count) }} today</small></div>
+                        </div>
+                    @empty
+                        <div class="dashboard-widget-empty">No merchant stores are open right now.</div>
+                    @endforelse
+                </div>
+            </article>
+        </div>
+
         <div class="dashboard-widget-grid">
             <article class="card admin-card dashboard-overview-card">
                 <div class="admin-card-header"><div><span class="admin-eyebrow">Leaderboard</span><h2>Top merchants</h2><p>Ranked by completed-order revenue.</p></div><a href="{{ route('dashboard.merchant') }}" class="dashboard-card-link">All merchants</a></div>
