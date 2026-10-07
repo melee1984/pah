@@ -78,4 +78,44 @@ class DeliveryZoneTest extends TestCase
         $this->assertTrue($result['allowed']);
         $this->assertNull($result['reason']);
     }
+
+    public function test_it_automatically_classifies_iligan_city_coordinates(): void
+    {
+        $deliveryZone = new DeliveryZone;
+
+        $this->assertSame('Iligan City', $deliveryZone->areaLabel(8.23, 124.25));
+    }
+
+    public function test_it_rejects_delivery_crossing_the_iligan_city_boundary(): void
+    {
+        config(['services.delivery.max_distance_km' => 30]);
+        $deliveryZone = new DeliveryZone;
+
+        $result = $deliveryZone->check(8.23, 124.25, 8.23, 124.15);
+
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('service_area', $result['reason']);
+        $this->assertSame('iligan_city', $result['merchant_area']['key']);
+        $this->assertNull($result['customer_area']);
+    }
+
+    public function test_it_automatically_classifies_cagayan_de_oro_coordinates(): void
+    {
+        $deliveryZone = new DeliveryZone;
+
+        $this->assertSame('Cagayan de Oro City', $deliveryZone->areaLabel(8.4542, 124.6319));
+    }
+
+    public function test_it_rejects_delivery_crossing_the_cagayan_de_oro_boundary(): void
+    {
+        config(['services.delivery.max_distance_km' => 30]);
+        $deliveryZone = new DeliveryZone;
+
+        $result = $deliveryZone->check(8.4542, 124.6319, 8.4542, 124.82);
+
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('service_area', $result['reason']);
+        $this->assertSame('cagayan_de_oro', $result['merchant_area']['key']);
+        $this->assertNull($result['customer_area']);
+    }
 }

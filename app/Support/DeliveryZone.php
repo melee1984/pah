@@ -170,12 +170,15 @@ class DeliveryZone
     public function failureResponse(array $check): array
     {
         if ($check['reason'] === 'service_area') {
+            $merchantArea = $check['merchant_area']['label'] ?? config('delivery_zones.default_label');
+            $customerArea = $check['customer_area']['label'] ?? config('delivery_zones.default_label');
+
             return [
                 'status' => 0,
-                'message' => 'This merchant does not deliver across the Davao–Samal water boundary. Please choose a merchant in the same delivery area as your address.',
+                'message' => "This merchant is in {$merchantArea}, but your address is in {$customerArea}. Please choose a merchant in the same delivery area as your address.",
                 'reason' => 'service_area',
-                'merchant_area' => $check['merchant_area']['label'] ?? config('delivery_zones.default_label'),
-                'customer_area' => $check['customer_area']['label'] ?? config('delivery_zones.default_label'),
+                'merchant_area' => $merchantArea,
+                'customer_area' => $customerArea,
             ];
         }
 
