@@ -51,13 +51,9 @@ class MerchantOrderReceipt
             $lines[] = $this->columns('Delivery', $this->money($amounts['delivery_fee']));
         }
 
-        if ($amounts['convenience_fee'] > 0) {
-            $lines[] = $this->columns('Convenience fee', $this->money($amounts['convenience_fee']));
-        }
-
-        if ($amounts['discount'] > 0) {
-            $lines[] = $this->columns('Discount', '-'.$this->money($amounts['discount']));
-        }
+        $lines[] = $this->columns('Convenience fee', $this->money($amounts['convenience_fee']));
+        $lines[] = $this->columns('VAT', $this->money($amounts['vat_amount']));
+        $lines[] = $this->columns('Discount', '-'.$this->money($amounts['discount']));
 
         $lines[] = $this->columns('TOTAL', $this->money($amounts['total']));
         $lines[] = str_repeat('-', self::PAPER_WIDTH);

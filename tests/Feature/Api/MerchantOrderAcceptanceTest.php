@@ -30,6 +30,10 @@ class MerchantOrderAcceptanceTest extends TestCase
         DB::purge('sqlite');
         DB::reconnect('sqlite');
         Queue::fake();
+        config([
+            'checkout.convenience_fee_rate' => 0.05,
+            'checkout.vat_rate' => 12,
+        ]);
         $this->mock(AgentCommissionService::class, function ($mock) {
             $mock->shouldReceive('sync')->andReturnNull();
         });
@@ -167,6 +171,20 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertStringContainsString('ORDER #TEST-100', $printJob['content']);
         $this->assertStringContainsString('2x Chicken Inasal', $printJob['content']);
         $this->assertStringContainsString('PHP 200.00', $printJob['content']);
+        $this->assertStringContainsString('Convenience fee', $printJob['content']);
+        $this->assertStringContainsString('PHP 10.00', $printJob['content']);
+        $this->assertStringContainsString('VAT', $printJob['content']);
+        $this->assertStringContainsString('PHP 1.20', $printJob['content']);
+        $this->assertStringContainsString('Discount', $printJob['content']);
+        $this->assertStringContainsString('-PHP 15.00', $printJob['content']);
+        $this->assertLessThan(
+            strpos($printJob['content'], 'VAT'),
+            strpos($printJob['content'], 'Convenience fee'),
+        );
+        $this->assertLessThan(
+            strpos($printJob['content'], 'Discount'),
+            strpos($printJob['content'], 'VAT'),
+        );
         $this->assertStringContainsString('Payment: Cash on Delivery', $printJob['content']);
         $this->assertStringContainsString('TOTAL', $printJob['content']);
     }
@@ -332,6 +350,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             'payment_id' => 3,
             'order_no' => 'TEST-100',
             'fulfillment_type' => $fulfillmentType,
+            'discount_amount' => 15,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
