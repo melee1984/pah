@@ -214,6 +214,37 @@ class MerchantOrderAcceptanceTest extends TestCase
         ]);
     }
 
+    public function test_merchant_can_request_a_fresh_print_job_for_an_accepted_order(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $controller = new OrderController;
+        $request = $this->merchantRequest();
+        $controller->acceptOrder($order, $request);
+
+        $response = $controller->reprintOrder($order, $request);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame(1, $response->getData(true)['status']);
+        $this->assertSame(
+            'order-'.$order->id.'-reprint',
+            $response->getData(true)['print_job']['id'],
+        );
+        $this->assertStringContainsString(
+            'ORDER #TEST-100',
+            $response->getData(true)['print_job']['content'],
+        );
+    }
+
+    public function test_pending_order_cannot_be_reprinted(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+
+        $response = (new OrderController)->reprintOrder($order, $this->merchantRequest());
+
+        $this->assertSame(409, $response->getStatusCode());
+        $this->assertSame('Only accepted orders can be reprinted.', $response->getData(true)['message']);
+    }
+
     public function test_merchant_completes_pickup_after_customer_collects_it(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Model\Cart;
 use App\Model\Orders\Orders;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 
 class MerchantOrderReceipt
@@ -62,7 +63,9 @@ class MerchantOrderReceipt
             $lines[] = $this->wrapLine('Payment: '.$cart->payment->title);
         }
 
-        $acceptedAt = $order->store_accepted_at ?: now();
+        $acceptedAt = $order->store_accepted_at
+            ? Carbon::parse($order->store_accepted_at)
+            : now();
         $lines[] = $this->wrapLine('Accepted: '.$acceptedAt->format('M d, Y h:i A'));
         $lines[] = '';
         $lines[] = $this->center('Thank you!');

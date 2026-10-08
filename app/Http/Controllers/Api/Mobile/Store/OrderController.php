@@ -207,6 +207,55 @@ class OrderController extends Controller
 
 	}
 
+    public function show(Orders $order, Request $request)
+    {
+        $merchant = $request->user()?->merchant;
+
+        abort_unless($merchant, 403, 'Merchant account not found.');
+
+        $order = Orders::query()
+            ->with([
+                'cart.details.item',
+                'cart.partner',
+                'partner',
+                'orderStatus',
+                'status',
+            ])
+            ->whereKey($order->getKey())
+            ->where('partner_id', $merchant->id)
+            ->firstOrFail();
+
+        abort_unless($order->cart, 404);
+
+        foreach ($order->cart->details as $detail) {
+            $variants = $this->decodeCartItemVariants($detail->variance_content);
+
+            $detail->variance_content = $variants;
+            $detail->setAttribute('variants', $variants);
+        }
+
+        $order->setAttribute('summary', $order->cart->cartItemSummary());
+        $order->setAttribute('cart_total', $order->cart->cartItemTotal());
+        $order->setAttribute('action', $order->getAction());
+
+        return response()->json(['order' => $order]);
+    }
+
+    private function decodeCartItemVariants(mixed $variants): array
+    {
+        if (is_array($variants)) {
+            return $variants;
+        }
+
+        if (! is_string($variants) || $variants === '') {
+            return [];
+        }
+
+        $decoded = unserialize($variants, ['allowed_classes' => false]);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
     public function riderOffers(Orders $order, Request $request)
     {
         $merchant = $request->user()?->merchant;
@@ -412,6 +461,55 @@ class OrderController extends Controller
             'print_job' => app(MerchantOrderReceipt::class)->printJob($result['order']),
             'rider_delivery_id' => $riderDeliveryReference,
             'pickup_code' => $pickupCode,
+        ]);
+    }
+
+    public function reprintOrder(Orders $order, Request $request)
+    {
+        $merchant = $request->user()?->merchant;
+
+        if (! $merchant) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Merchant account not found.',
+            ], 403);
+        }
+
+        $order = Orders::query()
+            ->with('cart')
+            ->whereKey($order->getKey())
+            ->where('partner_id', $merchant->id)
+            ->first();
+
+        if (! $order) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Order not found.',
+            ], 404);
+        }
+
+        if (! $order->store_accepted_at) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Only accepted orders can be reprinted.',
+            ], 409);
+        }
+
+        $storeLocationId = $request->input('store_location_id');
+        if ($storeLocationId && (int) $storeLocationId !== (int) $order->cart?->partner_location_address_id) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Order does not belong to the selected store location.',
+            ], 403);
+        }
+
+        $printJob = app(MerchantOrderReceipt::class)->printJob($order);
+        $printJob['id'] = 'order-'.$order->id.'-reprint';
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Receipt ready to reprint.',
+            'print_job' => $printJob,
         ]);
     }
 
