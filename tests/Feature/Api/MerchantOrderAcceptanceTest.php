@@ -192,6 +192,41 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertStringContainsString('TOTAL', $printJob['content']);
     }
 
+    public function test_merchant_can_get_its_order_with_cart_details_variants_and_partner(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+
+        $response = (new OrderController)->show($order, $this->merchantRequest());
+        $data = $response->getData(true)['order'];
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame($order->id, $data['id']);
+        $this->assertSame('Test Merchant', $data['partner']['restaurant_name']);
+        $this->assertSame('TEST-100', $data['cart']['order_no']);
+        $this->assertSame('200.00', $data['summary']['sub_total']);
+        $this->assertSame(193.8, $data['cart_total']);
+        $this->assertSame('Chicken Inasal', $data['cart']['details'][0]['item']['title']);
+        $this->assertSame([
+            ['title' => 'Large Size'],
+            ['title' => 'Extra Cheese'],
+        ], $data['cart']['details'][0]['variants']);
+        $this->assertSame(
+            $data['cart']['details'][0]['variants'],
+            $data['cart']['details'][0]['variance_content'],
+        );
+    }
+
+    public function test_merchant_cannot_get_another_merchants_order(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $order->partner_id = 999;
+        $order->save();
+
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        (new OrderController)->show($order, $this->merchantRequest());
+    }
+
     public function test_pickup_order_moves_to_ready_for_pickup_before_completion(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
