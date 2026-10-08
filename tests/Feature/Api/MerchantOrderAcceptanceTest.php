@@ -74,6 +74,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->unsignedInteger('qty');
             $table->decimal('price', 8, 2);
             $table->decimal('variance_total', 8, 2)->default(0);
+            $table->text('variance_content')->nullable();
             $table->decimal('price_comm_total', 8, 2)->default(0);
             $table->decimal('variance_total_comm_total', 8, 2)->default(0);
             $table->decimal('discount_amount', 8, 2)->default(0);
@@ -170,6 +171,8 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertStringContainsString('Test Merchant', $printJob['content']);
         $this->assertStringContainsString('ORDER #TEST-100', $printJob['content']);
         $this->assertStringContainsString('2x Chicken Inasal', $printJob['content']);
+        $this->assertStringContainsString('+ Large Size', $printJob['content']);
+        $this->assertStringContainsString('+ Extra Cheese', $printJob['content']);
         $this->assertStringContainsString('PHP 200.00', $printJob['content']);
         $this->assertStringContainsString('Convenience fee', $printJob['content']);
         $this->assertStringContainsString('PHP 10.00', $printJob['content']);
@@ -187,6 +190,41 @@ class MerchantOrderAcceptanceTest extends TestCase
         );
         $this->assertStringContainsString('Payment: Cash on Delivery', $printJob['content']);
         $this->assertStringContainsString('TOTAL', $printJob['content']);
+    }
+
+    public function test_merchant_can_get_its_order_with_cart_details_variants_and_partner(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+
+        $response = (new OrderController)->show($order, $this->merchantRequest());
+        $data = $response->getData(true)['order'];
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame($order->id, $data['id']);
+        $this->assertSame('Test Merchant', $data['partner']['restaurant_name']);
+        $this->assertSame('TEST-100', $data['cart']['order_no']);
+        $this->assertSame('200.00', $data['summary']['sub_total']);
+        $this->assertSame(193.8, $data['cart_total']);
+        $this->assertSame('Chicken Inasal', $data['cart']['details'][0]['item']['title']);
+        $this->assertSame([
+            ['title' => 'Large Size'],
+            ['title' => 'Extra Cheese'],
+        ], $data['cart']['details'][0]['variants']);
+        $this->assertSame(
+            $data['cart']['details'][0]['variants'],
+            $data['cart']['details'][0]['variance_content'],
+        );
+    }
+
+    public function test_merchant_cannot_get_another_merchants_order(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $order->partner_id = 999;
+        $order->save();
+
+        $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
+
+        (new OrderController)->show($order, $this->merchantRequest());
     }
 
     public function test_pickup_order_moves_to_ready_for_pickup_before_completion(): void
@@ -391,6 +429,10 @@ class MerchantOrderAcceptanceTest extends TestCase
             'item_id' => 30,
             'qty' => 2,
             'price' => 100,
+            'variance_content' => serialize([
+                ['title' => 'Large Size'],
+                ['title' => 'Extra Cheese'],
+            ]),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

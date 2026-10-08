@@ -11,10 +11,15 @@ use App\Model\Cart;
 use App\PartnerLocationCheckoutOption;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Support\DeliveryZone;
 use Str;
 
 class LocationController extends Controller
 {
+    public function __construct(private DeliveryZone $deliveryZone)
+    {
+    }
+
      //
     public function getList() 
     {	
@@ -26,6 +31,13 @@ class LocationController extends Controller
 						->wherePartnerId(Auth::User()->merchant->id)
     					->orderby('address_1','asc')
     					->paginate(50);
+
+        $location->getCollection()->each(function (PartnerLocation $branch) {
+            $branch->setAttribute(
+                'delivery_zone',
+                $this->deliveryZone->areaLabel($branch->latitude, $branch->longtitude),
+            );
+        });
 
     	$data['location'] = $location;
 
@@ -86,8 +98,10 @@ class LocationController extends Controller
 		});
 	   
 		if ($status) {
-			$data['message'] = "Successfully added new branch";
+			$data['message'] = 'Successfully added new branch. Delivery area: '
+                .$this->deliveryZone->areaLabel($status->latitude, $status->longtitude).'.';
 			$data['status'] = 1;
+			$data['delivery_zone'] = $this->deliveryZone->areaLabel($status->latitude, $status->longtitude);
 		}
 		else {
 			$data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
@@ -131,8 +145,10 @@ class LocationController extends Controller
 		});
 
 		if ($status) {
-			$data['message'] = "Successfully updated branch";
+			$data['message'] = 'Successfully updated branch. Delivery area: '
+                .$this->deliveryZone->areaLabel($location->latitude, $location->longtitude).'.';
 			$data['status'] = 1;
+			$data['delivery_zone'] = $this->deliveryZone->areaLabel($location->latitude, $location->longtitude);
 		}
 		else {
 			$data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";

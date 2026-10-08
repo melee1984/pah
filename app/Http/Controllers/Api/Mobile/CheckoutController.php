@@ -33,10 +33,14 @@ use App\PushNotification;
 use App\Events\SendPushNotificationEvent;
 use App\PartnerLocationTable;
 use App\PartnerLocationCheckoutOption;
+use App\Support\DeliveryZone;
 use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
-{	
+{
+    public function __construct(private DeliveryZone $deliveryZone)
+    {
+    }
     
     public function checkout(Request $request) {
 
@@ -294,6 +298,32 @@ class CheckoutController extends Controller
                     'message' => 'The selected delivery address is invalid.',
                 ], 200);
             }
+
+            $location = $cart->partnerlocation;
+            if (! $location
+                || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
+                || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Valid merchant and delivery-address map pins are required before checkout.',
+                ], 200);
+            }
+
+            $deliveryCheck = $this->deliveryZone->check(
+                (float) $location->latitude,
+                (float) $location->longtitude,
+                (float) $userAddress->lat,
+                (float) $userAddress->long,
+            );
+
+            if (! $deliveryCheck['allowed']) {
+                return response()->json($this->deliveryZone->failureResponse($deliveryCheck), 200);
+            }
+
+            $cart->user_lat = $userAddress->lat;
+            $cart->user_long = $userAddress->long;
+            $cart->save();
+            $cart->deliveryRate($cart->partner_location_address_id);
         }
 
         $diningTable = null;

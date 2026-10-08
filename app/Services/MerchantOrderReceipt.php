@@ -40,6 +40,10 @@ class MerchantOrderReceipt
                 $this->money($quantity * $unitPrice),
             );
 
+            foreach ($this->variantTitles($detail->variance_content) as $variantTitle) {
+                $lines[] = $this->wrapLine('  + '.$variantTitle);
+            }
+
             if (filled($detail->instruction)) {
                 $lines[] = $this->wrapLine('  Note: '.$detail->instruction);
             }
@@ -116,5 +120,34 @@ class MerchantOrderReceipt
         return collect(explode("\n", wordwrap(trim($text), self::PAPER_WIDTH, "\n", true)))
             ->map(fn (string $line) => rtrim($line))
             ->implode("\n");
+    }
+
+    private function variantTitles(mixed $content): array
+    {
+        if (is_string($content)) {
+            if (trim($content) === '') {
+                return [];
+            }
+
+            try {
+                $content = unserialize($content, ['allowed_classes' => false]);
+            } catch (\Throwable) {
+                return [];
+            }
+        }
+
+        if (! is_iterable($content)) {
+            return [];
+        }
+
+        return collect($content)
+            ->map(function (mixed $variant): ?string {
+                $title = is_string($variant) ? $variant : data_get($variant, 'title');
+
+                return is_string($title) && filled(trim($title)) ? trim($title) : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }
