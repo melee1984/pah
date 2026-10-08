@@ -186,7 +186,7 @@ class CartController extends Controller
                 ], 200);
             }
 
-            $locationDistance = $this->deliveryZone->closestLocation(
+            $locationDistance = $this->deliveryZone->bestDeliveryLocation(
                 PartnerLocation::query()
                     ->where('partner_id', $partnerId)
                     ->where('active', 1)
@@ -202,8 +202,8 @@ class CartController extends Controller
                 ], 200);
             }
 
-            if (! $this->deliveryZone->isWithinRange($locationDistance['distance_km'])) {
-                return response()->json($this->outsideDeliveryZoneResponse($locationDistance['distance_km']), 200);
+            if (! $locationDistance['check']['allowed']) {
+                return response()->json($this->outsideDeliveryZoneResponse($locationDistance['check']), 200);
             }
 
             $cart->partner_location_address_id = $locationDistance['location']->id;
@@ -372,20 +372,9 @@ class CartController extends Controller
         return response()->json($data, 200);
     }
 
-    private function outsideDeliveryZoneResponse(float $distanceKilometers): array
+    private function outsideDeliveryZoneResponse(array $check): array
     {
-        $maximumDistance = $this->deliveryZone->maximumDistanceKilometers();
-
-        return [
-            'status' => 0,
-            'message' => sprintf(
-                'This order is not allowed because your location is %.2f km from the merchant. The maximum delivery distance is %s km.',
-                $distanceKilometers,
-                rtrim(rtrim(number_format($maximumDistance, 2, '.', ''), '0'), '.'),
-            ),
-            'distance_km' => round($distanceKilometers, 2),
-            'max_distance_km' => $maximumDistance,
-        ];
+        return $this->deliveryZone->failureResponse($check);
     }
 
     public function modifyCartItem(Request $request, CartItem $cartItem, $status)
@@ -586,6 +575,32 @@ class CartController extends Controller
                         'message' => 'Please select a valid delivery address.',
                     ], 422);
                 }
+
+                $location = $cart->partnerlocation;
+                if (! $location
+                    || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
+                    || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'Valid merchant and delivery-address map pins are required before checkout.',
+                    ], 422);
+                }
+
+                $deliveryCheck = $this->deliveryZone->check(
+                    (float) $location->latitude,
+                    (float) $location->longtitude,
+                    (float) $userAddress->lat,
+                    (float) $userAddress->long,
+                );
+
+                if (! $deliveryCheck['allowed']) {
+                    return response()->json($this->deliveryZone->failureResponse($deliveryCheck), 422);
+                }
+
+                $cart->user_lat = $userAddress->lat;
+                $cart->user_long = $userAddress->long;
+                $cart->save();
+                $cart->deliveryRate($cart->partner_location_address_id);
             }
 
             if ($cart?->discount_code) {

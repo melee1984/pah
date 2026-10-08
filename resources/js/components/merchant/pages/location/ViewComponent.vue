@@ -13,11 +13,12 @@
       </div>
       <div class="card-body table-responsive p-0">
         <table class="table dashboard-data-table merchant-settings-table merchant-location-table">
-          <thead><tr><th>Branch</th><th>Checkout options</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
+          <thead><tr><th>Branch</th><th>Delivery area</th><th>Checkout options</th><th>Telephone</th><th>Mobile</th><th>Coordinates</th><th class="text-right">Availability</th></tr></thead>
           <tbody>
-            <tr v-if="searchFilter.length === 0"><td colspan="6" class="dashboard-table-empty">{{ search ? 'No branches match your search.' : 'No store branches have been added yet.' }}</td></tr>
+            <tr v-if="searchFilter.length === 0"><td colspan="7" class="dashboard-table-empty">{{ search ? 'No branches match your search.' : 'No store branches have been added yet.' }}</td></tr>
             <tr v-for="location in searchFilter" :key="location.id" class="merchant-settings-row" @click="editAction(location)">
               <td><strong>{{ location.address_1 }}</strong><small>{{ [location.address_2, location.city, location.zip_code].filter(Boolean).join(', ') || 'No additional address details' }}</small></td>
+              <td><span class="merchant-option-badge">{{ location.delivery_zone || 'Automatically detected' }}</span><small>From branch pin</small></td>
               <td><span v-for="option in enabledCheckoutOptions(location)" :key="option.type" class="merchant-option-badge">{{ option.label }}</span><small v-if="enabledCheckoutOptions(location).length === 0">None enabled</small><small v-else-if="enabledCheckoutOptions(location).some(option => option.type === 'dine_in')">{{ (location.dining_tables || []).length }} dining {{ (location.dining_tables || []).length === 1 ? 'table' : 'tables' }}</small></td>
               <td>{{ location.telephone || '—' }}</td>
               <td>{{ location.mobile || '—' }}</td>
@@ -38,7 +39,7 @@
     <div v-else class="merchant-form-shell merchant-form-shell-wide">
       <div class="card admin-card merchant-form-card">
         <div class="admin-card-header">
-          <div><span class="admin-eyebrow">Branch details</span><h2>{{ actionStatus === 'add' ? 'Add a branch' : 'Edit branch' }}</h2><p>Provide an address and reliable contact details for this branch.</p></div>
+          <div><span class="admin-eyebrow">Branch details</span><h2>{{ actionStatus === 'add' ? 'Add a branch' : 'Edit branch' }}</h2><p>Provide an address and reliable contact details. The delivery area is detected automatically from the map pin.</p></div>
           <button v-if="actionStatus === 'edit'" type="button" class="btn merchant-danger-button" @click="onDelete"><i class="fas fa-trash-alt mr-2"></i>Delete</button>
         </div>
         <form class="merchant-settings-form" @submit.prevent="onSubmit">
