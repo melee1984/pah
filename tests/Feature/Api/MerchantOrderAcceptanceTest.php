@@ -74,6 +74,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->unsignedInteger('qty');
             $table->decimal('price', 8, 2);
             $table->decimal('variance_total', 8, 2)->default(0);
+            $table->text('variance_content')->nullable();
             $table->decimal('price_comm_total', 8, 2)->default(0);
             $table->decimal('variance_total_comm_total', 8, 2)->default(0);
             $table->decimal('discount_amount', 8, 2)->default(0);
@@ -170,6 +171,8 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertStringContainsString('Test Merchant', $printJob['content']);
         $this->assertStringContainsString('ORDER #TEST-100', $printJob['content']);
         $this->assertStringContainsString('2x Chicken Inasal', $printJob['content']);
+        $this->assertStringContainsString('+ Large Size', $printJob['content']);
+        $this->assertStringContainsString('+ Extra Cheese', $printJob['content']);
         $this->assertStringContainsString('PHP 200.00', $printJob['content']);
         $this->assertStringContainsString('Convenience fee', $printJob['content']);
         $this->assertStringContainsString('PHP 10.00', $printJob['content']);
@@ -360,6 +363,10 @@ class MerchantOrderAcceptanceTest extends TestCase
             'item_id' => 30,
             'qty' => 2,
             'price' => 100,
+            'variance_content' => serialize([
+                ['title' => 'Large Size'],
+                ['title' => 'Extra Cheese'],
+            ]),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
