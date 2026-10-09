@@ -30,7 +30,7 @@
                     <div class="home-hero-orbit home-hero-orbit-two"></div>
                     <div class="home-phone-showcase home-phone-showcase-hero" aria-label="PahatudFood mobile app preview">
                         <figure class="home-phone-screen home-phone-screen-secondary">
-                            <img src="{{ asset('images/app-preview/restaurants.png') }}" alt="PahatudFood restaurants near you screen" width="720" height="1600" loading="eager">
+                            <img src="{{ asset('images/app-preview/restaurant-menu.png') }}" alt="PahatudFood restaurant menu screen" width="720" height="1600" loading="eager">
                         </figure>
                         <figure class="home-phone-screen home-phone-screen-primary">
                             <img src="{{ asset('images/app-preview/home.png') }}" alt="PahatudFood mobile app home screen" width="720" height="1600" loading="eager" fetchpriority="high">
@@ -54,12 +54,15 @@
             <div class="home-app-card">
                 <div class="row align-items-center">
                     <div class="col-lg-6 home-app-image">
-                        <div class="home-phone-showcase home-phone-showcase-feature" aria-label="PahatudFood login and order tracking preview">
-                            <figure class="home-phone-screen home-phone-screen-login">
-                                <img src="{{ asset('images/app-preview/login.png') }}" alt="PahatudFood mobile app login screen" loading="lazy" width="720" height="1600">
+                        <div class="home-phone-showcase home-phone-showcase-feature" aria-label="PahatudFood ordering flow preview">
+                            <figure class="home-phone-screen home-phone-screen-menu">
+                                <img src="{{ asset('images/app-preview/menu-browse.png') }}" alt="Browsing a restaurant menu in the PahatudFood mobile app" loading="lazy" width="720" height="1600">
                             </figure>
-                            <figure class="home-phone-screen home-phone-screen-tracking">
-                                <img src="{{ asset('images/app-preview/order-tracking.png') }}" alt="PahatudFood live order tracking screen" loading="lazy" width="720" height="1600">
+                            <figure class="home-phone-screen home-phone-screen-checkout">
+                                <img src="{{ asset('images/app-preview/checkout.png') }}" alt="Reviewing an order at PahatudFood checkout" loading="lazy" width="720" height="1600">
+                            </figure>
+                            <figure class="home-phone-screen home-phone-screen-confirmed">
+                                <img src="{{ asset('images/app-preview/order-confirmed.png') }}" alt="Confirmed PahatudFood order screen" loading="lazy" width="720" height="1600">
                             </figure>
                         </div>
                     </div>

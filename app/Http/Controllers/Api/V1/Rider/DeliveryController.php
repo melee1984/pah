@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Rider;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RedispatchRiderOffers;
 use App\LibraryStatus;
 use App\Model\Bookings\Bookings;
 use App\Model\Bookings\BookingStatus;
@@ -98,7 +99,11 @@ class DeliveryController extends Controller
     {
         $rider = $this->riders->rider($request);
 
-        $delivery = DB::transaction(function () use ($rider, $offer) {
+        $result = DB::transaction(function () use ($rider, $offer) {
+            // Serialize accept attempts for this rider, including attempts for
+            // different deliveries, so the active-delivery limit is authoritative.
+            DB::table('rider')->where('id', $rider->id)->lockForUpdate()->first();
+
             $record = DB::table('rider_api_offers')
                 ->where('rider_id', $rider->id)
                 ->where('reference', $offer)
@@ -151,6 +156,13 @@ class DeliveryController extends Controller
                     'responded_at' => now(),
                     'updated_at' => now(),
                 ]);
+            $redispatchDeliveryIds = DB::table('rider_api_offers')
+                ->where('rider_id', $rider->id)
+                ->where('id', '!=', $record->id)
+                ->where('status', 'pending')
+                ->pluck('delivery_id')
+                ->map(fn ($deliveryId) => (int) $deliveryId)
+                ->all();
             DB::table('rider_api_offers')
                 ->where('rider_id', $rider->id)
                 ->where('id', '!=', $record->id)
@@ -207,12 +219,19 @@ class DeliveryController extends Controller
                 }
             }
 
-            return DB::table('rider_api_deliveries')->where('id', $record->delivery_id)->first();
+            return [
+                'delivery' => DB::table('rider_api_deliveries')->where('id', $record->delivery_id)->first(),
+                'redispatch_delivery_ids' => $redispatchDeliveryIds,
+            ];
         });
+
+        if ($result['redispatch_delivery_ids'] !== []) {
+            RedispatchRiderOffers::dispatch($result['redispatch_delivery_ids'])->afterCommit();
+        }
 
         return response()->json([
             'message' => 'Delivery offer accepted.',
-            'delivery' => $this->deliveryData($delivery),
+            'delivery' => $this->deliveryData($result['delivery']),
         ]);
     }
 

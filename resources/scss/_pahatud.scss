@@ -430,18 +430,28 @@ html {
     height: 700px;
 }
 
-.home-phone-showcase-feature .home-phone-screen-login {
-    left: -25px;
-    top: 95px;
-    transform: rotate(-4deg);
-    width: 235px;
+.home-phone-showcase-feature .home-phone-screen-menu {
+    left: -15px;
+    top: 115px;
+    transform: rotate(-5deg);
+    width: 205px;
+    z-index: 1;
 }
 
-.home-phone-showcase-feature .home-phone-screen-tracking {
-    right: -5px;
-    top: 15px;
-    transform: rotate(3deg);
-    width: 260px;
+.home-phone-showcase-feature .home-phone-screen-checkout {
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%);
+    width: 245px;
+    z-index: 3;
+}
+
+.home-phone-showcase-feature .home-phone-screen-confirmed {
+    right: -15px;
+    top: 115px;
+    transform: rotate(5deg);
+    width: 205px;
+    z-index: 2;
 }
 
 .home-app-content {
@@ -991,23 +1001,28 @@ html {
     }
 
     .home-app-image {
-        min-height: 545px;
+        min-height: 485px;
     }
 
     .home-phone-showcase-feature {
-        height: 545px;
+        height: 485px;
     }
 
-    .home-phone-showcase-feature .home-phone-screen-login {
-        left: 0;
-        top: 80px;
-        width: 175px;
+    .home-phone-showcase-feature .home-phone-screen-menu {
+        left: -5px;
+        top: 75px;
+        width: 145px;
     }
 
-    .home-phone-showcase-feature .home-phone-screen-tracking {
-        right: 0;
-        top: 20px;
-        width: 195px;
+    .home-phone-showcase-feature .home-phone-screen-checkout {
+        top: 10px;
+        width: 185px;
+    }
+
+    .home-phone-showcase-feature .home-phone-screen-confirmed {
+        right: -5px;
+        top: 75px;
+        width: 145px;
     }
 
     .home-section-heading {

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\RedispatchRiderOffers;
 use App\Jobs\SendRiderOfferPush;
 use App\Model\Orders\Orders;
 use App\Model\Rider\Rider as ApiRider;
@@ -878,6 +879,7 @@ class FullRiderApiTest extends TestCase
 
     public function test_accepting_one_offer_closes_the_riders_other_pending_offers(): void
     {
+        Bus::fake([RedispatchRiderOffers::class]);
         $token = $this->loginApprovedRider('accept-multiple@example.com');
         $riderId = DB::table('rider')->latest('id')->value('id');
         $offerReferences = [];
@@ -916,6 +918,70 @@ class FullRiderApiTest extends TestCase
         ]);
         $this->authenticated($token)->getJson('/api/v1/rider/offers')
             ->assertOk()->assertJsonCount(0, 'offers');
+        Bus::assertDispatched(RedispatchRiderOffers::class, fn (RedispatchRiderOffers $job) => $job->deliveryIds === [$deliveryId]);
+    }
+
+    public function test_redispatch_revalidates_and_renews_a_compatible_add_on_offer(): void
+    {
+        Bus::fake([SendRiderOfferPush::class]);
+        $this->loginApprovedRider('redispatch-add-on@example.com');
+        $riderId = DB::table('rider')->latest('id')->value('id');
+        DB::table('rider_api_availability')->updateOrInsert(
+            ['rider_id' => $riderId],
+            ['state' => 'active_delivery', 'created_at' => now(), 'updated_at' => now()],
+        );
+        DB::table('rider_api_locations')->insert([
+            'rider_id' => $riderId,
+            'latitude' => 10.3157,
+            'longitude' => 123.8854,
+            'recorded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('rider_api_deliveries')->insert([
+            'reference' => (string) Str::uuid(),
+            'rider_id' => $riderId,
+            'current_state' => 'accepted',
+            'merchant_name' => 'First Merchant',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.8854,
+            'dropoff_latitude' => 10.3157,
+            'dropoff_longitude' => 123.9254,
+            'accepted_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $secondDeliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'current_state' => 'offered',
+            'merchant_name' => 'Along The Way Merchant',
+            'pickup_latitude' => 10.3157,
+            'pickup_longitude' => 123.9054,
+            'dropoff_latitude' => 10.3157,
+            'dropoff_longitude' => 123.9354,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $expiredReference = (string) Str::uuid();
+        DB::table('rider_api_offers')->insert([
+            'reference' => $expiredReference,
+            'rider_id' => $riderId,
+            'delivery_id' => $secondDeliveryId,
+            'status' => 'expired',
+            'expires_at' => now()->addMinutes(15),
+            'responded_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        (new RedispatchRiderOffers([$secondDeliveryId]))->handle(app(RiderOfferDispatcher::class));
+
+        $renewedOffer = DB::table('rider_api_offers')->where('delivery_id', $secondDeliveryId)->first();
+        $this->assertSame('pending', $renewedOffer->status);
+        $this->assertNotSame($expiredReference, $renewedOffer->reference);
+        $this->assertNull($renewedOffer->responded_at);
+        Bus::assertDispatchedTimes(SendRiderOfferPush::class, 1);
     }
 
     public function test_active_rider_can_accept_one_compatible_add_on_and_receive_a_multi_stop_route(): void
