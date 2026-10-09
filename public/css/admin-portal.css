@@ -23,7 +23,7 @@ body.pahatud-admin {
 .pahatud-admin .brand-copy { line-height: 1.15; }
 .pahatud-admin .brand-copy strong { color: var(--admin-ink); display: block; font-family: 'Manrope', sans-serif; font-size: 15px; }
 .pahatud-admin .brand-copy small { color: var(--admin-red); font-size: 9px; font-weight: 800; letter-spacing: 1.25px; text-transform: uppercase; }
-.pahatud-admin .user-panel { align-items: center; border-bottom: 1px solid var(--admin-line) !important; margin: 16px 14px 18px !important; padding: 0 0 16px !important; }
+.pahatud-admin .user-panel { align-items: center; border-bottom: 1px solid var(--admin-line) !important; margin: 32px 14px 18px !important; padding: 0 0 16px !important; }
 .pahatud-admin .admin-user-avatar { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; flex: 0 0 38px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 800; height: 38px; justify-content: center; line-height: 1; width: 38px; }
 .pahatud-admin .user-panel .info { padding-left: 10px; }
 .pahatud-admin .user-panel .info a { color: var(--admin-ink); font-size: 13px; font-weight: 700; }
