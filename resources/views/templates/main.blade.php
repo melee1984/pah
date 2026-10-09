@@ -18,6 +18,7 @@
     <!-- <div class="preloader"><div class="load loade"><hr/><hr/><hr/><hr/></div></div> -->
     <!-- preloader -->
     <div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
         @include('includes.nav3')
         @yield('content')
         <register-form></register-form>

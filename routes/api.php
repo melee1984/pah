@@ -43,7 +43,7 @@ Route::middleware(['api', 'web'])->group(function () {
 
     Route::post('account/login', [AccessController::class, 'login']);
     Route::post('account/register', [AccessController::class, 'register']);
-    Route::post('login/submit', [AccessController::class, 'login'])
+    Route::post('login/submit', [\App\Http\Controllers\Customer\AccountController::class, 'login'])
         ->middleware(['throttle:10,1', 'turnstile:customer_login']);
 
     Route::post('location/submit', [CartController::class, 'updateLocationCoordinates']);

@@ -20,6 +20,7 @@
     <!-- search area -->
 
     <div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
 
         <div class="search-area">
             <div class="search-input">

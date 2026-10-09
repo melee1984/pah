@@ -10,6 +10,7 @@ use App\Http\Controllers\Booking\RequestController;
 use App\Http\Controllers\Flower\FlowerstoreController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Customer\AccountController;
 use App\Http\Controllers\Restaurant\PageController as RestaurantPageController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\Route;
  */
 
 Auth::routes(['verify' => true]);
+Route::get('/login', [AccountController::class, 'loginPage'])->name('login');
+Route::post('/login', [AccountController::class, 'login'])->middleware(['throttle:10,1', 'turnstile:customer_login']);
 Route::get('/', [PageController::class, 'index'])->name('home');
 Route::get('/location-restriction', [PageController::class, 'restriction'])->name('location.restriction')   ;
 Route::get('/demo', [PageController::class, 'demoMap']);
@@ -73,13 +76,13 @@ Route::post('newsletter/submit', [\App\Http\Controllers\NewsletterController::cl
     ->name('newsletter.submit');
 
 // User Profile
-Route::get('/user/profile', [ProfileController::class, 'index'])->name('profile.home');
+Route::redirect('/user/profile', '/profile')->middleware('auth')->name('profile.home');
 
 // SOA
 Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('profile.report.soa');
 
 // API
-Route::post('login/submit', [\App\Http\Controllers\Api\User\AccessController::class, 'loginAccess'])
+Route::post('login/submit', [AccountController::class, 'login'])
     ->middleware(['throttle:10,1', 'turnstile:customer_login'])
     ->name('login.submit');
 Route::post('contact/submit', [PageController::class, 'storeContact'])
@@ -138,12 +141,10 @@ Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function
 // -------------------------------------------------------
 Route::middleware('auth')->group(function () {
 
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->middleware(['verified'])->name('dashboard');
+    Route::redirect('/account', '/dashboard')->name('dashboard');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile', [AccountController::class, 'profile'])->name('profile.edit');
+    Route::patch('/profile', [AccountController::class, 'updateProfile'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Checkout
@@ -151,14 +152,16 @@ Route::middleware('auth')->group(function () {
     Route::get('checkout/{cart:order_no}/success', [\App\Http\Controllers\Api\CartController::class, 'success'])->name('checkout.success');
 
     // Dashboard & Bookings
-    Route::get('/dashboard', [\App\Http\Controllers\Booking\RequestController::class, 'bookings'])->name('profile.dashboard');
+    Route::get('/dashboard', [AccountController::class, 'dashboard'])->name('profile.dashboard');
     Route::get('/profile/bookings', [\App\Http\Controllers\Booking\RequestController::class, 'bookings'])->name('profile.bookings');
 
     // Orders
     Route::get('/profile/orders', [\App\Http\Controllers\Order\OrderHistoryController::class, 'index'])->name('profile.orders');
     Route::get('/profile/order/{cart:order_no}', [\App\Http\Controllers\Order\OrderHistoryController::class, 'view'])->name('profile.orders.view');
 
-    Route::get('/logout', [\App\Http\Controllers\Merchant\DashboardController::class, 'showPasswordResetForm']);
+    Route::get('/profile/support', [AccountController::class, 'support'])->name('profile.support');
+    Route::post('/logout', [AccountController::class, 'logout'])->name('logout');
+    Route::get('/logout', fn () => redirect()->route('profile.dashboard'));
 });
 
 
@@ -365,4 +368,28 @@ Route::middleware('merchant')->group(function () {
     Route::get('merchant/report-sales', [\App\Http\Controllers\Merchant\ReportController::class, 'salesReport'])->name('merchant.dashboard.report.report');
     Route::get('merchant/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('merchant.dashboard.report.soa');
     Route::get('merchant/soa/{statement}', [\App\Http\Controllers\Merchant\ReportController::class, 'statement'])->name('merchant.dashboard.report.soa.show');
+});
+
+// Support data is always authenticated; admin routes also enforce the existing admin role.
+Route::middleware('auth')->prefix('support')->name('support.')->group(function () {
+    $controller = \App\Http\Controllers\Support\TicketController::class;
+    Route::get('options', [$controller, 'options'])->name('options');
+    Route::get('orders', [$controller, 'orders'])->name('orders');
+    Route::get('alerts', [$controller, 'alerts'])->name('alerts');
+    Route::get('tickets', [$controller, 'index'])->name('index');
+    Route::post('tickets', [$controller, 'store'])->middleware('throttle:10,1')->name('store');
+    Route::get('tickets/{ticket}', [$controller, 'show'])->name('show');
+    Route::post('tickets/{ticket}/replies', [$controller, 'reply'])->middleware('throttle:20,1')->name('reply');
+    Route::get('tickets/{ticket}/attachments/{attachment}', [$controller, 'attachment'])->name('attachment');
+});
+Route::middleware('auth')->prefix('data/dashboard/support')->name('support.admin.')->group(function () {
+    $controller = \App\Http\Controllers\Support\TicketController::class;
+    Route::get('/', [$controller, 'page'])->name('index');
+    Route::get('options', [$controller, 'options'])->name('options');
+    Route::get('alerts', [$controller, 'alerts'])->name('alerts');
+    Route::get('tickets', [$controller, 'index'])->name('tickets');
+    Route::get('tickets/{ticket}', [$controller, 'show'])->name('show');
+    Route::patch('tickets/{ticket}', [$controller, 'update'])->name('update');
+    Route::post('tickets/{ticket}/replies', [$controller, 'reply'])->middleware('throttle:30,1')->name('reply');
+    Route::get('tickets/{ticket}/attachments/{attachment}', [$controller, 'attachment'])->name('attachment');
 });

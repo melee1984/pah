@@ -13,31 +13,8 @@
 </head>
 <body class="landing-page">
     <div id="app">
-        <header class="landing-header">
-            <div class="container landing-header-inner">
-                <a class="landing-logo" href="{{ route('home') }}" aria-label="PahatudFood — Online Food Ordering and Delivery Services" title="PahatudFood — Online Food Ordering &amp; Delivery Services">
-                    <img src="{{ asset('images/logo.jpg') }}" alt="PahatudFood logo">
-                    <span><strong>PahatudFood</strong><small>Local food delivery</small></span>
-                </a>
-
-                <nav class="landing-nav" aria-label="Homepage navigation">
-                    <a href="#mobile-app">Mobile app</a>
-                    <a href="#restaurant-partners">Our partners</a>
-                    <a href="#how-it-works">How it works</a>
-                    <a class="landing-nav-button" href="#become-a-partner">Register as a partner</a>
-                </nav>
-
-                <details class="landing-mobile-nav">
-                    <summary aria-label="Open navigation"><span></span><span></span><span></span></summary>
-                    <div>
-                        <a href="#mobile-app">Mobile app</a>
-                        <a href="#restaurant-partners">Our partners</a>
-                        <a href="#how-it-works">How it works</a>
-                        <a href="#become-a-partner">Register as a partner</a>
-                    </div>
-                </details>
-            </div>
-        </header>
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
+        @include('includes.landing-header')
 
         @yield('content')
     </div>

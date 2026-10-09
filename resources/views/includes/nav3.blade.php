@@ -10,6 +10,7 @@
             </a>
 
             <div class="public-mobile-actions">
+                @include('includes.customer-account-menu')
                 <div class="public-header-cart">
                     <cart-basket-summary></cart-basket-summary>
                 </div>
@@ -55,36 +56,7 @@
                     <cart-basket-summary></cart-basket-summary>
                 </div>
 
-                <div class="author-account public-account-menu">
-                    @if (Auth::check())
-                        <div class="dropdown">
-                            <input type="checkbox" id="userDropdown" class="dropdown-toggle-input">
-                            <label for="userDropdown" class="dropdown-toggle">
-                                <span class="public-account-avatar" aria-hidden="true">{{ strtoupper(substr(Auth::user()->firstname, 0, 1)) }}</span>
-                                <span>Hi, {{ Auth::user()->firstname }}</span>
-                                <i class="icofont-rounded-down" aria-hidden="true"></i>
-                            </label>
-
-                            <div class="dropdown-menu">
-                                <a href="{{ route('profile.dashboard') }}">Profile</a>
-                                <a href="{{ route('profile.orders') }}">My orders</a>
-                                <a href="javascript:alert('My booking is not yet available.')">My bookings</a>
-                                <a href="javascript:alert('Settings is not yet available.')">Settings</a>
-                                <div class="divider"></div>
-                                <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">Logout</a>
-                            </div>
-                        </div>
-
-                        <form id="logout-form" action="{{ route('logout') }}" method="POST" hidden>
-                            @csrf
-                        </form>
-                    @else
-                        <a href="{{ route('profile.dashboard') }}" class="public-dashboard-link">
-                            <span class="public-account-avatar" aria-hidden="true"><i class="icofont-ui-user"></i></span>
-                            <span>My dashboard</span>
-                        </a>
-                    @endif
-                </div>
+                @include('includes.customer-account-menu')
             </div>
         </div>
     </div>

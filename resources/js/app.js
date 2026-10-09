@@ -1,3 +1,5 @@
+import './customer-account-menu';
+import SupportCenter from './components/support/SupportCenter.vue';
 import 'bootstrap';
 import axios from 'axios'
 import Vue from 'vue';
@@ -132,6 +134,7 @@ Vue.config.ignoredElements = [
 ];
 
 Vue.use(VueSimpleAlert);
+Vue.component('support-center', SupportCenter);
 window.vm = new Vue({
      el: '#app',
 });
