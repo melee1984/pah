@@ -35,6 +35,7 @@
     </div>
 
     <div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
         @include('includes.nav3')
         <!-- search area -->
         @yield('content')

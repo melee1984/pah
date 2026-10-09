@@ -15,6 +15,7 @@
 
 <body>
     <div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
         <div class="container-fluid">
             @include('includes.nav-logo')
         </div>

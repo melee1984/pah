@@ -37,6 +37,7 @@
         </div>
         <!-- search area -->
         <div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
     		@include('includes.nav2')
     		<!-- search area -->
             @yield('content')

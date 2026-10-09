@@ -9,11 +9,15 @@
 <!-- Scripts -->
 @vite('resources/js/app.js')
 
-<body>
+<body class="landing-page">
+    @include('includes.landing-header')
 	<!-- preloader -->
 	<!-- preloader -->
 	<br>
-	<div class="container">
+	<div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
+    </div>
+    <div class="container">
 		<div class="row justify-content-center">
 			<a href="{{ URL::to('/') }}" class="logo"><img src="{{ asset('images/logo-small.jpg') }}" alt="logo"></a>
 		</div>

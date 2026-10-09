@@ -23,7 +23,7 @@ body.pahatud-admin {
 .pahatud-admin .brand-copy { line-height: 1.15; }
 .pahatud-admin .brand-copy strong { color: var(--admin-ink); display: block; font-family: 'Manrope', sans-serif; font-size: 15px; }
 .pahatud-admin .brand-copy small { color: var(--admin-red); font-size: 9px; font-weight: 800; letter-spacing: 1.25px; text-transform: uppercase; }
-.pahatud-admin .user-panel { align-items: center; border-bottom: 1px solid var(--admin-line) !important; margin: 16px 14px 18px !important; padding: 0 0 16px !important; }
+.pahatud-admin .user-panel { align-items: center; border-bottom: 1px solid var(--admin-line) !important; margin: 32px 14px 18px !important; padding: 0 0 16px !important; }
 .pahatud-admin .admin-user-avatar { align-items: center; background: #fff0ee; border-radius: 50%; color: var(--admin-red); display: flex; flex: 0 0 38px; font-family: 'Manrope', sans-serif; font-size: 15px; font-weight: 800; height: 38px; justify-content: center; line-height: 1; width: 38px; }
 .pahatud-admin .user-panel .info { padding-left: 10px; }
 .pahatud-admin .user-panel .info a { color: var(--admin-ink); font-size: 13px; font-weight: 700; }
@@ -827,3 +827,27 @@ a.dashboard-availability-row:hover { color: var(--admin-ink); text-decoration: n
     .push-compose-actions { align-items: stretch; flex-direction: column; }
     .push-compose-actions .btn { width: 100%; }
 }
+
+/* Support management shares the orders card, table, and pagination theme. */
+.pf-admin-support { color: var(--admin-ink); font: inherit; }
+.pf-admin-support .support-admin-tabs { padding: 16px 21px 0; margin-bottom: 0; }
+.pf-admin-support button:where(:not(.dashboard-order-link):not(.dashboard-pagination button)) { background: #fff; border: 1px solid var(--admin-line); border-radius: 8px; color: var(--admin-ink); cursor: pointer; font: inherit; font-size: 12px; min-height: 38px; padding: 8px 13px; }
+.pf-admin-support button.pf-primary { background: var(--admin-red); border-color: var(--admin-red); color: #fff; font-weight: 700; }
+.pf-admin-support button:disabled { opacity: .5; cursor: default; }
+.pf-admin-support button:focus-visible { outline: 3px solid #f6a8ad; outline-offset: 2px; }
+.pf-admin-support .pf-filters { background: #fff; border-bottom: 1px solid var(--admin-line); padding: 16px 21px 20px; gap: 12px; }
+.pf-admin-support label { display: block; font-size: 11px; font-weight: 700; margin: 0; text-transform: none; }
+.pf-admin-support .pf-filters label { text-transform: capitalize; }
+.pf-admin-support input:not([type="checkbox"]), .pf-admin-support select, .pf-admin-support textarea { background: #fff; border: 1px solid #ddd8d3; border-radius: 8px; color: var(--admin-ink); display: block; font: inherit; font-size: 12px; margin-top: 6px; min-height: 40px; padding: 9px 11px; width: 100%; }
+.pf-admin-support .pf-primary { margin-top: 0; }
+.support-admin-table { min-width: 960px; }
+.support-admin-table .support-ticket-subject { margin-top: 8px; max-width: 300px; overflow-wrap: anywhere; }
+.support-admin-table td { overflow-wrap: anywhere; }
+.support-admin-table .support-priority { font-size: 10px; }
+.support-admin-table .support-priority.is-urgent { color: var(--admin-red-dark); font-weight: 700; }
+.support-admin-body > .pf-error, .support-admin-body > .pf-success, .support-admin-body > p[role="status"] { margin: 16px 21px; }
+.pf-admin-support .support-admin-body.support-admin-detail { padding: 21px; }
+.pf-admin-support .support-admin-detail .support-admin-tabs { padding: 0; margin-bottom: 18px; }
+.pf-admin-support .support-admin-detail > form:not(.pf-filters) label { margin: 12px 0; }
+.pf-admin-support .support-admin-detail > h3 { font-size: 21px; margin: 8px 0; }
+.pf-admin-support .pf-message small { display: block; color: var(--admin-muted); margin-top: 4px; }

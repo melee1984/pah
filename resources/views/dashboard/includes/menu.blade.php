@@ -1,4 +1,5 @@
 <ul class="nav nav-pills nav-sidebar flex-column nav-flat" data-widget="treeview" role="menu" data-accordion="false">
+    <li class="nav-item"><a href="{{ route('support.admin.index') }}" class="nav-link {{ Request::is('data/dashboard/support*') ? 'active' : '' }}"><i class="nav-icon fas fa-headset"></i><p>Support Tickets <support-badge></support-badge></p></a></li>
     <li class="nav-header">Overview</li>
     <li class="nav-item">
         <a href="{{ route('dashboard.data') }}" class="nav-link {{ Request::is('data/dashboard') ? 'active' : '' }}"><i class="nav-icon fas fa-chart-pie"></i><p>Dashboard</p></a>

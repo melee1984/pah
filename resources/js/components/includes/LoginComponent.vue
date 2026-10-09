@@ -103,7 +103,8 @@
                           this.$refs.turnstile && this.$refs.turnstile.reset();
                         }
                       }).catch((errors) => {
-                          console.log('There was an error => ', errors);
+                          this.display.message = Object.values(errors.response?.data?.errors || {}).flat().join(' ') || errors.response?.data?.message || 'Unable to sign in. Please try again.';
+                          this.displayMessage = true;
                           this.isSubmit = false;
                           this.$refs.turnstile && this.$refs.turnstile.reset();
                       }); 
