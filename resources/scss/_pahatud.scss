@@ -503,6 +503,11 @@ html {
 
 .home-partners {
     background: var(--home-cream);
+    padding: 85px 0;
+
+    .home-section-heading {
+        margin-bottom: 32px;
+    }
 }
 
 .home-section-heading {
@@ -534,15 +539,19 @@ html {
 
 .home-partner-grid {
     display: grid;
-    gap: 22px;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .home-partner-card {
+    align-items: center;
     background: #fff;
     border: 1px solid rgba(26, 32, 34, .07);
-    border-radius: 16px;
+    border-radius: 14px;
     color: var(--home-ink);
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    min-height: 88px;
     overflow: hidden;
     transition: transform .22s ease, box-shadow .22s ease;
 
@@ -556,10 +565,10 @@ html {
     align-items: center;
     background: #fff;
     display: flex;
-    height: 195px;
+    height: 88px;
     justify-content: center;
     overflow: hidden;
-    padding: 18px;
+    padding: 12px;
 
     img {
         height: 100%;
@@ -570,13 +579,22 @@ html {
 
 .home-partner-name {
     align-items: center;
-    border-top: 1px solid var(--home-line);
+    border-left: 1px solid var(--home-line);
     display: flex;
     font-family: 'Manrope', sans-serif;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
+    gap: 10px;
     justify-content: space-between;
-    padding: 16px 18px;
+    min-width: 0;
+    padding: 12px 14px;
+
+    > span:first-child {
+        display: -webkit-box;
+        overflow: hidden;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+    }
 
     .material-icons {
         color: var(--home-red);
@@ -981,10 +999,13 @@ html {
     }
 
     .home-app-section,
-    .home-partners,
     .home-how,
     .home-partner-signup {
         padding: 70px 0;
+    }
+
+    .home-partners {
+        padding: 58px 0;
     }
 
     .home-app-card {
@@ -1041,13 +1062,35 @@ html {
         align-items: center;
     }
 
-    .home-partner-grid,
     .home-step-grid {
         grid-template-columns: 1fr;
     }
 
+    .home-partner-grid {
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .home-partner-card {
+        display: block;
+        min-height: 0;
+    }
+
     .home-partner-image {
-        height: 220px;
+        height: 105px;
+        padding: 14px;
+    }
+
+    .home-partner-name {
+        border-left: 0;
+        border-top: 1px solid var(--home-line);
+        font-size: 12px;
+        min-height: 52px;
+        padding: 9px 10px;
+
+        .material-icons {
+            font-size: 17px;
+        }
     }
 
     .home-step-grid {
