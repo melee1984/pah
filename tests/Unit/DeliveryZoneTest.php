@@ -52,7 +52,7 @@ class DeliveryZoneTest extends TestCase
         $deliveryZone = new DeliveryZone;
 
         $this->assertSame('Samal Island', $deliveryZone->areaLabel(7.12, 125.72));
-        $this->assertSame('Davao mainland / standard area', $deliveryZone->areaLabel(7.10, 125.61));
+        $this->assertSame('Davao City', $deliveryZone->areaLabel(7.10, 125.61));
     }
 
     public function test_it_rejects_a_short_delivery_that_crosses_the_samal_boundary(): void
@@ -65,7 +65,7 @@ class DeliveryZoneTest extends TestCase
         $this->assertFalse($result['allowed']);
         $this->assertSame('service_area', $result['reason']);
         $this->assertSame('samal_island', $result['merchant_area']['key']);
-        $this->assertNull($result['customer_area']);
+        $this->assertSame('davao_city', $result['customer_area']['key']);
     }
 
     public function test_it_allows_delivery_within_the_same_samal_service_area(): void
@@ -77,6 +77,31 @@ class DeliveryZoneTest extends TestCase
 
         $this->assertTrue($result['allowed']);
         $this->assertNull($result['reason']);
+    }
+
+    public function test_it_allows_delivery_within_davao_city(): void
+    {
+        config(['services.delivery.max_distance_km' => 20]);
+        $deliveryZone = new DeliveryZone;
+
+        $result = $deliveryZone->check(7.10, 125.61, 7.12, 125.60);
+
+        $this->assertTrue($result['allowed']);
+        $this->assertSame('davao_city', $result['merchant_area']['key']);
+        $this->assertSame('davao_city', $result['customer_area']['key']);
+    }
+
+    public function test_it_rejects_delivery_crossing_the_davao_city_boundary(): void
+    {
+        config(['services.delivery.max_distance_km' => 30]);
+        $deliveryZone = new DeliveryZone;
+
+        $result = $deliveryZone->check(7.10, 125.61, 7.10, 125.30);
+
+        $this->assertFalse($result['allowed']);
+        $this->assertSame('service_area', $result['reason']);
+        $this->assertSame('davao_city', $result['merchant_area']['key']);
+        $this->assertNull($result['customer_area']);
     }
 
     public function test_it_automatically_classifies_iligan_city_coordinates(): void
