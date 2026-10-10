@@ -1,0 +1,185 @@
+{
+  "sourcePptx": "/Users/larryparba/Downloads/Pahatud_Agent_Orientation_2026-09-29_v3 (1).pptx",
+  "workspace": "/Users/larryparba/web/pah",
+  "outDir": "/Users/larryparba/web/pah/presentation-work/source-inspect",
+  "generatedAt": "2026-10-07T02:06:33.474Z",
+  "slideCount": 9,
+  "slideArtifacts": [
+    {
+      "slide": 1,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-01.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-01.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-01.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-01.layout.json"
+    },
+    {
+      "slide": 2,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-02.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-02.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-02.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-02.layout.json"
+    },
+    {
+      "slide": 3,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-03.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-03.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-03.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-03.layout.json"
+    },
+    {
+      "slide": 4,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-04.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-04.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-04.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-04.layout.json"
+    },
+    {
+      "slide": 5,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-05.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-05.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-05.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-05.layout.json"
+    },
+    {
+      "slide": 6,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-06.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-06.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-06.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-06.layout.json"
+    },
+    {
+      "slide": 7,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-07.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-07.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-07.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-07.layout.json"
+    },
+    {
+      "slide": 8,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-08.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-08.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-08.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-08.layout.json"
+    },
+    {
+      "slide": 9,
+      "previewPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/source-slides/source-slide-09.png",
+      "previewRelativePath": "presentation-work/source-inspect/source-slides/source-slide-09.png",
+      "layoutPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/layouts/source-slide-09.layout.json",
+      "layoutRelativePath": "presentation-work/source-inspect/layouts/source-slide-09.layout.json"
+    }
+  ],
+  "inspectPath": "/Users/larryparba/web/pah/presentation-work/source-inspect/template-inspect.ndjson",
+  "inspectRelativePath": "presentation-work/source-inspect/template-inspect.ndjson",
+  "inspectTruncated": true,
+  "inspectMetadata": {
+    "revision": "6fbamw",
+    "target": {
+      "id": "pr/tqph3e"
+    },
+    "kind": {
+      "requested": "slide,textbox,shape,image,table,chart",
+      "tokens": [
+        "slide",
+        "textbox",
+        "shape",
+        "image",
+        "table",
+        "chart"
+      ]
+    },
+    "include": {
+      "tokens": []
+    },
+    "exclude": {
+      "tokens": []
+    },
+    "notices": []
+  },
+  "extractedMedia": [
+    {
+      "entry": "ppt/media/image3.jpg",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image3.jpg",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image3.jpg",
+      "bytes": 5856
+    },
+    {
+      "entry": "ppt/media/image8.png",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image8.png",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image8.png",
+      "bytes": 252765
+    },
+    {
+      "entry": "ppt/media/image4.jpg",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image4.jpg",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image4.jpg",
+      "bytes": 3305
+    },
+    {
+      "entry": "ppt/media/image2.jpg",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image2.jpg",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image2.jpg",
+      "bytes": 9876
+    },
+    {
+      "entry": "ppt/media/image7.png",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image7.png",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image7.png",
+      "bytes": 55737
+    },
+    {
+      "entry": "ppt/media/image5.png",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image5.png",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image5.png",
+      "bytes": 396702
+    },
+    {
+      "entry": "ppt/media/image1.jpg",
+      "path": "/Users/larryparba/web/pah/presentation-work/source-inspect/assets/ppt/media/image1.jpg",
+      "relativePath": "presentation-work/source-inspect/assets/ppt/media/image1.jpg",
+      "bytes": 28702
+    }
+  ],
+  "fonts": [
+    "Angsana New",
+    "Arial",
+    "Cordia New",
+    "DM Sans",
+    "DaunPenh",
+    "DokChampa",
+    "Estrangelo Edessa",
+    "Euphemia",
+    "Gautami",
+    "Iskoola Pota",
+    "Kalinga",
+    "Kartika",
+    "Latha",
+    "MV Boli",
+    "Mangal",
+    "Manrope",
+    "Microsoft Himalaya",
+    "Microsoft Uighur",
+    "Microsoft Yi Baiti",
+    "Mongolian Baiti",
+    "MoolBoran",
+    "Nyala",
+    "Plantagenet Cherokee",
+    "Poppins",
+    "Raavi",
+    "Shruti",
+    "Sylfaen",
+    "Times New Roman",
+    "Tunga",
+    "Vrinda",
+    "宋体",
+    "新細明體",
+    "맑은 고딕",
+    "ＭＳ Ｐゴシック"
+  ],
+  "packageParts": {
+    "mediaCount": 7,
+    "slideXmlCount": 9,
+    "chartCount": 0,
+    "tableSlideCount": 0
+  }
+}

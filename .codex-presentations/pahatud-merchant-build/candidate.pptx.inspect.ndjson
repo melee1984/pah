@@ -1,0 +1,248 @@
+{"kind":"deck","id":"pr/dxmntu","name":"Deck"}
+{"kind":"layout","layoutId":"1b500cd2-18a6-4eea-90a6-311e70c08b6c","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"06ccb90c-cd20-4f6b-ac93-a81c57eabfac","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/fbgnlq","slide":1,"title":"Pahatud Merchant","textShapes":4}
+{"kind":"shape","id":"sh/0nqx8j25","slide":1,"bbox":[0,0,34,720]}
+{"kind":"textbox","id":"sh/zmhwze1k","slide":1,"text":"Pahatud Merchant","textPreview":"Pahatud Merchant","textChars":16,"textLines":1,"bbox":[76,132,520,110]}
+{"kind":"textbox","id":"sh/elof6tkz","slide":1,"text":"The merchant workspace behind the Pahatud customer experience","textPreview":"The merchant workspace behind the Pahatud customer experience","textChars":61,"textLines":1,"bbox":[78,258,470,88]}
+{"kind":"shape","id":"sh/dkfexoju","slide":1,"bbox":[78,377,98,0]}
+{"kind":"textbox","id":"sh/cj6d4j29","slide":1,"text":"Store setup  ·  catalog  ·  orders  ·  promotions  ·  sales","textPreview":"Store setup  ·  catalog  ·  orders  ·  promotions  ·  sales","textChars":59,"textLines":1,"bbox":[78,404,500,58]}
+{"kind":"shape","id":"sh/ryxwve1o","slide":1,"bbox":[652,86,556,548]}
+{"kind":"textbox","id":"sh/pwfet4ji","slide":1,"text":"Merchant overview","textPreview":"Merchant overview","textChars":17,"textLines":1,"bbox":[78,638,330,25]}
+{"kind":"image","id":"im/rmlo3ut0","slide":1,"name":"","geometry":"roundRect","alt":"Pahatud delivery services logo over a map","bbox":[671,106,518,508]}
+{"kind":"notes","id":"nt/fbgnlq","slide":1,"text":"Sources: public/images/pahatud-logo-with-motor.jpg; routes/web.php\n\nPresenter note: Introduce Pahatud Merchant as the operational workspace that keeps the customer-facing app accurate and responsive."}
+{"kind":"slide","id":"sl/6ng560","slide":2,"title":"PRODUCT OVERVIEW","textShapes":18}
+{"kind":"textbox","id":"sh/cf2983yl","slide":2,"text":"PRODUCT OVERVIEW","textPreview":"PRODUCT OVERVIEW","textChars":16,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/betsfyh0","slide":2,"text":"One connected service for customers and merchants","textPreview":"One connected service for customers and merchants","textChars":49,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/qdkr6t0f","slide":2,"text":"Customers discover and order in Pahatud. Merchants manage the storefront and fulfillment behind it.","textPreview":"Customers discover and order in Pahatud. Merchants manage the storefront and fulfillment behind it.","textChars":99,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/pcradozu","slide":2,"bbox":[72,192,1136,0]}
+{"kind":"textbox","id":"sh/obi943i9","slide":2,"text":"CUSTOMER APP","textPreview":"CUSTOMER APP","textChars":12,"textLines":1,"bbox":[86,226,260,26]}
+{"kind":"shape","id":"sh/3a9sbyho","slide":2,"bbox":[95,260,280,374]}
+{"kind":"shape","id":"sh/98vapsze","slide":2,"bbox":[432,446,86,0]}
+{"kind":"shape","id":"sh/87mtgnyt","slide":2,"bbox":[503,430,32,32]}
+{"kind":"textbox","id":"sh/ilo7yl8r","slide":2,"text":"+","textPreview":"+","textChars":1,"textLines":1,"bbox":[503,428,32,32]}
+{"kind":"textbox","id":"sh/jmx87qpc","slide":2,"text":"MERCHANT WORKSPACE","textPreview":"MERCHANT WORKSPACE","textChars":18,"textLines":1,"bbox":[584,226,420,26]}
+{"kind":"shape","id":"sh/k76p0vqx","slide":2,"bbox":[584,273,12,12]}
+{"kind":"textbox","id":"sh/58fq907i","slide":2,"text":"Storefront","textPreview":"Storefront","textChars":10,"textLines":1,"bbox":[615,265,170,30]}
+{"kind":"textbox","id":"sh/ah47u18v","slide":2,"text":"Profile, branches, categories, and online status","textPreview":"Profile, branches, categories, and online status","textChars":48,"textLines":1,"bbox":[790,267,405,44]}
+{"kind":"shape","id":"sh/vido36pg","slide":2,"bbox":[615,322,580,0]}
+{"kind":"shape","id":"sh/wj6pwbql","slide":2,"bbox":[584,345,12,12]}
+{"kind":"textbox","id":"sh/xkf65g76","slide":2,"text":"Catalog","textPreview":"Catalog","textChars":7,"textLines":1,"bbox":[615,337,170,30]}
+{"kind":"textbox","id":"sh/ud87658z","slide":2,"text":"Products, pricing, availability, variants, and add-ons","textPreview":"Products, pricing, availability, variants, and add-ons","textChars":54,"textLines":1,"bbox":[790,339,405,44]}
+{"kind":"shape","id":"sh/feh8fapk","slide":2,"bbox":[615,394,580,0]}
+{"kind":"shape","id":"sh/ri94725w","slide":2,"bbox":[584,417,12,12]}
+{"kind":"textbox","id":"sh/qh03yxob","slide":2,"text":"Operations","textPreview":"Operations","textChars":10,"textLines":1,"bbox":[615,409,170,30]}
+{"kind":"textbox","id":"sh/dkbm9cn2","slide":2,"text":"Incoming orders, preparation, rider pickup, and proof","textPreview":"Incoming orders, preparation, rider pickup, and proof","textChars":53,"textLines":1,"bbox":[790,411,405,44]}
+{"kind":"shape","id":"sh/cji5076h","slide":2,"bbox":[615,466,580,0]}
+{"kind":"shape","id":"sh/zmt4b258","slide":2,"bbox":[584,489,12,12]}
+{"kind":"textbox","id":"sh/elkn2hon","slide":2,"text":"Growth","textPreview":"Growth","textChars":6,"textLines":1,"bbox":[615,481,170,30]}
+{"kind":"textbox","id":"sh/1obmdcny","slide":2,"text":"Coupons, promotional banners, and app visibility","textPreview":"Coupons, promotional banners, and app visibility","textChars":48,"textLines":1,"bbox":[790,483,405,44]}
+{"kind":"shape","id":"sh/0n25476d","slide":2,"bbox":[615,538,580,0]}
+{"kind":"shape","id":"sh/nqt4fm54","slide":2,"bbox":[584,561,12,12]}
+{"kind":"textbox","id":"sh/mpkn6hoj","slide":2,"text":"Reporting","textPreview":"Reporting","textChars":9,"textLines":1,"bbox":[615,553,170,30]}
+{"kind":"textbox","id":"sh/kfmlwrmx","slide":2,"text":"Completed sales, commission, and merchant net","textPreview":"Completed sales, commission, and merchant net","textChars":45,"textLines":1,"bbox":[790,555,405,44]}
+{"kind":"textbox","id":"sh/5gvmpw3i","slide":2,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/it43uh4r","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/zux03m5s","slide":2,"name":"","geometry":"roundRect","alt":"Pahatud customer app home screen","bbox":[109,271,252,352]}
+{"kind":"notes","id":"nt/6ng560","slide":2,"text":"Sources: resources/views/merchant/includes/menu.blade.php; resources/views/merchant/pages/dashboard.blade.php; public/images/app-preview/home.png\n\nPresenter note: Explain that the customer app and merchant portal are two sides of the same transaction, with merchant updates flowing into the customer experience."}
+{"kind":"slide","id":"sl/6q5rll","slide":3,"title":"MERCHANT ONBOARDING","textShapes":20}
+{"kind":"textbox","id":"sh/wzi54rm1","slide":3,"text":"MERCHANT ONBOARDING","textPreview":"MERCHANT ONBOARDING","textChars":19,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/vy9ovmlw","slide":3,"text":"From application to an order-ready store","textPreview":"From application to an order-ready store","textChars":40,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/ud0n214b","slide":3,"text":"The merchant journey includes business details, required documents, review, and operational setup.","textPreview":"The merchant journey includes business details, required documents, review, and operational setup.","textChars":98,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/9cr6tw3q","slide":3,"bbox":[72,192,1136,0]}
+{"kind":"shape","id":"sh/7apormlk","slide":3,"bbox":[553,267,0,302]}
+{"kind":"shape","id":"sh/m9gnyh4z","slide":3,"bbox":[533,238,40,40]}
+{"kind":"textbox","id":"sh/l876pc3e","slide":3,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[533,239,40,39]}
+{"kind":"textbox","id":"sh/k7y5w7m9","slide":3,"text":"Create the merchant account","textPreview":"Create the merchant account","textChars":27,"textLines":1,"bbox":[596,237,540,29]}
+{"kind":"textbox","id":"sh/ahknmxor","slide":3,"text":"Provide the restaurant and administrator information.","textPreview":"Provide the restaurant and administrator information.","textChars":53,"textLines":1,"bbox":[596,267,590,42]}
+{"kind":"shape","id":"sh/v2tov25c","slide":3,"bbox":[533,314,40,40]}
+{"kind":"textbox","id":"sh/w325o76x","slide":3,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[533,315,40,39]}
+{"kind":"textbox","id":"sh/x4b6xcni","slide":3,"text":"Complete the application","textPreview":"Complete the application","textChars":24,"textLines":1,"bbox":[596,313,540,29]}
+{"kind":"textbox","id":"sh/md0nixov","slide":3,"text":"Confirm business, contact, address, and payout details.","textPreview":"Confirm business, contact, address, and payout details.","textChars":55,"textLines":1,"bbox":[596,343,590,42]}
+{"kind":"shape","id":"sh/ne9or25g","slide":3,"bbox":[533,390,40,40]}
+{"kind":"textbox","id":"sh/8fi5k761","slide":3,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[533,391,40,39]}
+{"kind":"textbox","id":"sh/9gb6tsn6","slide":3,"text":"Upload required documents","textPreview":"Upload required documents","textChars":25,"textLines":1,"bbox":[596,389,540,29]}
+{"kind":"textbox","id":"sh/y90nedoj","slide":3,"text":"Government ID and business registration are standard requirements.","textPreview":"Government ID and business registration are standard requirements.","textChars":66,"textLines":1,"bbox":[596,419,590,42]}
+{"kind":"shape","id":"sh/za94nip4","slide":3,"bbox":[533,466,40,40]}
+{"kind":"textbox","id":"sh/3e5kve5w","slide":3,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[533,467,40,39]}
+{"kind":"textbox","id":"sh/2dw3m94b","slide":3,"text":"Resolve review findings","textPreview":"Resolve review findings","textChars":23,"textLines":1,"bbox":[596,465,540,29]}
+{"kind":"textbox","id":"sh/pgn2xo32","slide":3,"text":"Replace rejected or expired files using administrator remarks.","textPreview":"Replace rejected or expired files using administrator remarks.","textChars":62,"textLines":1,"bbox":[596,495,590,42]}
+{"kind":"shape","id":"sh/ofelojmh","slide":3,"bbox":[533,542,40,40]}
+{"kind":"textbox","id":"sh/bipkzyl8","slide":3,"text":"5","textPreview":"5","textChars":1,"textLines":1,"bbox":[533,543,40,39]}
+{"kind":"textbox","id":"sh/qhg3qt4n","slide":3,"text":"Prepare the store","textPreview":"Prepare the store","textChars":17,"textLines":1,"bbox":[596,541,540,29]}
+{"kind":"textbox","id":"sh/dk72183y","slide":3,"text":"Check menu, categories, branches, pricing, and availability before going online.","textPreview":"Check menu, categories, branches, pricing, and availability before going online.","textChars":80,"textLines":1,"bbox":[596,571,590,42]}
+{"kind":"textbox","id":"sh/cjyls3mt","slide":3,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/7mlknu5o","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/d8ju5876","slide":3,"name":"","geometry":"roundRect","alt":"Pahatud partner illustration","bbox":[72,228,415,390]}
+{"kind":"notes","id":"nt/6q5rll","slide":3,"text":"Sources: resources/views/merchant/pages/help.blade.php; resources/views/merchant/pages/application.blade.php; routes/web.php\n\nPresenter note: Clarify that approval documents apply to the application flow and that merchants should not open the store until operational information is complete."}
+{"kind":"slide","id":"sl/xjcsmd","slide":4,"title":"STOREFRONT MANAGEMENT","textShapes":18}
+{"kind":"textbox","id":"sh/lwrylcza","slide":4,"text":"STOREFRONT MANAGEMENT","textPreview":"STOREFRONT MANAGEMENT","textChars":21,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/ytgzqx0j","slide":4,"text":"Merchant updates shape what customers see before ordering","textPreview":"Merchant updates shape what customers see before ordering","textChars":57,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/jupgj2h4","slide":4,"text":"The portal controls essential discovery and availability information shown through Pahatud.","textPreview":"The portal controls essential discovery and availability information shown through Pahatud.","textChars":91,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/8zihw7yl","slide":4,"bbox":[72,192,1136,0]}
+{"kind":"textbox","id":"sh/t0rypcz6","slide":4,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[80,242,48,34]}
+{"kind":"textbox","id":"sh/6x0zuhgv","slide":4,"text":"Profile","textPreview":"Profile","textChars":7,"textLines":1,"bbox":[145,235,218,35]}
+{"kind":"textbox","id":"sh/7y9gn2hg","slide":4,"text":"Restaurant name and customer-facing contact information","textPreview":"Restaurant name and customer-facing contact information","textChars":55,"textLines":1,"bbox":[145,272,390,43]}
+{"kind":"shape","id":"sh/o3yxknih","slide":4,"bbox":[145,317,380,0]}
+{"kind":"textbox","id":"sh/947ydsz2","slide":4,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[80,333,48,34]}
+{"kind":"textbox","id":"sh/hkji1cbe","slide":4,"text":"Branches","textPreview":"Branches","textChars":8,"textLines":1,"bbox":[145,326,218,35]}
+{"kind":"textbox","id":"sh/gja1s7ut","slide":4,"text":"Address, telephone, mobile, and service location details","textPreview":"Address, telephone, mobile, and service location details","textChars":56,"textLines":1,"bbox":[145,363,390,43]}
+{"kind":"shape","id":"sh/fi10zmd8","slide":4,"bbox":[145,408,380,0]}
+{"kind":"textbox","id":"sh/uhsjqhc3","slide":4,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[80,424,48,34]}
+{"kind":"textbox","id":"sh/po3i5wbq","slide":4,"text":"Categories","textPreview":"Categories","textChars":10,"textLines":1,"bbox":[145,417,218,35]}
+{"kind":"textbox","id":"sh/4nu1wru5","slide":4,"text":"Menu organization that helps customers browse","textPreview":"Menu organization that helps customers browse","textChars":45,"textLines":1,"bbox":[145,454,390,43]}
+{"kind":"shape","id":"sh/3ml03mtk","slide":4,"bbox":[145,499,380,0]}
+{"kind":"textbox","id":"sh/2lsjuhcz","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[80,515,48,34]}
+{"kind":"textbox","id":"sh/dc329wbm","slide":4,"text":"Online status","textPreview":"Online status","textChars":13,"textLines":1,"bbox":[145,508,218,35]}
+{"kind":"textbox","id":"sh/cbu10ru1","slide":4,"text":"Whether the store is currently accepting orders","textPreview":"Whether the store is currently accepting orders","textChars":47,"textLines":1,"bbox":[145,545,390,43]}
+{"kind":"shape","id":"sh/w7mtsz6p","slide":4,"bbox":[644,220,488,420]}
+{"kind":"textbox","id":"sh/a54bqpoj","slide":4,"text":"Visible to customers","textPreview":"Visible to customers","textChars":20,"textLines":1,"bbox":[977,594,190,26]}
+{"kind":"textbox","id":"sh/b6dcju54","slide":4,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/kv6dwj6l","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/u9c7utk3","slide":4,"name":"","geometry":"roundRect","alt":"Pahatud restaurant discovery screen","bbox":[708,238,360,384]}
+{"kind":"notes","id":"nt/xjcsmd","slide":4,"text":"Sources: resources/views/merchant/includes/menu.blade.php; resources/views/merchant/pages/help.blade.php; public/images/app-preview/restaurants.png\n\nPresenter note: Use the customer screen to show why profile, branch, category, and status accuracy matters."}
+{"kind":"slide","id":"sl/6fxtnj","slide":5,"title":"CATALOG MANAGEMENT","textShapes":17}
+{"kind":"textbox","id":"sh/qt0vqhcn","slide":5,"text":"CATALOG MANAGEMENT","textPreview":"CATALOG MANAGEMENT","textChars":18,"textLines":1,"bbox":[72,45,310,24]}
+{"kind":"textbox","id":"sh/dwbelwby","slide":5,"text":"A menu customers can order with confidence","textPreview":"A menu customers can order with confidence","textChars":42,"textLines":1,"bbox":[72,80,665,92]}
+{"kind":"textbox","id":"sh/sv2dsrut","slide":5,"text":"Clear product information reduces avoidable substitutions and cancellations.","textPreview":"Clear product information reduces avoidable substitutions and cancellations.","textChars":76,"textLines":1,"bbox":[74,173,620,48]}
+{"kind":"shape","id":"sh/exkvu1cj","slide":5,"bbox":[74,274,28,28]}
+{"kind":"textbox","id":"sh/10bepwba","slide":5,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[74,271,28,28]}
+{"kind":"textbox","id":"sh/0z2xwrup","slide":5,"text":"Product basics","textPreview":"Product basics","textChars":14,"textLines":1,"bbox":[122,268,250,30]}
+{"kind":"textbox","id":"sh/n2dwr6tg","slide":5,"text":"Name, description, price, image, and category","textPreview":"Name, description, price, image, and category","textChars":45,"textLines":1,"bbox":[122,301,555,42]}
+{"kind":"shape","id":"sh/214fy1cv","slide":5,"bbox":[74,362,28,28]}
+{"kind":"textbox","id":"sh/43yp0jip","slide":5,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[74,359,28,28]}
+{"kind":"textbox","id":"sh/5476tozu","slide":5,"text":"Availability","textPreview":"Availability","textChars":12,"textLines":1,"bbox":[122,356,250,30]}
+{"kind":"textbox","id":"sh/i1gnyt0j","slide":5,"text":"Publish active items and hide sold-out products quickly","textPreview":"Publish active items and hide sold-out products quickly","textChars":55,"textLines":1,"bbox":[122,389,555,42]}
+{"kind":"shape","id":"sh/32poreh4","slide":5,"bbox":[74,450,28,28]}
+{"kind":"textbox","id":"sh/s7yp43il","slide":5,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[74,447,28,28]}
+{"kind":"textbox","id":"sh/d876x8z6","slide":5,"text":"Customer choices","textPreview":"Customer choices","textChars":16,"textLines":1,"bbox":[122,444,250,30]}
+{"kind":"textbox","id":"sh/q5g72t0f","slide":5,"text":"Use variants and add-ons for size, flavor, extras, or preparation","textPreview":"Use variants and add-ons for size, flavor, extras, or preparation","textChars":65,"textLines":1,"bbox":[122,477,555,42]}
+{"kind":"shape","id":"sh/r6povyh0","slide":5,"bbox":[74,538,28,28]}
+{"kind":"textbox","id":"sh/0vip83ih","slide":5,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[74,535,28,28]}
+{"kind":"textbox","id":"sh/1wr618z2","slide":5,"text":"Catalog hygiene","textPreview":"Catalog hygiene","textChars":15,"textLines":1,"bbox":[122,532,250,30]}
+{"kind":"textbox","id":"sh/9g3e54na","slide":5,"text":"Keep labels short and show every additional charge clearly","textPreview":"Keep labels short and show every additional charge clearly","textChars":58,"textLines":1,"bbox":[122,565,555,42]}
+{"kind":"textbox","id":"sh/ofuxwj6p","slide":5,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/nelw3e54","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/mdk3ql07","slide":5,"name":"","alt":"Food products including pizza and burgers","bbox":[778,38,446,640]}
+{"kind":"notes","id":"nt/6fxtnj","slide":5,"text":"Sources: resources/js/components/merchant/pages/products/ViewComponent.vue; resources/views/merchant/pages/help.blade.php; public/images/banner-left.png\n\nPresenter note: Emphasize real-time availability and transparent add-on pricing as practical controls for order accuracy."}
+{"kind":"slide","id":"sl/98nqky","slide":6,"title":"ORDER OPERATIONS","textShapes":18}
+{"kind":"textbox","id":"sh/mpk3e1gn","slide":6,"text":"ORDER OPERATIONS","textPreview":"ORDER OPERATIONS","textChars":16,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/9sb2pgzy","slide":6,"text":"Each order stays visible from acceptance to rider pickup","textPreview":"Each order stays visible from acceptance to rider pickup","textChars":56,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/8r2lgbyt","slide":6,"text":"The merchant workspace refreshes order activity and exposes the details needed to prepare the right package.","textPreview":"The merchant workspace refreshes order activity and exposes the details needed to prepare the right package.","textChars":108,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/zmtkjmhw","slide":6,"bbox":[72,192,1136,0]}
+{"kind":"shape","id":"sh/yl03a1gb","slide":6,"bbox":[846,224,300,416]}
+{"kind":"shape","id":"sh/bi9kfmh0","slide":6,"bbox":[109,280,0,270]}
+{"kind":"shape","id":"sh/qx0j6hgf","slide":6,"bbox":[89,241,40,40]}
+{"kind":"textbox","id":"sh/4zm9cf2d","slide":6,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[89,242,40,39]}
+{"kind":"textbox","id":"sh/p0vq5kjy","slide":6,"text":"Review","textPreview":"Review","textChars":6,"textLines":1,"bbox":[154,237,160,31]}
+{"kind":"textbox","id":"sh/2x4ra5k7","slide":6,"text":"Check every item, quantity, option, customer note, and delivery time.","textPreview":"Check every item, quantity, option, customer note, and delivery time.","textChars":69,"textLines":1,"bbox":[154,272,525,48]}
+{"kind":"shape","id":"sh/3yd83a1s","slide":6,"bbox":[89,335,40,40]}
+{"kind":"textbox","id":"sh/gvm98v21","slide":6,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[89,336,40,39]}
+{"kind":"textbox","id":"sh/hwvq10jm","slide":6,"text":"Confirm","textPreview":"Confirm","textChars":7,"textLines":1,"bbox":[154,331,160,31]}
+{"kind":"textbox","id":"sh/utkr6lkb","slide":6,"text":"Respond promptly and keep the order visible during preparation.","textPreview":"Respond promptly and keep the order visible during preparation.","textChars":63,"textLines":1,"bbox":[154,366,525,48]}
+{"kind":"shape","id":"sh/fud8zq1w","slide":6,"bbox":[89,429,40,40]}
+{"kind":"textbox","id":"sh/0r69kz2l","slide":6,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[89,430,40,39]}
+{"kind":"textbox","id":"sh/1sfad4j6","slide":6,"text":"Prepare","textPreview":"Prepare","textChars":7,"textLines":1,"bbox":[154,425,160,31]}
+{"kind":"textbox","id":"sh/98vqxkba","slide":6,"text":"Complete, pack, and check the full order before changing its status.","textPreview":"Complete, pack, and check the full order before changing its status.","textChars":68,"textLines":1,"bbox":[154,460,525,48]}
+{"kind":"shape","id":"sh/8n294fup","slide":6,"bbox":[89,523,40,40]}
+{"kind":"textbox","id":"sh/nmt8vut4","slide":6,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[89,524,40,39]}
+{"kind":"textbox","id":"sh/mlkr2pcj","slide":6,"text":"Release","textPreview":"Release","textChars":7,"textLines":1,"bbox":[154,519,160,31]}
+{"kind":"textbox","id":"sh/lkbqtkby","slide":6,"text":"Mark ready when the package can be collected, then coordinate rider pickup.","textPreview":"Mark ready when the package can be collected, then coordinate rider pickup.","textChars":75,"textLines":1,"bbox":[154,554,525,48]}
+{"kind":"textbox","id":"sh/0j290fud","slide":6,"text":"Order detail includes totals, discounts, customer information, rider status, and delivery proof when available.","textPreview":"Order detail includes totals, discounts, customer information, rider status, and delivery proof when available.","textChars":111,"textLines":1,"bbox":[154,613,570,46]}
+{"kind":"textbox","id":"sh/zit8rat8","slide":6,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/yhkry5cn","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/c3ip03a1","slide":6,"name":"","geometry":"roundRect","alt":"Pahatud customer order tracking screen","bbox":[870,237,252,390]}
+{"kind":"image","id":"im/x4rq98r6","slide":6,"name":"","alt":"Pahatud delivery rider illustration","bbox":[704,490,142,142]}
+{"kind":"notes","id":"nt/98nqky","slide":6,"text":"Sources: resources/views/merchant/pages/help.blade.php; resources/js/components/merchant/pages/orders/ViewComponent.vue; routes/web.php; public/images/app-preview/order-tracking.png\n\nPresenter note: Connect merchant preparation steps with the customer's order-tracking experience. Avoid promising a specific rider assignment time."}
+{"kind":"slide","id":"sl/jgmzy5","slide":7,"title":"MERCHANT MARKETING","textShapes":12}
+{"kind":"textbox","id":"sh/4fi9k3ep","slide":7,"text":"MERCHANT MARKETING","textPreview":"MERCHANT MARKETING","textChars":18,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/3e9sryd4","slide":7,"text":"Two tools support store-specific offers","textPreview":"Two tools support store-specific offers","textChars":39,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/id0ritwj","slide":7,"text":"Coupons change the checkout price. Promotional banners increase visibility after administrator approval.","textPreview":"Coupons change the checkout price. Promotional banners increase visibility after administrator approval.","textChars":104,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/hcrapovy","slide":7,"bbox":[72,192,1136,0]}
+{"kind":"textbox","id":"sh/vapsnyd8","slide":7,"text":"COUPONS","textPreview":"COUPONS","textChars":7,"textLines":1,"bbox":[648,235,190,24]}
+{"kind":"textbox","id":"sh/u9gretwn","slide":7,"text":"Flexible checkout discounts","textPreview":"Flexible checkout discounts","textChars":27,"textLines":1,"bbox":[648,268,470,38]}
+{"kind":"textbox","id":"sh/18ba1svi","slide":7,"text":"Choose a fixed peso value or percentage. Add a minimum order, usage limit, validity window, and active switch.","textPreview":"Choose a fixed peso value or percentage. Add a minimum order, usage limit, validity window, and active switch.","textChars":110,"textLines":1,"bbox":[648,318,480,78]}
+{"kind":"shape","id":"sh/0729snux","slide":7,"bbox":[648,420,494,0]}
+{"kind":"textbox","id":"sh/2ds3y14r","slide":7,"text":"PROMOTIONAL BANNERS","textPreview":"PROMOTIONAL BANNERS","textChars":19,"textLines":1,"bbox":[648,451,250,24]}
+{"kind":"textbox","id":"sh/3e1kr65c","slide":7,"text":"Scheduled app visibility","textPreview":"Scheduled app visibility","textChars":24,"textLines":1,"bbox":[648,484,450,38]}
+{"kind":"textbox","id":"sh/4fal0rmx","slide":7,"text":"Upload a 1600 × 800 banner, set timing and display order, then submit it for review. Approved offers can move through scheduled, live, and expired states.","textPreview":"Upload a 1600 × 800 banner, set timing and display order, then submit it for review. Approved offers can move through scheduled, live, an...","textChars":154,"textLines":1,"bbox":[648,534,510,98]}
+{"kind":"textbox","id":"sh/pgj2twni","slide":7,"text":"Administrator approval protects what appears in the customer app.","textPreview":"Administrator approval protects what appears in the customer app.","textChars":65,"textLines":1,"bbox":[72,554,515,52]}
+{"kind":"textbox","id":"sh/u98juh4v","slide":7,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/fahknm5g","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/9czahoby","slide":7,"name":"","geometry":"roundRect","alt":"Pahatud merchant partner discount banner","bbox":[72,231,515,291]}
+{"kind":"notes","id":"nt/jgmzy5","slide":7,"text":"Sources: resources/views/merchant/pages/promotions/index.blade.php; resources/views/merchant/pages/promotions/form.blade.php; resources/views/merchant/pages/coupons/form.blade.php; public/images/highlights/ads1.png\n\nPresenter note: Separate the two mechanics clearly: checkout coupons take effect through coupon settings, while promotional banners require administrator approval before app publication."}
+{"kind":"slide","id":"sl/pc9a7p","slide":8,"title":"SALES REPORTING","textShapes":18}
+{"kind":"textbox","id":"sh/i94v6lob","slide":8,"text":"SALES REPORTING","textPreview":"SALES REPORTING","textChars":15,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/5wve107m","slide":8,"text":"Completed orders explain gross sales and merchant net","textPreview":"Completed orders explain gross sales and merchant net","textChars":53,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/4vmd8v61","slide":8,"text":"Merchants can run a date-range report and inspect the components behind each completed order.","textPreview":"Merchants can run a date-range report and inspect the components behind each completed order.","textChars":93,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/v6dcvqpk","slide":8,"bbox":[72,192,1136,0]}
+{"kind":"textbox","id":"sh/u54v2loz","slide":8,"text":"GROSS COMPLETED SALES","textPreview":"GROSS COMPLETED SALES","textChars":21,"textLines":1,"bbox":[72,253,290,24]}
+{"kind":"textbox","id":"sh/h8vuxg7q","slide":8,"text":"Order value","textPreview":"Order value","textChars":11,"textLines":1,"bbox":[72,288,270,48]}
+{"kind":"textbox","id":"sh/w7md4v65","slide":8,"text":"Includes completed order totals for the selected reporting period.","textPreview":"Includes completed order totals for the selected reporting period.","textChars":66,"textLines":1,"bbox":[72,343,290,66]}
+{"kind":"textbox","id":"sh/72tcr6po","slide":8,"text":"−","textPreview":"−","textChars":1,"textLines":1,"bbox":[382,300,50,50]}
+{"kind":"textbox","id":"sh/m1kvy1o3","slide":8,"text":"PLATFORM COMMISSION","textPreview":"PLATFORM COMMISSION","textChars":19,"textLines":1,"bbox":[450,253,285,24]}
+{"kind":"textbox","id":"sh/wzix4zm9","slide":8,"text":"Commission","textPreview":"Commission","textChars":10,"textLines":1,"bbox":[450,288,250,48]}
+{"kind":"textbox","id":"sh/x0ryx4nu","slide":8,"text":"Reported separately so the merchant can see the platform share.","textPreview":"Reported separately so the merchant can see the platform share.","textChars":63,"textLines":1,"bbox":[450,343,290,66]}
+{"kind":"textbox","id":"sh/ax0f2p4j","slide":8,"text":"=","textPreview":"=","textChars":1,"textLines":1,"bbox":[758,300,50,50]}
+{"kind":"shape","id":"sh/by9gvu5o","slide":8,"bbox":[830,231,365,210]}
+{"kind":"textbox","id":"sh/obix0zmd","slide":8,"text":"ESTIMATED MERCHANT NET","textPreview":"ESTIMATED MERCHANT NET","textChars":22,"textLines":1,"bbox":[862,258,302,24]}
+{"kind":"textbox","id":"sh/9wrytkny","slide":8,"text":"Net earnings","textPreview":"Net earnings","textChars":12,"textLines":1,"bbox":[862,296,300,52]}
+{"kind":"textbox","id":"sh/m9gfyp47","slide":8,"text":"The amount assigned to the restaurant after commission and applicable entries.","textPreview":"The amount assigned to the restaurant after commission and applicable entries.","textChars":78,"textLines":1,"bbox":[862,354,290,70]}
+{"kind":"shape","id":"sh/napwru5s","slide":8,"bbox":[72,486,1123,0]}
+{"kind":"textbox","id":"sh/tsby5on2","slide":8,"text":"The order-level report also shows items, subtotal, delivery fee, discount, rider, completion time, and status.","textPreview":"The order-level report also shows items, subtotal, delivery fee, discount, rider, completion time, and status.","textChars":110,"textLines":1,"bbox":[222,530,950,52]}
+{"kind":"textbox","id":"sh/ho7ypof6","slide":8,"text":"Only completed orders contribute to the displayed sales totals.","textPreview":"Only completed orders contribute to the displayed sales totals.","textChars":63,"textLines":1,"bbox":[222,592,760,32]}
+{"kind":"textbox","id":"sh/gnyxgjel","slide":8,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/fmpgnex0","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/36lwfyxo","slide":8,"name":"","alt":"Merchant payout illustration","bbox":[72,519,120,120]}
+{"kind":"notes","id":"nt/pc9a7p","slide":8,"text":"Sources: resources/js/components/merchant/pages/report/OrderReportTodayComponent.vue; resources/views/merchant/pages/reports/today.blade.php; resources/views/merchant/pages/help.blade.php\n\nPresenter note: Do not insert sample revenue figures. Explain the relationship between gross, commission, and estimated merchant net using the labels from the implementation."}
+{"kind":"slide","id":"sl/v22ong","slide":9,"title":"MERCHANT ROUTINE","textShapes":18}
+{"kind":"textbox","id":"sh/ax47m90f","slide":9,"text":"MERCHANT ROUTINE","textPreview":"MERCHANT ROUTINE","textChars":16,"textLines":1,"bbox":[72,42,300,24]}
+{"kind":"textbox","id":"sh/x0v6h4j6","slide":9,"text":"A simple operating rhythm keeps the store reliable","textPreview":"A simple operating rhythm keeps the store reliable","textChars":50,"textLines":1,"bbox":[72,75,1136,62]}
+{"kind":"textbox","id":"sh/wzmpojil","slide":9,"text":"Most merchant work falls into four moments across the service day.","textPreview":"Most merchant work falls into four moments across the service day.","textChars":66,"textLines":1,"bbox":[72,139,1020,46]}
+{"kind":"shape","id":"sh/jmdoje1c","slide":9,"bbox":[72,192,1136,0]}
+{"kind":"textbox","id":"sh/y147q90r","slide":9,"text":"01","textPreview":"01","textChars":2,"textLines":1,"bbox":[72,242,60,38]}
+{"kind":"shape","id":"sh/lofqloj2","slide":9,"bbox":[72,292,238,0]}
+{"kind":"textbox","id":"sh/knmpsjih","slide":9,"text":"Before opening","textPreview":"Before opening","textChars":14,"textLines":1,"bbox":[72,317,238,66]}
+{"kind":"textbox","id":"sh/7qx8ny18","slide":9,"text":"Review profile and branch details. Confirm menu prices and stock. Switch the store online only when staff can monitor orders.","textPreview":"Review profile and branch details. Confirm menu prices and stock. Switch the store online only when staff can monitor orders.","textChars":125,"textLines":1,"bbox":[72,392,238,154]}
+{"kind":"textbox","id":"sh/6po7ut0n","slide":9,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[358,242,60,38]}
+{"kind":"shape","id":"sh/0rqtwfyl","slide":9,"bbox":[358,292,238,0]}
+{"kind":"textbox","id":"sh/1szu5kz6","slide":9,"text":"During service","textPreview":"During service","textChars":14,"textLines":1,"bbox":[358,317,238,66]}
+{"kind":"textbox","id":"sh/e58bu5gf","slide":9,"text":"Keep sold-out items unavailable. Watch incoming orders and respond quickly when a new request appears.","textPreview":"Keep sold-out items unavailable. Watch incoming orders and respond quickly when a new request appears.","textChars":102,"textLines":1,"bbox":[358,392,238,154]}
+{"kind":"textbox","id":"sh/fqhc3ah0","slide":9,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[644,242,60,38]}
+{"kind":"shape","id":"sh/ovat0fyh","slide":9,"bbox":[644,292,238,0]}
+{"kind":"textbox","id":"sh/pwju9kz2","slide":9,"text":"For every order","textPreview":"For every order","textChars":15,"textLines":1,"bbox":[644,317,238,66]}
+{"kind":"textbox","id":"sh/2t8bypgr","slide":9,"text":"Check options and notes. Prepare the complete package, mark it ready, and release it to the correct rider.","textPreview":"Check options and notes. Prepare the complete package, mark it ready, and release it to the correct rider.","textChars":106,"textLines":1,"bbox":[644,392,238,154]}
+{"kind":"textbox","id":"sh/nu1c7uhc","slide":9,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[930,242,60,38]}
+{"kind":"shape","id":"sh/czad4zyt","slide":9,"bbox":[930,292,238,0]}
+{"kind":"textbox","id":"sh/x0jud4ze","slide":9,"text":"After service","textPreview":"After service","textChars":13,"textLines":1,"bbox":[930,317,238,66]}
+{"kind":"textbox","id":"sh/lgzuh4ri","slide":9,"text":"Review completed sales, commission, and net. Update tomorrow's availability and switch the store offline when needed.","textPreview":"Review completed sales, commission, and net. Update tomorrow's availability and switch the store offline when needed.","textChars":117,"textLines":1,"bbox":[930,392,238,154]}
+{"kind":"shape","id":"sh/jexcfu9c","slide":9,"bbox":[72,586,874,64]}
+{"kind":"textbox","id":"sh/ydobmp8r","slide":9,"text":"Help and documentation covers account setup, application status, products, orders, sales, payouts, and support.","textPreview":"Help and documentation covers account setup, application status, products, orders, sales, payouts, and support.","textChars":111,"textLines":1,"bbox":[96,603,826,36]}
+{"kind":"textbox","id":"sh/tkzul47e","slide":9,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/8jqtszqt","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/7610fy5o","slide":9,"name":"","alt":"Merchant holding a burger illustration","bbox":[1018,521,148,148]}
+{"kind":"notes","id":"nt/v22ong","slide":9,"text":"Sources: resources/views/merchant/pages/help.blade.php; resources/views/merchant/pages/dashboard.blade.php; resources/js/components/merchant/includes/MerchantStoreOnlineComponent.vue\n\nPresenter note: Frame these as practical habits based on the implemented controls, not as contractual service-level commitments."}
+{"kind":"slide","id":"sl/8xu78y","slide":10,"title":"PAHATUD MERCHANT","textShapes":15}
+{"kind":"textbox","id":"sh/r2lgzqpk","slide":10,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,50,320,25]}
+{"kind":"textbox","id":"sh/cnux8vq5","slide":10,"text":"Merchant outcomes","textPreview":"Merchant outcomes","textChars":17,"textLines":1,"bbox":[72,93,585,64]}
+{"kind":"textbox","id":"sh/do3y107q","slide":10,"text":"A clear operating workspace connected to the Pahatud customer experience","textPreview":"A clear operating workspace connected to the Pahatud customer experience","textChars":72,"textLines":1,"bbox":[72,160,620,64]}
+{"kind":"shape","id":"sh/2xsf2183","slide":10,"bbox":[76,266,26,26]}
+{"kind":"textbox","id":"sh/3y1gv6po","slide":10,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[76,264,26,26]}
+{"kind":"textbox","id":"sh/4zux4bq9","slide":10,"text":"A customer-facing storefront in the Pahatud app","textPreview":"A customer-facing storefront in the Pahatud app","textChars":47,"textLines":1,"bbox":[121,262,615,38]}
+{"kind":"shape","id":"sh/p03yxg7e","slide":10,"bbox":[76,332,26,26]}
+{"kind":"textbox","id":"sh/mtwfe587","slide":10,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[76,330,26,26]}
+{"kind":"textbox","id":"sh/nu5g7aps","slide":10,"text":"Direct control of catalog and product availability","textPreview":"Direct control of catalog and product availability","textChars":50,"textLines":1,"bbox":[121,328,615,38]}
+{"kind":"shape","id":"sh/buhofixk","slide":10,"bbox":[76,398,26,26]}
+{"kind":"textbox","id":"sh/at8nmdwz","slide":10,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[76,396,26,26]}
+{"kind":"textbox","id":"sh/xwj6hsfq","slide":10,"text":"Order visibility through preparation and rider pickup","textPreview":"Order visibility through preparation and rider pickup","textChars":53,"textLines":1,"bbox":[121,394,615,38]}
+{"kind":"shape","id":"sh/wvapone5","slide":10,"bbox":[76,464,26,26]}
+{"kind":"textbox","id":"sh/jy1oj2xw","slide":10,"text":"✓","textPreview":"✓","textChars":1,"textLines":1,"bbox":[76,462,26,26]}
+{"kind":"textbox","id":"sh/yxs7qxwb","slide":10,"text":"Sales reporting with gross, commission, and net amounts","textPreview":"Sales reporting with gross, commission, and net amounts","textChars":55,"textLines":1,"bbox":[121,460,615,38]}
+{"kind":"shape","id":"sh/l0j6lsfm","slide":10,"bbox":[72,555,646,0]}
+{"kind":"textbox","id":"sh/kzaps7e1","slide":10,"text":"Merchant support","textPreview":"Merchant support","textChars":16,"textLines":1,"bbox":[72,580,210,28]}
+{"kind":"textbox","id":"sh/7m1on2xs","slide":10,"text":"info@pahatud.com   ·   +63 916 298 6547   ·   (082) 224 3919","textPreview":"info@pahatud.com   ·   +63 916 298 6547   ·   (082) 224 3919","textChars":60,"textLines":1,"bbox":[72,615,670,30]}
+{"kind":"shape","id":"sh/6ls7uxw7","slide":10,"bbox":[790,60,430,596]}
+{"kind":"textbox","id":"sh/3up0balc","slide":10,"text":"PAHATUD MERCHANT","textPreview":"PAHATUD MERCHANT","textChars":16,"textLines":1,"bbox":[72,680,260,18]}
+{"kind":"textbox","id":"sh/4vy14v2x","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1148,678,60,20]}
+{"kind":"image","id":"im/p07ilonu","slide":10,"name":"","geometry":"roundRect","alt":"Pahatud website and customer app announcement","bbox":[790,60,430,596]}
+{"kind":"notes","id":"nt/8xu78y","slide":10,"text":"Sources: resources/views/merchant/pages/help.blade.php; resources/views/merchant/includes/menu.blade.php; public/images/announcements/pahatud-new-website.png\n\nPresenter note: Close with concrete merchant capabilities and the support channels implemented in the merchant help page."}

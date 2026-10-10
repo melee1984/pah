@@ -222,6 +222,16 @@ Route::middleware('admin')->group(function () {
         ->name('dashboard.rider-top-ups.approve');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard/merchant-applications', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'index'])
+        ->name('dashboard.merchant-applications.index');
+    Route::get('data/dashboard/merchant-applications/{application}', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'show'])
+        ->name('dashboard.merchant-applications.show');
+    Route::post('data/dashboard/merchant-applications/{application}/approve', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'approve'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.merchant-applications.approve');
+    Route::post('data/dashboard/merchant-applications/{application}/decline', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'decline'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.merchant-applications.decline');
     Route::resource('data/dashboard/promotions', PartnerPromotionController::class)
         ->except('show')
         ->names('dashboard.promotions');
@@ -307,7 +317,9 @@ Route::get('/login/{social}/callback', [\App\Http\Controllers\SocialLoginControl
 
 Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.dashboard.login');
 Route::get('/merchant/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
-Route::get('/merchant/register', [\App\Http\Controllers\Merchant\DashboardController::class, 'register'])->name('merchant.register');
+Route::get('/merchant/register', [\App\Http\Controllers\MerchantApplicationController::class, 'create'])->name('merchant.register');
+Route::get('/merchant/register/thank-you', [\App\Http\Controllers\MerchantApplicationController::class, 'success'])
+    ->name('merchant.register.success');
 
 Route::get('/merchant/forgot', [\App\Http\Controllers\Merchant\DashboardController::class, 'forgot'])->name('merchant.forgot');
 Route::get('/merchant/reset', [\App\Http\Controllers\Merchant\DashboardController::class, 'forgot'])->name('merchant.reset');
@@ -317,7 +329,9 @@ Route::get('/merchant/setpassword', [\App\Http\Controllers\Merchant\DashboardCon
 Route::post('/merchant/dashboard/login/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'validateLogin'])
     ->middleware(['throttle:10,1', 'turnstile:merchant_login'])
     ->name('merchant.login.submit');
-Route::post('/merchant/register/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'storeMerchant'])->name('merchant.register.submit');
+Route::post('/merchant/register/submit', [\App\Http\Controllers\MerchantApplicationController::class, 'store'])
+    ->middleware(['throttle:5,1', 'turnstile:merchant_application'])
+    ->name('merchant.register.submit');
 Route::post('/merchant/reset/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'reset'])->name('merchant.reset.submit');
 
 Route::get('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\DashboardController::class, 'showPasswordResetForm']);

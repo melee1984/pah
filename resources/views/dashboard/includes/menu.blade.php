@@ -16,6 +16,9 @@
         <a href="{{ route('dashboard.merchant') }}" class="nav-link {{ Request::is('data/dashboard/merchant') ? 'active' : '' }}"><i class="nav-icon fas fa-store"></i><p>Merchant partners</p></a>
     </li>
     <li class="nav-item">
+        <a href="{{ route('dashboard.merchant-applications.index') }}" class="nav-link {{ Request::is('data/dashboard/merchant-applications*') ? 'active' : '' }}"><i class="nav-icon fas fa-store-alt"></i><p>Merchant applications</p></a>
+    </li>
+    <li class="nav-item">
         <a href="{{ route('dashboard.promotions.index') }}" class="nav-link {{ Request::is('data/dashboard/promotions*') ? 'active' : '' }}"><i class="nav-icon fas fa-bullhorn"></i><p>Promotions</p></a>
     </li>
     <li class="nav-item">
