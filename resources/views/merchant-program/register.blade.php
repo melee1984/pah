@@ -57,9 +57,24 @@
     <section class="agent-program-section merchant-services-section" id="services">
         <div class="agent-program-heading"><p class="agent-eyebrow">Choose what fits your operation</p><h2>Serve customers their way</h2><p>You can request one or more service types in your application. Final availability depends on your location and operational readiness.</p></div>
         <div class="merchant-service-grid">
-            <article><span aria-hidden="true">⌂</span><div><h3>Dine-in</h3><p>Help customers discover your restaurant and support on-premise dining and table-oriented experiences.</p></div></article>
-            <article><span aria-hidden="true">◫</span><div><h3>Pickup</h3><p>Let customers order ahead, then collect prepared food directly from your selected location.</p></div></article>
-            <article><span aria-hidden="true">→</span><div><h3>Delivery</h3><p>Reach customers beyond your storefront with delivery availability coordinated through Pahatud.</p></div></article>
+            <article>
+                <span class="merchant-service-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" role="img"><path d="M5 21.5h22M8 21.5c.3-6 3.5-10 8-10s7.7 4 8 10M16 8.2v3.3M13.2 8.2h5.6"/><path class="merchant-service-icon-accent" d="M8.5 25h15"/></svg>
+                </span>
+                <div><h3>Dine-in</h3><p>Help customers discover your restaurant and support on-premise dining and table-oriented experiences.</p></div>
+            </article>
+            <article>
+                <span class="merchant-service-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" role="img"><path d="M8 12.5h16l-1.2 13H9.2L8 12.5Z"/><path d="M12 13v-1.5a4 4 0 0 1 8 0V13"/><path class="merchant-service-icon-accent" d="m13 19 2.1 2.1L19.5 17"/></svg>
+                </span>
+                <div><h3>Pickup</h3><p>Let customers order ahead, then collect prepared food directly from your selected location.</p></div>
+            </article>
+            <article>
+                <span class="merchant-service-icon" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" role="img"><circle cx="10" cy="24" r="2.7"/><circle cx="24" cy="24" r="2.7"/><path d="M12.7 24h8.6l2.2-7.5h-7.7l-2.2 4H8.2l-1.7-7H4"/><path d="M17.5 13.2h4.2l2.2 3.3M13.8 9.5h5.5"/><path class="merchant-service-icon-accent" d="M6.5 10h4M5 7.5h6"/></svg>
+                </span>
+                <div><h3>Delivery</h3><p>Reach customers beyond your storefront with delivery availability coordinated through Pahatud.</p></div>
+            </article>
         </div>
     </section>
 
