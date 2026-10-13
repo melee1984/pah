@@ -368,6 +368,12 @@ class Cart extends Model
       $discount += (int) $item->qty * (float) $item->discount_amount;
     }
 
+    $fulfillmentCommissionPercentage = $this->fulfillmentCommissionPercentage();
+
+    if ($fulfillmentCommissionPercentage !== null) {
+      $totalCommission = round($subTotal * ($fulfillmentCommissionPercentage / 100), 2);
+    }
+
     $convenienceFee = round($subTotal * (float) config('checkout.convenience_fee_rate', 0.05), 2);
     $vatAmount = round($convenienceFee * ((float) config('checkout.vat_rate', 0) / 100), 2);
 
@@ -381,6 +387,17 @@ class Cart extends Model
       'total' => max(0, ($subTotal + $deliveryFee + ($convenienceFee - $vatAmount)) - $discount),
       'total_comm' => $totalCommission,
     ];
+  }
+
+  public function fulfillmentCommissionPercentage(): ?float
+  {
+    $fulfillmentType = $this->fulfillment_type ?: self::FULFILLMENT_DELIVERY;
+
+    if (! in_array($fulfillmentType, [self::FULFILLMENT_PICKUP, self::FULFILLMENT_DINE_IN], true)) {
+      return null;
+    }
+
+    return (float) config('checkout.non_delivery_commission_percentage', 5);
   }
 
   public function isEmpty(): bool

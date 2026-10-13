@@ -1168,6 +1168,50 @@ class AgentPortalTest extends TestCase
         ]);
     }
 
+    public function test_pickup_and_dine_in_orders_snapshot_five_percent_commission(): void
+    {
+        config()->set('checkout.non_delivery_commission_percentage', 5);
+
+        $agent = $this->agent();
+        $restaurant = $this->restaurant($agent);
+        $restaurant->update(['percentage' => 20]);
+
+        foreach ([Cart::FULFILLMENT_PICKUP, Cart::FULFILLMENT_DINE_IN] as $fulfillmentType) {
+            $cart = Cart::query()->create([
+                'partner_id' => $restaurant->id,
+                'fulfillment_type' => $fulfillmentType,
+                'delivery_fee' => 0,
+                'discount_amount' => 0,
+            ]);
+            CartItem::query()->create([
+                'cart_id' => $cart->id,
+                'qty' => 2,
+                'price' => 100,
+                'variance_total' => 20,
+                'price_comm_total' => 12,
+                'variance_total_comm_total' => 3,
+                'discount_amount' => 0,
+            ]);
+            $order = Orders::query()->create([
+                'cart_id' => $cart->id,
+                'partner_id' => $restaurant->id,
+                'submitted_at' => now(),
+                'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+            ]);
+
+            $order->update(['order_status_id' => LibraryStatus::STATUS_COMPLETED]);
+
+            $this->assertDatabaseHas('agent_commissions', [
+                'order_id' => $order->id,
+                'subtotal_amount' => 240,
+                'pahatud_commission_percentage' => 5,
+                'pahatud_commission_amount' => 12,
+                'commission_percentage' => config('agent.commission_tiers.0'),
+                'commission_amount' => round(12 * config('agent.commission_tiers.0') / 100, 2),
+            ]);
+        }
+    }
+
     public function test_commission_tiers_count_only_approved_restaurants_and_apply_to_future_network_orders(): void
     {
         $agent = $this->agent('tiered-agent@example.com');

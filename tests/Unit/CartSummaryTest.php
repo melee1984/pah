@@ -51,4 +51,42 @@ class CartSummaryTest extends TestCase
         $this->assertSame('0.00', $summary['vat_amount']);
         $this->assertSame('0.00', $summary['total']);
     }
+
+    public function test_delivery_keeps_the_item_level_commission(): void
+    {
+        $cart = new Cart(['fulfillment_type' => Cart::FULFILLMENT_DELIVERY]);
+        $cart->setRelation('details', new Collection([
+            new CartItem([
+                'qty' => 2,
+                'price' => 100,
+                'variance_total' => 20,
+                'price_comm_total' => 12,
+                'variance_total_comm_total' => 3,
+                'discount_amount' => 0,
+            ]),
+        ]));
+
+        $this->assertSame(30.0, $cart->cartItemAmounts()['total_comm']);
+    }
+
+    public function test_pickup_and_dine_in_use_five_percent_of_the_item_subtotal(): void
+    {
+        config()->set('checkout.non_delivery_commission_percentage', 5);
+
+        foreach ([Cart::FULFILLMENT_PICKUP, Cart::FULFILLMENT_DINE_IN] as $fulfillmentType) {
+            $cart = new Cart(['fulfillment_type' => $fulfillmentType]);
+            $cart->setRelation('details', new Collection([
+                new CartItem([
+                    'qty' => 2,
+                    'price' => 100,
+                    'variance_total' => 20,
+                    'price_comm_total' => 12,
+                    'variance_total_comm_total' => 3,
+                    'discount_amount' => 0,
+                ]),
+            ]));
+
+            $this->assertSame(12.0, $cart->cartItemAmounts()['total_comm']);
+        }
+    }
 }

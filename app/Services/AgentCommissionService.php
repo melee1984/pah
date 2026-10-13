@@ -39,7 +39,11 @@ class AgentCommissionService
             $order->loadMissing('cart');
             $breakdown = $this->orderBreakdown($order);
             $percentage = $agent->commissionPercentage();
-            $pahatudCommissionPercentage = round((float) ($restaurant->percentage ?? config('agent.pahatud_commission_percentage')), 2);
+            $pahatudCommissionPercentage = round((float) (
+                $order->cart->fulfillmentCommissionPercentage()
+                ?? $restaurant->percentage
+                ?? config('agent.pahatud_commission_percentage')
+            ), 2);
             $pahatudCommissionAmount = $breakdown['commission'];
             $commissionAmount = round($pahatudCommissionAmount * ($percentage / 100), 2);
 

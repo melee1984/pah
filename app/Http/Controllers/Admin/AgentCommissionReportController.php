@@ -7,6 +7,7 @@ use App\AgentCommission;
 use App\Http\Controllers\Controller;
 use App\LibraryStatus;
 use App\Model\Bookings\BookingStatus;
+use App\Model\Cart;
 use App\Partners;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -67,7 +68,7 @@ class AgentCommissionReportController extends Controller
                 'restaurant:id,restaurant_name,agent_id,percentage',
                 'order:id,cart_id',
                 'order.cart:id,order_no,fulfillment_type',
-                'order.cart.details:id,cart_id,qty,price_comm_total,variance_total_comm_total',
+                'order.cart.details:id,cart_id,qty,price,variance_total,price_comm_total,variance_total_comm_total',
             ])
             ->latest('qualified_at')
             ->latest('id')
@@ -118,18 +119,27 @@ class AgentCommissionReportController extends Controller
     {
         $calculated = $query
             ->leftJoin('order as report_orders', 'report_orders.id', '=', 'agent_commissions.order_id')
+            ->leftJoin('cart as report_carts', 'report_carts.id', '=', 'report_orders.cart_id')
             ->leftJoin('cart_details as report_items', 'report_items.cart_id', '=', 'report_orders.cart_id')
             ->selectRaw('agent_commissions.id')
             ->selectRaw(
                 'CASE WHEN COUNT(report_items.id) > 0'
-                .' THEN ROUND(COALESCE(SUM(report_items.qty * (report_items.price_comm_total + report_items.variance_total_comm_total)), 0)'
+                .' THEN ROUND(CASE WHEN report_carts.fulfillment_type IN (?, ?)'
+                .' THEN COALESCE(SUM(report_items.qty * (report_items.price + report_items.variance_total)), 0) * ? / 100'
+                .' ELSE COALESCE(SUM(report_items.qty * (report_items.price_comm_total + report_items.variance_total_comm_total)), 0) END'
                 .' * agent_commissions.commission_percentage / 100, 2)'
                 .' ELSE agent_commissions.commission_amount END as calculated_commission',
+                [
+                    Cart::FULFILLMENT_PICKUP,
+                    Cart::FULFILLMENT_DINE_IN,
+                    (float) config('checkout.non_delivery_commission_percentage', 5),
+                ],
             )
             ->groupBy(
                 'agent_commissions.id',
                 'agent_commissions.commission_percentage',
                 'agent_commissions.commission_amount',
+                'report_carts.fulfillment_type',
             );
 
         return (float) DB::query()
