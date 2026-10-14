@@ -52,7 +52,7 @@
               <td><span class="merchant-sales-commission">{{ money(order.summary.total_comm) }}</span></td>
               <td><strong class="merchant-sales-net">{{ money(order.summary.net) }}</strong></td>
               <td><template v-if="fulfillmentTypeFor(order) === 'delivery'"><strong v-if="order.rider">{{ order.rider.name }}</strong><span v-else class="text-muted">Not assigned</span></template><span v-else class="text-muted">Not required</span></td>
-              <td><span v-if="order.status" class="dashboard-status-pill is-success"><i class="fas fa-check mr-1"></i>{{ order.status.title }}</span></td>
+              <td><span v-if="order.order_status || order.status" class="dashboard-status-pill is-success"><i class="fas fa-check mr-1"></i>{{ (order.order_status || order.status).title }}</span><span v-else class="text-muted">—</span></td>
             </tr>
           </tbody>
           <tfoot v-if="orders.length">
