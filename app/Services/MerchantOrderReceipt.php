@@ -24,9 +24,24 @@ class MerchantOrderReceipt
         $orderNumber = $cart->order_no ?: $order->id;
         $lines = [];
 
+        $lines[] = str_repeat('*', self::PAPER_WIDTH);
+        $lines[] = $this->center('PahatudFood');
+        $lines[] = str_repeat('*', self::PAPER_WIDTH);
         $lines[] = $this->center($cart->partner?->restaurant_name ?: 'PAHATUD MERCHANT');
         $lines[] = $this->center('ORDER #'.$orderNumber);
         $lines[] = $this->center($this->fulfillmentLabel($cart));
+
+        if (in_array($cart->fulfillment_type, [Cart::FULFILLMENT_PICKUP, Cart::FULFILLMENT_DINE_IN], true)
+            && filled($cart->fullname)) {
+            $lines[] = $this->center('Order For:');
+            $lines[] = $this->center((string) $cart->fullname);
+        }
+
+        if ($cart->fulfillment_type === Cart::FULFILLMENT_PICKUP) {
+            $lines[] = $this->center('Be Ready by:');
+            $lines[] = $this->center($this->pickupSchedule($cart));
+        }
+
         $lines[] = str_repeat('-', self::PAPER_WIDTH);
         $lines[] = $this->columns('QTY ITEM', 'AMOUNT');
         $lines[] = str_repeat('-', self::PAPER_WIDTH);
@@ -95,6 +110,33 @@ class MerchantOrderReceipt
     private function money(float|int|string $amount): string
     {
         return 'PHP '.number_format((float) $amount, 2, '.', ',');
+    }
+
+    private function pickupSchedule(Cart $cart): string
+    {
+        $date = filled($cart->delivery_date)
+            ? $this->formatScheduleValue((string) $cart->delivery_date, 'M d, Y')
+            : null;
+        $time = filled($cart->delivery_time)
+            ? $this->formatScheduleValue((string) $cart->delivery_time, 'h:i A')
+            : null;
+
+        return collect([$date, $time])
+            ->filter()
+            ->implode(' at ') ?: 'Time not specified';
+    }
+
+    private function formatScheduleValue(string $value, string $format): string
+    {
+        if (strtoupper(trim($value)) === 'ASAP') {
+            return 'ASAP';
+        }
+
+        try {
+            return Carbon::parse($value)->format($format);
+        } catch (\Throwable) {
+            return trim($value);
+        }
     }
 
     private function center(string $text): string

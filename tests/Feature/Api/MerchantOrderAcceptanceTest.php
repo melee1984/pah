@@ -55,6 +55,9 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->unsignedBigInteger('payment_id')->nullable();
             $table->string('order_no')->nullable();
             $table->string('fulfillment_type')->nullable();
+            $table->string('fullname')->nullable();
+            $table->string('delivery_date')->nullable();
+            $table->string('delivery_time')->nullable();
             $table->decimal('delivery_fee', 8, 2)->default(0);
             $table->decimal('discount_amount', 8, 2)->default(0);
             $table->timestamps();
@@ -168,8 +171,13 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertSame('plain_text', $printJob['format']);
         $this->assertSame(1, $printJob['copies']);
         $this->assertSame(3, $printJob['feed_lines']);
+        $this->assertStringContainsString('PahatudFood', $printJob['content']);
         $this->assertStringContainsString('Test Merchant', $printJob['content']);
         $this->assertStringContainsString('ORDER #TEST-100', $printJob['content']);
+        $this->assertStringContainsString('Order For:', $printJob['content']);
+        $this->assertStringContainsString('Juan Dela Cruz', $printJob['content']);
+        $this->assertStringContainsString('Be Ready by:', $printJob['content']);
+        $this->assertStringContainsString('Oct 14, 2026 at 02:30 PM', $printJob['content']);
         $this->assertStringContainsString('2x Chicken Inasal', $printJob['content']);
         $this->assertStringContainsString('+ Large Size', $printJob['content']);
         $this->assertStringContainsString('+ Extra Cheese', $printJob['content']);
@@ -311,7 +319,14 @@ class MerchantOrderAcceptanceTest extends TestCase
     {
         $order = $this->createOrder(Cart::FULFILLMENT_DINE_IN);
         $controller = new OrderController;
-        $controller->acceptOrder($order, $this->merchantRequest());
+        $accepted = $controller->acceptOrder($order, $this->merchantRequest());
+
+        $receipt = $accepted->getData(true)['print_job']['content'];
+        $this->assertStringContainsString('PahatudFood', $receipt);
+        $this->assertStringContainsString('DINE IN', $receipt);
+        $this->assertStringContainsString('Order For:', $receipt);
+        $this->assertStringContainsString('Juan Dela Cruz', $receipt);
+        $this->assertStringNotContainsString('Be Ready by:', $receipt);
 
         $response = $controller->acceptOrder(
             $order,
@@ -419,6 +434,9 @@ class MerchantOrderAcceptanceTest extends TestCase
             'payment_id' => 3,
             'order_no' => 'TEST-100',
             'fulfillment_type' => $fulfillmentType,
+            'fullname' => 'Juan Dela Cruz',
+            'delivery_date' => '2026-10-14',
+            'delivery_time' => '14:30:00',
             'discount_amount' => 15,
             'created_at' => now(),
             'updated_at' => now(),
