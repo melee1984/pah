@@ -361,16 +361,28 @@ class Cart extends Model
       ? $this->getRelation('details')
       : CartItem::query()->where('cart_id', $this->getKey())->get();
 
+    $fulfillmentCommissionPercentage = $this->fulfillmentCommissionPercentage();
+    $commissionIsAddedToPrice = $fulfillmentCommissionPercentage !== null
+      && $this->commissionIsAddedToPrice();
+
     foreach ($items as $item) {
-      $qty += (int) $item->qty;
-      $subTotal += (int) $item->qty * ((float) $item->price + (float) $item->variance_total);
-      $totalCommission += (int) $item->qty * ((float) $item->price_comm_total + (float) $item->variance_total_comm_total);
-      $discount += (int) $item->qty * (float) $item->discount_amount;
+      $itemQty = (int) $item->qty;
+      $itemPrice = (float) $item->price + (float) $item->variance_total;
+      $itemCommission = (float) $item->price_comm_total + (float) $item->variance_total_comm_total;
+
+      if ($commissionIsAddedToPrice) {
+        $basePrice = max(0, $itemPrice - $itemCommission);
+        $itemCommission = round($basePrice * ($fulfillmentCommissionPercentage / 100), 2);
+        $itemPrice = $basePrice + $itemCommission;
+      }
+
+      $qty += $itemQty;
+      $subTotal += $itemQty * $itemPrice;
+      $totalCommission += $itemQty * $itemCommission;
+      $discount += $itemQty * (float) $item->discount_amount;
     }
 
-    $fulfillmentCommissionPercentage = $this->fulfillmentCommissionPercentage();
-
-    if ($fulfillmentCommissionPercentage !== null) {
+    if ($fulfillmentCommissionPercentage !== null && ! $commissionIsAddedToPrice) {
       $totalCommission = round($subTotal * ($fulfillmentCommissionPercentage / 100), 2);
     }
 
@@ -398,6 +410,19 @@ class Cart extends Model
     }
 
     return (float) config('checkout.non_delivery_commission_percentage', 5);
+  }
+
+  private function commissionIsAddedToPrice(): bool
+  {
+    if ($this->relationLoaded('partner')) {
+      return (bool) $this->getRelation('partner')?->addup;
+    }
+
+    if (! $this->partner_id) {
+      return false;
+    }
+
+    return (bool) $this->partner()->value('addup');
   }
 
   public function isEmpty(): bool

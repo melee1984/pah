@@ -89,4 +89,29 @@ class CartSummaryTest extends TestCase
             $this->assertSame(12.0, $cart->cartItemAmounts()['total_comm']);
         }
     }
+
+    public function test_pickup_and_dine_in_replace_an_added_delivery_commission_with_five_percent(): void
+    {
+        config()->set('checkout.non_delivery_commission_percentage', 5);
+
+        foreach ([Cart::FULFILLMENT_PICKUP, Cart::FULFILLMENT_DINE_IN] as $fulfillmentType) {
+            $cart = new Cart(['fulfillment_type' => $fulfillmentType]);
+            $cart->setRelation('partner', new \App\Partners(['addup' => true]));
+            $cart->setRelation('details', new Collection([
+                new CartItem([
+                    'qty' => 1,
+                    'price' => 115,
+                    'variance_total' => 0,
+                    'price_comm_total' => 15,
+                    'variance_total_comm_total' => 0,
+                    'discount_amount' => 0,
+                ]),
+            ]));
+
+            $amounts = $cart->cartItemAmounts();
+
+            $this->assertSame(105.0, $amounts['sub_total']);
+            $this->assertSame(5.0, $amounts['total_comm']);
+        }
+    }
 }

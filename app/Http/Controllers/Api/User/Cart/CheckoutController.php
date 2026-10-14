@@ -452,11 +452,13 @@ class CheckoutController extends Controller
 
 	private function discountableSubtotal(Cart $cart): float
 	{
-		return round((float) DB::table('cart_details')->where('cart_id', $cart->id)->get()->sum(function ($item) {
-			return max(0, (int) $item->qty * (
-				(float) $item->price + (float) $item->variance_total - (float) $item->discount_amount
-			));
-		}), 2);
+		$amounts = $cart->cartItemAmounts();
+		$itemDiscount = (float) DB::table('cart_details')
+			->where('cart_id', $cart->id)
+			->get()
+			->sum(fn ($item) => (int) $item->qty * (float) $item->discount_amount);
+
+		return round(max(0, $amounts['sub_total'] - $itemDiscount), 2);
 	}
 
 	private function checkoutSummary(Cart $cart): array

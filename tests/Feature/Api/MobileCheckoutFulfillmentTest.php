@@ -29,6 +29,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
             $table->id();
             $table->unsignedBigInteger('account_type_id')->default(1);
             $table->boolean('no_delivery_fee')->default(false);
+            $table->boolean('addup')->default(false);
             $table->timestamps();
         });
 
@@ -203,6 +204,30 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $this->assertSame('105.00', $response['summary']['total']);
     }
 
+    public function test_updating_to_pickup_replaces_the_added_delivery_commission_with_five_percent(): void
+    {
+        config()->set('checkout.non_delivery_commission_percentage', 5);
+        DB::table('partners')->where('id', $this->partnerId)->update(['addup' => true]);
+
+        $optionId = $this->createCheckoutOption('pickup');
+        $cartId = $this->createCart('pickup-commission-session', 50);
+        DB::table('cart_details')->insert([
+            'cart_id' => $cartId,
+            'qty' => 1,
+            'price' => 115,
+            'price_comm_total' => 15,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $response = $this->updateOrderOption('pickup-commission-session', $optionId);
+
+        $this->assertSame(1, $response['status']);
+        $this->assertSame('105.00', $response['summary']['sub_total']);
+        $this->assertSame('5.00', $response['summary']['total_comm']);
+        $this->assertSame('0.00', $response['summary']['delivery_fee']);
+    }
+
     public function test_updating_to_delivery_requires_an_address(): void
     {
         $optionId = $this->createCheckoutOption('delivery');
@@ -272,7 +297,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         ], $extra));
         $request->setUserResolver(fn () => $this->user);
 
-        return (new CheckoutController)->process($request)->getData(true);
+        return app(CheckoutController::class)->process($request)->getData(true);
     }
 
     private function createCart(string $sessionId, float $deliveryFee = 0): int
@@ -314,6 +339,6 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $request = Request::create('/api/mobile/checkout/order-option/update/submit', 'POST', $payload);
         $request->setUserResolver(fn () => $this->user);
 
-        return (new CheckoutController)->updateOrderOption($request)->getData(true);
+        return app(CheckoutController::class)->updateOrderOption($request)->getData(true);
     }
 }
