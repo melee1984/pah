@@ -99,6 +99,7 @@ class Cart extends Model
       'convenience_fee' => number_format($amounts['convenience_fee'], 2),
       'vat_amount' => number_format($amounts['vat_amount'], 2),
       'discount' => number_format($amounts['discount'], 2),
+      'fulfillment_discount' => number_format($amounts['fulfillment_discount'], 2),
       'total' => number_format($amounts['total'], 2),
       'qty' => $amounts['qty'],
       'total_comm' => number_format($amounts['total_comm'], 2),
@@ -355,6 +356,7 @@ class Cart extends Model
     $qty = 0;
     $subTotal = 0;
     $totalCommission = 0;
+    $fulfillmentDiscount = 0;
     $discount = (float) $this->discount_amount;
     $deliveryFee = (float) $this->delivery_fee;
     $items = $this->relationLoaded('details')
@@ -372,8 +374,9 @@ class Cart extends Model
 
       if ($commissionIsAddedToPrice) {
         $basePrice = max(0, $itemPrice - $itemCommission);
-        $itemCommission = round($basePrice * ($fulfillmentCommissionPercentage / 100), 2);
-        $itemPrice = $basePrice + $itemCommission;
+        $adjustedCommission = round($basePrice * ($fulfillmentCommissionPercentage / 100), 2);
+        $fulfillmentDiscount += $itemQty * max(0, $itemCommission - $adjustedCommission);
+        $itemCommission = $adjustedCommission;
       }
 
       $qty += $itemQty;
@@ -382,11 +385,14 @@ class Cart extends Model
       $discount += $itemQty * (float) $item->discount_amount;
     }
 
+    $discount += $fulfillmentDiscount;
+
     if ($fulfillmentCommissionPercentage !== null && ! $commissionIsAddedToPrice) {
       $totalCommission = round($subTotal * ($fulfillmentCommissionPercentage / 100), 2);
     }
 
-    $convenienceFee = round($subTotal * (float) config('checkout.convenience_fee_rate', 0.05), 2);
+    $convenienceFeeBase = max(0, $subTotal - $fulfillmentDiscount);
+    $convenienceFee = round($convenienceFeeBase * (float) config('checkout.convenience_fee_rate', 0.05), 2);
     $vatAmount = round($convenienceFee * ((float) config('checkout.vat_rate', 0) / 100), 2);
 
     return [
@@ -396,6 +402,7 @@ class Cart extends Model
       'convenience_fee' => $convenienceFee,
       'vat_amount' => $vatAmount,
       'discount' => $discount,
+      'fulfillment_discount' => $fulfillmentDiscount,
       'total' => max(0, ($subTotal + $deliveryFee + ($convenienceFee - $vatAmount)) - $discount),
       'total_comm' => $totalCommission,
     ];

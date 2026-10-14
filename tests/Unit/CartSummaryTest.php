@@ -110,7 +110,9 @@ class CartSummaryTest extends TestCase
 
             $amounts = $cart->cartItemAmounts();
 
-            $this->assertSame(105.0, $amounts['sub_total']);
+            $this->assertSame(115.0, $amounts['sub_total']);
+            $this->assertSame(10.0, $amounts['discount']);
+            $this->assertSame(10.0, $amounts['fulfillment_discount']);
             $this->assertSame(5.0, $amounts['total_comm']);
         }
     }

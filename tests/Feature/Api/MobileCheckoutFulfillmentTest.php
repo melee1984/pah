@@ -223,7 +223,9 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $response = $this->updateOrderOption('pickup-commission-session', $optionId);
 
         $this->assertSame(1, $response['status']);
-        $this->assertSame('105.00', $response['summary']['sub_total']);
+        $this->assertSame('115.00', $response['summary']['sub_total']);
+        $this->assertSame('10.00', $response['summary']['discount']);
+        $this->assertSame('10.00', $response['summary']['fulfillment_discount']);
         $this->assertSame('5.00', $response['summary']['total_comm']);
         $this->assertSame('0.00', $response['summary']['delivery_fee']);
     }

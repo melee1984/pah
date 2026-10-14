@@ -888,7 +888,7 @@ class CheckoutController extends Controller
             ->get()
             ->sum(fn ($item) => (int) $item->qty * (float) $item->discount_amount);
 
-        return round(max(0, $amounts['sub_total'] - $itemDiscount), 2);
+        return round(max(0, $amounts['sub_total'] - $amounts['fulfillment_discount'] - $itemDiscount), 2);
     }
 
     private function checkoutSummary(Cart $cart): array
