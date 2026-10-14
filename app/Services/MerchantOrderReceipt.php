@@ -16,6 +16,7 @@ class MerchantOrderReceipt
         $order->loadMissing([
             'cart.partner',
             'cart.payment',
+            'cart.diningTable',
             'cart.details.item',
         ]);
 
@@ -35,6 +36,11 @@ class MerchantOrderReceipt
             && filled($cart->fullname)) {
             $lines[] = $this->center('Order For:');
             $lines[] = $this->center((string) $cart->fullname);
+        }
+
+        if ($cart->fulfillment_type === Cart::FULFILLMENT_DINE_IN && $cart->dining_table_id) {
+            $tableNumber = $cart->diningTable?->name ?: $cart->dining_table_id;
+            $lines[] = $this->center('Table No: '.$tableNumber);
         }
 
         if ($cart->fulfillment_type === Cart::FULFILLMENT_PICKUP) {

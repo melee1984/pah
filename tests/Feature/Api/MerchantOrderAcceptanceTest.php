@@ -55,6 +55,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->unsignedBigInteger('payment_id')->nullable();
             $table->string('order_no')->nullable();
             $table->string('fulfillment_type')->nullable();
+            $table->unsignedBigInteger('dining_table_id')->nullable();
             $table->string('fullname')->nullable();
             $table->string('delivery_date')->nullable();
             $table->string('delivery_time')->nullable();
@@ -69,6 +70,19 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->softDeletes();
             $table->timestamps();
         });
+
+        Schema::create('partner_location_tables', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        DB::table('partner_location_tables')->insert([
+            'id' => 12,
+            'name' => 'Table 12',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         Schema::create('cart_details', function (Blueprint $table) {
             $table->id();
@@ -326,6 +340,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertStringContainsString('DINE IN', $receipt);
         $this->assertStringContainsString('Order For:', $receipt);
         $this->assertStringContainsString('Juan Dela Cruz', $receipt);
+        $this->assertStringContainsString('Table No: Table 12', $receipt);
         $this->assertStringNotContainsString('Be Ready by:', $receipt);
 
         $response = $controller->acceptOrder(
@@ -434,6 +449,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             'payment_id' => 3,
             'order_no' => 'TEST-100',
             'fulfillment_type' => $fulfillmentType,
+            'dining_table_id' => $fulfillmentType === Cart::FULFILLMENT_DINE_IN ? 12 : null,
             'fullname' => 'Juan Dela Cruz',
             'delivery_date' => '2026-10-14',
             'delivery_time' => '14:30:00',
