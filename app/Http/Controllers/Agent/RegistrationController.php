@@ -31,6 +31,7 @@ class RegistrationController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('agents', 'email')],
             'mobile' => ['required', 'string', 'max:30'],
+            'city' => ['required', 'string', 'max:120'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'terms' => ['accepted'],
         ]);
@@ -41,6 +42,7 @@ class RegistrationController extends Controller
                     'name' => $validated['name'],
                     'email' => $validated['email'],
                     'mobile' => $validated['mobile'],
+                    'city' => $validated['city'],
                     'password' => $validated['password'],
                     'commission_percentage' => config('agent.commission_tiers.0', 15),
                     'active' => false,

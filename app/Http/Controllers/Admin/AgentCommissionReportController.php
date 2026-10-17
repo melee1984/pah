@@ -9,6 +9,7 @@ use App\LibraryStatus;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Cart;
 use App\Partners;
+use App\Services\AdminCityScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ use Illuminate\View\View;
 
 class AgentCommissionReportController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, AdminCityScope $cityScope): View
     {
         $validated = $request->validate([
             'agent_id' => ['nullable', 'integer', 'exists:agents,id'],
@@ -58,6 +59,10 @@ class AgentCommissionReportController extends Controller
             ->when($selectedRestaurantId, fn ($query) => $query->where('restaurant_id', $selectedRestaurantId))
             ->when($selectedStatus, fn ($query) => $query->where('status', $selectedStatus));
 
+        if ($cityScope->restricted()) {
+            $baseQuery->whereHas('restaurant', fn ($query) => $cityScope->partners($query));
+        }
+
         $commissionCount = (clone $baseQuery)->count();
         $earnedQuery = (clone $baseQuery)->where('status', '!=', AgentCommission::STATUS_REVERSED);
         $reversedQuery = (clone $baseQuery)->where('status', AgentCommission::STATUS_REVERSED);
@@ -90,8 +95,8 @@ class AgentCommissionReportController extends Controller
             );
         });
 
-        $agents = Agent::query()->orderBy('name')->get(['id', 'name']);
-        $restaurants = Partners::query()
+        $agents = $cityScope->agents(Agent::query())->orderBy('name')->get(['id', 'name']);
+        $restaurants = $cityScope->partners(Partners::query())
             ->whereNotNull('agent_id')
             ->when($selectedAgentId, fn ($query) => $query->where('agent_id', $selectedAgentId))
             ->orderBy('restaurant_name')

@@ -115,34 +115,30 @@ Route::group(['middleware' => ['api', 'web']], function () {
     Route::post('/getCoordinateByPlaceId', [DistanceController::class, 'getByPlaceId']);
 
     // Admin API
-    Route::get('dashboard/order/list', [AdminOrderController::class, 'getList']);
-    Route::get('dashboard/booking/list', [AdminBookingController::class, 'getList']);
-
-    Route::post('data/dashboard/update/{order}/rider/submit', [AdminOrderController::class, 'updateOrderRider'])
-        ->middleware('admin');
-    Route::post('data/dashboard/orders/{order}/retry-rider-offers', [AdminOrderController::class, 'retryRiderOffers'])
-        ->middleware(['admin', 'throttle:10,1']);
-    Route::post('data/dashboard/update/{order}/status/submit', [AdminOrderController::class, 'updateOrderStatus']);
-
-    Route::post('data/dashboard/booking/update/{booking}/rider/submit', [AdminBookingController::class, 'updateOrderRider']);
-    Route::post('data/dashboard/booking/update/{booking}/status/submit', [AdminBookingController::class, 'updateOrderStatus']);
-
-    Route::get('/data/dashboard/order/summary', [AdminOrderController::class, 'orderSummary']);
-    Route::post('data/order/search/list', [AdminOrderController::class, 'getListwithFilter']);
-    Route::get('data/merchant/search/list', [AdminOrderController::class, 'getListMerchantwithFilter']);
-    Route::get('data/member/search/list', [AdminOrderController::class, 'getListMemberwithFilter']);
-
-    Route::post('data/merchant/{partner:id}/online/submit', [AdminMerchantController::class, 'updateOnlineStatus']);
-    Route::post('data/merchant/{partner:id}/status/submit', [AdminMerchantController::class, 'updateStatus'])->middleware('admin');
-    Route::post('data/merchant/{partner:id}/verify/submit', [AdminMerchantController::class, 'verify'])->middleware('admin');
-    Route::post('data/merchant/{partner:id}/preorder/submit', [AdminMerchantController::class, 'preorder']);
-    Route::post('data/merchant/{partner:id}/coomrate/submit', [AdminMerchantController::class, 'coomrate']);
-    Route::post('data/merchant/{partner:id}/addup/submit', [AdminMerchantController::class, 'addup']);
-
-    Route::post('data/merchant/{partner:id}/password/submit', [AdminMerchantController::class, 'passwordSend']);
-    Route::get('data/dashboard/booking/new', [AdminBookingController::class, 'index']);
-    Route::post('data/dashboard/address/submit', [AdminBookingController::class, 'addressStore']);
-    Route::post('data/dashboard/boooking/submit', [AdminBookingController::class, 'storeNewBooking']);
+    Route::middleware('admin')->group(function () {
+        Route::get('dashboard/order/list', [AdminOrderController::class, 'getList']);
+        Route::get('dashboard/booking/list', [AdminBookingController::class, 'getList']);
+        Route::post('data/dashboard/update/{order}/rider/submit', [AdminOrderController::class, 'updateOrderRider']);
+        Route::post('data/dashboard/orders/{order}/retry-rider-offers', [AdminOrderController::class, 'retryRiderOffers'])
+            ->middleware('throttle:10,1');
+        Route::post('data/dashboard/update/{order}/status/submit', [AdminOrderController::class, 'updateOrderStatus']);
+        Route::post('data/dashboard/booking/update/{booking}/rider/submit', [AdminBookingController::class, 'updateOrderRider']);
+        Route::post('data/dashboard/booking/update/{booking}/status/submit', [AdminBookingController::class, 'updateOrderStatus']);
+        Route::get('/data/dashboard/order/summary', [AdminOrderController::class, 'orderSummary']);
+        Route::post('data/order/search/list', [AdminOrderController::class, 'getListwithFilter']);
+        Route::get('data/merchant/search/list', [AdminOrderController::class, 'getListMerchantwithFilter']);
+        Route::get('data/member/search/list', [AdminOrderController::class, 'getListMemberwithFilter']);
+        Route::post('data/merchant/{partner:id}/online/submit', [AdminMerchantController::class, 'updateOnlineStatus']);
+        Route::post('data/merchant/{partner:id}/status/submit', [AdminMerchantController::class, 'updateStatus']);
+        Route::post('data/merchant/{partner:id}/verify/submit', [AdminMerchantController::class, 'verify']);
+        Route::post('data/merchant/{partner:id}/preorder/submit', [AdminMerchantController::class, 'preorder']);
+        Route::post('data/merchant/{partner:id}/coomrate/submit', [AdminMerchantController::class, 'coomrate']);
+        Route::post('data/merchant/{partner:id}/addup/submit', [AdminMerchantController::class, 'addup']);
+        Route::post('data/merchant/{partner:id}/password/submit', [AdminMerchantController::class, 'passwordSend']);
+        Route::get('data/dashboard/booking/new', [AdminBookingController::class, 'index']);
+        Route::post('data/dashboard/address/submit', [AdminBookingController::class, 'addressStore']);
+        Route::post('data/dashboard/boooking/submit', [AdminBookingController::class, 'storeNewBooking']);
+    });
 });
 
 // Domain-specific API routes

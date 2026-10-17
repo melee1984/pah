@@ -25,7 +25,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'firstname','lastname', 'email', 'mobile', 'password','ip_address', 'api_token', 'description', 'telephone','account_type_id', 'provider', 'provider_id', 'avatar', 'device_token','device_id'
+        'firstname','lastname', 'email', 'mobile', 'city', 'managed_city', 'password','ip_address', 'api_token', 'description', 'telephone','account_type_id', 'provider', 'provider_id', 'avatar', 'device_token','device_id'
     ];
 
     /**
@@ -74,8 +74,8 @@ class User extends Authenticatable
      * @return boolean
      */
     public function isAdmin(): bool
-    {        
-        return $this->hasRole('admin');
+    {
+        return $this->hasAnyRole(['super', 'admin', 'manager']);
     }   
 
     /**

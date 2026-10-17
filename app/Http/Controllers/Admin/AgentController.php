@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\AgentApprovedMail;
 use App\Mail\AgentDeclinedMail;
 use App\Mail\AgentTemporaryPasswordMail;
+use App\Services\AdminCityScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ use Throwable;
 
 class AgentController extends Controller
 {
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
     public function index(Request $request): View
     {
         $validated = $request->validate([
@@ -27,9 +30,12 @@ class AgentController extends Controller
         ]);
 
         $search = trim($validated['search'] ?? '');
-        $agents = Agent::query()
-            ->withCount('restaurants')
-            ->withCount('approvedRestaurants')
+        $agentQuery = Agent::query();
+        $this->cityScope->agents($agentQuery);
+        $restaurantScope = fn ($query) => $this->cityScope->partners($query);
+        $agents = $agentQuery
+            ->withCount(['restaurants' => $restaurantScope])
+            ->withCount(['approvedRestaurants' => $restaurantScope])
             ->withSum(['commissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -42,11 +48,16 @@ class AgentController extends Controller
             ->paginate(25)
             ->withQueryString();
 
+        $metricAgents = fn () => $this->cityScope->agents(Agent::query());
+        $commissionQuery = AgentCommission::query()->earned();
+        if ($this->cityScope->restricted()) {
+            $commissionQuery->whereHas('agent', fn ($query) => $this->cityScope->agents($query));
+        }
         $metrics = [
-            'total' => Agent::query()->count(),
-            'active' => Agent::query()->where('active', true)->count(),
-            'password_pending' => Agent::query()->where('must_change_password', true)->count(),
-            'commission' => (float) AgentCommission::query()->earned()->sum('commission_amount'),
+            'total' => $metricAgents()->count(),
+            'active' => $metricAgents()->where('active', true)->count(),
+            'password_pending' => $metricAgents()->where('must_change_password', true)->count(),
+            'commission' => (float) $commissionQuery->sum('commission_amount'),
         ];
 
         return view('dashboard.pages.agents.index', compact('agents', 'metrics', 'search'));
@@ -54,12 +65,14 @@ class AgentController extends Controller
 
     public function show(Agent $agent): View
     {
-        $agent->loadCount('restaurants')
-            ->loadCount('approvedRestaurants')
+        $restaurantScope = fn ($query) => $this->cityScope->partners($query);
+        $agent->loadCount(['restaurants' => $restaurantScope])
+            ->loadCount(['approvedRestaurants' => $restaurantScope])
             ->loadSum(['commissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount');
 
-        $restaurants = $agent->restaurants()
-            ->orderBy('restaurant_name')
+        $restaurantsQuery = $agent->restaurants();
+        $this->cityScope->partners($restaurantsQuery);
+        $restaurants = $restaurantsQuery->orderBy('restaurant_name')
             ->paginate(10);
 
         return view('dashboard.pages.agents.show', compact('agent', 'restaurants'));
@@ -71,7 +84,12 @@ class AgentController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('agents', 'email')],
             'mobile' => ['nullable', 'string', 'max:30'],
+            'city' => ['required', 'string', 'max:120'],
         ]);
+
+        if ($this->cityScope->restricted()) {
+            $validated['city'] = auth()->user()->managed_city;
+        }
 
         try {
             DB::transaction(function () use ($validated) {

@@ -30,6 +30,7 @@ class RiderApplication extends Model
         'password',
         'birth_date',
         'home_address',
+        'city',
         'profile_photo_path',
         'emergency_contact_name',
         'emergency_contact_relationship',

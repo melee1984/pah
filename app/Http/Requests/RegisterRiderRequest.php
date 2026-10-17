@@ -17,6 +17,7 @@ class RegisterRiderRequest extends FormRequest
         return [
             'full_name' => ['required', 'string', 'max:255'],
             'mobile' => ['required', 'string', 'max:25', 'regex:/^\+?[0-9][0-9\s-]{6,24}$/'],
+            'city' => ['sometimes', 'nullable', 'string', 'max:120'],
             'email' => [
                 'required',
                 'email',
@@ -33,6 +34,7 @@ class RegisterRiderRequest extends FormRequest
         $this->merge([
             'full_name' => trim((string) $this->input('full_name')),
             'mobile' => trim((string) $this->input('mobile')),
+            'city' => trim((string) $this->input('city')),
             'email' => strtolower(trim((string) $this->input('email'))),
         ]);
     }

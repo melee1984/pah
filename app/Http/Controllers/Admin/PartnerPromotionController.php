@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\PartnerPromotion;
 use App\Partners;
+use App\Services\AdminCityScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -14,9 +15,12 @@ use Illuminate\View\View;
 
 class PartnerPromotionController extends Controller
 {
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
     public function index(): View
     {
         $promotions = PartnerPromotion::query()
+            ->when($this->cityScope->restricted(), fn ($query) => $query->whereHas('partner', fn ($partner) => $this->cityScope->partners($partner)))
             ->with('partner:id,restaurant_name,slug')
             ->orderBy('sort_order')
             ->latest()
@@ -110,7 +114,7 @@ class PartnerPromotionController extends Controller
 
     private function validated(Request $request, ?PartnerPromotion $promotion = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'partner_id' => [
                 'required',
                 'integer',
@@ -131,11 +135,15 @@ class PartnerPromotionController extends Controller
                 Rule::when($request->filled('starts_at'), ['after_or_equal:starts_at']),
             ],
         ]);
+
+        $this->cityScope->authorizePartner(Partners::query()->findOrFail($validated['partner_id']));
+
+        return $validated;
     }
 
     private function partners()
     {
-        return Partners::query()
+        return $this->cityScope->partners(Partners::query())
             ->where('active', true)
             ->orderBy('restaurant_name')
             ->get(['id', 'restaurant_name', 'slug']);

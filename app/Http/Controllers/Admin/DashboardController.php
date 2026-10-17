@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\LibraryStatus;
 use App\Model\Orders\Orders;
 use App\Partners;
+use App\Services\AdminCityScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +17,8 @@ use User;
 use Auth;
 class DashboardController extends Controller
 {	
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
 	/**
      * Login Merchant Account
      * @return view 
@@ -68,18 +71,23 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $agentQuery = fn () => $this->cityScope->agents(Agent::query());
+        $agentCommissionQuery = AgentCommission::query()->earned();
+        if ($this->cityScope->restricted()) {
+            $agentCommissionQuery->whereHas('agent', fn ($query) => $this->cityScope->agents($query));
+        }
         $agentMetrics = [
-            'total' => Agent::query()->count(),
-            'active' => Agent::query()->where('active', true)->count(),
-            'setup_pending' => Agent::query()->where('must_change_password', true)->count(),
-            'commission' => (float) AgentCommission::query()->earned()->sum('commission_amount'),
+            'total' => $agentQuery()->count(),
+            'active' => $agentQuery()->where('active', true)->count(),
+            'setup_pending' => $agentQuery()->where('must_change_password', true)->count(),
+            'commission' => (float) $agentCommissionQuery->sum('commission_amount'),
         ];
 
-        $orders = Orders::query()
+        $orderQuery = Orders::query()
             ->with(['cart.details', 'partner', 'status'])
             ->whereNotNull('submitted_at')
-            ->latest('submitted_at')
-            ->get();
+            ->latest('submitted_at');
+        $orders = $this->cityScope->orders($orderQuery)->get();
 
         $now = now();
         $startOfToday = $now->copy()->startOfDay();
@@ -122,7 +130,7 @@ class DashboardController extends Controller
             'average_order' => $completedOrders->count() ? $completedOrders->avg('dashboard_total') : 0,
             'completion_rate' => $orders->count() ? ($completedOrders->count() / $orders->count()) * 100 : 0,
             'cancellation_rate' => $orders->count() ? ($orders->where('dashboard_status_id', LibraryStatus::STATUS_CANCELLED)->count() / $orders->count()) * 100 : 0,
-            'active_merchants' => Partners::query()->where('active', true)->whereNotNull('verified_at')->count(),
+            'active_merchants' => $this->cityScope->partners(Partners::query())->where('active', true)->whereNotNull('verified_at')->count(),
         ];
 
         $statusBreakdown = $orders
@@ -172,6 +180,7 @@ class DashboardController extends Controller
             ->where('active', true)
             ->whereNotNull('verified_at')
             ->where('store_open', true);
+        $this->cityScope->partners($availableMerchantsQuery);
 
         $availableMerchantCount = (clone $availableMerchantsQuery)->count();
         $availableMerchants = $availableMerchantsQuery
@@ -205,6 +214,7 @@ class DashboardController extends Controller
             ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = riders.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', [
                 'pending', $now, 'offered', $maxPendingOffers,
             ]);
+        $this->cityScope->riders($availableRidersQuery, 'riders.city');
 
         $availableRiderCount = (clone $availableRidersQuery)->count();
         $availableRiders = $availableRidersQuery

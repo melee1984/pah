@@ -295,13 +295,16 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/statements/{statement}', [\App\Http\Controllers\Admin\StatementAccountController::class, 'show'])->name('dashboard.statements.show');
 
     // Auto-login as merchant
-    Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request) {
+    Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request, \App\Services\AdminCityScope $cityScope) {
+
+        $partner = \App\Partners::query()->where('user_id', $loginId)->firstOrFail();
+        $cityScope->authorizePartner($partner);
 
         \Illuminate\Support\Facades\Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        $user = \App\Models\User::find($loginId);
+        $user = \App\User::findOrFail($loginId);
         \Illuminate\Support\Facades\Auth::login($user, true);
 
         return redirect()->route('merchant.dashboard.index');
