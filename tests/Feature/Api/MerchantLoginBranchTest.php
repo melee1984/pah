@@ -18,6 +18,8 @@ class MerchantLoginBranchTest extends TestCase
 {
     use RefreshDatabase;
 
+    private User $parentUser;
+
     private User $merchantUser;
 
     protected function setUp(): void
@@ -50,24 +52,37 @@ class MerchantLoginBranchTest extends TestCase
             $table->timestamps();
         });
 
-        $userId = DB::table('users')->insertGetId([
+        $parentUserId = DB::table('users')->insertGetId([
             'name' => 'Merchant Owner',
             'firstname' => 'Merchant',
             'lastname' => 'Owner',
-            'email' => 'merchant@example.com',
+            'email' => 'parent@example.com',
             'mobile' => '09171234567',
             'password' => Hash::make('password'),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        $this->merchantUser = User::query()->findOrFail($userId);
+        $branchUserId = DB::table('users')->insertGetId([
+            'name' => 'Branch User',
+            'firstname' => 'Branch',
+            'lastname' => 'User',
+            'email' => 'branch@example.com',
+            'mobile' => '09171234568',
+            'password' => Hash::make('password'),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->parentUser = User::query()->findOrFail($parentUserId);
+        $this->merchantUser = User::query()->findOrFail($branchUserId);
 
         Role::findOrCreate('partner', 'web');
+        $this->parentUser->assignRole('partner');
         $this->merchantUser->assignRole('partner');
 
         $partnerId = DB::table('partners')->insertGetId([
-            'user_id' => $this->merchantUser->id,
+            'user_id' => $this->parentUser->id,
             'restaurant_name' => 'Test Restaurant',
             'created_at' => now(),
             'updated_at' => now(),
@@ -107,9 +122,21 @@ class MerchantLoginBranchTest extends TestCase
             'user_id' => $this->merchantUser->id,
             'partner_id' => $partnerId,
             'partner_location_id' => 11,
-            'created_by_user_id' => $this->merchantUser->id,
+            'created_by_user_id' => $this->parentUser->id,
             'active' => true,
         ]);
+    }
+
+    public function test_parent_login_returns_all_merchant_branches_for_selection(): void
+    {
+        $this->postMerchantLogin([], $this->parentUser)
+            ->assertOk()
+            ->assertJsonCount(2, 'branches')
+            ->assertJsonPath('merchant_location_id', null)
+            ->assertJsonPath('selected_branch', null)
+            ->assertJsonPath('requires_branch_selection', true)
+            ->assertJsonPath('merchant_access_type', 'parent')
+            ->assertJsonPath('is_parent_merchant', true);
     }
 
     public function test_login_returns_only_the_users_designated_branch(): void
@@ -120,7 +147,9 @@ class MerchantLoginBranchTest extends TestCase
             ->assertJsonCount(1, 'branches')
             ->assertJsonPath('merchant_location_id', 11)
             ->assertJsonPath('selected_branch.id', 11)
-            ->assertJsonPath('requires_branch_selection', false);
+            ->assertJsonPath('requires_branch_selection', false)
+            ->assertJsonPath('merchant_access_type', 'branch')
+            ->assertJsonPath('is_parent_merchant', false);
     }
 
     public function test_client_cannot_override_the_designated_branch(): void
@@ -139,7 +168,7 @@ class MerchantLoginBranchTest extends TestCase
         $this->postMerchantLogin()
             ->assertForbidden()
             ->assertJsonPath('status', 0)
-            ->assertJsonPath('message', 'No active merchant branch is assigned to this login. Please contact the merchant account owner.');
+            ->assertJsonPath('message', 'No merchant or active merchant branch is assigned to this login. Please contact the merchant account owner.');
     }
 
     public function test_branch_middleware_ignores_client_branch_overrides(): void
@@ -163,11 +192,31 @@ class MerchantLoginBranchTest extends TestCase
         ], $response->getData(true));
     }
 
-    private function postMerchantLogin(array $overrides = [])
+    public function test_parent_middleware_accepts_an_owned_branch_selection(): void
     {
+        $request = Request::create('/api/merchant/orders', 'GET', [
+            'merchant_location_id' => 10,
+        ]);
+        $request->setUserResolver(fn () => $this->parentUser);
+
+        $response = (new EnsureMerchantBranch)->handle($request, fn (Request $securedRequest) => response()->json([
+            'access_type' => $securedRequest->attributes->get('merchantAccessType'),
+            'branch_id' => $securedRequest->attributes->get('merchantBranch')->id,
+        ]));
+
+        $this->assertSame([
+            'access_type' => 'parent',
+            'branch_id' => 10,
+        ], $response->getData(true));
+    }
+
+    private function postMerchantLogin(array $overrides = [], ?User $user = null)
+    {
+        $user ??= $this->merchantUser;
+
         return $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
             ->postJson('/api/merchant/account/login', array_merge([
-                'email' => $this->merchantUser->email,
+                'email' => $user->email,
                 'password' => 'password',
             ], $overrides));
     }

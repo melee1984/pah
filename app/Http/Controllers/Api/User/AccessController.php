@@ -11,6 +11,7 @@ use Validator;
 use Hash;
 use App\User;
 use App\MerchantBranchUser;
+use App\Partners;
 use App\UserVerificationMobile;
 use App\NotificationAction;
 use Session;
@@ -533,28 +534,43 @@ class AccessController extends Controller
 
           }
 
-          $assignment = MerchantBranchUser::query()
-            ->with(['partner.locations', 'branch'])
+          $merchant = Partners::query()
+            ->with('locations')
             ->where('user_id', $user->id)
-            ->where('active', true)
             ->first();
+          $merchantAccessType = 'parent';
 
-          if (! $assignment
-              || ! $assignment->partner
-              || ! $assignment->branch
-              || (int) $assignment->branch->partner_id !== (int) $assignment->partner_id) {
-              Auth::logout();
+          if ($merchant) {
+              $branches = $merchant->locations
+                ->sortBy(fn ($branch) => strtolower(trim(($branch->address_1 ?? '').' '.($branch->city ?? ''))))
+                ->values();
+              $selectedBranch = $branches->count() === 1 ? $branches->first() : null;
+              $merchant->setRelation('locations', $branches);
+          } else {
+              $assignment = MerchantBranchUser::query()
+                ->with(['partner.locations', 'branch'])
+                ->where('user_id', $user->id)
+                ->where('active', true)
+                ->first();
 
-              return response()->json([
-                'status' => 0,
-                'message' => 'No active merchant branch is assigned to this login. Please contact the merchant account owner.',
-              ], 403);
+              if (! $assignment
+                  || ! $assignment->partner
+                  || ! $assignment->branch
+                  || (int) $assignment->branch->partner_id !== (int) $assignment->partner_id) {
+                  Auth::logout();
+
+                  return response()->json([
+                    'status' => 0,
+                    'message' => 'No merchant or active merchant branch is assigned to this login. Please contact the merchant account owner.',
+                  ], 403);
+              }
+
+              $merchantAccessType = 'branch';
+              $merchant = $assignment->partner;
+              $selectedBranch = $assignment->branch;
+              $branches = collect([$selectedBranch]);
+              $merchant->setRelation('locations', $branches);
           }
-
-          $merchant = $assignment->partner;
-          $selectedBranch = $assignment->branch;
-          $branches = collect([$selectedBranch]);
-          $merchant->setRelation('locations', $branches);
 
           Session::setId($session_id);
           Session::put('merchant_location_id', $selectedBranch?->id);
@@ -578,7 +594,9 @@ class AccessController extends Controller
               'branches' => $branches,
               'merchant_location_id' => $selectedBranch?->id,
               'selected_branch' => $selectedBranch,
-              'requires_branch_selection' => false,
+              'requires_branch_selection' => $merchantAccessType === 'parent' && $branches->count() > 1,
+              'merchant_access_type' => $merchantAccessType,
+              'is_parent_merchant' => $merchantAccessType === 'parent',
               'is_with_sms_otp' => true
             ]);
           }
