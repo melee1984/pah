@@ -65,6 +65,7 @@ class MerchantDeviceTokenTest extends TestCase
         ]);
         $user = $this->merchantUser();
         $request->setUserResolver(fn () => $user);
+        $request->attributes->set('merchantBranch', PartnerLocation::findOrFail(2));
 
         $response = (new OrderController)->saveTokenDeviceStore($request);
 
@@ -108,6 +109,7 @@ class MerchantDeviceTokenTest extends TestCase
             'device_token_store' => $token,
         ]);
         $request->setUserResolver(fn () => $this->merchantUser());
+        $request->attributes->set('merchantBranch', PartnerLocation::findOrFail($locationId));
 
         return $request;
     }

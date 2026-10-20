@@ -97,7 +97,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::post('account/login', [AccessController::class, 'loginStore']);
         Route::post('login/submit', [AccessController::class, 'loginStore']);
 
-        Route::group(['middleware' => 'auth:api'], function () {
+        Route::group(['middleware' => ['auth:api', 'merchant.branch']], function () {
 
             Route::post('account/logout', [AccessController::class, 'postLogout']);
             // Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');

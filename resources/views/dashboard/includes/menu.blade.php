@@ -68,6 +68,11 @@
     </li>
 
     <li class="nav-header">System</li>
+    @if (request()->attributes->get('can_manage_managers', false))
+    <li class="nav-item">
+        <a href="{{ route('dashboard.managers.index') }}" class="nav-link {{ Request::is('data/dashboard/managers*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-shield"></i><p>Manager access</p></a>
+    </li>
+    @endif
     <li class="nav-item">
         <a href="{{ route('dashboard.settings') }}" class="nav-link {{ Request::is('data/dashboard/settings') ? 'active' : '' }}"><i class="nav-icon fas fa-cog"></i><p>Settings</p></a>
     </li>

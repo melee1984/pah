@@ -10,6 +10,7 @@ use App\Model\Orders\Orders;
 use App\Partners;
 use App\Services\AgentCommissionService;
 use App\User;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -246,6 +247,17 @@ class MerchantOrderAcceptanceTest extends TestCase
 
         $this->expectException(\Illuminate\Database\Eloquent\ModelNotFoundException::class);
 
+        (new OrderController)->show($order, $this->merchantRequest());
+    }
+
+    public function test_branch_user_cannot_get_another_branch_order(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        DB::table('cart')->where('id', $order->cart_id)->update([
+            'partner_location_address_id' => 201,
+        ]);
+
+        $this->expectException(ModelNotFoundException::class);
         (new OrderController)->show($order, $this->merchantRequest());
     }
 
@@ -499,6 +511,7 @@ class MerchantOrderAcceptanceTest extends TestCase
 
         $request = Request::create('/api/merchant/orders/1/accept', 'POST', $parameters);
         $request->setUserResolver(fn () => $user);
+        $request->attributes->set('merchantBranch', (object) ['id' => 200]);
 
         return $request;
     }

@@ -30,6 +30,11 @@ class isAdmin
     {
         if (Auth::check()) {
             if(auth()->user()->isAdmin()) {
+                $request->attributes->set(
+                    'can_manage_managers',
+                    auth()->user()->hasAnyRole(['admin', 'super']),
+                );
+
                 foreach ($request->route()?->parameters() ?? [] as $parameter) {
                     match (true) {
                         $parameter instanceof Partners => $this->cityScope->authorizePartner($parameter),

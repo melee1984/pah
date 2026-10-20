@@ -30,8 +30,13 @@ class AssignManager extends Command
         }
 
         Role::findOrCreate('manager', 'web');
+        if ($user->hasAnyRole(['admin', 'super'])) {
+            $this->error('Administrator and super-user accounts cannot be converted to city managers.');
+
+            return self::FAILURE;
+        }
         $user->forceFill(['managed_city' => $city])->save();
-        $user->syncRoles(['manager']);
+        $user->assignRole('manager');
 
         $this->info("{$user->email} is now the manager for {$city}.");
 

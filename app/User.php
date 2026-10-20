@@ -97,6 +97,33 @@ class User extends Authenticatable
         return $this->hasOne('App\Partners')->with('locations');
     }
 
+    public function ownedMerchant()
+    {
+        return $this->hasOne(Partners::class)->with('locations');
+    }
+
+    public function merchantBranchAssignment()
+    {
+        return $this->hasOne(MerchantBranchUser::class)->with(['partner.locations', 'branch']);
+    }
+
+    public function getMerchantAttribute()
+    {
+        if ($this->relationLoaded('merchant')) {
+            return $this->getRelation('merchant');
+        }
+
+        $ownedMerchant = $this->ownedMerchant()->first();
+
+        if ($ownedMerchant) {
+            return $ownedMerchant;
+        }
+
+        return $this->merchantBranchAssignment()
+            ->where('active', true)
+            ->first()?->partner;
+    }
+
     /**
      * [category description]
      * @return [type] [description]

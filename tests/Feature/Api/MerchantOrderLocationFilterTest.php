@@ -4,6 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Http\Controllers\Api\Mobile\Store\OrderController;
 use App\Partners;
+use App\Services\RiderDispatchStatus;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
@@ -53,6 +54,20 @@ class MerchantOrderLocationFilterTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('rider_api_deliveries', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('legacy_order_id');
+            $table->unsignedBigInteger('rider_id')->nullable();
+            $table->string('current_state')->nullable();
+        });
+
+        Schema::create('rider_api_offers', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('delivery_id');
+            $table->string('status');
+            $table->timestamp('expires_at')->nullable();
+        });
+
         DB::table('partners')->insert([
             ['id' => 20, 'created_at' => now(), 'updated_at' => now()],
             ['id' => 99, 'created_at' => now(), 'updated_at' => now()],
@@ -75,8 +90,9 @@ class MerchantOrderLocationFilterTest extends TestCase
             'merchant_location_id' => 34,
         ]);
         $request->setUserResolver(fn () => $user);
+        $request->attributes->set('merchantBranch', (object) ['id' => 34]);
 
-        $response = (new OrderController)->orders($request);
+        $response = (new OrderController)->orders($request, app(RiderDispatchStatus::class));
         $orders = $response->getData(true)['orders'];
 
         $this->assertCount(1, $orders);

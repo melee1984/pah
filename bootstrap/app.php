@@ -43,8 +43,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'agent.password.changed' => \App\Http\Middleware\EnsureAgentPasswordChanged::class,
+            'admin.manage' => \App\Http\Middleware\ManageManagers::class,
             'rider.application' => \App\Http\Middleware\AuthenticateRiderApplication::class,
             'rider.approved' => \App\Http\Middleware\EnsureApprovedRider::class,
+            'merchant.branch' => \App\Http\Middleware\EnsureMerchantBranch::class,
             'turnstile' => \App\Http\Middleware\ValidateTurnstile::class,
         ]);
         //
