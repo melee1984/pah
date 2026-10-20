@@ -7,6 +7,7 @@ use App\LibraryStatus;
 use App\Model\Orders\Orders;
 use App\Partners;
 use App\StatementAccount;
+use App\Services\AdminCityScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class StatementAccountController extends Controller
 {
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
     public function index(Request $request)
     {
         $filters = $request->validate([
@@ -27,7 +30,7 @@ class StatementAccountController extends Controller
         [$rangeStart, $rangeEnd] = $this->dateRange($filters['date_range'] ?? null);
 
         $completedAt = DB::raw('COALESCE(delivered_at, updated_at, submitted_at)');
-        $orders = Orders::query()
+        $ordersQuery = Orders::query()
             ->with(['cart', 'partner', 'orderStatus'])
             ->whereNotNull('submitted_at')
             ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES)
@@ -40,7 +43,9 @@ class StatementAccountController extends Controller
                         ->orWhereHas('cart', fn ($cart) => $cart->where('order_no', 'like', '%'.$search.'%'));
                 });
             })
-            ->orderByDesc($completedAt)
+            ->orderByDesc($completedAt);
+        $this->cityScope->orders($ordersQuery);
+        $orders = $ordersQuery
             ->paginate(50)
             ->withQueryString();
 
@@ -49,9 +54,10 @@ class StatementAccountController extends Controller
             $order->statement_summary = $order->cart?->cartItemSummary() ?? [];
         });
 
-        $merchants = Partners::query()->orderBy('restaurant_name')->get(['id', 'restaurant_name']);
+        $merchants = $this->cityScope->partners(Partners::query())->orderBy('restaurant_name')->get(['id', 'restaurant_name']);
         $statements = StatementAccount::query()
             ->with('partner:id,restaurant_name')
+            ->when($this->cityScope->restricted(), fn ($query) => $query->whereHas('partner', fn ($partner) => $this->cityScope->partners($partner)))
             ->latest()
             ->paginate(15, ['*'], 'statements_page')
             ->withQueryString();
@@ -105,6 +111,9 @@ class StatementAccountController extends Controller
             'order_ids.*' => ['integer', 'distinct'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        $partner = Partners::query()->findOrFail($validated['partner_id']);
+        $this->cityScope->authorizePartner($partner);
 
         $statement = DB::transaction(function () use ($validated) {
             $orders = Orders::query()

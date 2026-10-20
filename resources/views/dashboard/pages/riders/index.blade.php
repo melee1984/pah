@@ -95,12 +95,13 @@
                 @else
                     <div class="table-responsive">
                         <table class="table admin-table">
-                            <thead><tr><th>Rider</th><th>Contact</th><th>Joined</th><th>Approval</th><th>Completed deliveries</th><th>Credits</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Rider</th><th>Contact</th><th>City</th><th>Joined</th><th>Approval</th><th>Completed deliveries</th><th>Credits</th><th>Actions</th></tr></thead>
                             <tbody>
                             @foreach ($riders as $rider)
                                 <tr>
                                     <td><div class="admin-agent-cell"><span>{{ mb_strtoupper(mb_substr($rider->name ?: 'R', 0, 1)) }}</span><div><strong>{{ $rider->name ?: 'Unnamed rider' }}</strong><small>Rider #{{ $rider->id }}</small></div></div></td>
                                     <td><strong>{{ $rider->mobile ?: 'No mobile number' }}</strong></td>
+                                    <td><strong>{{ $rider->city ?: 'Not assigned' }}</strong></td>
                                     <td>{{ $rider->date_join?->format('M d, Y') ?? $rider->created_at?->format('M d, Y') ?? '—' }}</td>
                                     <td>
                                         @if ($rider->archived_at)

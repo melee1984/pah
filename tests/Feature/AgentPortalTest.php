@@ -217,6 +217,7 @@ class AgentPortalTest extends TestCase
             'name' => 'New Agent',
             'email' => 'new-agent@example.com',
             'mobile' => '09171234567',
+            'city' => 'Davao City',
         ])->assertRedirect(route('dashboard.agents.index'));
 
         $agent = Agent::query()->where('email', 'new-agent@example.com')->firstOrFail();

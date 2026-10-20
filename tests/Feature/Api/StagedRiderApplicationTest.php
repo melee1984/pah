@@ -31,6 +31,7 @@ class StagedRiderApplicationTest extends TestCase
             'password' => 'secret-password',
             'birth_date' => '1997-03-18',
             'home_address' => 'Lahug, Cebu City',
+            'city' => 'Cebu City',
             'emergency_contact_name' => 'Maria Juan',
             'emergency_contact_relationship' => 'Sister',
             'emergency_contact_mobile' => '09185550188',
@@ -88,6 +89,7 @@ class StagedRiderApplicationTest extends TestCase
             ->patchJson("/api/v1/rider/applications/{$applicationId}/personal", [
                 'birth_date' => '1997-03-18',
                 'home_address' => 'Lahug, Cebu City',
+                'city' => 'Cebu City',
             ])
             ->assertOk()
             ->assertJsonPath('application.personal.full_name', 'Carlo Juan')
@@ -181,6 +183,7 @@ class StagedRiderApplicationTest extends TestCase
                 'full_name' => 'Carlo Juan',
                 'birth_date' => '1997-03-18',
                 'home_address' => 'Lahug, Cebu City',
+                'city' => 'Cebu City',
                 'mobile' => '09171234567',
             ])
             ->assertOk()
@@ -257,6 +260,7 @@ class StagedRiderApplicationTest extends TestCase
             ->assertJsonValidationErrors([
                 'birth_date',
                 'home_address',
+                'city',
                 'documents.profile_photo',
                 'documents.government_id',
                 'documents.drivers_license',

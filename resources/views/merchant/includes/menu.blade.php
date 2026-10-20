@@ -39,6 +39,13 @@
       <i class="nav-icon fas fa-chair"></i><p>Dining tables</p>
     </a>
   </li>
+  @if ((int) Auth::User()->merchant?->user_id === (int) Auth::id())
+    <li class="nav-item">
+      <a href="{{ route('merchant.dashboard.users.index') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.users.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-users-cog"></i><p>Branch users</p>
+      </a>
+    </li>
+  @endif
 
   <li class="nav-header merchant-nav-section">Insights</li>
   <li class="nav-item">

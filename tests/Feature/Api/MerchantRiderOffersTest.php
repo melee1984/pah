@@ -26,15 +26,28 @@ class MerchantRiderOffersTest extends TestCase
         Schema::create('order', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('partner_id');
+            $table->unsignedBigInteger('cart_id');
             $table->timestamp('store_accepted_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('cart', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('partner_location_address_id');
             $table->timestamps();
         });
     }
 
     public function test_merchant_can_view_offer_candidates_and_the_assigned_rider(): void
     {
+        $cartId = DB::table('cart')->insertGetId([
+            'partner_location_address_id' => 200,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $orderId = DB::table('order')->insertGetId([
             'partner_id' => 20,
+            'cart_id' => $cartId,
             'store_accepted_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
@@ -94,8 +107,14 @@ class MerchantRiderOffersTest extends TestCase
 
     public function test_merchant_cannot_view_another_merchants_rider_offers(): void
     {
+        $cartId = DB::table('cart')->insertGetId([
+            'partner_location_address_id' => 200,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $orderId = DB::table('order')->insertGetId([
             'partner_id' => 99,
+            'cart_id' => $cartId,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -112,6 +131,7 @@ class MerchantRiderOffersTest extends TestCase
         $user->setRelation('merchant', $merchant);
         $request = Request::create('/api/merchant/orders/1/rider-offers', 'GET');
         $request->setUserResolver(fn () => $user);
+        $request->attributes->set('merchantBranch', (object) ['id' => 200]);
 
         return $request;
     }

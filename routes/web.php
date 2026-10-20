@@ -177,6 +177,13 @@ Route::get('/data/dashboard/logout', [DashboardController::class, 'logout'])->na
 
 Route::middleware('admin')->group(function () {
 
+    Route::middleware('admin.manage')->group(function () {
+        Route::get('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'index'])->name('dashboard.managers.index');
+        Route::post('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'store'])->name('dashboard.managers.store');
+        Route::put('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'update'])->name('dashboard.managers.update');
+        Route::delete('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'destroy'])->name('dashboard.managers.destroy');
+    });
+
     Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
     Route::get('data/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
     Route::get(
@@ -295,13 +302,16 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/statements/{statement}', [\App\Http\Controllers\Admin\StatementAccountController::class, 'show'])->name('dashboard.statements.show');
 
     // Auto-login as merchant
-    Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request) {
+    Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request, \App\Services\AdminCityScope $cityScope) {
+
+        $partner = \App\Partners::query()->where('user_id', $loginId)->firstOrFail();
+        $cityScope->authorizePartner($partner);
 
         \Illuminate\Support\Facades\Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        $user = \App\Models\User::find($loginId);
+        $user = \App\User::findOrFail($loginId);
         \Illuminate\Support\Facades\Auth::login($user, true);
 
         return redirect()->route('merchant.dashboard.index');
@@ -365,6 +375,9 @@ Route::middleware('merchant')->group(function () {
     // Settings
     Route::get('merchant/location', [\App\Http\Controllers\Merchant\LocationController::class, 'index'])->name('merchant.dashboard.location');
     Route::get('merchant/tables', [\App\Http\Controllers\Merchant\LocationController::class, 'tables'])->name('merchant.dashboard.tables');
+    Route::get('merchant/users', [\App\Http\Controllers\Merchant\UserController::class, 'index'])->name('merchant.dashboard.users.index');
+    Route::post('merchant/users', [\App\Http\Controllers\Merchant\UserController::class, 'store'])->name('merchant.dashboard.users.store');
+    Route::patch('merchant/users/{merchantUser}', [\App\Http\Controllers\Merchant\UserController::class, 'update'])->name('merchant.dashboard.users.update');
     Route::get('merchant/category', [\App\Http\Controllers\Merchant\CategoryController::class, 'index'])->name('merchant.dashboard.category');
     Route::get('merchant/settings', [\App\Http\Controllers\Merchant\SettingsController::class, 'index'])->name('merchant.dashboard.settings');
     Route::get('merchant/voucher', [\App\Http\Controllers\Merchant\VoucherController::class, 'index'])->name('merchant.dashboard.voucher');

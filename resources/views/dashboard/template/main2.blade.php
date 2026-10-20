@@ -47,7 +47,7 @@
           <div class="admin-user-avatar">{{ mb_strtoupper(mb_substr(Auth::User()->fullname, 0, 1)) }}</div>
           <div class="info">
             <a href="#" class="d-block">{{ Auth::User()->fullname }}</a>
-            <small>Administrator</small>
+            <small>{{ Auth::User()->managed_city ? Auth::User()->managed_city.' manager' : 'Administrator' }}</small>
           </div>
         </div>
 

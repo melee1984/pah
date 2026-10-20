@@ -6,14 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Mail\RiderApplicationApprovedMail;
 use App\Mail\RiderApplicationDeclinedMail;
 use App\Model\Rider\Rider;
-use App\Models\User;
+use App\User;
 use App\RiderApplication;
 use App\RiderApplicationDocument;
+use App\Services\AdminCityScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +25,8 @@ use Throwable;
 
 class RiderManagementController extends Controller
 {
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
     public function available(Request $request): View
     {
         $validated = $request->validate([
@@ -35,6 +39,7 @@ class RiderManagementController extends Controller
         $approvedRiders = DB::table('rider as riders')
             ->where('riders.active', true)
             ->whereNull('riders.archived_at');
+        $this->cityScope->riders($approvedRiders, 'riders.city');
 
         $availableRiders = (clone $approvedRiders)
             ->join('rider_api_availability as availability', 'availability.rider_id', '=', 'riders.id')
@@ -147,7 +152,9 @@ class RiderManagementController extends Controller
 
         $search = trim($validated['search'] ?? '');
         $view = $validated['view'] ?? 'active';
-        $riders = Rider::query()
+        $riderQuery = Rider::query();
+        $this->cityScope->riders($riderQuery);
+        $riders = $riderQuery
             ->with('wallet')
             ->withCount([
                 'deliveries as completed_deliveries_count' => fn ($query) => $query->where('current_state', 'delivered'),
@@ -163,27 +170,36 @@ class RiderManagementController extends Controller
             ->orderByDesc('created_at')
             ->paginate(25)
             ->withQueryString();
-        $applications = RiderApplication::query()
+        $applicationQuery = RiderApplication::query();
+        $this->cityScope->riderApplications($applicationQuery);
+        $applications = $applicationQuery
             ->with('documents')
             ->where('status', RiderApplication::STATUS_PENDING)
             ->orderBy('submitted_at')
             ->paginate(15, ['*'], 'applications_page')
             ->withQueryString();
 
+        $metricRiders = fn () => $this->cityScope->riders(Rider::query());
         $metrics = [
-            'total' => Rider::query()->whereNull('archived_at')->count(),
-            'archived' => Rider::query()->whereNotNull('archived_at')->count(),
-            'approved' => Rider::query()->whereNull('archived_at')->where('active', true)->count(),
-            'pending' => Rider::query()->whereNull('archived_at')->where(function ($query) {
+            'total' => $metricRiders()->whereNull('archived_at')->count(),
+            'archived' => $metricRiders()->whereNotNull('archived_at')->count(),
+            'approved' => $metricRiders()->whereNull('archived_at')->where('active', true)->count(),
+            'pending' => $metricRiders()->whereNull('archived_at')->where(function ($query) {
                 $query->whereNull('active')->orWhere('active', false);
             })->count(),
             'completed_deliveries' => DB::table('rider_api_deliveries')
+                ->join('rider', 'rider.id', '=', 'rider_api_deliveries.rider_id')
+                ->tap(fn ($query) => $this->cityScope->riders($query, 'rider.city'))
                 ->where('current_state', 'delivered')
                 ->count(),
-            'credits' => (float) DB::table('rider_api_wallets')->sum('credit_amount'),
+            'credits' => (float) DB::table('rider_api_wallets')
+                ->join('rider', 'rider.id', '=', 'rider_api_wallets.rider_id')
+                ->tap(fn ($query) => $this->cityScope->riders($query, 'rider.city'))
+                ->sum('credit_amount'),
         ];
         $pendingTopUps = DB::table('rider_api_wallet_top_ups as top_ups')
             ->join('rider as riders', 'riders.id', '=', 'top_ups.rider_id')
+            ->tap(fn ($query) => $this->cityScope->riders($query, 'riders.city'))
             ->where('top_ups.status', 'pending')
             ->select([
                 'top_ups.reference',
@@ -262,24 +278,47 @@ class RiderManagementController extends Controller
                 // user was created during submission of the application, so we just need to find the user by email.
 
                 $user = User::where('email', $pendingApplication->email)->first();
-
-                \Log::info(['user' => $user]);
-
-                // we just need to update the rider table to active and approved_at timestamp.
-                $rider = DB::table('rider')
-                    ->where('user_id', $user->id)
-                    ->first();
-
-                if ($rider) {
-                    DB::table('rider')
-                        ->where('user_id', $user->id)
-                        ->update([
-                            'active' => true,
-                            'is_active' => true,
-                            'approved_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                if (! $user) {
+                    $nameParts = preg_split('/\s+/', trim($pendingApplication->full_name), 2);
+                    $attributes = [
+                        'email' => $pendingApplication->email,
+                        'password' => $pendingApplication->getRawOriginal('password'),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    if (Schema::hasColumn('users', 'name')) {
+                        $attributes['name'] = $pendingApplication->full_name;
+                    }
+                    if (Schema::hasColumn('users', 'firstname')) {
+                        $attributes['firstname'] = $nameParts[0] ?? $pendingApplication->full_name;
+                    }
+                    if (Schema::hasColumn('users', 'lastname')) {
+                        $attributes['lastname'] = $nameParts[1] ?? '';
+                    }
+                    if (Schema::hasColumn('users', 'mobile')) {
+                        $attributes['mobile'] = $pendingApplication->mobile;
+                    }
+                    if (Schema::hasColumn('users', 'city')) {
+                        $attributes['city'] = $pendingApplication->city;
+                    }
+                    $user = User::query()->findOrFail(DB::table('users')->insertGetId($attributes));
                 }
+
+                DB::table('rider')->updateOrInsert(
+                    ['user_id' => $user->id],
+                    [
+                        'name' => $pendingApplication->full_name,
+                        'mobile' => $pendingApplication->mobile,
+                        'city' => $pendingApplication->city,
+                        'active' => true,
+                        'is_active' => true,
+                        'approved_at' => now(),
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ],
+                );
+                $rider = DB::table('rider')->where('user_id', $user->id)->first();
+                $user->forceFill(['city' => $pendingApplication->city])->save();
 
                 DB::table('rider_api_activity_logs')->insert([
                     'rider_id' => $rider->id,

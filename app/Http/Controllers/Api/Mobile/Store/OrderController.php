@@ -73,10 +73,11 @@ class OrderController extends Controller
     public function getAcceptedBooking(Request $request) {
 
     	$user = $request->user();
+		$branchId = $this->assignedBranchId($request);
 
     	$orders = Orders::wherePartnerId($user->merchant->id)
     					->whereNotNull('store_accepted_at')
-    					->whereAcceptedByStoreId($user->merchant->id)
+						->whereAcceptedByStoreId($branchId)
     					->whereDate('submitted_at', Carbon::today())
 	    	 			->orderby('submitted_at','desc')
 	    	 			->with('cart')
@@ -154,9 +155,9 @@ class OrderController extends Controller
 	
 		$data = array();	
 		$validated = $request->validate([
-			'merchant_location_id' => ['nullable', 'integer', 'min:1'],
+			'merchant_location_id' => ['required', 'integer', 'min:1'],
 		]);
-		$merchantLocationId = $validated['merchant_location_id'] ?? null;
+		$merchantLocationId = $this->assignedBranchId($request);
 		
 		\Log::info('Fetching Order from which Restaurant: ' . $request->user()->merchant->id);
 
@@ -223,6 +224,7 @@ class OrderController extends Controller
             ])
             ->whereKey($order->getKey())
             ->where('partner_id', $merchant->id)
+            ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $this->assignedBranchId($request)))
             ->firstOrFail();
 
         abort_unless($order->cart, 404);
@@ -266,6 +268,7 @@ class OrderController extends Controller
         $order = Orders::query()
             ->whereKey($order->getKey())
             ->where('partner_id', $merchant->id)
+            ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $this->assignedBranchId($request)))
             ->firstOrFail();
 
         $delivery = DB::table('rider_api_deliveries')
@@ -339,6 +342,7 @@ class OrderController extends Controller
 
         $user = $request->user();
         $merchant = $user?->merchant;
+		$branchId = $this->assignedBranchId($request);
 
         if (! $merchant) {
             return response()->json([
@@ -347,10 +351,11 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $user, $request) {
+        $result = DB::transaction(function () use ($merchant, $order, $user, $request, $branchId) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
+                ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
                 ->lockForUpdate()
                 ->first();
 
@@ -467,6 +472,7 @@ class OrderController extends Controller
     public function reprintOrder(Orders $order, Request $request)
     {
         $merchant = $request->user()?->merchant;
+		$branchId = $this->assignedBranchId($request);
 
         if (! $merchant) {
             return response()->json([
@@ -479,6 +485,7 @@ class OrderController extends Controller
             ->with('cart')
             ->whereKey($order->getKey())
             ->where('partner_id', $merchant->id)
+            ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
             ->first();
 
         if (! $order) {
@@ -517,6 +524,7 @@ class OrderController extends Controller
     {
         $user = $request->user();
         $merchant = $user?->merchant;
+		$branchId = $this->assignedBranchId($request);
 
         if (! $merchant) {
             return response()->json([
@@ -525,10 +533,11 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $request, $user) {
+        $result = DB::transaction(function () use ($merchant, $order, $request, $user, $branchId) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
+                ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
                 ->lockForUpdate()
                 ->first();
 
@@ -629,6 +638,7 @@ class OrderController extends Controller
     {
         $user = $request->user();
         $merchant = $user?->merchant;
+		$branchId = $this->assignedBranchId($request);
 
         if (! $merchant) {
             return response()->json([
@@ -637,10 +647,11 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $request, $user) {
+        $result = DB::transaction(function () use ($merchant, $order, $request, $user, $branchId) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
+                ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
                 ->lockForUpdate()
                 ->first();
 
@@ -718,6 +729,7 @@ class OrderController extends Controller
     {
         $user = $request->user();
         $merchant = $user?->merchant;
+		$branchId = $this->assignedBranchId($request);
 
         if (! $merchant) {
             return response()->json([
@@ -726,10 +738,11 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $user) {
+        $result = DB::transaction(function () use ($merchant, $order, $user, $branchId) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
+                ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
                 ->lockForUpdate()
                 ->first();
 
@@ -893,6 +906,7 @@ class OrderController extends Controller
 
         $location = PartnerLocation::query()
             ->where('partner_id', $user->merchant->id)
+            ->whereKey($this->assignedBranchId($request))
             ->find($validated['merchant_location_id']);
 
         if (! $location) {
@@ -932,8 +946,11 @@ class OrderController extends Controller
     public function updateLocationDeviceToken(PartnerLocation $partnerLocation, Request $request)
     {
 		$merchant = $request->user()->merchant;
+		$assignedBranchId = $this->assignedBranchId($request);
 
-        if (! $merchant || (int) $partnerLocation->partner_id !== (int) $merchant->id) {
+        if (! $merchant
+            || (int) $partnerLocation->partner_id !== (int) $merchant->id
+            || (int) $partnerLocation->id !== $assignedBranchId) {
             return response()->json([
                 'status' => 0,
                 'message' => 'Merchant location not found.',
@@ -1049,6 +1066,15 @@ class OrderController extends Controller
 			'product' => $product,
 		]);
 
+	}
+
+	private function assignedBranchId(Request $request): int
+	{
+		$branch = $request->attributes->get('merchantBranch');
+
+		abort_unless($branch, 403, 'No active merchant branch is assigned to this login.');
+
+		return (int) $branch->id;
 	}
 
 }

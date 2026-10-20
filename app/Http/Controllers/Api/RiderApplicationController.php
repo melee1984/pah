@@ -42,6 +42,7 @@ class RiderApplicationController extends Controller
             'access_token_hash' => $tokenHash,
             'full_name' => $request->validated('full_name'),
             'mobile' => $request->validated('mobile'),
+            'city' => $request->validated('city'),
             'email' => $request->validated('email'),
             'password' => $request->validated('password'), // we need to remove this since we are not using this anymore. we will create the user account once the rider submits the application.
             'status' => RiderApplication::STATUS_DRAFT,
@@ -71,6 +72,9 @@ class RiderApplicationController extends Controller
             if (Schema::hasColumn('users', 'mobile')) {
                 $attributes['mobile'] = $application->mobile;
             }
+            if (Schema::hasColumn('users', 'city')) {
+                $attributes['city'] = $application->city;
+            }
 
             $user = User::query()->findOrFail(DB::table('users')->insertGetId($attributes));
             // create also rider account in the rider table
@@ -78,6 +82,7 @@ class RiderApplicationController extends Controller
                 'user_id' => $user->id,
                 'name' => $application->full_name,
                 'mobile' => $application->mobile,
+                'city' => $application->city,
                 'active' => false,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -110,6 +115,7 @@ class RiderApplicationController extends Controller
                     'password' => $validated['password'],
                     'birth_date' => $validated['birth_date'],
                     'home_address' => $validated['home_address'],
+                    'city' => $validated['city'],
                     'profile_photo_path' => $this->storeFile($request->file('profile_photo'), $directory),
                     'emergency_contact_name' => $validated['emergency_contact_name'],
                     'emergency_contact_relationship' => $validated['emergency_contact_relationship'],
@@ -409,6 +415,9 @@ class RiderApplicationController extends Controller
                 if (Schema::hasColumn('users', 'mobile')) {
                     $attributes['mobile'] = $riderApplication->mobile;
                 }
+                if (Schema::hasColumn('users', 'city')) {
+                    $attributes['city'] = $riderApplication->city;
+                }
                 if (Schema::hasColumn('users', 'api_token')) {
                     $attributes['api_token'] = Str::random(80);
                 }
@@ -422,6 +431,7 @@ class RiderApplicationController extends Controller
                     'name' => $riderApplication->full_name,
                     'date_join' => now(),
                     'mobile' => $riderApplication->mobile,
+                    'city' => $riderApplication->city,
                     'active' => true,
                     'created_at' => now(),
                     'updated_at' => now(),
@@ -479,6 +489,7 @@ class RiderApplicationController extends Controller
             'mobile',
             'birth_date',
             'home_address',
+            'city',
             'emergency_contact_name',
             'emergency_contact_relationship',
             'emergency_contact_mobile',

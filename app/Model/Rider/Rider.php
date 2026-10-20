@@ -12,6 +12,19 @@ class Rider extends Model
 
     public $timestamps = true;
 
+    protected $fillable = [
+        'name',
+        'mobile',
+        'city',
+        'user_id',
+        'date_join',
+        'license_no',
+        'active',
+        'is_active',
+        'approved_at',
+        'archived_at',
+    ];
+
     protected $casts = [
         'active' => 'boolean',
         'is_active' => 'boolean',

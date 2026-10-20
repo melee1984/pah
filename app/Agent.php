@@ -11,6 +11,7 @@ class Agent extends Authenticatable
         'name',
         'email',
         'mobile',
+        'city',
         'password',
         'commission_percentage',
         'active',

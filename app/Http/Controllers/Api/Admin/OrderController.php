@@ -16,6 +16,7 @@ use App\User;
 use App\LibraryStatus;
 use App\Services\RiderOfferDispatcher;
 use App\Services\RiderDispatchStatus;
+use App\Services\AdminCityScope;
 use Carbon\Carbon;
 
 use App\PushNotification;
@@ -26,12 +27,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class OrderController extends Controller
 {
    
-    public function getList(RiderDispatchStatus $dispatchStatus)
+    public function getList(RiderDispatchStatus $dispatchStatus, AdminCityScope $cityScope)
     {	 
-         $orders = Orders::with(['cart.payment', 'cart.diningTable', 'orderStatus'])
+         $ordersQuery = Orders::with(['cart.payment', 'cart.diningTable', 'orderStatus'])
                 ->whereNotNull('submitted_at') 
                 ->with(['partner', 'rider', 'status'])
-                ->orderBy('created_at', 'desc')->get();
+                ->orderBy('created_at', 'desc');
+         $orders = $cityScope->orders($ordersQuery)->get();
 
         $deliveries = DB::table('rider_api_deliveries')
             ->whereIn('legacy_order_id', $orders->pluck('id'))
@@ -88,7 +90,7 @@ class OrderController extends Controller
         $data['completedOrders'] = $orders->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES)->values();
         $data['cancelledOrders'] = $orders->where('order_status_id', LibraryStatus::STATUS_CANCELLED)->values();
 
-        $data['riders'] = Riders::active()->get();
+        $data['riders'] = $cityScope->riders(Riders::active())->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
     	return response()->json($data, 200);
@@ -151,7 +153,7 @@ class OrderController extends Controller
         ]);
     }
 
-     public function getListwithFilter(Request $request) {
+     public function getListwithFilter(Request $request, AdminCityScope $cityScope) {
 
         $request->validate([
             'fulfillment_type' => ['nullable', 'in:delivery,pickup,dine_in'],
@@ -175,6 +177,7 @@ class OrderController extends Controller
         $query = Orders::with(['cart', 'partner'])
             ->whereNotNull('submitted_at')
             ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
+        $cityScope->orders($query);
      
         if ($request->has('dateFilter')) {
 
@@ -264,18 +267,20 @@ class OrderController extends Controller
         
         $data['totalSummary'] = $totalSummary;
         $data['orders'] = $orders;
-        $data['partners'] = Partners::whereNotNull('verified_at')->whereActive(1)->get(['id','restaurant_name']);
+        $data['partners'] = $cityScope->partners(
+            Partners::whereNotNull('verified_at')->whereActive(1)
+        )->get(['id','restaurant_name']);
 
         return response()->json($data, 200);
 
     }
 
-    public function getListMemberwithFilter(Request $request)
+    public function getListMemberwithFilter(Request $request, AdminCityScope $cityScope)
     {
         $data = [];
         $search = trim((string) $request->query('search', ''));
 
-        $users = User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email')
+        $users = User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email', 'city')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('firstname', 'like', "%{$search}%")
@@ -283,8 +288,9 @@ class OrderController extends Controller
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhere('mobile', 'like', "%{$search}%");
                 });
-            })
-            ->orderBy('created_at', 'desc')
+            });
+        $cityScope->users($users);
+        $users = $users->orderBy('created_at', 'desc')
             ->paginate(25);
 
         foreach ($users as $user) {
@@ -296,7 +302,7 @@ class OrderController extends Controller
         return response()->json($data, 200);
     }
 
-    public function getListMerchantwithFilter(Request $request)
+    public function getListMerchantwithFilter(Request $request, AdminCityScope $cityScope)
     {
         $data = [];
         $search = trim((string) $request->query('search', ''));
@@ -310,8 +316,9 @@ class OrderController extends Controller
                         ->orWhere('telephone', 'like', "%{$search}%")
                         ->orWhere('city', 'like', "%{$search}%");
                 });
-            })
-            ->orderBy('created_at', 'desc')
+            });
+        $cityScope->partners($users);
+        $users = $users->orderBy('created_at', 'desc')
             ->paginate(25);
 
         foreach ($users as $user) {

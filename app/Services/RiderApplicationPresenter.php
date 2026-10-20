@@ -21,6 +21,7 @@ class RiderApplicationPresenter
                 'mobile' => $application->mobile,
                 'birth_date' => $application->birth_date?->format('Y-m-d'),
                 'home_address' => $application->home_address,
+                'city' => $application->city,
             ],
             'emergency_contact' => [
                 'name' => $application->emergency_contact_name,
