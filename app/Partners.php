@@ -3,9 +3,28 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Schema;
 
 class Partners extends Model
 {
+    protected static function booted(): void
+    {
+        static::creating(function (Partners $partner) {
+            if ($partner->agent_id || blank($partner->email)
+                || ! Schema::hasTable('merchant_applications')
+                || ! Schema::hasColumn('merchant_applications', 'agent_id')) {
+                return;
+            }
+
+            $partner->agent_id = MerchantApplication::query()
+                ->where('email', $partner->email)
+                ->where('status', MerchantApplication::STATUS_APPROVED)
+                ->whereNotNull('agent_id')
+                ->latest('reviewed_at')
+                ->value('agent_id');
+        });
+    }
+
     protected $fillable = array(
                                 'user_id',
                                 'restaurant_name',

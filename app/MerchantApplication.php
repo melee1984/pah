@@ -3,6 +3,8 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
 
 class MerchantApplication extends Model
 {
@@ -19,6 +21,7 @@ class MerchantApplication extends Model
     ];
 
     protected $fillable = [
+        'agent_id',
         'business_name',
         'registered_business_name',
         'owner_name',
@@ -40,6 +43,11 @@ class MerchantApplication extends Model
         'reviewed_at',
     ];
 
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
     protected function casts(): array
     {
         return [
@@ -59,5 +67,18 @@ class MerchantApplication extends Model
         return collect($this->services ?? [])
             ->map(fn (string $service) => self::SERVICES[$service] ?? str($service)->headline()->toString())
             ->all();
+    }
+
+    public function syncReferralToPartner(): void
+    {
+        if (! $this->agent_id || $this->status !== self::STATUS_APPROVED
+            || ! Schema::hasTable('partners') || ! Schema::hasColumn('partners', 'agent_id')) {
+            return;
+        }
+
+        Partners::query()
+            ->where('email', $this->email)
+            ->whereNull('agent_id')
+            ->update(['agent_id' => $this->agent_id]);
     }
 }

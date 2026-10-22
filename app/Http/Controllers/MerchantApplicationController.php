@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Agent;
 use App\Mail\MerchantApplicationReceivedMail;
 use App\MerchantApplication;
 use Illuminate\Http\RedirectResponse;
@@ -14,17 +15,36 @@ use Throwable;
 
 class MerchantApplicationController extends Controller
 {
-    public function create(): View
+    public function create(Request $request): View
     {
+        $referralCode = $this->normalizeReferralCode($request->query('ref'));
+        $referralAgent = $referralCode === '' ? null : Agent::query()
+            ->where('referral_code', $referralCode)
+            ->where('active', true)
+            ->first();
+
         return view('merchant-program.register', [
             'commissionPercentage' => (float) config('agent.pahatud_commission_percentage', 20),
             'services' => MerchantApplication::SERVICES,
+            'referralCode' => $referralAgent?->referral_code ?? $referralCode,
+            'referralAgent' => $referralAgent,
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $referralCode = $this->normalizeReferralCode($request->input('referral_code'));
+        $request->merge([
+            'referral_code' => $referralCode === '' ? null : $referralCode,
+        ]);
+
         $validated = $request->validate([
+            'referral_code' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::exists('agents', 'referral_code')->where(fn ($query) => $query->where('active', true)),
+            ],
             'business_name' => ['required', 'string', 'max:255'],
             'registered_business_name' => ['required', 'string', 'max:255'],
             'owner_name' => ['required', 'string', 'max:255'],
@@ -42,12 +62,19 @@ class MerchantApplicationController extends Controller
             'business_description' => ['nullable', 'string', 'max:2000'],
             'terms' => ['accepted'],
         ], [
+            'referral_code.exists' => 'Enter a valid referral code from an active Pahatud agent.',
             'services.required' => 'Choose at least one service you want to offer.',
             'services.min' => 'Choose at least one service you want to offer.',
         ]);
 
+        $referralAgent = blank($validated['referral_code'] ?? null) ? null : Agent::query()
+            ->where('referral_code', $validated['referral_code'])
+            ->where('active', true)
+            ->firstOrFail();
+
         $application = MerchantApplication::query()->create([
-            ...collect($validated)->except('terms')->all(),
+            ...collect($validated)->except(['terms', 'referral_code'])->all(),
+            'agent_id' => $referralAgent?->getKey(),
             'commission_percentage' => config('agent.pahatud_commission_percentage', 20),
             'status' => MerchantApplication::STATUS_PENDING,
         ]);
@@ -76,5 +103,10 @@ class MerchantApplicationController extends Controller
         return view('merchant-program.success', [
             'email' => $request->session()->get('merchant_application_email'),
         ]);
+    }
+
+    private function normalizeReferralCode(mixed $code): string
+    {
+        return mb_strtoupper(trim((string) $code));
     }
 }

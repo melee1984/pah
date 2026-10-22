@@ -12,9 +12,10 @@ use App\Mail\AgentRegistrationReceivedMail;
 use App\Mail\AgentTemporaryPasswordMail;
 use App\Mail\RestaurantApplicationStatusMail;
 use App\Mail\RestaurantInvitationMail;
+use App\MerchantApplication;
+use App\Model\Bookings\BookingStatus;
 use App\Model\Cart;
 use App\Model\CartItem;
-use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\Orders;
 use App\PartnerPromotion;
 use App\Partners;
@@ -1114,6 +1115,80 @@ class AgentPortalTest extends TestCase
             ->assertSee('agent-commission-table', false)
             ->assertSee('agent-order-breakdown', false)
             ->assertSeeText('#PAH-2026-0042');
+    }
+
+    public function test_agent_can_track_referred_applications_and_approval_links_an_existing_partner(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $agent = $this->agent('referral-tracking@example.com');
+        $application = MerchantApplication::query()->create([
+            'agent_id' => $agent->id,
+            'business_name' => 'Referral Cafe',
+            'registered_business_name' => 'Referral Cafe Foods',
+            'owner_name' => 'Rina Santos',
+            'email' => 'referral-cafe@example.com',
+            'mobile' => '09171234567',
+            'address' => '123 Referral Street',
+            'city' => 'Cebu City',
+            'business_structure' => 'sole_proprietorship',
+            'branch_count' => 1,
+            'services' => ['delivery'],
+            'commission_percentage' => 20,
+            'status' => MerchantApplication::STATUS_PENDING,
+        ]);
+        $partner = Partners::query()->create([
+            'restaurant_name' => 'Referral Cafe',
+            'email' => $application->email,
+            'slug' => 'referral-cafe',
+            'search_string' => 'referral cafe',
+        ]);
+
+        $this->actingAs($agent, 'agent')->get(route('agent.dashboard'))
+            ->assertOk()
+            ->assertSee($agent->referral_code)
+            ->assertSee($agent->referralUrl())
+            ->assertSee('Copy code')
+            ->assertSee('Share link')
+            ->assertSee('Referral Cafe');
+
+        $this->actingAs($agent, 'agent')->get(route('agent.restaurants.index'))
+            ->assertOk()
+            ->assertSee('Referral Cafe')
+            ->assertSee($application->created_at->format('M d, Y'))
+            ->assertSee('Pending');
+
+        $this->post(route('dashboard.merchant-applications.approve', $application), [
+            'message' => 'Continue to onboarding.',
+        ])->assertSessionHas('success');
+
+        $this->assertSame($agent->id, $partner->fresh()->agent_id);
+        $this->assertSame(MerchantApplication::STATUS_APPROVED, $application->fresh()->status);
+
+        MerchantApplication::query()->create([
+            'agent_id' => $agent->id,
+            'business_name' => 'Future Referral Store',
+            'registered_business_name' => 'Future Referral Store Inc.',
+            'owner_name' => 'Luis Reyes',
+            'email' => 'future-referral@example.com',
+            'mobile' => '09179876543',
+            'address' => '456 Future Avenue',
+            'city' => 'Davao City',
+            'business_structure' => 'corporation',
+            'branch_count' => 1,
+            'services' => ['pickup'],
+            'commission_percentage' => 20,
+            'status' => MerchantApplication::STATUS_APPROVED,
+            'reviewed_at' => now(),
+        ]);
+        $futurePartner = Partners::query()->create([
+            'restaurant_name' => 'Future Referral Store',
+            'email' => 'future-referral@example.com',
+            'slug' => 'future-referral-store',
+            'search_string' => 'future referral store',
+        ]);
+
+        $this->assertSame($agent->id, $futurePartner->agent_id);
     }
 
     public function test_delivered_order_snapshots_commission_and_cancellation_reverses_it(): void

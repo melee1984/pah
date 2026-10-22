@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Agent;
 use App\Http\Middleware\isAdmin;
 use App\Mail\MerchantApplicationReceivedMail;
 use App\Mail\MerchantApplicationStatusMail;
@@ -46,6 +47,63 @@ class MerchantApplicationTest extends TestCase
         $application = MerchantApplication::query()->firstOrFail();
         $this->assertSame(['dine_in', 'pickup', 'delivery'], $application->services);
         Mail::assertSent(MerchantApplicationReceivedMail::class, fn ($mail) => $mail->hasTo('owner@example.com'));
+    }
+
+    public function test_agent_referral_link_prefills_and_attributes_a_merchant_application(): void
+    {
+        Mail::fake();
+        $agent = Agent::query()->create([
+            'name' => 'Referral Agent',
+            'email' => 'referral-agent@example.com',
+            'password' => 'password123',
+            'commission_percentage' => 15,
+            'active' => true,
+        ]);
+        $secondAgent = Agent::query()->create([
+            'name' => 'Second Referral Agent',
+            'email' => 'second-referral-agent@example.com',
+            'password' => 'password123',
+            'commission_percentage' => 15,
+            'active' => true,
+        ]);
+
+        $this->assertNotNull($agent->referral_code);
+        $this->assertNotSame($agent->referral_code, $secondAgent->referral_code);
+        $this->assertStringContainsString('ref='.$agent->referral_code, $agent->referralUrl());
+
+        $this->get($agent->referralUrl())
+            ->assertOk()
+            ->assertSee('Agent referral applied')
+            ->assertSee($agent->name)
+            ->assertSee('value="'.$agent->referral_code.'"', false);
+
+        $this->post(route('merchant.register.submit'), [
+            ...$this->validApplication(),
+            'referral_code' => strtolower($agent->referral_code),
+        ])->assertRedirect(route('merchant.register.success'));
+
+        $this->assertDatabaseHas('merchant_applications', [
+            'email' => 'owner@example.com',
+            'agent_id' => $agent->id,
+        ]);
+    }
+
+    public function test_invalid_or_inactive_agent_referral_code_is_rejected(): void
+    {
+        $inactiveAgent = Agent::query()->create([
+            'name' => 'Inactive Agent',
+            'email' => 'inactive-referral@example.com',
+            'password' => 'password123',
+            'commission_percentage' => 15,
+            'active' => false,
+        ]);
+
+        $this->post(route('merchant.register.submit'), [
+            ...$this->validApplication(),
+            'referral_code' => $inactiveAgent->referral_code,
+        ])->assertSessionHasErrors('referral_code');
+
+        $this->assertDatabaseCount('merchant_applications', 0);
     }
 
     public function test_application_requires_at_least_one_service(): void
@@ -100,6 +158,47 @@ class MerchantApplicationTest extends TestCase
             ->assertSee($application->registered_business_name)
             ->assertSee('Approve')
             ->assertSee('Decline');
+    }
+
+    public function test_admin_can_filter_merchant_applications_by_referring_agent(): void
+    {
+        $this->withoutMiddleware(isAdmin::class);
+        $admin = User::query()->forceCreate([
+            'name' => 'Admin User',
+            'email' => 'referral-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $firstAgent = Agent::query()->create([
+            'name' => 'First Agent',
+            'email' => 'first-agent@example.com',
+            'password' => 'password123',
+            'commission_percentage' => 15,
+            'active' => true,
+        ]);
+        $secondAgent = Agent::query()->create([
+            'name' => 'Second Agent',
+            'email' => 'second-agent@example.com',
+            'password' => 'password123',
+            'commission_percentage' => 15,
+            'active' => true,
+        ]);
+        MerchantApplication::query()->create($this->modelAttributes([
+            'agent_id' => $firstAgent->id,
+            'business_name' => 'First Referred Business',
+            'email' => 'first-business@example.com',
+        ]));
+        MerchantApplication::query()->create($this->modelAttributes([
+            'agent_id' => $secondAgent->id,
+            'business_name' => 'Second Referred Business',
+            'email' => 'second-business@example.com',
+        ]));
+
+        $this->actingAs($admin)
+            ->get(route('dashboard.merchant-applications.index', ['agent_id' => $firstAgent->id]))
+            ->assertOk()
+            ->assertSee('First Referred Business')
+            ->assertDontSee('Second Referred Business')
+            ->assertSee($firstAgent->referral_code);
     }
 
     public function test_decline_requires_a_reason_and_an_application_cannot_be_reviewed_twice(): void

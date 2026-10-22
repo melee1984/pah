@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Agent;
 use App\Http\Controllers\Controller;
 use App\Mail\MerchantApplicationStatusMail;
 use App\MerchantApplication;
@@ -21,6 +22,7 @@ class MerchantApplicationController extends Controller
     {
         $validated = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
+            'agent_id' => ['nullable', 'integer', Rule::exists('agents', 'id')],
             'status' => ['nullable', Rule::in([
                 MerchantApplication::STATUS_PENDING,
                 MerchantApplication::STATUS_APPROVED,
@@ -30,7 +32,9 @@ class MerchantApplicationController extends Controller
 
         $search = trim($validated['search'] ?? '');
         $status = $validated['status'] ?? '';
+        $agentId = isset($validated['agent_id']) ? (int) $validated['agent_id'] : null;
         $applications = MerchantApplication::query()
+            ->with('agent:id,name,referral_code')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('business_name', 'like', "%{$search}%")
@@ -41,6 +45,7 @@ class MerchantApplicationController extends Controller
                 });
             })
             ->when($status !== '', fn ($query) => $query->where('status', $status))
+            ->when($agentId !== null, fn ($query) => $query->where('agent_id', $agentId))
             ->latest()
             ->paginate(25)
             ->withQueryString();
@@ -51,12 +56,18 @@ class MerchantApplicationController extends Controller
             'approved' => MerchantApplication::query()->where('status', MerchantApplication::STATUS_APPROVED)->count(),
             'declined' => MerchantApplication::query()->where('status', MerchantApplication::STATUS_DECLINED)->count(),
         ];
+        $agents = Agent::query()
+            ->withCount('referredApplications')
+            ->orderBy('name')
+            ->get(['id', 'name', 'referral_code']);
 
-        return view('dashboard.pages.merchant-applications.index', compact('applications', 'metrics', 'search', 'status'));
+        return view('dashboard.pages.merchant-applications.index', compact('applications', 'metrics', 'search', 'status', 'agents', 'agentId'));
     }
 
     public function show(MerchantApplication $application): View
     {
+        $application->load('agent:id,name,email,mobile,referral_code');
+
         return view('dashboard.pages.merchant-applications.show', compact('application'));
     }
 
@@ -95,6 +106,8 @@ class MerchantApplicationController extends Controller
                     'reviewed_by' => $request->user()?->getKey(),
                     'reviewed_at' => now(),
                 ]);
+
+                $pendingApplication->syncReferralToPartner();
 
                 Mail::to($pendingApplication->email)->send(new MerchantApplicationStatusMail($pendingApplication, $message));
             });
