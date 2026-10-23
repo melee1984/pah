@@ -36,9 +36,8 @@ class MerchantApplicationController extends Controller
         $search = trim($validated['search'] ?? '');
         $status = $validated['status'] ?? '';
         $agentId = isset($validated['agent_id']) ? (int) $validated['agent_id'] : null;
-        $applications = MerchantApplication::query()
-            ->with('agent:id,name,referral_code')
-        $applicationQuery = MerchantApplication::query();
+        $applicationQuery = MerchantApplication::query()
+            ->with('agent:id,name,referral_code');
         $this->cityScope->partners($applicationQuery);
         $applications = $applicationQuery
             ->when($search !== '', function ($query) use ($search) {
