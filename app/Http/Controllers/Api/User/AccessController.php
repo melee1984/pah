@@ -415,6 +415,7 @@ class AccessController extends Controller
       'lastname'  => 'required',
       'email'     => 'required|email|unique:users,email',
       'mobile'    => 'required',
+      'city'    => 'required',
       'password'  => 'required|min:5|confirmed',
     ];  
 
@@ -434,6 +435,7 @@ class AccessController extends Controller
       $user->mobile = $request->input('mobile');
       $user->password =  Hash::make($request->input('password'));
       $user->api_token = $this->apiToken;
+      $user->city  = $request->input('city');
       $user->save();
 
       if($user) {
@@ -457,6 +459,7 @@ class AccessController extends Controller
             'firstname'    => $user->firstname,
             'lastname'    => $user->lastname,
             'email'        => $user->email,
+            'city'        => $user->city,
             'currency'        => 'PHP',
             'access_token' => $this->apiToken,
             'mobile' => $user->mobile,
