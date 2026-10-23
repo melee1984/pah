@@ -6,14 +6,19 @@ use App\Coupon;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CouponRequest;
 use App\Partners;
+use App\Services\AdminCityScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class CouponController extends Controller
 {
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
     public function index(): View
     {
-        $coupons = Coupon::query()->withUsageCount()->with('partner:id,restaurant_name')->latest()->paginate(20);
+        $coupons = Coupon::query()
+            ->when($this->cityScope->restricted(), fn ($query) => $query->whereHas('partner', fn ($partner) => $this->cityScope->partners($partner)))
+            ->withUsageCount()->with('partner:id,restaurant_name')->latest()->paginate(20);
 
         return view('dashboard.pages.coupons.index', compact('coupons'));
     }
@@ -57,6 +62,8 @@ class CouponController extends Controller
 
     private function data(CouponRequest $request): array
     {
+        $this->cityScope->authorizePartner(Partners::query()->findOrFail($request->validated('partner_id')));
+
         return array_merge($request->validated(), [
             'active' => $request->boolean('active'),
             'valid_at' => $request->input('valid_until'),
@@ -65,6 +72,6 @@ class CouponController extends Controller
 
     private function partners()
     {
-        return Partners::query()->where('active', true)->orderBy('restaurant_name')->get(['id', 'restaurant_name']);
+        return $this->cityScope->partners(Partners::query())->where('active', true)->orderBy('restaurant_name')->get(['id', 'restaurant_name']);
     }
 }

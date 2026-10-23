@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Model\Rider\Rider;
+use App\Services\AdminCityScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class RiderCommissionReportController extends Controller
 {
-    public function __invoke(Request $request)
+    public function __invoke(Request $request, AdminCityScope $cityScope)
     {
         $validated = $request->validate([
             'rider_id' => ['nullable', 'integer', 'exists:rider,id'],
@@ -37,6 +38,7 @@ class RiderCommissionReportController extends Controller
             ->where('transactions.type', 'pahatud_commission')
             ->whereBetween('transactions.occurred_at', [$from, $to])
             ->when($selectedRiderId, fn ($query) => $query->where('transactions.rider_id', $selectedRiderId));
+        $cityScope->riders($baseQuery, 'riders.city');
 
         $totalCentavos = abs((int) (clone $baseQuery)->sum('transactions.amount_centavos'));
         $commissionCount = (clone $baseQuery)->count();
@@ -59,7 +61,7 @@ class RiderCommissionReportController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        $riders = Rider::query()->orderBy('name')->get(['id', 'name']);
+        $riders = $cityScope->riders(Rider::query())->orderBy('name')->get(['id', 'name']);
         $selectedRider = $selectedRiderId
             ? $riders->firstWhere('id', $selectedRiderId)
             : null;

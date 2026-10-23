@@ -25,7 +25,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'firstname','lastname', 'email', 'mobile', 'password','ip_address', 'api_token', 'description', 'telephone','account_type_id', 'provider', 'provider_id', 'avatar', 'device_token','device_id'
+        'firstname','lastname', 'email', 'mobile', 'city', 'managed_city', 'password','ip_address', 'api_token', 'description', 'telephone','account_type_id', 'provider', 'provider_id', 'avatar', 'device_token','device_id'
     ];
 
     /**
@@ -74,8 +74,8 @@ class User extends Authenticatable
      * @return boolean
      */
     public function isAdmin(): bool
-    {        
-        return $this->hasRole('admin');
+    {
+        return $this->hasAnyRole(['super', 'admin', 'manager']);
     }   
 
     /**
@@ -95,6 +95,33 @@ class User extends Authenticatable
     public function merchant()
     {
         return $this->hasOne('App\Partners')->with('locations');
+    }
+
+    public function ownedMerchant()
+    {
+        return $this->hasOne(Partners::class)->with('locations');
+    }
+
+    public function merchantBranchAssignment()
+    {
+        return $this->hasOne(MerchantBranchUser::class)->with(['partner.locations', 'branch']);
+    }
+
+    public function getMerchantAttribute()
+    {
+        if ($this->relationLoaded('merchant')) {
+            return $this->getRelation('merchant');
+        }
+
+        $ownedMerchant = $this->ownedMerchant()->first();
+
+        if ($ownedMerchant) {
+            return $ownedMerchant;
+        }
+
+        return $this->merchantBranchAssignment()
+            ->where('active', true)
+            ->first()?->partner;
     }
 
     /**

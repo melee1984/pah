@@ -34,6 +34,7 @@ class SubmitRiderApplicationRequest extends FormRequest
                 'before_or_equal:'.now()->subYears(18)->format('Y-m-d'),
             ],
             'home_address' => ['required', 'string', 'max:1000'],
+            'city' => ['required', 'string', 'max:120'],
             'profile_photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
 
             'emergency_contact_name' => ['required', 'string', 'max:255'],
@@ -61,6 +62,7 @@ class SubmitRiderApplicationRequest extends FormRequest
             'full_name' => trim((string) $this->input('full_name')),
             'email' => strtolower(trim((string) $this->input('email'))),
             'mobile' => trim((string) $this->input('mobile')),
+            'city' => trim((string) $this->input('city')),
             'emergency_contact_mobile' => trim((string) $this->input('emergency_contact_mobile')),
         ]);
     }

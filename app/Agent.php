@@ -13,6 +13,7 @@ class Agent extends Authenticatable
         'email',
         'mobile',
         'referral_code',
+        'city',
         'password',
         'commission_percentage',
         'active',

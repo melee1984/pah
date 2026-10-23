@@ -125,8 +125,14 @@ class DashboardController extends Controller
 
         abort_unless($merchant, 404);
 
+        $branches = $merchant->locations()
+            ->orderBy('address_1')
+            ->orderBy('city')
+            ->get();
+
         return view('merchant.pages.dashboard', [
             'merchantSetup' => $setupChecklist->for($merchant),
+            'branches' => $branches,
         ]);
     }
 

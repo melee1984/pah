@@ -12,11 +12,12 @@
     <div v-if="loading" class="dashboard-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading members…</div>
     <div v-else-if="memberRows.length" class="table-responsive">
       <table class="table dashboard-data-table dashboard-member-table">
-        <thead><tr><th>Member</th><th>Contact</th><th>Date joined</th></tr></thead>
+        <thead><tr><th>Member</th><th>Contact</th><th>City</th><th>Date joined</th></tr></thead>
         <tbody>
           <tr v-for="member in memberRows" :key="member.id">
             <td><div class="admin-agent-cell"><span>{{ initial(member) }}</span><div><strong>{{ fullName(member) }}</strong><small>Member #{{ member.id }}</small></div></div></td>
             <td><strong>{{ member.email }}</strong><small>{{ member.mobile || 'No mobile number' }}</small></td>
+            <td><strong>{{ member.city || 'Not assigned' }}</strong></td>
             <td><strong>{{ member.created_at_format }}</strong></td>
           </tr>
         </tbody>

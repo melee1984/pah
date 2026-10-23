@@ -21,6 +21,7 @@ class UpdateRiderPersonalRequest extends FormRequest
                 'before_or_equal:'.now()->subYears(18)->format('Y-m-d'),
             ],
             'home_address' => ['required', 'string', 'max:1000'],
+            'city' => ['required', 'string', 'max:120'],
             'mobile' => ['sometimes', 'required', 'string', 'max:25', 'regex:/^\+?[0-9][0-9\s-]{6,24}$/'],
         ];
     }

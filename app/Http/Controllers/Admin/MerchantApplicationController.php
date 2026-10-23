@@ -6,6 +6,7 @@ use App\Agent;
 use App\Http\Controllers\Controller;
 use App\Mail\MerchantApplicationStatusMail;
 use App\MerchantApplication;
+use App\Services\AdminCityScope;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ use Throwable;
 
 class MerchantApplicationController extends Controller
 {
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
     public function index(Request $request): View
     {
         $validated = $request->validate([
@@ -35,6 +38,9 @@ class MerchantApplicationController extends Controller
         $agentId = isset($validated['agent_id']) ? (int) $validated['agent_id'] : null;
         $applications = MerchantApplication::query()
             ->with('agent:id,name,referral_code')
+        $applicationQuery = MerchantApplication::query();
+        $this->cityScope->partners($applicationQuery);
+        $applications = $applicationQuery
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('business_name', 'like', "%{$search}%")
@@ -50,11 +56,12 @@ class MerchantApplicationController extends Controller
             ->paginate(25)
             ->withQueryString();
 
+        $metricApplications = fn () => $this->cityScope->partners(MerchantApplication::query());
         $metrics = [
-            'total' => MerchantApplication::query()->count(),
-            'pending' => MerchantApplication::query()->where('status', MerchantApplication::STATUS_PENDING)->count(),
-            'approved' => MerchantApplication::query()->where('status', MerchantApplication::STATUS_APPROVED)->count(),
-            'declined' => MerchantApplication::query()->where('status', MerchantApplication::STATUS_DECLINED)->count(),
+            'total' => $metricApplications()->count(),
+            'pending' => $metricApplications()->where('status', MerchantApplication::STATUS_PENDING)->count(),
+            'approved' => $metricApplications()->where('status', MerchantApplication::STATUS_APPROVED)->count(),
+            'declined' => $metricApplications()->where('status', MerchantApplication::STATUS_DECLINED)->count(),
         ];
         $agents = Agent::query()
             ->withCount('referredApplications')

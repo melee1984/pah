@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Partners;
 use App\UserFavorite;
+use App\Services\AdminCityScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,7 @@ class FavoriteReportController extends Controller
 {
     public function __invoke(Request $request): View
     {
+        $cityScope = app(AdminCityScope::class);
         $validated = $request->validate([
             'merchant_id' => ['nullable', 'integer', 'exists:partners,id'],
             'search' => ['nullable', 'string', 'max:100'],
@@ -47,6 +49,9 @@ class FavoriteReportController extends Controller
                             ->orWhere('mobile', 'like', "%{$search}%"));
                 });
             });
+        if ($cityScope->restricted()) {
+            $baseQuery->whereHas('partner', fn ($query) => $cityScope->partners($query));
+        }
 
         $metrics = [
             'favorites' => (clone $baseQuery)->count(),
@@ -83,7 +88,7 @@ class FavoriteReportController extends Controller
         return view('dashboard.pages.report.favorites', [
             'favorites' => $favorites,
             'topMerchants' => $topMerchants,
-            'merchants' => Partners::query()
+            'merchants' => $cityScope->partners(Partners::query())
                 ->orderBy('restaurant_name')
                 ->get(['id', 'restaurant_name']),
             'metrics' => $metrics,

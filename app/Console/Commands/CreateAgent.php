@@ -11,7 +11,8 @@ class CreateAgent extends Command
     protected $signature = 'agent:create
         {name : Agent full name}
         {email : Agent email address}
-        {--mobile= : Mobile number}';
+        {--mobile= : Mobile number}
+        {--city= : Assigned city}';
 
     protected $description = 'Create an active Pahatud Agent Portal account';
 
@@ -21,6 +22,7 @@ class CreateAgent extends Command
             'name' => $this->argument('name'),
             'email' => $this->argument('email'),
             'mobile' => $this->option('mobile'),
+            'city' => $this->option('city'),
             'commission_percentage' => config('agent.commission_tiers.0', 15),
             'password' => $this->secret('Password (minimum 8 characters)'),
         ];
@@ -29,6 +31,7 @@ class CreateAgent extends Command
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:agents,email'],
             'mobile' => ['nullable', 'string', 'max:30'],
+            'city' => ['required', 'string', 'max:120'],
             'password' => ['required', 'string', 'min:8'],
         ]);
 

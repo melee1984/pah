@@ -27,6 +27,7 @@ class RiderManagementTest extends TestCase
             'full_name' => 'Ana Rider',
             'email' => 'ana@example.com',
             'mobile' => '09171234567',
+            'city' => 'Cebu City',
             'password' => Hash::make('password'),
             'status' => RiderApplication::STATUS_PENDING,
             'submitted_at' => now(),
