@@ -6,16 +6,59 @@ use App\Agent;
 use App\Http\Middleware\isAdmin;
 use App\Mail\MerchantApplicationReceivedMail;
 use App\Mail\MerchantApplicationStatusMail;
-use App\MerchantApplication;
+use App\Partners;
 use App\User;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class MerchantApplicationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Schema::create('partners', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id')->nullable();
+            $table->unsignedBigInteger('agent_id')->nullable()->index();
+            $table->string('restaurant_name');
+            $table->string('registered_business_name')->nullable();
+            $table->string('owner_name')->nullable();
+            $table->string('email')->nullable()->unique();
+            $table->string('mobile', 30)->nullable();
+            $table->string('telephone', 30)->nullable();
+            $table->text('address')->nullable();
+            $table->string('city', 120)->nullable();
+            $table->string('business_structure', 30)->nullable();
+            $table->string('cuisine', 120)->nullable();
+            $table->unsignedSmallInteger('branch_count')->default(1);
+            $table->json('services')->nullable();
+            $table->string('website')->nullable();
+            $table->text('description')->nullable();
+            $table->decimal('percentage', 5, 2)->nullable();
+            $table->string('application_source', 40)->nullable()->index();
+            $table->string('recruitment_status', 20)->nullable()->index();
+            $table->text('recruitment_review_message')->nullable();
+            $table->timestamp('recruitment_submitted_at')->nullable();
+            $table->string('application_status', 30)->nullable();
+            $table->text('application_remarks')->nullable();
+            $table->unsignedBigInteger('recruitment_reviewed_by')->nullable();
+            $table->timestamp('recruitment_reviewed_at')->nullable();
+            $table->string('slug')->nullable();
+            $table->text('search_string')->nullable();
+            $table->boolean('active')->default(false);
+            $table->unsignedInteger('account_type_id')->nullable();
+            $table->boolean('addup')->default(false);
+            $table->timestamps();
+        });
+    }
 
     public function test_merchant_recruitment_page_explains_services_commission_and_requirements(): void
     {
@@ -37,16 +80,18 @@ class MerchantApplicationTest extends TestCase
         $response = $this->post(route('merchant.register.submit'), $this->validApplication());
 
         $response->assertRedirect(route('merchant.register.success'));
-        $this->assertDatabaseHas('merchant_applications', [
-            'business_name' => 'Kusina ni Pahatud',
+        $this->assertDatabaseHas('partners', [
+            'restaurant_name' => 'Kusina ni Pahatud',
             'email' => 'owner@example.com',
-            'status' => MerchantApplication::STATUS_PENDING,
-            'commission_percentage' => config('agent.pahatud_commission_percentage'),
+            'recruitment_status' => Partners::STATUS_PENDING,
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'percentage' => config('agent.pahatud_commission_percentage'),
         ]);
 
-        $application = MerchantApplication::query()->firstOrFail();
+        $application = Partners::query()->firstOrFail();
         $this->assertSame(['dine_in', 'pickup', 'delivery'], $application->services);
-        Mail::assertSent(MerchantApplicationReceivedMail::class, fn ($mail) => $mail->hasTo('owner@example.com'));
+        Mail::assertSent(MerchantApplicationReceivedMail::class, fn ($mail) => $mail->hasTo('owner@example.com')
+            && str_contains($mail->render(), 'Kusina ni Pahatud'));
     }
 
     public function test_agent_referral_link_prefills_and_attributes_a_merchant_application(): void
@@ -82,7 +127,7 @@ class MerchantApplicationTest extends TestCase
             'referral_code' => strtolower($agent->referral_code),
         ])->assertRedirect(route('merchant.register.success'));
 
-        $this->assertDatabaseHas('merchant_applications', [
+        $this->assertDatabaseHas('partners', [
             'email' => 'owner@example.com',
             'agent_id' => $agent->id,
         ]);
@@ -103,7 +148,7 @@ class MerchantApplicationTest extends TestCase
             'referral_code' => $inactiveAgent->referral_code,
         ])->assertSessionHasErrors('referral_code');
 
-        $this->assertDatabaseCount('merchant_applications', 0);
+        $this->assertDatabaseCount('partners', 0);
     }
 
     public function test_application_requires_at_least_one_service(): void
@@ -116,25 +161,49 @@ class MerchantApplicationTest extends TestCase
             ->assertRedirect(route('merchant.register'))
             ->assertSessionHasErrors('services');
 
-        $this->assertDatabaseCount('merchant_applications', 0);
+        $this->assertDatabaseCount('partners', 0);
     }
 
     public function test_admin_can_approve_and_notify_a_merchant_applicant(): void
     {
         Mail::fake();
         $this->withoutMiddleware(isAdmin::class);
-        $application = MerchantApplication::query()->create($this->modelAttributes());
+        $admin = User::query()->forceCreate([
+            'name' => 'Approval Admin',
+            'email' => 'approval-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+        $application = Partners::query()->create($this->modelAttributes());
 
-        $this->post(route('dashboard.merchant-applications.approve', $application), [
+        $response = $this->actingAs($admin)->post(route('dashboard.merchant-applications.approve', $application), [
             'message' => 'Our onboarding team will contact you next.',
-        ])->assertSessionHas('success');
+        ]);
+        $response->assertRedirect(route('dashboard.merchant-applications.index'))
+            ->assertSessionHas('success');
 
         $application->refresh();
-        $this->assertSame(MerchantApplication::STATUS_APPROVED, $application->status);
-        $this->assertSame('Our onboarding team will contact you next.', $application->review_message);
-        $this->assertNotNull($application->reviewed_at);
+        $this->assertSame(Partners::STATUS_APPROVED, $application->recruitment_status);
+        $this->assertSame('Our onboarding team will contact you next.', $application->recruitment_review_message);
+        $this->assertNotNull($application->recruitment_reviewed_at);
+        $this->assertSame('pending_review', $application->application_status);
+        $this->assertFalse((bool) $application->active);
         Mail::assertSent(MerchantApplicationStatusMail::class, fn ($mail) => $mail->hasTo($application->email)
-            && $mail->application->status === MerchantApplication::STATUS_APPROVED);
+            && $mail->application->recruitment_status === Partners::STATUS_APPROVED
+            && str_contains($mail->render(), 'has been approved'));
+
+        $this->get(route('dashboard.merchant-applications.index'))
+            ->assertOk()
+            ->assertDontSee('data-application-id="'.$application->id.'"', false)
+            ->assertSee('All-time applications')
+            ->assertSee('Approved');
+
+        $pendingApplication = Partners::query()->create($this->modelAttributes([
+            'restaurant_name' => 'Still Pending Cafe',
+            'email' => 'still-pending@example.com',
+        ]));
+        $merchantDirectoryIds = Partners::query()->visibleInMerchantDirectory()->pluck('id');
+        $this->assertTrue($merchantDirectoryIds->contains($application->id));
+        $this->assertFalse($merchantDirectoryIds->contains($pendingApplication->id));
     }
 
     public function test_admin_can_list_and_open_merchant_applications(): void
@@ -145,12 +214,12 @@ class MerchantApplicationTest extends TestCase
             'email' => 'merchant-admin@example.com',
             'password' => Hash::make('password123'),
         ]);
-        $application = MerchantApplication::query()->create($this->modelAttributes());
+        $application = Partners::query()->create($this->modelAttributes());
 
         $this->actingAs($admin)
             ->get(route('dashboard.merchant-applications.index'))
             ->assertOk()
-            ->assertSee($application->business_name)
+            ->assertSee($application->restaurant_name)
             ->assertSee(route('dashboard.merchant-applications.show', $application));
 
         $this->get(route('dashboard.merchant-applications.show', $application))
@@ -182,14 +251,14 @@ class MerchantApplicationTest extends TestCase
             'commission_percentage' => 15,
             'active' => true,
         ]);
-        MerchantApplication::query()->create($this->modelAttributes([
+        Partners::query()->create($this->modelAttributes([
             'agent_id' => $firstAgent->id,
-            'business_name' => 'First Referred Business',
+            'restaurant_name' => 'First Referred Business',
             'email' => 'first-business@example.com',
         ]));
-        MerchantApplication::query()->create($this->modelAttributes([
+        Partners::query()->create($this->modelAttributes([
             'agent_id' => $secondAgent->id,
-            'business_name' => 'Second Referred Business',
+            'restaurant_name' => 'Second Referred Business',
             'email' => 'second-business@example.com',
         ]));
 
@@ -205,24 +274,82 @@ class MerchantApplicationTest extends TestCase
     {
         Mail::fake();
         $this->withoutMiddleware(isAdmin::class);
-        $application = MerchantApplication::query()->create($this->modelAttributes([
+        $application = Partners::query()->create($this->modelAttributes([
             'email' => 'decline@example.com',
         ]));
 
         $this->post(route('dashboard.merchant-applications.decline', $application))
             ->assertSessionHasErrors('message');
-        $this->assertSame(MerchantApplication::STATUS_PENDING, $application->fresh()->status);
+        $this->assertSame(Partners::STATUS_PENDING, $application->fresh()->recruitment_status);
 
         $this->post(route('dashboard.merchant-applications.decline', $application), [
             'message' => 'The submitted business information could not be verified.',
         ])->assertSessionHas('success');
 
-        $this->assertSame(MerchantApplication::STATUS_DECLINED, $application->fresh()->status);
+        $this->assertSame(Partners::STATUS_DECLINED, $application->fresh()->recruitment_status);
         Mail::assertSentCount(1);
 
         $this->post(route('dashboard.merchant-applications.approve', $application))
             ->assertSessionHasErrors('review');
         Mail::assertSentCount(1);
+    }
+
+    public function test_legacy_applications_are_migrated_to_partners_before_the_old_table_is_removed(): void
+    {
+        Schema::create('merchant_applications', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('agent_id')->nullable();
+            $table->string('business_name');
+            $table->string('registered_business_name');
+            $table->string('owner_name');
+            $table->string('email');
+            $table->string('mobile', 30);
+            $table->string('telephone', 30)->nullable();
+            $table->text('address');
+            $table->string('city', 120);
+            $table->string('business_structure', 30);
+            $table->string('cuisine', 120)->nullable();
+            $table->unsignedSmallInteger('branch_count')->default(1);
+            $table->json('services');
+            $table->string('website')->nullable();
+            $table->text('business_description')->nullable();
+            $table->decimal('commission_percentage', 5, 2);
+            $table->string('status', 20);
+            $table->text('review_message')->nullable();
+            $table->unsignedBigInteger('reviewed_by')->nullable();
+            $table->timestamp('reviewed_at')->nullable();
+            $table->timestamps();
+        });
+
+        $legacy = $this->validApplication();
+        DB::table('merchant_applications')->insert([
+            ...collect($legacy)->except(['terms', 'services'])->all(),
+            'services' => json_encode($legacy['services'], JSON_THROW_ON_ERROR),
+            'commission_percentage' => 20,
+            'status' => 'approved',
+            'review_message' => 'Welcome to onboarding.',
+            'reviewed_at' => now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $migration = require database_path('migrations/2026_10_23_000000_consolidate_merchant_applications_into_partners.php');
+        $migration->up();
+
+        $this->assertFalse(Schema::hasTable('merchant_applications'));
+        $this->assertDatabaseHas('partners', [
+            'restaurant_name' => 'Kusina ni Pahatud',
+            'owner_name' => 'Maria Santos',
+            'email' => 'owner@example.com',
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_APPROVED,
+            'recruitment_review_message' => 'Welcome to onboarding.',
+        ]);
+        $this->assertSame(
+            ['dine_in', 'pickup', 'delivery'],
+            Partners::query()->where('email', 'owner@example.com')->firstOrFail()->services,
+        );
+        $this->assertNull(Partners::query()->where('email', 'owner@example.com')->value('application_status'));
     }
 
     private function validApplication(): array
@@ -248,9 +375,28 @@ class MerchantApplicationTest extends TestCase
 
     private function modelAttributes(array $overrides = []): array
     {
-        return [...collect($this->validApplication())->except('terms')->all(), ...$overrides, ...[
-            'commission_percentage' => config('agent.pahatud_commission_percentage'),
-            'status' => MerchantApplication::STATUS_PENDING,
-        ]];
+        $application = collect($this->validApplication())->except('terms')->all();
+
+        return [...[
+            'restaurant_name' => $application['business_name'],
+            'registered_business_name' => $application['registered_business_name'],
+            'owner_name' => $application['owner_name'],
+            'email' => $application['email'],
+            'mobile' => $application['mobile'],
+            'telephone' => $application['telephone'],
+            'address' => $application['address'],
+            'city' => $application['city'],
+            'business_structure' => $application['business_structure'],
+            'cuisine' => $application['cuisine'],
+            'branch_count' => $application['branch_count'],
+            'services' => $application['services'],
+            'website' => $application['website'],
+            'description' => $application['business_description'],
+            'percentage' => config('agent.pahatud_commission_percentage'),
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_PENDING,
+            'recruitment_submitted_at' => now(),
+            'slug' => 'kusina-ni-pahatud',
+        ], ...$overrides];
     }
 }

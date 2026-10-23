@@ -308,6 +308,7 @@ class OrderController extends Controller
         $search = trim((string) $request->query('search', ''));
 
         $users = Partners::with('accoutType')
+            ->visibleInMerchantDirectory()
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('restaurant_name', 'like', "%{$search}%")

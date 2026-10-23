@@ -9,12 +9,8 @@ UPDATE `agents`
 SET `referral_code` = CONCAT('PAH-', LPAD(UPPER(CONV(`id`, 10, 36)), 8, '0'))
 WHERE `referral_code` IS NULL;
 
-ALTER TABLE `merchant_applications`
-    ADD COLUMN `agent_id` BIGINT UNSIGNED NULL AFTER `id`,
-    ADD INDEX `merchant_applications_agent_id_index` (`agent_id`);
-
--- The existing partners.agent_id column remains the source used by commission
--- calculations after an approved application is converted into a merchant.
+-- Merchant applications are stored directly in partners. The existing
+-- partners.agent_id column is also the source used by commission calculations.
 
 SHOW COLUMNS FROM `agents` LIKE 'referral_code';
-SHOW COLUMNS FROM `merchant_applications` LIKE 'agent_id';
+SHOW COLUMNS FROM `partners` LIKE 'agent_id';

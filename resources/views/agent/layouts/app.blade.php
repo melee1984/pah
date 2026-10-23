@@ -27,7 +27,7 @@
             <a class="agent-nav-link {{ request()->routeIs('agent.dashboard') ? 'active' : '' }}" href="{{ route('agent.dashboard') }}">
                 <span class="agent-nav-icon">⌂</span><span>Dashboard</span>
             </a>
-            <a class="agent-nav-link {{ request()->routeIs('agent.restaurants.index') ? 'active' : '' }}" href="{{ route('agent.restaurants.index') }}">
+            <a class="agent-nav-link {{ request()->routeIs('agent.restaurants.index', 'agent.restaurants.show', 'agent.merchant-applications.*') ? 'active' : '' }}" href="{{ route('agent.restaurants.index') }}">
                 <span class="agent-nav-icon">▦</span><span>Restaurants</span>
             </a>
             <a class="agent-nav-link {{ request()->routeIs('agent.reports.*') ? 'active' : '' }}" href="{{ route('agent.reports.index') }}">
@@ -69,7 +69,7 @@
         </div>
     </main>
 </div>
-@if (request()->routeIs('agent.restaurants.show'))
+@if (request()->routeIs('agent.restaurants.show', 'agent.merchant-applications.edit'))
     <script src="{{ asset('js/restaurant-file-preview.js') }}" defer></script>
 @endif
 </body>

@@ -3,7 +3,7 @@
 @section('content')
 <div class="content-wrapper admin-content-wrapper">
     <section class="content-header admin-page-header"><div class="container-fluid"><div class="admin-page-heading">
-        <div><span class="admin-eyebrow">Merchant recruitment / Application #{{ $application->id }}</span><h1>{{ $application->business_name }}</h1><p>Review the initial application and send the applicant a decision.</p></div>
+        <div><span class="admin-eyebrow">Merchant recruitment / Application #{{ $application->id }}</span><h1>{{ $application->restaurant_name }}</h1><p>Review the initial application and send the applicant a decision.</p></div>
         <a class="btn admin-btn-secondary" href="{{ route('dashboard.merchant-applications.index') }}"><i class="fas fa-arrow-left mr-2"></i>All applications</a>
     </div></div></section>
 
@@ -14,22 +14,40 @@
         <div class="admin-stat-grid">
             <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-concierge-bell"></i></span><div><small>Requested services</small><strong>{{ count($application->services ?? []) }}</strong><small>{{ implode(', ', $application->serviceLabels()) }}</small></div></article>
             <article class="admin-stat-card"><span class="admin-stat-icon"><i class="fas fa-map-marker-alt"></i></span><div><small>Primary location</small><strong style="font-size:18px">{{ $application->city }}</strong></div></article>
-            <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-percent"></i></span><div><small>Application rate</small><strong>{{ number_format($application->commission_percentage, 2) }}%</strong></div></article>
+            <article class="admin-stat-card admin-stat-card-red"><span class="admin-stat-icon"><i class="fas fa-percent"></i></span><div><small>Application rate</small><strong>{{ number_format($application->percentage, 2) }}%</strong></div></article>
         </div>
 
         <div class="row">
             <div class="col-lg-7">
                 <div class="card admin-card"><div class="admin-card-header"><div><h2>Business details</h2><p>Information submitted by the applicant</p></div></div><div class="card-body">
                     <dl class="row mb-0">
-                        <dt class="col-sm-4">Store name</dt><dd class="col-sm-8">{{ $application->business_name }}</dd>
+                        <dt class="col-sm-4">Store name</dt><dd class="col-sm-8">{{ $application->restaurant_name }}</dd>
                         <dt class="col-sm-4">Registered name</dt><dd class="col-sm-8">{{ $application->registered_business_name }}</dd>
                         <dt class="col-sm-4">Structure</dt><dd class="col-sm-8">{{ Str::headline($application->business_structure) }}</dd>
+                        <dt class="col-sm-4">Enrolling as</dt><dd class="col-sm-8">{{ Str::headline($application->enrolling_as ?: 'Not provided') }}</dd>
+                        <dt class="col-sm-4">TIN</dt><dd class="col-sm-8">{{ $application->tin ?: 'Not provided' }}</dd>
+                        <dt class="col-sm-4">Registration number</dt><dd class="col-sm-8">{{ $application->business_registration_number ?: 'Not provided' }}</dd>
                         <dt class="col-sm-4">Cuisine / category</dt><dd class="col-sm-8">{{ $application->cuisine ?: 'Not provided' }}</dd>
                         <dt class="col-sm-4">Branches</dt><dd class="col-sm-8">{{ number_format($application->branch_count) }}</dd>
                         <dt class="col-sm-4">Services</dt><dd class="col-sm-8">{{ implode(', ', $application->serviceLabels()) }}</dd>
-                        <dt class="col-sm-4">Description</dt><dd class="col-sm-8" style="white-space: pre-line">{{ $application->business_description ?: 'Not provided' }}</dd>
+                        <dt class="col-sm-4">Description</dt><dd class="col-sm-8" style="white-space: pre-line">{{ $application->description ?: 'Not provided' }}</dd>
                         <dt class="col-sm-4">Website / social</dt><dd class="col-sm-8">@if ($application->website)<a href="{{ $application->website }}" target="_blank" rel="noopener">{{ $application->website }}</a>@else Not provided @endif</dd>
+                        <dt class="col-sm-4">Payout account</dt><dd class="col-sm-8" style="white-space: pre-line">{{ $application->payout_account_name ?: 'Not provided' }}</dd>
                     </dl>
+                </div></div>
+
+                <div class="card admin-card"><div class="admin-card-header"><div><h2>Submitted documents</h2><p>Files supplied by the applicant or referring agent</p></div></div><div class="card-body">
+                    @foreach (\App\RestaurantEnrollmentDocument::LABELS as $type => $label)
+                        @if ($type !== 'authorization_document' || $application->enrolling_as === 'authorized_representative')
+                            @php $document = $documents->get($type); @endphp
+                            <div class="d-flex justify-content-between align-items-center border-top py-3">
+                                <div><strong>{{ $label }}</strong><br><small>{{ $document ? Str::headline($document->currentStatus()) : 'Missing' }}</small></div>
+                                @if ($document)
+                                    <a class="btn admin-btn-secondary btn-sm" href="{{ route('dashboard.merchant.documents.show', [$application, $document]) }}" target="_blank" rel="noopener">View file</a>
+                                @endif
+                            </div>
+                        @endif
+                    @endforeach
                 </div></div>
 
                 <div class="card admin-card"><div class="admin-card-header"><div><h2>Applicant and location</h2><p>Primary contact for follow-up</p></div></div><div class="card-body">
@@ -39,7 +57,7 @@
                         <dt class="col-sm-4">Mobile</dt><dd class="col-sm-8">{{ $application->mobile }}</dd>
                         <dt class="col-sm-4">Telephone</dt><dd class="col-sm-8">{{ $application->telephone ?: 'Not provided' }}</dd>
                         <dt class="col-sm-4">Address</dt><dd class="col-sm-8">{{ $application->address }}, {{ $application->city }}</dd>
-                        <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">{{ $application->created_at?->format('M d, Y · g:i A') }}</dd>
+                        <dt class="col-sm-4">Last submitted</dt><dd class="col-sm-8">{{ ($application->recruitment_submitted_at ?? $application->created_at)?->format('M d, Y · g:i A') }}</dd>
                         <dt class="col-sm-4">Referring agent</dt><dd class="col-sm-8">@if ($application->agent)<a href="{{ route('dashboard.agents.show', $application->agent) }}">{{ $application->agent->name }}</a><br><small>{{ $application->agent->referral_code }} · {{ $application->agent->email }}</small>@else Direct signup @endif</dd>
                     </dl>
                 </div></div>
@@ -58,10 +76,10 @@
                             </div>
                         </form>
                     @else
-                        <p><span class="admin-status {{ $application->status === 'approved' ? 'admin-status-active' : 'admin-status-inactive' }}">{{ Str::headline($application->status) }}</span></p>
+                        <p><span class="admin-status {{ $application->recruitment_status === 'approved' ? 'admin-status-active' : 'admin-status-inactive' }}">{{ Str::headline($application->recruitment_status) }}</span></p>
                         <dl class="row mb-0">
-                            <dt class="col-sm-4">Reviewed</dt><dd class="col-sm-8">{{ $application->reviewed_at?->format('M d, Y · g:i A') }}</dd>
-                            <dt class="col-sm-4">Message</dt><dd class="col-sm-8" style="white-space: pre-line">{{ $application->review_message ?: 'No message provided' }}</dd>
+                            <dt class="col-sm-4">Reviewed</dt><dd class="col-sm-8">{{ $application->recruitment_reviewed_at?->format('M d, Y · g:i A') }}</dd>
+                            <dt class="col-sm-4">Message</dt><dd class="col-sm-8" style="white-space: pre-line">{{ $application->recruitment_review_message ?: 'No message provided' }}</dd>
                         </dl>
                     @endif
                 </div></div>

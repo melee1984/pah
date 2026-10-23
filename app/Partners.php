@@ -3,27 +3,22 @@
 namespace App;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 
 class Partners extends Model
 {
-    protected static function booted(): void
-    {
-        static::creating(function (Partners $partner) {
-            if ($partner->agent_id || blank($partner->email)
-                || ! Schema::hasTable('merchant_applications')
-                || ! Schema::hasColumn('merchant_applications', 'agent_id')) {
-                return;
-            }
+    public const APPLICATION_SOURCE_REGISTRATION = 'merchant_registration';
 
-            $partner->agent_id = MerchantApplication::query()
-                ->where('email', $partner->email)
-                ->where('status', MerchantApplication::STATUS_APPROVED)
-                ->whereNotNull('agent_id')
-                ->latest('reviewed_at')
-                ->value('agent_id');
-        });
-    }
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_DECLINED = 'declined';
+
+    public const SERVICES = [
+        'dine_in' => 'Dine-in',
+        'pickup' => 'Pickup',
+        'delivery' => 'Delivery',
+    ];
 
     protected $fillable = array(
                                 'user_id',
@@ -53,6 +48,17 @@ class Partners extends Model
                                 ,'payout_account_name'
                                 ,'application_status'
                                 ,'application_remarks'
+                                ,'application_source'
+                                ,'recruitment_status'
+                                ,'recruitment_review_message'
+                                ,'recruitment_submitted_at'
+                                ,'owner_name'
+                                ,'cuisine'
+                                ,'branch_count'
+                                ,'services'
+                                ,'website'
+                                ,'recruitment_reviewed_by'
+                                ,'recruitment_reviewed_at'
                             );
     
 	public $timestamps = true;
@@ -61,6 +67,10 @@ class Partners extends Model
         'archive_at' => 'datetime',
         'verified_at' => 'datetime',
         'sms_verified' => 'datetime',
+        'services' => 'array',
+        'percentage' => 'decimal:2',
+        'recruitment_reviewed_at' => 'datetime',
+        'recruitment_submitted_at' => 'datetime',
     ];
     
     protected $hidden = ['verified_at', 'updated_at', 'created_at' , 'archive_at', 'deleted_at'];
@@ -100,6 +110,37 @@ class Partners extends Model
     public function agent()
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function isPending(): bool
+    {
+        return $this->recruitment_status === self::STATUS_PENDING;
+    }
+
+    public function recruitmentStatusLabel(): string
+    {
+        return match ($this->recruitment_status) {
+            self::STATUS_PENDING => 'Pending Approval',
+            self::STATUS_APPROVED => 'Approved',
+            self::STATUS_DECLINED => 'Declined',
+            default => 'Not Submitted',
+        };
+    }
+
+    public function serviceLabels(): array
+    {
+        return collect($this->services ?? [])
+            ->map(fn (string $service) => self::SERVICES[$service] ?? str($service)->headline()->toString())
+            ->all();
+    }
+
+    public function scopeVisibleInMerchantDirectory($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereNull('application_source')
+                ->orWhere('application_source', '!=', self::APPLICATION_SOURCE_REGISTRATION)
+                ->orWhere('recruitment_status', self::STATUS_APPROVED);
+        });
     }
 
     public function orders()

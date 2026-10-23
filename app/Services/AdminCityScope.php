@@ -115,11 +115,6 @@ class AdminCityScope
         $this->authorizeCity($partner->city ?? null);
     }
 
-    public function authorizeMerchantApplication(object $application): void
-    {
-        $this->authorizeCity($application->city ?? null);
-    }
-
     public function authorizeAgent(object $agent): void
     {
         if (! $this->restricted()) {

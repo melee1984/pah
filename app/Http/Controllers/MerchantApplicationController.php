@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Agent;
 use App\Mail\MerchantApplicationReceivedMail;
-use App\MerchantApplication;
+use App\Partners;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Throwable;
@@ -25,7 +26,7 @@ class MerchantApplicationController extends Controller
 
         return view('merchant-program.register', [
             'commissionPercentage' => (float) config('agent.pahatud_commission_percentage', 20),
-            'services' => MerchantApplication::SERVICES,
+            'services' => Partners::SERVICES,
             'referralCode' => $referralAgent?->referral_code ?? $referralCode,
             'referralAgent' => $referralAgent,
         ]);
@@ -48,7 +49,7 @@ class MerchantApplicationController extends Controller
             'business_name' => ['required', 'string', 'max:255'],
             'registered_business_name' => ['required', 'string', 'max:255'],
             'owner_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('merchant_applications', 'email')],
+            'email' => ['required', 'email', 'max:255', Rule::unique('partners', 'email')],
             'mobile' => ['required', 'string', 'max:30'],
             'telephone' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
@@ -57,7 +58,7 @@ class MerchantApplicationController extends Controller
             'cuisine' => ['nullable', 'string', 'max:120'],
             'branch_count' => ['required', 'integer', 'min:1', 'max:500'],
             'services' => ['required', 'array', 'min:1'],
-            'services.*' => ['required', Rule::in(array_keys(MerchantApplication::SERVICES))],
+            'services.*' => ['required', Rule::in(array_keys(Partners::SERVICES))],
             'website' => ['nullable', 'url:http,https', 'max:255'],
             'business_description' => ['nullable', 'string', 'max:2000'],
             'terms' => ['accepted'],
@@ -72,11 +73,31 @@ class MerchantApplicationController extends Controller
             ->where('active', true)
             ->firstOrFail();
 
-        $application = MerchantApplication::query()->create([
-            ...collect($validated)->except(['terms', 'referral_code'])->all(),
+        $application = Partners::query()->create([
             'agent_id' => $referralAgent?->getKey(),
-            'commission_percentage' => config('agent.pahatud_commission_percentage', 20),
-            'status' => MerchantApplication::STATUS_PENDING,
+            'restaurant_name' => $validated['business_name'],
+            'registered_business_name' => $validated['registered_business_name'],
+            'owner_name' => $validated['owner_name'],
+            'email' => $validated['email'],
+            'mobile' => $validated['mobile'],
+            'telephone' => $validated['telephone'] ?? null,
+            'address' => $validated['address'],
+            'city' => $validated['city'],
+            'business_structure' => $validated['business_structure'],
+            'cuisine' => $validated['cuisine'] ?? null,
+            'branch_count' => $validated['branch_count'],
+            'services' => $validated['services'],
+            'website' => $validated['website'] ?? null,
+            'description' => $validated['business_description'] ?? null,
+            'percentage' => config('agent.pahatud_commission_percentage', 20),
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_PENDING,
+            'recruitment_submitted_at' => now(),
+            'active' => false,
+            'account_type_id' => 1,
+            'addup' => config('agent.default_commission_addup', true),
+            'slug' => $this->uniqueSlug($validated['business_name']),
+            'search_string' => Str::lower(trim($validated['business_name'].' '.$validated['city'])),
         ]);
 
         try {
@@ -108,5 +129,18 @@ class MerchantApplicationController extends Controller
     private function normalizeReferralCode(mixed $code): string
     {
         return mb_strtoupper(trim((string) $code));
+    }
+
+    private function uniqueSlug(string $businessName): string
+    {
+        $base = Str::slug($businessName) ?: 'merchant';
+        $slug = $base;
+        $suffix = 2;
+
+        while (Partners::query()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix++;
+        }
+
+        return $slug;
     }
 }

@@ -70,12 +70,17 @@ class Agent extends Authenticatable
 
     public function restaurants(): HasMany
     {
-        return $this->hasMany(Partners::class, 'agent_id');
+        return $this->hasMany(Partners::class, 'agent_id')
+            ->where(function ($query) {
+                $query->whereNull('application_source')
+                    ->orWhere('recruitment_status', Partners::STATUS_APPROVED);
+            });
     }
 
     public function referredApplications(): HasMany
     {
-        return $this->hasMany(MerchantApplication::class);
+        return $this->hasMany(Partners::class, 'agent_id')
+            ->where('application_source', Partners::APPLICATION_SOURCE_REGISTRATION);
     }
 
     public function approvedRestaurants(): HasMany

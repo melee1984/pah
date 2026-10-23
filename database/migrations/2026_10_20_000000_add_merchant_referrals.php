@@ -23,22 +23,10 @@ return new class extends Migration
                     ]);
                 });
         }
-
-        if (Schema::hasTable('merchant_applications') && ! Schema::hasColumn('merchant_applications', 'agent_id')) {
-            Schema::table('merchant_applications', function (Blueprint $table) {
-                $table->unsignedBigInteger('agent_id')->nullable()->index()->after('id');
-            });
-        }
     }
 
     public function down(): void
     {
-        if (Schema::hasTable('merchant_applications') && Schema::hasColumn('merchant_applications', 'agent_id')) {
-            Schema::table('merchant_applications', function (Blueprint $table) {
-                $table->dropColumn('agent_id');
-            });
-        }
-
         if (Schema::hasTable('agents') && Schema::hasColumn('agents', 'referral_code')) {
             Schema::table('agents', function (Blueprint $table) {
                 $table->dropColumn('referral_code');
