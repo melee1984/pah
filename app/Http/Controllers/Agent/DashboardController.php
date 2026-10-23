@@ -41,6 +41,12 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
-        return view('agent.dashboard', compact('agent', 'metrics', 'recentCommissions'));
+        $recentReferrals = $agent->referredApplications()
+            ->latest()
+            ->limit(5)
+            ->get();
+        $referralUrl = $agent->referralUrl();
+
+        return view('agent.dashboard', compact('agent', 'metrics', 'recentCommissions', 'recentReferrals', 'referralUrl'));
     }
 }

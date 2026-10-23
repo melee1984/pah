@@ -12,6 +12,33 @@
         <a class="agent-button agent-button-primary" href="{{ route('agent.restaurants.create') }}"><span>＋</span> Enroll restaurant</a>
     </div>
 
+    <section class="agent-card agent-referral-directory" id="referral-signups">
+        <div class="agent-card-header">
+            <div><h2>Referred merchant applications</h2><p>{{ number_format($referredApplications->total()) }} merchant {{ Str::plural('application', $referredApplications->total()) }} attributed to your referral code.</p></div>
+        </div>
+        @if ($referredApplications->isEmpty())
+            <div class="agent-empty"><strong>No referred merchants yet</strong>Share the signup link from your dashboard. New applications will remain listed here through review and onboarding.</div>
+        @else
+            <div class="agent-table-wrap">
+                <table class="agent-table">
+                    <thead><tr><th>Business name</th><th>Applicant</th><th>Location</th><th>Signup date</th><th>Application status</th></tr></thead>
+                    <tbody>
+                    @foreach ($referredApplications as $application)
+                        <tr>
+                            <td class="agent-table-primary">{{ $application->business_name }}<span class="agent-table-secondary">{{ $application->registered_business_name }}</span></td>
+                            <td>{{ $application->owner_name }}<span class="agent-table-secondary">{{ $application->email }}</span><span class="agent-table-secondary">{{ $application->mobile }}</span></td>
+                            <td>{{ $application->city }}<span class="agent-table-secondary">{{ Str::limit($application->address, 42) }}</span></td>
+                            <td>{{ $application->created_at?->format('M d, Y') }}<span class="agent-table-secondary">{{ $application->created_at?->format('g:i A') }}</span></td>
+                            <td><span class="agent-badge agent-badge-{{ $application->status === 'declined' ? 'reversed' : $application->status }}">{{ Str::headline($application->status) }}</span></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="agent-pagination">{{ $referredApplications->links('pagination::bootstrap-4') }}</div>
+        @endif
+    </section>
+
     <div class="agent-tier-note"><strong>Tier reminder:</strong> only restaurants with a final <em>Approved</em> enrollment status count toward your commission tier. Pending Review and Declined restaurants remain linked to you but do not raise the tier. <a class="agent-text-link" href="{{ route('agent.help') }}#earnings">See how tiers work →</a></div>
 
     <section class="agent-card">

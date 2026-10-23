@@ -121,9 +121,13 @@
             @if ($errors->any())
                 <div class="agent-alert agent-alert-error" role="alert">Please review the highlighted fields and try again.</div>
             @endif
+            @if ($referralAgent)
+                <div class="merchant-referral-applied"><strong>Agent referral applied</strong><span>{{ $referralAgent->name }} · {{ $referralAgent->referral_code }}</span></div>
+            @endif
             <form class="agent-login-form" method="POST" action="{{ route('merchant.register.submit') }}">
                 @csrf
                 <div class="agent-form-grid">
+                    <div class="agent-field agent-field-full"><label for="referral_code">Agent referral code <small>(optional)</small></label><input class="agent-input @error('referral_code') agent-input-error @enderror" id="referral_code" name="referral_code" value="{{ old('referral_code', $referralCode) }}" maxlength="20" autocomplete="off" placeholder="e.g. PAH-AB12CD34"><small class="merchant-referral-help">If an agent invited you, enter their code here. Referral links fill this in automatically.</small>@error('referral_code')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field"><label for="business_name">Store or restaurant name <span class="agent-required">*</span></label><input class="agent-input @error('business_name') agent-input-error @enderror" id="business_name" name="business_name" value="{{ old('business_name') }}" maxlength="255" required>@error('business_name')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field"><label for="registered_business_name">Registered business name <span class="agent-required">*</span></label><input class="agent-input @error('registered_business_name') agent-input-error @enderror" id="registered_business_name" name="registered_business_name" value="{{ old('registered_business_name') }}" maxlength="255" required>@error('registered_business_name')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field"><label for="owner_name">Owner / authorized representative <span class="agent-required">*</span></label><input class="agent-input @error('owner_name') agent-input-error @enderror" id="owner_name" name="owner_name" value="{{ old('owner_name') }}" maxlength="255" autocomplete="name" required>@error('owner_name')<span class="agent-error">{{ $message }}</span>@enderror</div>

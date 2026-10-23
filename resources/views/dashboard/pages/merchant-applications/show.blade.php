@@ -40,6 +40,7 @@
                         <dt class="col-sm-4">Telephone</dt><dd class="col-sm-8">{{ $application->telephone ?: 'Not provided' }}</dd>
                         <dt class="col-sm-4">Address</dt><dd class="col-sm-8">{{ $application->address }}, {{ $application->city }}</dd>
                         <dt class="col-sm-4">Submitted</dt><dd class="col-sm-8">{{ $application->created_at?->format('M d, Y · g:i A') }}</dd>
+                        <dt class="col-sm-4">Referring agent</dt><dd class="col-sm-8">@if ($application->agent)<a href="{{ route('dashboard.agents.show', $application->agent) }}">{{ $application->agent->name }}</a><br><small>{{ $application->agent->referral_code }} · {{ $application->agent->email }}</small>@else Direct signup @endif</dd>
                     </dl>
                 </div></div>
             </div>

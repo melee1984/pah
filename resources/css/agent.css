@@ -92,6 +92,19 @@ button, input, select, textarea { font: inherit; }
 .agent-card-header p { color: var(--agent-muted); font-size: 13px; margin: 5px 0 0; }
 .agent-text-link { color: var(--agent-red); font-size: 13px; font-weight: 700; }
 
+.agent-referral-card { background: linear-gradient(135deg, #fff 20%, #fff4f1); border: 1px solid #f2d9d5; border-radius: 16px; box-shadow: 0 8px 30px rgba(23, 27, 29, .04); display: grid; gap: 20px; grid-template-columns: minmax(220px, .85fr) minmax(360px, 1.2fr) auto; margin-bottom: 26px; padding: 24px; position: relative; }
+.agent-referral-copy h2 { font-family: 'Manrope', sans-serif; font-size: 20px; margin: 0; }
+.agent-referral-copy > p:last-child { color: var(--agent-muted); font-size: 13px; line-height: 1.55; margin: 8px 0 0; }
+.agent-referral-values { display: grid; gap: 10px; }
+.agent-referral-values > div { background: rgba(255,255,255,.82); border: 1px solid var(--agent-line); border-radius: 10px; min-width: 0; padding: 11px 13px; }
+.agent-referral-values span { color: var(--agent-muted); display: block; font-size: 10px; font-weight: 800; letter-spacing: .7px; margin-bottom: 4px; text-transform: uppercase; }
+.agent-referral-values strong { font-family: 'Manrope', sans-serif; font-size: 18px; letter-spacing: .5px; }
+.agent-referral-values input { background: transparent; border: 0; color: var(--agent-ink); font-size: 12px; outline: 0; padding: 0; width: 100%; }
+.agent-referral-actions { align-content: center; display: grid; gap: 8px; }
+.agent-copy-status { bottom: 2px; color: var(--agent-green); font-size: 11px; font-weight: 700; margin: 0; position: absolute; right: 24px; }
+.agent-referral-activity { margin-bottom: 26px; }
+.agent-referral-directory { margin-bottom: 24px; scroll-margin-top: 96px; }
+
 .agent-table-wrap { overflow-x: auto; }
 .agent-table { border-collapse: collapse; min-width: 850px; width: 100%; }
 .agent-table th { background: #fcfbfa; color: #858d90; font-size: 11px; letter-spacing: .7px; padding: 13px 22px; text-align: left; text-transform: uppercase; }
@@ -146,6 +159,8 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 .agent-input:focus { border-color: var(--agent-red); box-shadow: 0 0 0 3px rgba(239, 59, 53, .1); }
 .agent-input-error { border-color: var(--agent-red); }
 .agent-error { color: #b32924; font-size: 12px; }
+.merchant-referral-applied { background: #eaf8ef; border: 1px solid #c9ead5; border-radius: 10px; color: #1c6b3a; display: flex; flex-wrap: wrap; font-size: 13px; gap: 6px 12px; justify-content: space-between; padding: 13px 15px; }
+.merchant-referral-help { color: var(--agent-muted); font-size: 11px; line-height: 1.45; }
 .agent-form-note { background: #fff7f5; border-left: 3px solid var(--agent-red); border-radius: 8px; color: #675e5c; font-size: 13px; margin-bottom: 23px; padding: 13px 15px; }
 .agent-form-actions { border-top: 1px solid var(--agent-line); display: flex; gap: 11px; justify-content: flex-end; margin-top: 26px; padding-top: 22px; }
 
@@ -380,6 +395,10 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
     .agent-program-footer > span { text-align: center; }
     .merchant-service-grid, .merchant-service-options { grid-template-columns: 1fr; }
     .merchant-requirements-section { padding-left: 20px; padding-right: 20px; }
+    .agent-referral-card { grid-template-columns: 1fr; }
+    .agent-referral-actions { grid-template-columns: 1fr 1fr; }
+    .agent-referral-actions .agent-button-primary { grid-column: 1 / -1; }
+    .agent-copy-status { bottom: 6px; left: 24px; right: 24px; text-align: center; }
 }
 
 @media (max-width: 420px) {

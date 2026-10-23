@@ -23,7 +23,13 @@ class RestaurantController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view('agent.restaurants.index', compact('restaurants'));
+        $referredApplications = $request->user('agent')
+            ->referredApplications()
+            ->latest()
+            ->paginate(15, ['*'], 'referrals_page')
+            ->withQueryString();
+
+        return view('agent.restaurants.index', compact('restaurants', 'referredApplications'));
     }
 
     public function create(): View

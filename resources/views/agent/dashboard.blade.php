@@ -12,6 +12,24 @@
         <a class="agent-button agent-button-primary" href="{{ route('agent.restaurants.create') }}"><span>＋</span> Enroll restaurant</a>
     </div>
 
+    <section class="agent-referral-card" aria-labelledby="agent-referral-title">
+        <div class="agent-referral-copy">
+            <p class="agent-eyebrow">Merchant referrals</p>
+            <h2 id="agent-referral-title">Invite merchants with your personal link</h2>
+            <p>Applications submitted with this code stay attributed to you through review and merchant onboarding.</p>
+        </div>
+        <div class="agent-referral-values">
+            <div><span>Your referral code</span><strong>{{ $agent->referral_code }}</strong></div>
+            <div><span>Merchant signup link</span><input type="text" value="{{ $referralUrl }}" readonly aria-label="Merchant referral signup link"></div>
+        </div>
+        <div class="agent-referral-actions">
+            <button class="agent-button agent-button-secondary" type="button" data-copy-referral="{{ $agent->referral_code }}">Copy code</button>
+            <button class="agent-button agent-button-secondary" type="button" data-copy-referral="{{ $referralUrl }}">Copy link</button>
+            <button class="agent-button agent-button-primary" type="button" data-share-referral data-referral-url="{{ $referralUrl }}">Share link</button>
+        </div>
+        <p class="agent-copy-status" data-copy-status role="status" aria-live="polite"></p>
+    </section>
+
     <section class="agent-metrics" aria-label="Agent performance metrics">
         <article class="agent-metric">
             <span class="agent-metric-icon">▦</span>
@@ -43,6 +61,31 @@
             <span>{{ now()->format('F') }} commission</span>
             <strong>₱{{ number_format($metrics['month_commission'], 2) }}</strong>
         </article>
+    </section>
+
+    <section class="agent-card agent-referral-activity">
+        <div class="agent-card-header">
+            <div><h2>Recent referral signups</h2><p>Merchant applications submitted with your referral code.</p></div>
+            <a class="agent-text-link" href="{{ route('agent.restaurants.index') }}#referral-signups">View all referred merchants →</a>
+        </div>
+        @if ($recentReferrals->isEmpty())
+            <div class="agent-empty"><strong>No referral signups yet</strong>Share your merchant signup link to start tracking applications here.</div>
+        @else
+            <div class="agent-table-wrap">
+                <table class="agent-table">
+                    <thead><tr><th>Business</th><th>Signup date</th><th>Application status</th></tr></thead>
+                    <tbody>
+                    @foreach ($recentReferrals as $referral)
+                        <tr>
+                            <td class="agent-table-primary">{{ $referral->business_name }}<span class="agent-table-secondary">{{ $referral->registered_business_name }}</span></td>
+                            <td>{{ $referral->created_at?->format('M d, Y') }}</td>
+                            <td><span class="agent-badge agent-badge-{{ $referral->status === 'declined' ? 'reversed' : $referral->status }}">{{ Str::headline($referral->status) }}</span></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </section>
 
     <section class="agent-tier-panel" aria-labelledby="commission-tier-title">
@@ -95,4 +138,64 @@
         </div>
         <a class="agent-guide-more" href="{{ route('agent.help') }}">More questions? Visit Help &amp; FAQ <span aria-hidden="true">→</span></a>
     </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const status = document.querySelector('[data-copy-status]');
+            const showStatus = function (message) {
+                status.textContent = message;
+                window.setTimeout(function () { status.textContent = ''; }, 2500);
+            };
+            const copyText = async function (value) {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(value);
+                    return;
+                }
+
+                const field = document.createElement('textarea');
+                field.value = value;
+                field.setAttribute('readonly', '');
+                field.style.position = 'fixed';
+                field.style.opacity = '0';
+                document.body.appendChild(field);
+                field.select();
+                document.execCommand('copy');
+                field.remove();
+            };
+
+            document.querySelectorAll('[data-copy-referral]').forEach(function (button) {
+                button.addEventListener('click', async function () {
+                    try {
+                        await copyText(button.dataset.copyReferral);
+                        showStatus(button.dataset.copyReferral.includes('://') ? 'Signup link copied.' : 'Referral code copied.');
+                    } catch (error) {
+                        showStatus('Copy failed. Select the value and copy it manually.');
+                    }
+                });
+            });
+
+            document.querySelector('[data-share-referral]')?.addEventListener('click', async function (event) {
+                const url = event.currentTarget.dataset.referralUrl;
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'Join PahatudFood',
+                            text: 'Apply to become a PahatudFood merchant using my referral link.',
+                            url: url,
+                        });
+                        return;
+                    } catch (error) {
+                        if (error.name === 'AbortError') return;
+                    }
+                }
+
+                try {
+                    await copyText(url);
+                    showStatus('Sharing is unavailable here, so the signup link was copied.');
+                } catch (error) {
+                    showStatus('Share failed. Select the link and copy it manually.');
+                }
+            });
+        });
+    </script>
 @endsection

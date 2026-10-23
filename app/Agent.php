@@ -4,6 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Str;
 
 class Agent extends Authenticatable
 {
@@ -11,6 +12,7 @@ class Agent extends Authenticatable
         'name',
         'email',
         'mobile',
+        'referral_code',
         'city',
         'password',
         'commission_percentage',
@@ -43,9 +45,37 @@ class Agent extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (Agent $agent) {
+            if (blank($agent->referral_code)) {
+                $agent->referral_code = static::generateReferralCode();
+            }
+        });
+    }
+
+    public static function generateReferralCode(): string
+    {
+        do {
+            $code = 'PAH-'.Str::upper(Str::random(8));
+        } while (static::query()->where('referral_code', $code)->exists());
+
+        return $code;
+    }
+
+    public function referralUrl(): string
+    {
+        return route('merchant.register', ['ref' => $this->referral_code]);
+    }
+
     public function restaurants(): HasMany
     {
         return $this->hasMany(Partners::class, 'agent_id');
+    }
+
+    public function referredApplications(): HasMany
+    {
+        return $this->hasMany(MerchantApplication::class);
     }
 
     public function approvedRestaurants(): HasMany
