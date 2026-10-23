@@ -629,6 +629,10 @@ class AgentPortalTest extends TestCase
         $this->actingAs($admin)
             ->post(route('dashboard.agent-statements.publish', $statement))
             ->assertSessionHasErrors('statement');
+        $this->actingAs($admin)
+            ->delete(route('dashboard.agent-statements.destroy', $statement))
+            ->assertSessionHasErrors('statement');
+        $this->assertDatabaseHas('agent_statement_accounts', ['id' => $statement->id]);
 
         $this->actingAs($agent, 'agent')
             ->get(route('agent.statements.index'))
@@ -644,6 +648,47 @@ class AgentPortalTest extends TestCase
         $this->actingAs($otherAgent, 'agent')
             ->get(route('agent.statements.show', $statement))
             ->assertNotFound();
+    }
+
+    public function test_admin_can_delete_an_agent_statement_draft_and_reuse_its_commissions(): void
+    {
+        $agent = $this->agent('draft-delete-agent@example.com');
+        $commission = AgentCommission::query()->create([
+            'order_id' => 98765,
+            'restaurant_id' => 98765,
+            'agent_id' => $agent->id,
+            'order_amount' => 100,
+            'commission_percentage' => 15,
+            'commission_amount' => 3,
+            'status' => AgentCommission::STATUS_PENDING,
+            'qualified_at' => now(),
+        ]);
+        $admin = User::query()->forceCreate([
+            'name' => 'Draft Delete Admin',
+            'email' => 'draft-delete-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class);
+        $payload = [
+            'agent_id' => $agent->id,
+            'commission_ids' => [$commission->id],
+        ];
+
+        $this->actingAs($admin)->post(route('dashboard.agent-statements.store'), $payload);
+        $draft = AgentStatementAccount::query()->firstOrFail();
+
+        $this->actingAs($admin)
+            ->delete(route('dashboard.agent-statements.destroy', $draft))
+            ->assertRedirect(route('dashboard.agent-statements.index'));
+
+        $this->assertDatabaseMissing('agent_statement_accounts', ['id' => $draft->id]);
+        $this->assertDatabaseMissing('agent_statement_account_items', ['agent_commission_id' => $commission->id]);
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.agent-statements.store'), $payload)
+            ->assertSessionDoesntHaveErrors();
+        $this->assertDatabaseHas('agent_statement_account_items', ['agent_commission_id' => $commission->id]);
     }
 
     public function test_restaurant_pages_are_scoped_to_the_logged_in_agent(): void

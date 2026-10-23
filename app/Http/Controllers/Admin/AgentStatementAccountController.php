@@ -198,4 +198,24 @@ class AgentStatementAccountController extends Controller
         return redirect()->route('dashboard.agent-statements.show', $statement)
             ->with('success', 'Statement '.$statement->reference.' was published and is now available in the agent dashboard.');
     }
+
+    public function destroy(AgentStatementAccount $statement)
+    {
+        $this->cityScope->authorizeAgent($statement->agent);
+
+        DB::transaction(function () use ($statement) {
+            $lockedStatement = AgentStatementAccount::query()->lockForUpdate()->findOrFail($statement->id);
+
+            if (! $lockedStatement->isDraft()) {
+                throw ValidationException::withMessages([
+                    'statement' => 'Published agent statements cannot be deleted.',
+                ]);
+            }
+
+            $lockedStatement->delete();
+        });
+
+        return redirect()->route('dashboard.agent-statements.index')
+            ->with('success', 'The draft agent statement was deleted. Its commissions are available for statement processing again.');
+    }
 }

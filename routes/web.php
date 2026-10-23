@@ -301,6 +301,8 @@ Route::middleware('admin')->group(function () {
     Route::post('data/dashboard/agent-statements/{statement}/publish', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'publish'])
         ->middleware('throttle:20,1')
         ->name('dashboard.agent-statements.publish');
+    Route::delete('data/dashboard/agent-statements/{statement}', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'destroy'])
+        ->name('dashboard.agent-statements.destroy');
     Route::get('data/dashboard/agent-statements/{statement}', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'show'])->name('dashboard.agent-statements.show');
     Route::get('data/dashboard/report/favorites', \App\Http\Controllers\Admin\FavoriteReportController::class)->name('dashboard.report.favorites');
     Route::get('data/dashboard/report/user-rewards', \App\Http\Controllers\Admin\UserRewardReportController::class)->name('dashboard.report.user-rewards');
