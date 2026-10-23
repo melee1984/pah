@@ -33,6 +33,9 @@
             <a class="agent-nav-link {{ request()->routeIs('agent.reports.*') ? 'active' : '' }}" href="{{ route('agent.reports.index') }}">
                 <span class="agent-nav-icon">↗</span><span>Reports</span>
             </a>
+            <a class="agent-nav-link {{ request()->routeIs('agent.statements.*') ? 'active' : '' }}" href="{{ route('agent.statements.index') }}">
+                <span class="agent-nav-icon">▤</span><span>Statements</span>
+            </a>
             <a class="agent-nav-link {{ request()->routeIs('agent.restaurants.create') ? 'active' : '' }}" href="{{ route('agent.restaurants.create') }}">
                 <span class="agent-nav-icon">＋</span><span>Enroll</span>
             </a>

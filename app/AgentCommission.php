@@ -5,6 +5,7 @@ namespace App;
 use App\Model\Orders\Orders;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AgentCommission extends Model
 {
@@ -65,6 +66,11 @@ class AgentCommission extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Orders::class, 'order_id');
+    }
+
+    public function statementItem(): HasOne
+    {
+        return $this->hasOne(AgentStatementAccountItem::class);
     }
 
     public function scopeEarned($query)

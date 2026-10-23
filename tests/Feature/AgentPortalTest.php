@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Agent;
 use App\AgentCommission;
+use App\AgentStatementAccount;
 use App\Http\Middleware\isAdmin;
 use App\LibraryStatus;
 use App\Mail\AgentApprovedMail;
@@ -545,6 +546,104 @@ class AgentPortalTest extends TestCase
             ->assertSeeText('Delivery fee')
             ->assertSeeText('₱125.00')
             ->assertSeeText('₱4.50');
+    }
+
+    public function test_agent_statement_permanently_assigns_each_commission_once_and_is_visible_only_to_its_agent(): void
+    {
+        $agent = $this->agent('statement-agent@example.com');
+        $otherAgent = $this->agent('other-statement-agent@example.com');
+        $restaurant = $this->restaurant($agent, 'Statement Restaurant', 'statement-restaurant@example.com');
+        $cart = Cart::query()->forceCreate([
+            'partner_id' => $restaurant->id,
+            'order_no' => 'PAH-ASOA-0001',
+            'fulfillment_type' => Cart::FULFILLMENT_DELIVERY,
+        ]);
+        $order = Orders::query()->create([
+            'cart_id' => $cart->id,
+            'partner_id' => $restaurant->id,
+            'submitted_at' => now(),
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+        ]);
+        $commission = AgentCommission::query()->create([
+            'order_id' => $order->id,
+            'restaurant_id' => $restaurant->id,
+            'agent_id' => $agent->id,
+            'order_amount' => 125,
+            'subtotal_amount' => 100,
+            'delivery_fee_amount' => 25,
+            'total_amount' => 125,
+            'pahatud_commission_percentage' => 20,
+            'pahatud_commission_amount' => 20,
+            'commission_percentage' => 30,
+            'commission_amount' => 6,
+            'status' => AgentCommission::STATUS_APPROVED,
+            'qualified_at' => now(),
+        ]);
+        $admin = User::query()->forceCreate([
+            'name' => 'Statement Admin',
+            'email' => 'statement-admin@example.com',
+            'password' => Hash::make('password123'),
+        ]);
+
+        $this->withoutMiddleware(isAdmin::class);
+
+        $response = $this->actingAs($admin)->post(route('dashboard.agent-statements.store'), [
+            'agent_id' => $agent->id,
+            'commission_ids' => [$commission->id],
+            'notes' => 'October commission statement',
+        ]);
+
+        $statement = AgentStatementAccount::query()->firstOrFail();
+        $response->assertRedirect(route('dashboard.agent-statements.show', $statement));
+        $this->assertSame(AgentStatementAccount::STATUS_DRAFT, $statement->status);
+        $this->assertNull($statement->issued_at);
+        $this->assertDatabaseHas('agent_statement_account_items', [
+            'agent_statement_account_id' => $statement->id,
+            'agent_commission_id' => $commission->id,
+            'order_number' => 'PAH-ASOA-0001',
+            'agent_commission_amount' => 6,
+        ]);
+
+        $this->actingAs($admin)->post(route('dashboard.agent-statements.store'), [
+            'agent_id' => $agent->id,
+            'commission_ids' => [$commission->id],
+        ])->assertSessionHasErrors('commission_ids');
+        $this->assertDatabaseCount('agent_statement_account_items', 1);
+
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.statements.index'))
+            ->assertOk()
+            ->assertDontSeeText($statement->reference);
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.statements.show', $statement))
+            ->assertNotFound();
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.agent-statements.publish', $statement))
+            ->assertRedirect(route('dashboard.agent-statements.show', $statement));
+
+        $statement->refresh();
+        $this->assertSame(AgentStatementAccount::STATUS_PUBLISHED, $statement->status);
+        $this->assertNotNull($statement->issued_at);
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.agent-statements.publish', $statement))
+            ->assertSessionHasErrors('statement');
+
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.statements.index'))
+            ->assertOk()
+            ->assertSeeText($statement->reference);
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.statements.show', $statement))
+            ->assertOk()
+            ->assertSeeText($statement->reference)
+            ->assertSeeText('PAH-ASOA-0001')
+            ->assertSeeText('₱6.00');
+
+        $this->actingAs($otherAgent, 'agent')
+            ->get(route('agent.statements.show', $statement))
+            ->assertNotFound();
     }
 
     public function test_restaurant_pages_are_scoped_to_the_logged_in_agent(): void

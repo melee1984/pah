@@ -140,4 +140,9 @@ class Agent extends Authenticatable
     {
         return $this->hasMany(AgentCommission::class);
     }
+
+    public function statements(): HasMany
+    {
+        return $this->hasMany(AgentStatementAccount::class);
+    }
 }

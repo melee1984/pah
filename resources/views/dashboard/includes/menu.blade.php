@@ -66,6 +66,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.statements.index') }}" class="nav-link {{ Request::is('data/dashboard/statements*') ? 'active' : '' }}"><i class="nav-icon fas fa-file-invoice-dollar"></i><p>Statements of account</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.agent-statements.index') }}" class="nav-link {{ Request::is('data/dashboard/agent-statements*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Agent statements</p></a>
+    </li>
 
     <li class="nav-header">System</li>
     @if (request()->attributes->get('can_manage_managers', false))

@@ -134,6 +134,8 @@ Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function
         Route::post('/restaurants/{restaurant}/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadAgent'])->name('restaurants.documents.store');
         Route::get('/restaurants/{restaurant}/documents/{document}', [\App\Http\Controllers\RestaurantApplicationController::class, 'documentAgent'])->name('restaurants.documents.show');
         Route::get('/reports', \App\Http\Controllers\Agent\ReportController::class)->name('reports.index');
+        Route::get('/statements', [\App\Http\Controllers\Agent\StatementAccountController::class, 'index'])->name('statements.index');
+        Route::get('/statements/{statement}', [\App\Http\Controllers\Agent\StatementAccountController::class, 'show'])->name('statements.show');
     });
 
     Route::post('/logout', [\App\Http\Controllers\Agent\AuthController::class, 'destroy'])->name('logout');
@@ -292,6 +294,14 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
     Route::get('data/dashboard/report/riders', \App\Http\Controllers\Admin\RiderCommissionReportController::class)->name('dashboard.report.riders');
     Route::get('data/dashboard/report/agent', \App\Http\Controllers\Admin\AgentCommissionReportController::class)->name('dashboard.report.agents');
+    Route::get('data/dashboard/agent-statements', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'index'])->name('dashboard.agent-statements.index');
+    Route::post('data/dashboard/agent-statements', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.agent-statements.store');
+    Route::post('data/dashboard/agent-statements/{statement}/publish', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'publish'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.agent-statements.publish');
+    Route::get('data/dashboard/agent-statements/{statement}', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'show'])->name('dashboard.agent-statements.show');
     Route::get('data/dashboard/report/favorites', \App\Http\Controllers\Admin\FavoriteReportController::class)->name('dashboard.report.favorites');
     Route::get('data/dashboard/report/user-rewards', \App\Http\Controllers\Admin\UserRewardReportController::class)->name('dashboard.report.user-rewards');
     Route::get('data/dashboard/statements', [\App\Http\Controllers\Admin\StatementAccountController::class, 'index'])->name('dashboard.statements.index');
