@@ -42,7 +42,7 @@ class DashboardController extends Controller
             ->get();
 
         $recentReferrals = $agent->referredApplications()
-            ->latest()
+            ->latest('recruitment_submitted_at')
             ->limit(5)
             ->get();
         $referralUrl = $agent->referralUrl();

@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Agent;
 use App\Coupon;
 use App\Model\Orders\Orders;
-use App\MerchantApplication;
 use App\Model\Rider\Rider;
 use App\Partners;
 use App\PartnerPromotion;
@@ -38,7 +37,6 @@ class isAdmin
                 foreach ($request->route()?->parameters() ?? [] as $parameter) {
                     match (true) {
                         $parameter instanceof Partners => $this->cityScope->authorizePartner($parameter),
-                        $parameter instanceof MerchantApplication => $this->cityScope->authorizeMerchantApplication($parameter),
                         $parameter instanceof Agent => $this->cityScope->authorizeAgent($parameter),
                         $parameter instanceof Rider => $this->cityScope->authorizeRider($parameter),
                         $parameter instanceof RiderApplication => $this->cityScope->authorizeRiderApplication($parameter),

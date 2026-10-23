@@ -94,10 +94,10 @@
             <td>
               <div class="dashboard-actions">
                 <a v-if="member.agent_id" :href="`/data/dashboard/merchant/${member.id}/application`" class="dashboard-action-primary"><i class="fas fa-clipboard-check"></i><span>Review application</span></a>
-                <a :href="'/merchant/aulogin/' + member.user_id" class="dashboard-action-secondary" title="Open merchant dashboard">
+                <a v-if="member.user_id" :href="'/merchant/aulogin/' + member.user_id" class="dashboard-action-secondary" title="Open merchant dashboard">
                   <i class="fas fa-external-link-alt"></i><span>Open</span>
                 </a>
-                <button type="button" class="dashboard-action-secondary" :disabled="sendingId === member.id" title="Email merchant login" @click="sendMerchantLogin(member.id)">
+                <button v-if="member.user_id" type="button" class="dashboard-action-secondary" :disabled="sendingId === member.id" title="Email merchant login" @click="sendMerchantLogin(member.id)">
                   <i :class="sendingId === member.id ? 'fas fa-circle-notch fa-spin' : 'far fa-envelope'"></i><span>Send login</span>
                 </button>
               </div>

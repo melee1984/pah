@@ -1,10 +1,10 @@
 <x-mail::message>
-@if ($application->status === \App\MerchantApplication::STATUS_APPROVED)
+@if ($application->recruitment_status === \App\Partners::STATUS_APPROVED)
 # Your merchant application is approved
 
 Hello {{ $application->owner_name }},
 
-Your application for **{{ $application->business_name }}** has been approved for the next stage of PahatudFood onboarding.
+Your application for **{{ $application->restaurant_name }}** has been approved for the next stage of PahatudFood onboarding.
 
 Approval of this application does not activate the storefront yet. The PahatudFood team will guide you through business-document verification, merchant account setup, menu preparation, and final activation.
 @else
@@ -12,7 +12,7 @@ Approval of this application does not activate the storefront yet. The PahatudFo
 
 Hello {{ $application->owner_name }},
 
-Thank you for your interest in PahatudFood. After review, the application for **{{ $application->business_name }}** was declined.
+Thank you for your interest in PahatudFood. After review, the application for **{{ $application->restaurant_name }}** was declined.
 @endif
 
 @if ($adminMessage)

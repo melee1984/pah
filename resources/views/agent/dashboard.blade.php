@@ -73,13 +73,14 @@
         @else
             <div class="agent-table-wrap">
                 <table class="agent-table">
-                    <thead><tr><th>Business</th><th>Signup date</th><th>Application status</th></tr></thead>
+                    <thead><tr><th>Business</th><th>Last submitted</th><th>Application status</th><th>Action</th></tr></thead>
                     <tbody>
                     @foreach ($recentReferrals as $referral)
                         <tr>
-                            <td class="agent-table-primary">{{ $referral->business_name }}<span class="agent-table-secondary">{{ $referral->registered_business_name }}</span></td>
-                            <td>{{ $referral->created_at?->format('M d, Y') }}</td>
-                            <td><span class="agent-badge agent-badge-{{ $referral->status === 'declined' ? 'reversed' : $referral->status }}">{{ Str::headline($referral->status) }}</span></td>
+                            <td class="agent-table-primary">{{ $referral->restaurant_name }}<span class="agent-table-secondary">{{ $referral->registered_business_name }}</span></td>
+                            <td>{{ ($referral->recruitment_submitted_at ?? $referral->created_at)?->format('M d, Y') }}</td>
+                            <td><span class="agent-badge agent-badge-{{ $referral->recruitment_status === 'declined' ? 'reversed' : $referral->recruitment_status }}">{{ $referral->recruitmentStatusLabel() }}</span></td>
+                            <td><a class="agent-text-link" href="{{ route('agent.merchant-applications.edit', $referral) }}">Update</a></td>
                         </tr>
                     @endforeach
                     </tbody>

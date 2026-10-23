@@ -125,6 +125,10 @@ Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function
         Route::get('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'index'])->name('restaurants.index');
         Route::get('/restaurants/enroll', [\App\Http\Controllers\Agent\RestaurantController::class, 'create'])->name('restaurants.create');
         Route::post('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'store'])->name('restaurants.store');
+        Route::get('/merchant-applications/{application}/edit', [\App\Http\Controllers\Agent\MerchantApplicationController::class, 'edit'])
+            ->name('merchant-applications.edit');
+        Route::put('/merchant-applications/{application}', [\App\Http\Controllers\Agent\MerchantApplicationController::class, 'update'])
+            ->name('merchant-applications.update');
         Route::get('/restaurants/{restaurant}', [\App\Http\Controllers\RestaurantApplicationController::class, 'showAgent'])->name('restaurants.show');
         Route::put('/restaurants/{restaurant}', [\App\Http\Controllers\RestaurantApplicationController::class, 'updateAgent'])->name('restaurants.update');
         Route::post('/restaurants/{restaurant}/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadAgent'])->name('restaurants.documents.store');

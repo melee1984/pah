@@ -138,6 +138,7 @@ button, input, select, textarea { font: inherit; }
 .agent-badge-reversed { background: #f1eeee; color: #6f6666; }
 .agent-badge-active { background: #eaf8ef; color: var(--agent-green); }
 .agent-badge-review { background: #fff5dc; color: var(--agent-amber); }
+.agent-status-stack { align-items: start; display: grid; gap: 5px; justify-items: start; }
 
 .agent-empty { color: var(--agent-muted); padding: 52px 24px; text-align: center; }
 .agent-empty strong { color: var(--agent-ink); display: block; font-family: 'Manrope', sans-serif; font-size: 17px; margin-bottom: 6px; }

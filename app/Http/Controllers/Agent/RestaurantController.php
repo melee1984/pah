@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Http\Controllers\Controller;
+use App\Partners;
 use App\RestaurantEnrollmentDocument;
 use App\Services\RestaurantEnrollmentService;
 use Illuminate\Http\RedirectResponse;
@@ -15,21 +16,16 @@ class RestaurantController extends Controller
 {
     public function index(Request $request): View
     {
-        $restaurants = $request->user('agent')
-            ->restaurants()
+        $restaurants = Partners::query()
+            ->where('agent_id', $request->user('agent')->getKey())
             ->with(['enrollmentDocuments', 'enrollmentContact'])
             ->withCount('orders')
             ->withSum(['agentCommissions as commission_total' => fn ($query) => $query->earned()], 'commission_amount')
-            ->latest()
-            ->paginate(15);
-
-        $referredApplications = $request->user('agent')
-            ->referredApplications()
-            ->latest()
-            ->paginate(15, ['*'], 'referrals_page')
+            ->latest('updated_at')
+            ->paginate(15)
             ->withQueryString();
 
-        return view('agent.restaurants.index', compact('restaurants', 'referredApplications'));
+        return view('agent.restaurants.index', compact('restaurants'));
     }
 
     public function create(): View

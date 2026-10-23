@@ -12,7 +12,6 @@ use App\Mail\AgentRegistrationReceivedMail;
 use App\Mail\AgentTemporaryPasswordMail;
 use App\Mail\RestaurantApplicationStatusMail;
 use App\Mail\RestaurantInvitationMail;
-use App\MerchantApplication;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Cart;
 use App\Model\CartItem;
@@ -66,6 +65,17 @@ class AgentPortalTest extends TestCase
             $table->string('payout_account_name')->nullable();
             $table->string('application_status', 30)->nullable();
             $table->text('application_remarks')->nullable();
+            $table->string('application_source', 40)->nullable()->index();
+            $table->string('recruitment_status', 20)->nullable()->index();
+            $table->text('recruitment_review_message')->nullable();
+            $table->timestamp('recruitment_submitted_at')->nullable();
+            $table->string('owner_name')->nullable();
+            $table->string('cuisine', 120)->nullable();
+            $table->unsignedSmallInteger('branch_count')->default(1);
+            $table->json('services')->nullable();
+            $table->string('website')->nullable();
+            $table->unsignedBigInteger('recruitment_reviewed_by')->nullable();
+            $table->timestamp('recruitment_reviewed_at')->nullable();
             $table->timestamp('verified_at')->nullable();
             $table->unsignedBigInteger('verified_by')->nullable();
             $table->timestamps();
@@ -1118,14 +1128,14 @@ class AgentPortalTest extends TestCase
             ->assertSeeText('#PAH-2026-0042');
     }
 
-    public function test_agent_can_track_referred_applications_and_approval_links_an_existing_partner(): void
+    public function test_agent_can_track_and_approve_a_referred_partner_application(): void
     {
         Mail::fake();
         $this->withoutMiddleware(isAdmin::class);
         $agent = $this->agent('referral-tracking@example.com');
-        $application = MerchantApplication::query()->create([
+        $application = Partners::query()->create([
             'agent_id' => $agent->id,
-            'business_name' => 'Referral Cafe',
+            'restaurant_name' => 'Referral Cafe',
             'registered_business_name' => 'Referral Cafe Foods',
             'owner_name' => 'Rina Santos',
             'email' => 'referral-cafe@example.com',
@@ -1135,14 +1145,12 @@ class AgentPortalTest extends TestCase
             'business_structure' => 'sole_proprietorship',
             'branch_count' => 1,
             'services' => ['delivery'],
-            'commission_percentage' => 20,
-            'status' => MerchantApplication::STATUS_PENDING,
-        ]);
-        $partner = Partners::query()->create([
-            'restaurant_name' => 'Referral Cafe',
-            'email' => $application->email,
             'slug' => 'referral-cafe',
             'search_string' => 'referral cafe',
+            'percentage' => 20,
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_PENDING,
+            'recruitment_submitted_at' => now(),
         ]);
 
         $this->actingAs($agent, 'agent')->get(route('agent.dashboard'))
@@ -1159,16 +1167,27 @@ class AgentPortalTest extends TestCase
             ->assertSee($application->created_at->format('M d, Y'))
             ->assertSee('Pending');
 
+        $this->assertSame(0, $agent->restaurants()->count());
+
         $this->post(route('dashboard.merchant-applications.approve', $application), [
             'message' => 'Continue to onboarding.',
         ])->assertSessionHas('success');
 
-        $this->assertSame($agent->id, $partner->fresh()->agent_id);
-        $this->assertSame(MerchantApplication::STATUS_APPROVED, $application->fresh()->status);
+        $this->assertSame($agent->id, $application->fresh()->agent_id);
+        $this->assertSame(Partners::STATUS_APPROVED, $application->fresh()->recruitment_status);
+        $this->assertSame(1, $agent->restaurants()->count());
+        $this->assertSame(0, $agent->approvedRestaurantCount());
 
-        MerchantApplication::query()->create([
+        $directoryResponse = $this->actingAs($agent, 'agent')->get(route('agent.restaurants.index'));
+        $directoryResponse->assertOk()
+            ->assertSee('Merchant directory')
+            ->assertSee('Recruitment')
+            ->assertSee('Enrollment');
+        $this->assertSame(1, substr_count($directoryResponse->getContent(), 'data-merchant-id="'.$application->id.'"'));
+
+        $futurePartner = Partners::query()->create([
             'agent_id' => $agent->id,
-            'business_name' => 'Future Referral Store',
+            'restaurant_name' => 'Future Referral Store',
             'registered_business_name' => 'Future Referral Store Inc.',
             'owner_name' => 'Luis Reyes',
             'email' => 'future-referral@example.com',
@@ -1178,18 +1197,154 @@ class AgentPortalTest extends TestCase
             'business_structure' => 'corporation',
             'branch_count' => 1,
             'services' => ['pickup'],
-            'commission_percentage' => 20,
-            'status' => MerchantApplication::STATUS_APPROVED,
-            'reviewed_at' => now(),
-        ]);
-        $futurePartner = Partners::query()->create([
-            'restaurant_name' => 'Future Referral Store',
-            'email' => 'future-referral@example.com',
             'slug' => 'future-referral-store',
             'search_string' => 'future referral store',
+            'percentage' => 20,
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_APPROVED,
+            'recruitment_reviewed_at' => now(),
+            'recruitment_submitted_at' => now(),
         ]);
 
         $this->assertSame($agent->id, $futurePartner->agent_id);
+    }
+
+    public function test_agent_can_update_an_owned_merchant_application_and_resubmit_it_for_approval(): void
+    {
+        Storage::fake('local');
+        $agent = $this->agent('application-editor@example.com');
+        $otherAgent = $this->agent('other-application-editor@example.com');
+        $originalSubmittedAt = now()->subDay();
+        $application = Partners::query()->create([
+            'agent_id' => $agent->id,
+            'restaurant_name' => 'Old Cafe Name',
+            'registered_business_name' => 'Old Cafe Company',
+            'owner_name' => 'Old Owner',
+            'email' => 'old-cafe@example.com',
+            'mobile' => '09170000000',
+            'telephone' => '1234567',
+            'address' => 'Old Address',
+            'city' => 'Old City',
+            'business_structure' => 'sole_proprietorship',
+            'enrolling_as' => 'owner',
+            'tin' => '000-000-000',
+            'payout_account_name' => 'Old Owner · Old Bank · 0000',
+            'cuisine' => 'Cafe',
+            'branch_count' => 1,
+            'services' => ['pickup'],
+            'website' => 'https://old-cafe.example.com',
+            'description' => 'Old description',
+            'slug' => 'old-cafe-name',
+            'search_string' => 'old cafe name old city',
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_DECLINED,
+            'recruitment_review_message' => 'Please correct the business details.',
+            'recruitment_reviewed_by' => 12,
+            'recruitment_reviewed_at' => now()->subHours(12),
+            'recruitment_submitted_at' => $originalSubmittedAt,
+            'application_status' => 'pending_review',
+        ]);
+
+        $this->actingAs($otherAgent, 'agent')
+            ->get(route('agent.merchant-applications.edit', $application))
+            ->assertNotFound();
+
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.merchant-applications.edit', $application))
+            ->assertOk()
+            ->assertSee('Update merchant application')
+            ->assertSee('Please correct the business details.')
+            ->assertSee('name="payout_account_name"', false)
+            ->assertSee('name="government_id"', false)
+            ->assertSee('name="business_registration"', false)
+            ->assertSee('Save and submit for approval');
+
+        $response = $this->actingAs($agent, 'agent')
+            ->put(route('agent.merchant-applications.update', $application), [
+                'restaurant_name' => 'Corrected Cafe',
+                'registered_business_name' => 'Corrected Cafe Foods Inc.',
+                'owner_name' => 'Maria Corrected',
+                'email' => 'corrected-cafe@example.com',
+                'mobile' => '09171234567',
+                'telephone' => null,
+                'address' => '45 Corrected Street',
+                'city' => 'Davao City',
+                'business_structure' => 'corporation',
+                'enrolling_as' => 'authorized_representative',
+                'tin' => '123-456-789',
+                'business_registration_number' => 'SEC-2026-100',
+                'payout_account_name' => 'Corrected Cafe Foods Inc. · Test Bank · 123456',
+                'cuisine' => 'Filipino',
+                'branch_count' => 3,
+                'services' => ['dine_in', 'delivery'],
+                'website' => 'https://corrected-cafe.example.com',
+                'description' => 'Corrected application details.',
+                'government_id' => UploadedFile::fake()->create('government-id.pdf', 100, 'application/pdf'),
+                'business_registration' => UploadedFile::fake()->create('business-registration.pdf', 100, 'application/pdf'),
+                'authorization_document' => UploadedFile::fake()->create('authorization.pdf', 100, 'application/pdf'),
+            ]);
+
+        $response->assertRedirect(route('agent.merchant-applications.edit', $application));
+        $response->assertSessionHas('success', 'The merchant application was updated and submitted as Pending Approval.');
+
+        $application->refresh();
+        $this->assertSame('Corrected Cafe', $application->restaurant_name);
+        $this->assertSame('corrected-cafe@example.com', $application->email);
+        $this->assertSame(['dine_in', 'delivery'], $application->services);
+        $this->assertSame('123-456-789', $application->tin);
+        $this->assertSame('Corrected Cafe Foods Inc. · Test Bank · 123456', $application->payout_account_name);
+        $this->assertSame('corrected cafe davao city', $application->search_string);
+        $this->assertSame(Partners::STATUS_PENDING, $application->recruitment_status);
+        $this->assertNull($application->recruitment_review_message);
+        $this->assertNull($application->recruitment_reviewed_by);
+        $this->assertNull($application->recruitment_reviewed_at);
+        $this->assertTrue($application->recruitment_submitted_at->isAfter($originalSubmittedAt));
+        $this->assertSame('pending_review', $application->application_status);
+        $this->assertSame(3, $application->enrollmentDocuments()->count());
+
+        foreach ([...RestaurantEnrollmentDocument::REQUIRED_TYPES, 'authorization_document'] as $type) {
+            $document = $application->enrollmentDocuments()->where('document_type', $type)->firstOrFail();
+            $this->assertSame('pending_verification', $document->status);
+            Storage::disk('local')->assertExists($document->file_path);
+        }
+
+        $this->actingAs($agent, 'agent')
+            ->get(route('agent.restaurants.index'))
+            ->assertOk()
+            ->assertSee('Corrected Cafe')
+            ->assertSee('Pending Approval')
+            ->assertSee(route('agent.merchant-applications.edit', $application));
+    }
+
+    public function test_agent_cannot_update_another_agents_merchant_application(): void
+    {
+        $owner = $this->agent('application-owner@example.com');
+        $otherAgent = $this->agent('application-intruder@example.com');
+        $application = Partners::query()->create([
+            'agent_id' => $owner->id,
+            'restaurant_name' => 'Protected Cafe',
+            'registered_business_name' => 'Protected Cafe Company',
+            'owner_name' => 'Protected Owner',
+            'email' => 'protected-cafe@example.com',
+            'mobile' => '09170000000',
+            'address' => 'Protected Address',
+            'city' => 'Davao City',
+            'business_structure' => 'sole_proprietorship',
+            'branch_count' => 1,
+            'services' => ['pickup'],
+            'slug' => 'protected-cafe',
+            'application_source' => Partners::APPLICATION_SOURCE_REGISTRATION,
+            'recruitment_status' => Partners::STATUS_PENDING,
+            'recruitment_submitted_at' => now(),
+        ]);
+
+        $this->actingAs($otherAgent, 'agent')
+            ->put(route('agent.merchant-applications.update', $application), [
+                'restaurant_name' => 'Hijacked Cafe',
+            ])
+            ->assertNotFound();
+
+        $this->assertSame('Protected Cafe', $application->fresh()->restaurant_name);
     }
 
     public function test_delivered_order_snapshots_commission_and_cancellation_reverses_it(): void
