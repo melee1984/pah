@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\City;
 use App\Http\Controllers\Controller;
-use App\Providers\RouteServiceProvider;
 use App\User;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 use Str;
 
 class RegisterController extends Controller implements HasMiddleware
@@ -32,7 +34,7 @@ class RegisterController extends Controller implements HasMiddleware
      *
      * @var string
      */
-    protected $redirectTo = "/";
+    protected $redirectTo = '/';
 
     /**
      * Create a new controller instance.
@@ -46,10 +48,16 @@ class RegisterController extends Controller implements HasMiddleware
         ];
     }
 
+    public function showRegistrationForm(): View
+    {
+        return view('auth.register', [
+            'cities' => City::query()->active()->orderBy('name')->get(),
+        ]);
+    }
+
     /**
      * Get a validator for an incoming registration request.
      *
-     * @param  array  $data
      * @return \Illuminate\Contracts\Validation\Validator
      */
     protected function validator(array $data)
@@ -58,24 +66,32 @@ class RegisterController extends Controller implements HasMiddleware
             'firstname' => ['required', 'string', 'max:255'],
             'lastname' => ['required', 'string', 'max:255'],
             'mobile' => ['required', 'string', 'max:255'],
+            'city' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::exists('cities', 'name')->where('active', true),
+            ],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'min:8'],
+        ], [
+            'city.exists' => 'Select an active city.',
         ]);
     }
 
     /**
      * Create a new user instance after a valid registration.
      *
-     * @param  array  $data
      * @return \App\User
      */
     protected function create(array $data)
-    {   
+    {
         return User::create([
             'firstname' => $data['firstname'],
             'lastname' => $data['lastname'],
             'email' => $data['email'],
             'mobile' => $data['mobile'],
+            'city' => $data['city'],
             'ip_address' => $_SERVER['REMOTE_ADDR'],
             'api_token' => Str::random(80),
             'password' => Hash::make($data['password']),

@@ -73,6 +73,9 @@
     <li class="nav-header">System</li>
     @if (request()->attributes->get('can_manage_managers', false))
     <li class="nav-item">
+        <a href="{{ route('dashboard.cities.index') }}" class="nav-link {{ Request::is('data/dashboard/cities*') ? 'active' : '' }}"><i class="nav-icon fas fa-city"></i><p>Cities</p></a>
+    </li>
+    <li class="nav-item">
         <a href="{{ route('dashboard.managers.index') }}" class="nav-link {{ Request::is('data/dashboard/managers*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-shield"></i><p>Manager access</p></a>
     </li>
     @endif

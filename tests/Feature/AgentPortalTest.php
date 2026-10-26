@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Agent;
 use App\AgentCommission;
 use App\AgentStatementAccount;
+use App\City;
 use App\Http\Middleware\isAdmin;
 use App\LibraryStatus;
 use App\Mail\AgentApprovedMail;
@@ -263,13 +264,46 @@ class AgentPortalTest extends TestCase
 
     public function test_agent_registration_page_explains_the_commission_tiers(): void
     {
+        City::query()->create(['name' => 'Davao City', 'active' => true]);
+        City::query()->create(['name' => 'Inactive City', 'active' => false]);
+
         $this->get(route('agent.register'))
             ->assertOk()
+            ->assertSee('<option value="Davao City"', false)
+            ->assertDontSee('<option value="Inactive City"', false)
             ->assertSee('0–34')
             ->assertSee('35–49')
             ->assertSee('50 or more')
             ->assertSee('What does “approved restaurant” mean for my tier?', false)
             ->assertSee('Existing commission entries keep the rate originally recorded');
+    }
+
+    public function test_agent_can_register_only_in_an_active_city(): void
+    {
+        Mail::fake();
+        City::query()->create(['name' => 'Davao City', 'active' => true]);
+        City::query()->create(['name' => 'Inactive City', 'active' => false]);
+
+        $application = [
+            'name' => 'City Agent',
+            'email' => 'city-agent@example.com',
+            'mobile' => '09171234567',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'terms' => '1',
+        ];
+
+        $this->post(route('agent.register.store'), $application + ['city' => 'Inactive City'])
+            ->assertSessionHasErrors('city');
+        $this->assertDatabaseMissing('agents', ['email' => $application['email']]);
+
+        $this->post(route('agent.register.store'), $application + ['city' => 'Davao City'])
+            ->assertRedirect(route('agent.register.success'));
+        $this->assertDatabaseHas('agents', [
+            'email' => $application['email'],
+            'city' => 'Davao City',
+        ]);
+        Mail::assertSent(AgentRegistrationReceivedMail::class);
     }
 
     public function test_admin_agent_page_lists_registered_agents(): void

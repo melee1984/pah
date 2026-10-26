@@ -137,7 +137,19 @@
                     <div class="agent-field"><label for="telephone">Telephone <small>(optional)</small></label><input class="agent-input @error('telephone') agent-input-error @enderror" id="telephone" name="telephone" value="{{ old('telephone') }}" maxlength="30">@error('telephone')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field"><label for="cuisine">Cuisine / food category <small>(optional)</small></label><input class="agent-input @error('cuisine') agent-input-error @enderror" id="cuisine" name="cuisine" value="{{ old('cuisine') }}" maxlength="120" placeholder="e.g. Filipino, bakery, coffee">@error('cuisine')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field agent-field-full"><label for="address">Primary business address <span class="agent-required">*</span></label><input class="agent-input @error('address') agent-input-error @enderror" id="address" name="address" value="{{ old('address') }}" maxlength="500" autocomplete="street-address" required>@error('address')<span class="agent-error">{{ $message }}</span>@enderror</div>
-                    <div class="agent-field"><label for="city">City / municipality <span class="agent-required">*</span></label><input class="agent-input @error('city') agent-input-error @enderror" id="city" name="city" value="{{ old('city') }}" maxlength="120" required>@error('city')<span class="agent-error">{{ $message }}</span>@enderror</div>
+                    <div class="agent-field">
+                        <label for="city">City <span class="agent-required">*</span></label>
+                        <select class="agent-input @error('city') agent-input-error @enderror" id="city" name="city" autocomplete="address-level2" required>
+                            <option value="" disabled @selected(! old('city'))>Select your city</option>
+                            @foreach ($cities as $city)
+                                <option value="{{ $city->name }}" @selected(old('city') === $city->name)>{{ $city->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('city')<span class="agent-error">{{ $message }}</span>@enderror
+                        @if ($cities->isEmpty())
+                            <span class="agent-error">Merchant registration is not available in any city yet.</span>
+                        @endif
+                    </div>
                     <div class="agent-field"><label for="branch_count">Number of branches <span class="agent-required">*</span></label><input class="agent-input @error('branch_count') agent-input-error @enderror" id="branch_count" name="branch_count" type="number" value="{{ old('branch_count', 1) }}" min="1" max="500" required>@error('branch_count')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field agent-field-full"><label>Services you want to offer <span class="agent-required">*</span></label><div class="merchant-service-options">@foreach ($services as $value => $label)<label><input name="services[]" type="checkbox" value="{{ $value }}" @checked(in_array($value, old('services', []), true))><span><strong>{{ $label }}</strong><small>{{ ['dine_in' => 'Welcome guests at your location', 'pickup' => 'Prepare orders for collection', 'delivery' => 'Send orders to customers nearby'][$value] }}</small></span></label>@endforeach</div>@error('services')<span class="agent-error">{{ $message }}</span>@enderror @error('services.*')<span class="agent-error">{{ $message }}</span>@enderror</div>
                     <div class="agent-field agent-field-full"><label for="website">Website or social page <small>(optional)</small></label><input class="agent-input @error('website') agent-input-error @enderror" id="website" name="website" type="url" value="{{ old('website') }}" maxlength="255" placeholder="https://">@error('website')<span class="agent-error">{{ $message }}</span>@enderror</div>

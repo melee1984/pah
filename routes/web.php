@@ -188,6 +188,10 @@ Route::middleware('admin')->group(function () {
         Route::post('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'store'])->name('dashboard.managers.store');
         Route::put('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'update'])->name('dashboard.managers.update');
         Route::delete('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'destroy'])->name('dashboard.managers.destroy');
+        Route::get('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'index'])->name('dashboard.cities.index');
+        Route::post('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'store'])->name('dashboard.cities.store');
+        Route::put('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'update'])->name('dashboard.cities.update');
+        Route::delete('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'destroy'])->name('dashboard.cities.destroy');
     });
 
     Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');

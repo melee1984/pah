@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Agent;
 
 use App\Agent;
+use App\City;
 use App\Http\Controllers\Controller;
 use App\Mail\AgentRegistrationReceivedMail;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ class RegistrationController extends Controller
     public function create(): View
     {
         return view('agent.auth.register', [
+            'cities' => City::query()->active()->orderBy('name')->get(),
             'commissionPercentage' => (float) config('agent.commission_tiers.0', 15),
             'commissionTiers' => config('agent.commission_tiers'),
             'pahatudCommissionPercentage' => (float) config('agent.pahatud_commission_percentage'),
@@ -27,11 +29,17 @@ class RegistrationController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['city' => trim((string) $request->input('city'))]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('agents', 'email')],
             'mobile' => ['required', 'string', 'max:30'],
-            'city' => ['required', 'string', 'max:120'],
+            'city' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::exists('cities', 'name')->where('active', true),
+            ],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'terms' => ['accepted'],
         ]);

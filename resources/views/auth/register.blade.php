@@ -53,6 +53,25 @@
                                     </span>
                                     @enderror
 
+                                    <div class="res-tab @error('city') is-invalid @enderror">
+                                        <select id="city" name="city" required autocomplete="address-level2">
+                                            <option value="" disabled @selected(! old('city'))>Select City *</option>
+                                            @foreach ($cities as $city)
+                                                <option value="{{ $city->name }}" @selected(old('city') === $city->name)>{{ $city->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @error('city')
+                                        <span class="invalid-feedback" role="alert">
+                                            <strong>{{ $message }}</strong>
+                                        </span>
+                                    @enderror
+                                    @if ($cities->isEmpty())
+                                        <span class="invalid-feedback d-block" role="alert">
+                                            <strong>Registration is not available in any city yet.</strong>
+                                        </span>
+                                    @endif
+
                                     
                                      <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password" placeholder="Password *">
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Agent;
+use App\City;
 use App\Mail\MerchantApplicationReceivedMail;
 use App\Partners;
 use Illuminate\Http\RedirectResponse;
@@ -25,6 +26,7 @@ class MerchantApplicationController extends Controller
             ->first();
 
         return view('merchant-program.register', [
+            'cities' => City::query()->active()->orderBy('name')->get(),
             'commissionPercentage' => (float) config('agent.pahatud_commission_percentage', 20),
             'services' => Partners::SERVICES,
             'referralCode' => $referralAgent?->referral_code ?? $referralCode,
@@ -37,6 +39,7 @@ class MerchantApplicationController extends Controller
         $referralCode = $this->normalizeReferralCode($request->input('referral_code'));
         $request->merge([
             'referral_code' => $referralCode === '' ? null : $referralCode,
+            'city' => trim((string) $request->input('city')),
         ]);
 
         $validated = $request->validate([
@@ -53,7 +56,12 @@ class MerchantApplicationController extends Controller
             'mobile' => ['required', 'string', 'max:30'],
             'telephone' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
-            'city' => ['required', 'string', 'max:120'],
+            'city' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::exists('cities', 'name')->where('active', true),
+            ],
             'business_structure' => ['required', Rule::in(['sole_proprietorship', 'corporation', 'partnership', 'cooperative'])],
             'cuisine' => ['nullable', 'string', 'max:120'],
             'branch_count' => ['required', 'integer', 'min:1', 'max:500'],
@@ -64,6 +72,7 @@ class MerchantApplicationController extends Controller
             'terms' => ['accepted'],
         ], [
             'referral_code.exists' => 'Enter a valid referral code from an active Pahatud agent.',
+            'city.exists' => 'Select an active city.',
             'services.required' => 'Choose at least one service you want to offer.',
             'services.min' => 'Choose at least one service you want to offer.',
         ]);

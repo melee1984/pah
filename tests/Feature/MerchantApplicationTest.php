@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Agent;
+use App\City;
 use App\Http\Middleware\isAdmin;
 use App\Mail\MerchantApplicationReceivedMail;
 use App\Mail\MerchantApplicationStatusMail;
@@ -58,12 +59,17 @@ class MerchantApplicationTest extends TestCase
             $table->boolean('addup')->default(false);
             $table->timestamps();
         });
+
+        City::query()->create(['name' => 'Cebu City', 'active' => true]);
+        City::query()->create(['name' => 'Inactive City', 'active' => false]);
     }
 
     public function test_merchant_recruitment_page_explains_services_commission_and_requirements(): void
     {
         $this->get(route('merchant.register'))
             ->assertOk()
+            ->assertSee('<option value="Cebu City"', false)
+            ->assertDontSee('<option value="Inactive City"', false)
             ->assertSee('Become a Merchant')
             ->assertSee('Dine-in')
             ->assertSee('Pickup')
@@ -71,6 +77,23 @@ class MerchantApplicationTest extends TestCase
             ->assertSee(number_format(config('agent.pahatud_commission_percentage'), 2).'%')
             ->assertSee('Business registration')
             ->assertSee('Payout details');
+    }
+
+    public function test_merchant_can_apply_only_in_an_active_city(): void
+    {
+        $this->post(route('merchant.register.submit'), [
+            ...$this->validApplication(),
+            'city' => 'Inactive City',
+        ])->assertSessionHasErrors('city');
+
+        $this->assertDatabaseCount('partners', 0);
+
+        $this->post(route('merchant.register.submit'), [
+            ...$this->validApplication(),
+            'city' => 'Unknown City',
+        ])->assertSessionHasErrors('city');
+
+        $this->assertDatabaseCount('partners', 0);
     }
 
     public function test_food_business_can_submit_a_merchant_application(): void
