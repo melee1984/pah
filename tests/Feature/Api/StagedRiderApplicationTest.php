@@ -65,7 +65,7 @@ class StagedRiderApplicationTest extends TestCase
         Mail::assertSentCount(1);
     }
 
-    public function test_rider_registration_starts_with_only_four_fields_and_uses_the_existing_application_steps(): void
+    public function test_rider_registration_starts_with_identity_and_city_and_uses_the_existing_application_steps(): void
     {
         Storage::fake('local');
 
@@ -73,6 +73,7 @@ class StagedRiderApplicationTest extends TestCase
             ->postJson('/api/v1/rider/auth/register', [
                 'full_name' => 'Carlo Juan',
                 'mobile' => '09171234567',
+                'city' => 'Cebu City',
                 'email' => 'CARLO@example.com',
                 'password' => 'secret-password',
             ])
@@ -81,6 +82,7 @@ class StagedRiderApplicationTest extends TestCase
             ->assertJsonPath('application.email', 'carlo@example.com')
             ->assertJsonPath('application.personal.full_name', 'Carlo Juan')
             ->assertJsonPath('application.personal.mobile', '09171234567')
+            ->assertJsonPath('application.personal.city', 'Cebu City')
             ->json();
 
         $applicationId = $registered['application']['id'];
@@ -151,11 +153,12 @@ class StagedRiderApplicationTest extends TestCase
         $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
             ->postJson('/api/v1/rider/auth/register', [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['full_name', 'mobile', 'email', 'password']);
+            ->assertJsonValidationErrors(['full_name', 'mobile', 'city', 'email', 'password']);
 
         $payload = [
             'full_name' => 'Carlo Juan',
             'mobile' => '09171234567',
+            'city' => 'Cebu City',
             'email' => 'carlo@example.com',
             'password' => 'secret-password',
         ];
@@ -168,6 +171,33 @@ class StagedRiderApplicationTest extends TestCase
             ->postJson('/api/v1/rider/auth/register', $payload)
             ->assertUnprocessable()
             ->assertJsonValidationErrors('email');
+    }
+
+    public function test_rider_registration_persists_the_city_on_every_created_record(): void
+    {
+        $this->withHeader('X-Admin-Request', 'apiRequestHandle001')
+            ->postJson('/api/v1/rider/auth/register', [
+                'full_name' => 'Carlo Juan',
+                'mobile' => '09171234567',
+                'city' => '  Cebu City  ',
+                'email' => 'carlo@example.com',
+                'password' => 'secret-password',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('application.personal.city', 'Cebu City');
+
+        $this->assertDatabaseHas('rider_applications', [
+            'email' => 'carlo@example.com',
+            'city' => 'Cebu City',
+        ]);
+        $this->assertDatabaseHas('users', [
+            'email' => 'carlo@example.com',
+            'city' => 'Cebu City',
+        ]);
+        $this->assertDatabaseHas('rider', [
+            'mobile' => '09171234567',
+            'city' => 'Cebu City',
+        ]);
     }
 
     public function test_a_rider_can_complete_and_submit_a_staged_application(): void
@@ -260,7 +290,6 @@ class StagedRiderApplicationTest extends TestCase
             ->assertJsonValidationErrors([
                 'birth_date',
                 'home_address',
-                'city',
                 'documents.profile_photo',
                 'documents.government_id',
                 'documents.drivers_license',
@@ -399,6 +428,7 @@ class StagedRiderApplicationTest extends TestCase
             ->postJson('/api/v1/rider/auth/register', [
                 'full_name' => 'Carlo Juan',
                 'mobile' => '09171234567',
+                'city' => 'Cebu City',
                 'email' => 'carlo@example.com',
                 'password' => 'secret-password',
             ])

@@ -31,6 +31,7 @@ class FullRiderApiTest extends TestCase
             ->postJson('/api/v1/rider/auth/register', [
                 'full_name' => 'Seven Character',
                 'mobile' => '09171234567',
+                'city' => 'Cebu City',
                 'email' => 'seven-character@example.com',
                 'password' => 'letmein',
             ])

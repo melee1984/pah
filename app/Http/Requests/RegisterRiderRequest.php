@@ -17,7 +17,7 @@ class RegisterRiderRequest extends FormRequest
         return [
             'full_name' => ['required', 'string', 'max:255'],
             'mobile' => ['required', 'string', 'max:25', 'regex:/^\+?[0-9][0-9\s-]{6,24}$/'],
-            'city' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'city' => ['required', 'string', 'max:120'],
             'email' => [
                 'required',
                 'email',
