@@ -1,5 +1,6 @@
 @extends('templates.inside')
 @section('title', 'Contact us')
+@section('description', 'Contact the Pahatud team in Davao City for help with an order, account, restaurant partnership, delivery, or another service question.')
 @section('content')
 
         @include('pages.partials.public-page-header', [

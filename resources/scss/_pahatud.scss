@@ -1183,11 +1183,11 @@ html {
     width: fit-content;
 
     .public-brand-mark {
-        color: #ef3b35;
+        border-radius: 11px;
         display: block;
         height: 46px;
         min-width: 46px;
-        shape-rendering: geometricPrecision;
+        object-fit: cover;
         width: 46px;
     }
 }

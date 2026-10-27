@@ -2,11 +2,6 @@
 <html lang="en">
 <head>
     @include('includes.meta')
-    @hasSection('title')
-        <title>@yield('title') | Pahatud Delivery Services</title>
-    @else
-        <title>Pahatud Delivery Services</title>
-    @endif
     @include('includes.gtag')
     @vite(['resources/js/app.js'])
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">

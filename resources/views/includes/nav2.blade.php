@@ -1,1 +1,1 @@
-@include('includes.nav3')
+@include('includes.landing-header')

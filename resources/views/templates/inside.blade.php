@@ -1,11 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    @hasSection('title')
-    <title>@yield('title') | Order Online from Pahatud Delivery Services</title>
-    @else
-    <title>Pahatud Order Online from Pahatud Delivery Services</title>
-    @endif
     @include('includes.meta')
     @include('includes.gtag')
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
@@ -15,7 +10,7 @@
     @vite(['resources/js/app.js'])
 </head>
 
-<body>
+<body class="landing-page">
     <!-- preloader -->
     <!-- <div class="preloader">
                 <div class="load loade"><hr/><hr/><hr/><hr/></div>
@@ -36,7 +31,7 @@
 
     <div id="app">
         <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
-        @include('includes.nav3')
+        @include('includes.landing-header')
         <!-- search area -->
         @yield('content')
         <register-form></register-form>
