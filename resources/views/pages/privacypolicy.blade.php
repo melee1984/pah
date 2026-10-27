@@ -1,6 +1,7 @@
 @extends('templates.inside')
 
 @section('title', 'Privacy policy')
+@section('description', 'Learn what personal information Pahatud collects, how it is used and protected, and the privacy choices available to you.')
 @section('content')
 
     @include('pages.partials.public-page-header', ['title' => 'Privacy policy', 'kicker' => 'Your data, handled responsibly', 'description' => 'Learn what information Pahatud collects, why we use it, and the choices available to you.'])

@@ -2,8 +2,7 @@
 <html lang="en">
 
 <head>
-    @include('includes.meta')
-    <title>@yield('title') | Pahatud</title>
+    @include('includes.meta', ['defaultRobots' => 'noindex, nofollow'])
     @include('includes.gtag')
 
 </head>
@@ -13,7 +12,7 @@
 <!-- Scripts -->
 @vite(['resources/js/app.js'])
 
-<body>
+<body class="landing-page">
     <!-- preloader -->
     <!-- <div class="preloader"><div class="load loade"><hr/><hr/><hr/><hr/></div></div> -->
     <!-- preloader -->
@@ -36,9 +35,7 @@
         </div>
         <!-- search area -->
 
-        <div class="container-fluid">
-            @include('includes.nav-logo')
-        </div>
+        @include('includes.landing-header')
 
         <!-- search area -->
         @yield('content')

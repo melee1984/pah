@@ -1,5 +1,6 @@
 @extends('templates.inside')
 @section('title', 'Fraud prevention')
+@section('description', 'Learn how to recognize suspicious activity, protect your Pahatud account, and report potential fraud or brand impersonation.')
 @section('content')
 
         @include('pages.partials.public-page-header', ['title' => 'Fraud prevention', 'kicker' => 'Stay safe with Pahatud', 'description' => 'Know the warning signs, protect your account, and learn how to report suspicious messages or activity.'])

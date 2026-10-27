@@ -2,13 +2,7 @@
 <html lang="en">
     <head>
         
-        @include('includes.meta')
-
-        @hasSection('title')
-            <title>@yield('title') | Pahatud Delivery Services</title>
-        @else 
-        <title>Pahatud Delivery Services</title>
-        @endif
+        @include('includes.meta', ['defaultRobots' => 'noindex, nofollow'])
 
         @include('includes.gtag')
         
@@ -18,7 +12,7 @@
 
     <!-- Scripts -->
     @vite('resources/js/app.js')
-    <body>
+    <body class="landing-page">
         <!-- preloader -->
         <!-- <div class="preloader"><div class="load loade"><hr/><hr/><hr/><hr/></div></div> -->
         <!-- preloader -->
@@ -38,7 +32,7 @@
         <!-- search area -->
         <div id="app">
         <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
-    		@include('includes.nav2')
+            @include('includes.landing-header')
     		<!-- search area -->
             @yield('content')
            <register-form></register-form>

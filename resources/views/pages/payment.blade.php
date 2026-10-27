@@ -1,4 +1,6 @@
 @extends('templates.inside')
+@section('title', 'Payment methods')
+@section('description', 'Learn about the payment methods accepted for orders and delivery services placed through Pahatud.')
 @section('content')
 
  <!-- Page Header Section Start Here -->

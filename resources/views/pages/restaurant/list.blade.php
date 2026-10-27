@@ -1,5 +1,6 @@
 @extends('templates.inside')
-@section('title', "Restaurants")
+@section('title', 'Restaurants Near You')
+@section('description', 'Discover local restaurants near you and order your favorite meals for delivery with PahatudFood across the Philippines.')
 
 @section('content')
     <!-- Page Header Section Start Here -->
