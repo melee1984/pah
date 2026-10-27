@@ -1,6 +1,7 @@
 @extends('templates.inside')
 
 @section('title', 'Terms of use')
+@section('description', 'Read the terms and conditions that apply when accessing the Pahatud website and using Pahatud delivery services.')
 @section('content')
 
         @include('pages.partials.public-page-header', ['title' => 'Terms of use', 'kicker' => 'Using Pahatud', 'description' => 'These terms explain the rules and responsibilities that apply when you access or use Pahatud services.'])

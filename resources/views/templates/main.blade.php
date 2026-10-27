@@ -2,24 +2,19 @@
 <html lang="en">
 <head>
     @include('includes.meta')
-    @hasSection('title')
-    <title>@yield('title') | Pahatud Delivery Services</title>
-    @else
-    <title>Pahatud Delivery Services</title>
-    @endif
     @include('includes.gtag')
     @vite(['resources/js/app.js'])
 
 </head>
 <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
 <!-- Scripts -->
-<body >
+<body class="landing-page">
     <!-- preloader -->
     <!-- <div class="preloader"><div class="load loade"><hr/><hr/><hr/><hr/></div></div> -->
     <!-- preloader -->
     <div id="app">
         <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
-        @include('includes.nav3')
+        @include('includes.landing-header')
         @yield('content')
         <register-form></register-form>
         <user-current-location></user-current-location>

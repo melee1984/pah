@@ -1,6 +1,8 @@
 @extends('templates.landing')
 
 @section('title', 'Food delivery made local')
+@section('description', 'Order food from local Davao restaurants with PahatudFood. Browse nearby favorites, enjoy convenient cash on delivery, and track every delivery in the app.')
+@section('canonical', route('home'))
 
 @section('content')
 <main class="home-landing">

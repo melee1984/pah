@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    @include('includes.meta')
-    <title>@yield('title', 'Sign in') | PahatudFood</title>
+    @include('includes.meta', ['defaultRobots' => 'noindex, nofollow'])
     @include('includes.gtag')
     @vite('resources/js/app.js')
 </head>

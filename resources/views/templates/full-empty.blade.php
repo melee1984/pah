@@ -2,8 +2,7 @@
 <html lang="en">
 
 <head>
-    @include('includes.meta')
-    <title>@yield('title') | Pahatud</title>
+    @include('includes.meta', ['defaultRobots' => 'noindex, nofollow'])
     @include('includes.gtag')
 
 </head>
@@ -13,12 +12,10 @@
 <!-- Scripts -->
 @vite('resources/js/app.js')
 
-<body>
+<body class="landing-page">
     <div id="app">
         <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
-        <div class="container-fluid">
-            @include('includes.nav-logo')
-        </div>
+        @include('includes.landing-header')
         @yield('content')
     </div>
 </body>

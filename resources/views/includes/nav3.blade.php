@@ -2,10 +2,7 @@
     <div class="container">
         <nav class="public-mobile-header" aria-label="Mobile navigation">
             <a href="{{ route('home') }}" class="public-brand" aria-label="Pahatud home">
-                <svg class="public-brand-mark" viewBox="0 0 48 48" width="46" height="46" aria-hidden="true" focusable="false">
-                    <rect width="48" height="48" rx="11" fill="currentColor"/>
-                    <path fill="#fff" fill-rule="evenodd" d="M14 9h14.25C35.84 9 41 13.7 41 20.55 41 27.4 35.84 32 28.25 32H23v7h-9V9Zm9 8v7h5.1c2.45 0 3.9-1.28 3.9-3.5S30.55 17 28.1 17H23Z" clip-rule="evenodd"/>
-                </svg>
+                <img class="public-brand-mark" src="{{ asset('images/logo.jpg') }}" width="46" height="46" alt="PahatudFood logo">
                 <span class="public-brand-copy"><strong>PahatudFood</strong><small>Local food delivery</small></span>
             </a>
 
@@ -40,10 +37,7 @@
     <div class="container">
         <div class="header-area public-header-inner">
             <a href="{{ route('home') }}" class="public-brand" aria-label="Pahatud home">
-                <svg class="public-brand-mark" viewBox="0 0 48 48" width="46" height="46" aria-hidden="true" focusable="false">
-                    <rect width="48" height="48" rx="11" fill="currentColor"/>
-                    <path fill="#fff" fill-rule="evenodd" d="M14 9h14.25C35.84 9 41 13.7 41 20.55 41 27.4 35.84 32 28.25 32H23v7h-9V9Zm9 8v7h5.1c2.45 0 3.9-1.28 3.9-3.5S30.55 17 28.1 17H23Z" clip-rule="evenodd"/>
-                </svg>
+                <img class="public-brand-mark" src="{{ asset('images/logo.jpg') }}" width="46" height="46" alt="PahatudFood logo">
                 <span class="public-brand-copy"><strong>PahatudFood</strong><small>Local food delivery</small></span>
             </a>
 

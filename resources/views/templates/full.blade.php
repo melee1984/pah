@@ -2,8 +2,7 @@
 <html lang="en">
 
 <head>
-	@include('includes.meta')
-	<title>Pahatud - Delivery Services</title>
+	@include('includes.meta', ['defaultRobots' => 'noindex, nofollow'])
 	@include('includes.gtag')
 </head>
 <!-- Scripts -->
@@ -19,7 +18,7 @@
     </div>
     <div class="container">
 		<div class="row justify-content-center">
-			<a href="{{ URL::to('/') }}" class="logo"><img src="{{ asset('images/logo-small.jpg') }}" alt="logo"></a>
+			<a href="{{ URL::to('/') }}" class="logo"><img src="{{ asset('images/logo.jpg') }}" width="84" height="84" alt="PahatudFood logo"></a>
 		</div>
 
 		@yield('content')

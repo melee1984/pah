@@ -1,6 +1,7 @@
 @extends('templates.inside')
 
 @section('title', 'About us')
+@section('description', 'Learn how Pahatud connects Davao customers with local restaurants, merchants, and reliable delivery while helping neighborhood businesses grow.')
 
 @section('content')
     @include('pages.partials.public-page-header', ['title' => 'About Pahatud', 'kicker' => 'Local delivery, meaningful connections', 'description' => 'We connect customers with neighborhood restaurants and merchants while creating opportunities for local partners.'])
@@ -10,7 +11,7 @@
             @include('includes.error')
             <div class="public-about-intro">
                 <div class="public-about-visual">
-                    <div class="public-about-logo"><img src="{{ asset('images/logo-big.png') }}" alt="Pahatud"></div>
+                    <div class="public-about-logo"><img src="{{ asset('images/logo.jpg') }}" alt="PahatudFood logo"></div>
                     <span>Davao-born delivery service</span>
                 </div>
                 <div class="public-about-copy">
