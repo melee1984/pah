@@ -3,14 +3,14 @@
     $seoTitle = trim($__env->yieldContent('seo_title'));
     $seoTitle = $seoTitle !== ''
         ? $seoTitle
-        : ($pageTitle !== '' ? $pageTitle.' | PahatudFood' : 'PahatudFood | Local Food Delivery in Davao City');
+        : ($pageTitle !== '' ? $pageTitle.' | PahatudFood' : 'PahatudFood | Food Delivery Across the Philippines');
 
-    $defaultDescription = 'Order food from local Davao restaurants with PahatudFood. Discover nearby favorites, order in the app, and have your meal delivered to your door.';
+    $defaultDescription = 'Order food from local restaurants across the Philippines with PahatudFood. Discover nearby favorites, order in the app, and have your meal delivered to your door.';
     $seoDescription = trim($__env->yieldContent('description')) ?: $defaultDescription;
     $canonicalUrl = trim($__env->yieldContent('canonical')) ?: url()->current();
     $customSocialImage = trim($__env->yieldContent('social_image'));
     $socialImage = $customSocialImage ?: asset('images/pahatud-social.jpg');
-    $socialImageAlt = trim($__env->yieldContent('social_image_alt')) ?: 'PahatudFood local food delivery in Davao City';
+    $socialImageAlt = trim($__env->yieldContent('social_image_alt')) ?: 'PahatudFood local food delivery across the Philippines';
     $socialImageWidth = trim($__env->yieldContent('social_image_width')) ?: ($customSocialImage === '' ? '1200' : '');
     $socialImageHeight = trim($__env->yieldContent('social_image_height')) ?: ($customSocialImage === '' ? '630' : '');
     $seoRobots = trim($__env->yieldContent('robots')) ?: ($defaultRobots ?? 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
