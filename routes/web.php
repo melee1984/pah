@@ -1,48 +1,52 @@
 <?php
 
 use App\Http\Controllers\Admin\BookingController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PartnerPromotionController;
+use App\Http\Controllers\Admin\PushNotificationController;
+use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Booking\RequestController;
 use App\Http\Controllers\Flower\FlowerstoreController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Customer\AccountController;
 use App\Http\Controllers\Restaurant\PageController as RestaurantPageController;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
-Route::get('/', [PageController::class, 'index']);
+// require __DIR__.'/auth.php';
 
-// Route::get('/', function () {
-//     return Inertia::render('Welcome', [
-//         'canLogin' => Route::has('login'),
-//         'canRegister' => Route::has('register'),
-//         'laravelVersion' => Application::VERSION,
-//         'phpVersion' => PHP_VERSION,
-//     ]);
-// });
+// -------------------------------------------------------
+// PUBLIC ROUTES
+// -------------------------------------------------------
 
-Route::get('/imager', 'ImageController@image')->name('cacheImage');
-Route::get('/image/size', 'ImageController@imageResize')->name('image-resize');
+/** 
+ * Demo Gere
+ */
 
-Route::get('/byplaceId', 'Map\DistanceController@getByPlaceId');
+Auth::routes(['verify' => true]);
+Route::get('/login', [AccountController::class, 'loginPage'])->name('login');
+Route::post('/login', [AccountController::class, 'login'])->middleware(['throttle:10,1', 'turnstile:customer_login']);
+Route::get('/', [PageController::class, 'index'])->name('home');
+Route::get('/location-restriction', [PageController::class, 'restriction'])->name('location.restriction')   ;
+Route::get('/demo', [PageController::class, 'demoMap']);
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/imager', [\App\Http\Controllers\ImageController::class, 'image'])->name('cacheImage');
+// Route::get('/image/size', [\App\Http\Controllers\ImageController::class, 'imageResize'])->name('image-resize');
+Route::get('/image/size', [\App\Http\Controllers\ImageController::class, 'image'])->name('image-resize');
 
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-Route::get('/distance', 'Map\DistanceController@getKilometerByCoodinates');
-Route::get('/sign-in/fb/complete', 'Api\User\AccessController@registerFB')->name('user.registerFB');
+Route::get('/byplaceId', [\App\Http\Controllers\Map\DistanceController::class, 'getByPlaceId']);
+Route::get('/distance', [\App\Http\Controllers\Map\DistanceController::class, 'getKilometerByCoodinates']);
+
+Route::get('/sign-in/fb/complete', [\App\Http\Controllers\Api\User\AccessController::class, 'registerFB'])->name('user.registerFB');
+
 Route::post('/search', [RestaurantPageController::class, 'search'])->name('search');
 Route::get('/restaurants/{search_string}', [RestaurantPageController::class, 'searchTag'])->name('search.tag');
 
-Route::get('/home', 'PageController@index')->name('/');
-Route::get('/about-us', 'PageController@aboutus')->name('aboutus');
+Route::get('/home', [PageController::class, 'index'])->name('/');
+Route::get('/about-us', [PageController::class, 'aboutus'])->name('aboutus');
 Route::get('/be-partner', [PageController::class, 'bepartner'])->name('bepartner');
 
 Route::get('/contact-us', [PageController::class, 'contactus'])->name('contactus');
@@ -50,139 +54,389 @@ Route::get('/privacy-policy', [PageController::class, 'privacypolicy'])->name('p
 Route::get('/terms-of-use', [PageController::class, 'termsofuse'])->name('termsofuse');
 Route::get('/fraud-prevention', [PageController::class, 'fraudprevention'])->name('fraudprevention');
 Route::get('/payment-method', [PageController::class, 'paymentmethod'])->name('paymentmethod');
-// Front End Restaurant View 
+
+// Frontend Restaurant
 Route::get('/restaurant/{partner:slug}', [RestaurantPageController::class, 'view'])->name('restaurant.view');
 Route::get('/restaurants', [RestaurantPageController::class, 'show'])->name('restaurant.show');
-// Flowerstore 
+
+// Flowerstore
 Route::get('/flowerstore/{partner:slug}', [RestaurantPageController::class, 'view'])->name('flowerstore.view');
 Route::get('/flowerstore', [FlowerstoreController::class, 'show'])->name('flowerstore.show');
 
-/// Errand 
+// Errand
 Route::get('/request/booking', [RequestController::class, 'index'])->name('new.bookings');
-Route::get('/request-booking/completed', 'Booking\RequestController@success')->name('booking.success');
-// Category 
-Route::get('/category/{category}', 'CategoryController@bepartner')->name('category.section');
-Route::get('/partner/{partner}', 'PartnerController@bepartner')->name('partner.section');
-Route::post('newsletter/submit', 'NewsletterController@subscribe')->name('newsletter.submit');
-Route::get('/user/profile', 'ProfileController@index')->name('profile.home');
-Route::get('profile/soa', 'Merchant\ReportController@soa')->name('merchant.dashboard.report.soa');
-// Checkout 
-// 
-Route::post('login/submit', 'Api\User\AccessController@loginAccess')->name('login.submit');
-Route::post('contact/submit', 'PageController@storeContact')->name('contact.submit');
+Route::get('/request-booking/completed', [\App\Http\Controllers\Booking\RequestController::class, 'success'])->name('booking.success');
 
-Route::group(['middleware' => 'auth'], function() {
-    
-  Route::get('/checkout', 'Checkout\PageController@index')->name('checkout.index');
-  Route::get('checkout/{cart:order_no}/success', 'Api\CartController@success')->name('checkout.success');
-  // Dashboard 
-  Route::get('/dashboard', 'Booking\RequestController@bookings')->name('profile.dashboard');
-  //** BOOKINGS
-  Route::get('/profile/bookings', 'Booking\RequestController@bookings')->name('profile.bookings');
-  // Orders 
-  Route::get('/profile/orders', 'Order\OrderHistoryController@index')->name('profile.orders');
-  Route::get('/profile/order/{cart:order_no}', 'Order\OrderHistoryController@view')->name('profile.orders.view');
+// Category & Partner
+Route::get('/category/{category}', [\App\Http\Controllers\CategoryController::class, 'bepartner'])->name('category.section');
+Route::get('/partner/{partner}', [\App\Http\Controllers\PartnerController::class, 'bepartner'])->name('partner.section');
 
-  Route::get('/logout', 'Merchant\DashboardController@showPasswordResetForm');
-  
+Route::post('newsletter/submit', [\App\Http\Controllers\NewsletterController::class, 'subscribe'])
+    ->middleware(['throttle:5,1', 'turnstile:newsletter'])
+    ->name('newsletter.submit');
+
+// User Profile
+Route::redirect('/user/profile', '/profile')->middleware('auth')->name('profile.home');
+
+// SOA
+Route::get('profile/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('profile.report.soa');
+
+// API
+Route::post('login/submit', [AccountController::class, 'login'])
+    ->middleware(['throttle:10,1', 'turnstile:customer_login'])
+    ->name('login.submit');
+Route::post('contact/submit', [PageController::class, 'storeContact'])
+    ->middleware(['throttle:5,1', 'turnstile:contact'])
+    ->name('contact.submit');
+
+Route::get('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantInvitationController::class, 'show'])
+    ->name('restaurant.invitation.show');
+Route::post('/restaurant/invitation/{token}', [\App\Http\Controllers\RestaurantInvitationController::class, 'update'])
+    ->middleware('throttle:10,1')
+    ->name('restaurant.invitation.update');
+
+// -------------------------------------------------------
+// AGENT PORTAL
+// -------------------------------------------------------
+
+Route::get('/agent/register', [\App\Http\Controllers\Agent\RegistrationController::class, 'create'])->name('agent.register');
+Route::post('/agent/register', [\App\Http\Controllers\Agent\RegistrationController::class, 'store'])
+    ->middleware(['throttle:5,1', 'turnstile:agent_register'])
+    ->name('agent.register.store');
+Route::get('/agent/register/thank-you', [\App\Http\Controllers\Agent\RegistrationController::class, 'success'])
+    ->name('agent.register.success');
+
+Route::middleware('guest:agent')->group(function () {
+    Route::get('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'create'])->name('agent.login');
+    Route::post('/agent/login', [\App\Http\Controllers\Agent\AuthController::class, 'store'])
+        ->middleware(['throttle:5,1', 'turnstile:agent_login'])
+        ->name('agent.login.store');
 });
 
-// **********************************************************************
-// **********************************************************************
-// ********************** Admin Dashboard *******************************
-// **********************************************************************
-// **********************************************************************
- 
+Route::prefix('agent')->name('agent.')->middleware('auth:agent')->group(function () {
+    Route::get('/password/change', [\App\Http\Controllers\Agent\PasswordController::class, 'edit'])->name('password.edit');
+    Route::post('/password/change', [\App\Http\Controllers\Agent\PasswordController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('password.update');
+
+    Route::middleware('agent.password.changed')->group(function () {
+        Route::get('/dashboard', \App\Http\Controllers\Agent\DashboardController::class)->name('dashboard');
+        Route::get('/help', fn () => view('agent.help', ['agent' => auth('agent')->user()]))->name('help');
+        Route::get('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'index'])->name('restaurants.index');
+        Route::get('/restaurants/enroll', [\App\Http\Controllers\Agent\RestaurantController::class, 'create'])->name('restaurants.create');
+        Route::post('/restaurants', [\App\Http\Controllers\Agent\RestaurantController::class, 'store'])->name('restaurants.store');
+        Route::get('/merchant-applications/{application}/edit', [\App\Http\Controllers\Agent\MerchantApplicationController::class, 'edit'])
+            ->name('merchant-applications.edit');
+        Route::put('/merchant-applications/{application}', [\App\Http\Controllers\Agent\MerchantApplicationController::class, 'update'])
+            ->name('merchant-applications.update');
+        Route::get('/restaurants/{restaurant}', [\App\Http\Controllers\RestaurantApplicationController::class, 'showAgent'])->name('restaurants.show');
+        Route::put('/restaurants/{restaurant}', [\App\Http\Controllers\RestaurantApplicationController::class, 'updateAgent'])->name('restaurants.update');
+        Route::post('/restaurants/{restaurant}/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadAgent'])->name('restaurants.documents.store');
+        Route::get('/restaurants/{restaurant}/documents/{document}', [\App\Http\Controllers\RestaurantApplicationController::class, 'documentAgent'])->name('restaurants.documents.show');
+        Route::get('/reports', \App\Http\Controllers\Agent\ReportController::class)->name('reports.index');
+        Route::get('/statements', [\App\Http\Controllers\Agent\StatementAccountController::class, 'index'])->name('statements.index');
+        Route::get('/statements/{statement}', [\App\Http\Controllers\Agent\StatementAccountController::class, 'show'])->name('statements.show');
+    });
+
+    Route::post('/logout', [\App\Http\Controllers\Agent\AuthController::class, 'destroy'])->name('logout');
+});
+
+
+// -------------------------------------------------------
+// LOGGED IN USER ROUTES
+// -------------------------------------------------------
+Route::middleware('auth')->group(function () {
+
+    Route::redirect('/account', '/dashboard')->name('dashboard');
+
+    Route::get('/profile', [AccountController::class, 'profile'])->name('profile.edit');
+    Route::patch('/profile', [AccountController::class, 'updateProfile'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Checkout
+    Route::get('/checkout', [\App\Http\Controllers\Checkout\PageController::class, 'index'])->name('checkout.index');
+    Route::get('checkout/{cart:order_no}/success', [\App\Http\Controllers\Api\CartController::class, 'success'])->name('checkout.success');
+
+    // Dashboard & Bookings
+    Route::get('/dashboard', [AccountController::class, 'dashboard'])->name('profile.dashboard');
+    Route::get('/profile/bookings', [\App\Http\Controllers\Booking\RequestController::class, 'bookings'])->name('profile.bookings');
+
+    // Orders
+    Route::get('/profile/orders', [\App\Http\Controllers\Order\OrderHistoryController::class, 'index'])->name('profile.orders');
+    Route::get('/profile/order/{cart:order_no}', [\App\Http\Controllers\Order\OrderHistoryController::class, 'view'])->name('profile.orders.view');
+
+    Route::get('/profile/support', [AccountController::class, 'support'])->name('profile.support');
+    Route::post('/logout', [AccountController::class, 'logout'])->name('logout');
+    Route::get('/logout', fn () => redirect()->route('profile.dashboard'));
+});
+
+
+// -------------------------------------------------------
+// ADMIN PANEL
+// -------------------------------------------------------
+
 Route::get('/data/login', [DashboardController::class, 'login']);
-Route::post('/data/dashboard/login/submit', [DashboardController::class, 'validateLogin'])->name('dashboard.login.submit');
+Route::post('/data/dashboard/login/submit', [DashboardController::class, 'validateLogin'])
+    ->middleware(['throttle:10,1', 'turnstile:admin_login'])
+    ->name('dashboard.login.submit');
 Route::get('/data/dashboard/logout', [DashboardController::class, 'logout'])->name('dashboard.logout');
 
-// Admin 
-Route::group(['middleware' => 'admin'], function() {
-	
-  Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
-  Route::get('data/dashboard/orders', [DashboardController::class, 'index'])->name('dashboard.orders');
-  Route::get('data/dashboard/bookings', [DashboardController::class, 'index'])->name('dashboard.bookings');
+Route::middleware('admin')->group(function () {
 
-  Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
+    Route::middleware('admin.manage')->group(function () {
+        Route::get('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'index'])->name('dashboard.managers.index');
+        Route::post('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'store'])->name('dashboard.managers.store');
+        Route::put('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'update'])->name('dashboard.managers.update');
+        Route::delete('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'destroy'])->name('dashboard.managers.destroy');
+        Route::get('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'index'])->name('dashboard.cities.index');
+        Route::post('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'store'])->name('dashboard.cities.store');
+        Route::put('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'update'])->name('dashboard.cities.update');
+        Route::delete('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'destroy'])->name('dashboard.cities.destroy');
+    });
 
-  Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
-  Route::get('data/dashboard/riders', [DashboardController::class, 'index'])->name('dashboard.rider');
-  Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
-  Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
+    Route::get('data/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
+    Route::get(
+        'data/dashboard/orders/deliveries/{delivery}/proofs/{proof}',
+        [\App\Http\Controllers\Api\Admin\OrderController::class, 'viewDeliveryProof']
+    )->name('dashboard.orders.delivery-proof');
+    Route::get('data/dashboard/orders/{order}', [\App\Http\Controllers\OrderDetailsController::class, 'admin'])
+        ->whereNumber('order')
+        ->name('dashboard.orders.show');
+    Route::get('data/dashboard/bookings', [DashboardController::class, 'bookings'])->name('dashboard.bookings');
 
-  Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
-  Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
-  Route::get('data/dashboard/report/riders', [DashboardController::class, 'index'])->name('dashboard.report.riders');
+    Route::get('data/dashboard/booking/add', [BookingController::class, 'index'])->name('dashboard.booking.add');
 
-  Route::get('merchant/aulogin/{id}', function($loginId, Request $request) {
+    Route::get('data/dashboard/settings', [DashboardController::class, 'index'])->name('dashboard.settings');
+    Route::get('data/dashboard/available-riders', [RiderManagementController::class, 'available'])
+        ->name('dashboard.riders.available');
+    Route::get('data/dashboard/riders', [RiderManagementController::class, 'index'])->name('dashboard.rider');
+    Route::get('data/dashboard/riders/{rider}', [RiderManagementController::class, 'show'])->name('dashboard.riders.show');
+    Route::get('data/dashboard/rider-applications/{application}/documents/{document}', [RiderManagementController::class, 'applicationDocument'])
+        ->name('dashboard.rider-applications.documents.show');
+    Route::post('data/dashboard/rider-applications/{application}/approve', [RiderManagementController::class, 'approveApplication'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.rider-applications.approve');
+    Route::post('data/dashboard/rider-applications/{application}/decline', [RiderManagementController::class, 'declineApplication'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.rider-applications.decline');
+    Route::post('data/dashboard/riders/{rider}/approve', [RiderManagementController::class, 'approve'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.riders.approve');
+    Route::post('data/dashboard/riders/{rider}/archive', [RiderManagementController::class, 'archive'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.riders.archive');
+    Route::post('data/dashboard/riders/{rider}/restore', [RiderManagementController::class, 'restore'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.riders.restore');
+    Route::post('data/dashboard/riders/{rider}/credits', [RiderManagementController::class, 'adjustCredits'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.riders.credits');
+    Route::get('data/dashboard/rider-top-ups/{topUp}/proof', [RiderManagementController::class, 'viewTopUpProof'])
+        ->name('dashboard.rider-top-ups.proof');
+    Route::post('data/dashboard/rider-top-ups/{topUp}/approve', [RiderManagementController::class, 'approveTopUp'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.rider-top-ups.approve');
+    Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
+    Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard/merchant-applications', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'index'])
+        ->name('dashboard.merchant-applications.index');
+    Route::get('data/dashboard/merchant-applications/{application}', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'show'])
+        ->name('dashboard.merchant-applications.show');
+    Route::post('data/dashboard/merchant-applications/{application}/approve', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'approve'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.merchant-applications.approve');
+    Route::post('data/dashboard/merchant-applications/{application}/decline', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'decline'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.merchant-applications.decline');
+    Route::resource('data/dashboard/promotions', PartnerPromotionController::class)
+        ->except('show')
+        ->names('dashboard.promotions');
+    Route::post('data/dashboard/promotions/{promotion}/approve', [PartnerPromotionController::class, 'approve'])
+        ->name('dashboard.promotions.approve');
+    Route::post('data/dashboard/promotions/{promotion}/reject', [PartnerPromotionController::class, 'reject'])
+        ->name('dashboard.promotions.reject');
+    Route::resource('data/dashboard/coupons', CouponController::class)
+        ->except('show')
+        ->names('dashboard.coupons');
+    Route::get('data/dashboard/push-notifications', [PushNotificationController::class, 'index'])
+        ->name('dashboard.push-notifications.index');
+    Route::get('data/dashboard/push-notifications/create', [PushNotificationController::class, 'create'])
+        ->name('dashboard.push-notifications.create');
+    Route::post('data/dashboard/push-notifications/preview', [PushNotificationController::class, 'storePreview'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.push-notifications.store-preview');
+    Route::get('data/dashboard/push-notifications/{notification}/preview', [PushNotificationController::class, 'preview'])
+        ->name('dashboard.push-notifications.preview');
+    Route::post('data/dashboard/push-notifications/{notification}/confirm', [PushNotificationController::class, 'confirm'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.push-notifications.confirm');
+    Route::delete('data/dashboard/push-notifications/{notification}/draft', [PushNotificationController::class, 'destroyDraft'])
+        ->name('dashboard.push-notifications.destroy-draft');
+    Route::get('data/dashboard/push-notifications/{notification}', [PushNotificationController::class, 'show'])
+        ->name('dashboard.push-notifications.show');
+    Route::get('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'show'])->name('dashboard.merchant.application.show');
+    Route::post('data/dashboard/merchant/{restaurant:id}/application', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'application'])->name('dashboard.merchant.application.review');
+    Route::post('data/dashboard/merchant/{restaurant:id}/documents/{document}/review', [\App\Http\Controllers\Admin\RestaurantApplicationReviewController::class, 'document'])->name('dashboard.merchant.documents.review');
+    Route::get('data/dashboard/merchant/{partner}/documents', [\App\Http\Controllers\Api\Admin\MerchantController::class, 'enrollmentDocuments'])
+        ->name('dashboard.merchant.documents.index');
+    Route::get('data/dashboard/merchant/{partner}/documents/{document}', [\App\Http\Controllers\Api\Admin\MerchantController::class, 'viewEnrollmentDocument'])
+        ->name('dashboard.merchant.documents.show');
+    Route::get('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'index'])->name('dashboard.agents.index');
+    Route::get('data/dashboard/agents/{agent}', [\App\Http\Controllers\Admin\AgentController::class, 'show'])->name('dashboard.agents.show');
+    Route::post('data/dashboard/agents', [\App\Http\Controllers\Admin\AgentController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.agents.store');
+    Route::post('data/dashboard/agents/{agent}/approve', [\App\Http\Controllers\Admin\AgentController::class, 'approve'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.agents.approve');
+    Route::post('data/dashboard/agents/{agent}/decline', [\App\Http\Controllers\Admin\AgentController::class, 'decline'])
+        ->middleware('throttle:10,1')
+        ->name('dashboard.agents.decline');
 
-      Auth::logout();
-      $request->session()->invalidate();
-      $request->session()->regenerateToken();
+    Route::get('data/dashboard/report/orders', [DashboardController::class, 'reportOrder'])->name('dashboard.report.orders');
+    Route::get('data/dashboard/report/bookings', [DashboardController::class, 'index'])->name('dashboard.report.bookings');
+    Route::get('data/dashboard/report/riders', \App\Http\Controllers\Admin\RiderCommissionReportController::class)->name('dashboard.report.riders');
+    Route::get('data/dashboard/report/agent', \App\Http\Controllers\Admin\AgentCommissionReportController::class)->name('dashboard.report.agents');
+    Route::get('data/dashboard/agent-statements', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'index'])->name('dashboard.agent-statements.index');
+    Route::post('data/dashboard/agent-statements', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.agent-statements.store');
+    Route::post('data/dashboard/agent-statements/{statement}/publish', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'publish'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.agent-statements.publish');
+    Route::delete('data/dashboard/agent-statements/{statement}', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'destroy'])
+        ->name('dashboard.agent-statements.destroy');
+    Route::get('data/dashboard/agent-statements/{statement}', [\App\Http\Controllers\Admin\AgentStatementAccountController::class, 'show'])->name('dashboard.agent-statements.show');
+    Route::get('data/dashboard/report/favorites', \App\Http\Controllers\Admin\FavoriteReportController::class)->name('dashboard.report.favorites');
+    Route::get('data/dashboard/report/user-rewards', \App\Http\Controllers\Admin\UserRewardReportController::class)->name('dashboard.report.user-rewards');
+    Route::get('data/dashboard/statements', [\App\Http\Controllers\Admin\StatementAccountController::class, 'index'])->name('dashboard.statements.index');
+    Route::post('data/dashboard/statements', [\App\Http\Controllers\Admin\StatementAccountController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.statements.store');
+    Route::post('data/dashboard/statements/{statement}/publish', [\App\Http\Controllers\Admin\StatementAccountController::class, 'publish'])
+        ->middleware('throttle:20,1')
+        ->name('dashboard.statements.publish');
+    Route::delete('data/dashboard/statements/{statement}', [\App\Http\Controllers\Admin\StatementAccountController::class, 'destroy'])
+        ->name('dashboard.statements.destroy');
+    Route::get('data/dashboard/statements/{statement}', [\App\Http\Controllers\Admin\StatementAccountController::class, 'show'])->name('dashboard.statements.show');
 
-      $user = User::find($loginId);
-      Auth::login($user, true);
+    // Auto-login as merchant
+    Route::get('merchant/aulogin/{id}', function ($loginId, \Illuminate\Http\Request $request, \App\Services\AdminCityScope $cityScope) {
 
-      return redirect()->route('merchant.dashboard.index');
-  });
+        $partner = \App\Partners::query()->where('user_id', $loginId)->firstOrFail();
+        $cityScope->authorizePartner($partner);
 
+        \Illuminate\Support\Facades\Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $user = \App\User::findOrFail($loginId);
+        \Illuminate\Support\Facades\Auth::login($user, true);
+
+        return redirect()->route('merchant.dashboard.index');
+    });
 });
 
-// End of the Admin Dashboard 
-// **********************************************************************
-// **********************************************************************
-// **********************************************************************
-// ******************* Merchant Dashboard *******************************
-// **********************************************************************
-// **********************************************************************
+// -------------------------------------------------------
+// MERCHANT DASHBOARD
+// -------------------------------------------------------
 
-Route::get( '/login/{social}', 'SocialLoginController@getSocialRedirect' );
-Route::get( '/login/{social}/callback', 'SocialLoginController@getSocialCallback' );
+Route::get('/login/{social}', [\App\Http\Controllers\SocialLoginController::class, 'getSocialRedirect']);
+Route::get('/login/{social}/callback', [\App\Http\Controllers\SocialLoginController::class, 'getSocialCallback']);
 
-Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
+Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.dashboard.login');
 Route::get('/merchant/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
-Route::get('/merchant/register', [\App\Http\Controllers\Merchant\DashboardController::class, 'register'])->name('merchant.register');
+Route::get('/merchant/register', [\App\Http\Controllers\MerchantApplicationController::class, 'create'])->name('merchant.register');
+Route::get('/merchant/register/thank-you', [\App\Http\Controllers\MerchantApplicationController::class, 'success'])
+    ->name('merchant.register.success');
 
-Route::get('/merchant/forgot', 'Merchant\DashboardController@forgot')->name('merchant.forgot');
-Route::get('/merchant/reset', 'Merchant\DashboardController@forgot')->name('merchant.reset');
-Route::get('/merchant/logout', 'Merchant\DashboardController@logout')->name('merchant.logout');
-Route::get('/merchant/setpassword', 'Merchant\DashboardController@setPassword')->name('merchant.setPassword');
+Route::get('/merchant/forgot', [\App\Http\Controllers\Merchant\DashboardController::class, 'forgot'])->name('merchant.forgot');
+Route::get('/merchant/reset', [\App\Http\Controllers\Merchant\DashboardController::class, 'forgot'])->name('merchant.reset');
+Route::get('/merchant/logout', [\App\Http\Controllers\Merchant\DashboardController::class, 'logout'])->name('merchant.logout');
+Route::get('/merchant/setpassword', [\App\Http\Controllers\Merchant\DashboardController::class, 'setPassword'])->name('merchant.setPassword');
 
-Route::post('/merchant/dashboard/login/submit', 'Merchant\DashboardController@validateLogin')->name('merchant.login.submit');
-Route::post('/merchant/register/submit', 'Merchant\DashboardController@storeMerchant')->name('merchant.register.submit');
-Route::post('/merchant/reset/submit', 'Merchant\DashboardController@reset')->name('merchant.reset.submit');
+Route::post('/merchant/dashboard/login/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'validateLogin'])
+    ->middleware(['throttle:10,1', 'turnstile:merchant_login'])
+    ->name('merchant.login.submit');
+Route::post('/merchant/register/submit', [\App\Http\Controllers\MerchantApplicationController::class, 'store'])
+    ->middleware(['throttle:5,1', 'turnstile:merchant_application'])
+    ->name('merchant.register.submit');
+Route::post('/merchant/reset/submit', [\App\Http\Controllers\Merchant\DashboardController::class, 'reset'])->name('merchant.reset.submit');
 
-Route::get('/merchant/reset-password/{token}', 'Merchant\DashboardController@showPasswordResetForm');
-Route::post('/merchant/reset-password/{token}', 'Merchant\DashboardController@resetPassword');
+Route::get('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\DashboardController::class, 'showPasswordResetForm']);
+Route::post('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\DashboardController::class, 'resetPassword']);
 
-Route::group(['middleware' => 'merchant'], function() {
+Route::middleware('merchant')->group(function () {
 
-	Route::get('merchant/verify-status', 'Merchant\DashboardController@verification')->name('merchant.status');
-	Route::get('merchant/dashboard', 'Merchant\DashboardController@index')->name('merchant.dashboard.index');
-	Route::get('merchant/products', 'Merchant\ItemsController@index')->name('merchant.dashboard.product');
-	Route::get('merchant/product/{product}/edit', 'Merchant\ItemsController@edit')->name('merchant.dashboard.product.edit');
-	Route::get('merchant/products-addons', 'Merchant\ItemsController@productaddons')->name('merchant.dashboard.product-addons');
-	// Order 
-	Route::get('merchant/orders', 'Merchant\OrderController@index')->name('merchant.dashboard.orders');
-	Route::get('merchant/previous-orders', 'Merchant\OrderController@previous')->name('merchant.dashboard.previous-order');
-	// Settings 
-	Route::get('merchant/location', 'Merchant\LocationController@index')->name('merchant.dashboard.location');
-	Route::get('merchant/category', 'Merchant\CategoryController@index')->name('merchant.dashboard.category');
-	Route::get('merchant/settings', 'Merchant\SettingsController@index')->name('merchant.dashboard.settings');
-	Route::get('merchant/voucher', 'Merchant\VoucherController@index')->name('merchant.dashboard.voucher');
-	// Report
-	Route::get('merchant/report-sales-for-today', 'Merchant\ReportController@today')->name('merchant.dashboard.report.salestoday');
-	Route::get('merchant/report-sales', 'Merchant\ReportController@salesReport')->name('merchant.dashboard.report.report');
-	Route::get('merchant/soa', 'Merchant\ReportController@soa')->name('merchant.dashboard.report.soa');
+    Route::get('merchant/verify-status', [\App\Http\Controllers\Merchant\DashboardController::class, 'verification'])->name('merchant.status');
+    Route::get('merchant/application', [\App\Http\Controllers\RestaurantApplicationController::class, 'showMerchant'])->name('merchant.application.show');
+    Route::put('merchant/application', [\App\Http\Controllers\RestaurantApplicationController::class, 'updateMerchant'])->name('merchant.application.update');
+    Route::post('merchant/application/documents', [\App\Http\Controllers\RestaurantApplicationController::class, 'uploadMerchant'])->name('merchant.application.documents.store');
+    Route::get('merchant/application/documents/{document}', [\App\Http\Controllers\RestaurantApplicationController::class, 'documentMerchant'])->name('merchant.application.documents.show');
+    Route::get('merchant/dashboard', [\App\Http\Controllers\Merchant\DashboardController::class, 'index'])->name('merchant.dashboard.index');
+    Route::get('merchant/help', [\App\Http\Controllers\Merchant\DashboardController::class, 'help'])->name('merchant.help');
 
+    Route::get('merchant/products', [\App\Http\Controllers\Merchant\ItemsController::class, 'index'])->name('merchant.dashboard.product');
+    Route::get('merchant/product/{product}/edit', [\App\Http\Controllers\Merchant\ItemsController::class, 'edit'])->name('merchant.dashboard.product.edit');
+
+    Route::get('merchant/products-addons', [\App\Http\Controllers\Merchant\ItemsController::class, 'productaddons'])->name('merchant.dashboard.product-addons');
+
+    Route::get('merchant/orders', [\App\Http\Controllers\Merchant\OrderController::class, 'index'])->name('merchant.dashboard.orders');
+    Route::get(
+        'merchant/orders/deliveries/{delivery}/proofs/{proof}',
+        [\App\Http\Controllers\Api\Merchant\OrderController::class, 'viewDeliveryProof']
+    )->name('merchant.orders.delivery-proof');
+    Route::get('merchant/orders/{order}', [\App\Http\Controllers\OrderDetailsController::class, 'merchant'])
+        ->whereNumber('order')
+        ->name('merchant.orders.show');
+    Route::get('merchant/previous-orders', [\App\Http\Controllers\Merchant\OrderController::class, 'previous'])->name('merchant.dashboard.previous-order');
+
+    // Settings
+    Route::get('merchant/location', [\App\Http\Controllers\Merchant\LocationController::class, 'index'])->name('merchant.dashboard.location');
+    Route::get('merchant/tables', [\App\Http\Controllers\Merchant\LocationController::class, 'tables'])->name('merchant.dashboard.tables');
+    Route::get('merchant/users', [\App\Http\Controllers\Merchant\UserController::class, 'index'])->name('merchant.dashboard.users.index');
+    Route::post('merchant/users', [\App\Http\Controllers\Merchant\UserController::class, 'store'])->name('merchant.dashboard.users.store');
+    Route::patch('merchant/users/{merchantUser}', [\App\Http\Controllers\Merchant\UserController::class, 'update'])->name('merchant.dashboard.users.update');
+    Route::get('merchant/category', [\App\Http\Controllers\Merchant\CategoryController::class, 'index'])->name('merchant.dashboard.category');
+    Route::get('merchant/settings', [\App\Http\Controllers\Merchant\SettingsController::class, 'index'])->name('merchant.dashboard.settings');
+    Route::get('merchant/voucher', [\App\Http\Controllers\Merchant\VoucherController::class, 'index'])->name('merchant.dashboard.voucher');
+    Route::get('merchant/promotions/coupons/create', [\App\Http\Controllers\Merchant\CouponController::class, 'create'])->name('merchant.dashboard.coupons.create');
+    Route::post('merchant/promotions/coupons', [\App\Http\Controllers\Merchant\CouponController::class, 'store'])->name('merchant.dashboard.coupons.store');
+    Route::get('merchant/promotions/coupons/{coupon}/edit', [\App\Http\Controllers\Merchant\CouponController::class, 'edit'])->name('merchant.dashboard.coupons.edit');
+    Route::put('merchant/promotions/coupons/{coupon}', [\App\Http\Controllers\Merchant\CouponController::class, 'update'])->name('merchant.dashboard.coupons.update');
+    Route::delete('merchant/promotions/coupons/{coupon}', [\App\Http\Controllers\Merchant\CouponController::class, 'destroy'])->name('merchant.dashboard.coupons.destroy');
+    Route::resource('merchant/promotions', \App\Http\Controllers\Merchant\PartnerPromotionController::class)
+        ->except('show')
+        ->names('merchant.dashboard.promotions');
+
+    // Reports
+    Route::get('merchant/report-sales-for-today', [\App\Http\Controllers\Merchant\ReportController::class, 'today'])->name('merchant.dashboard.report.salestoday');
+    Route::get('merchant/report-sales', [\App\Http\Controllers\Merchant\ReportController::class, 'salesReport'])->name('merchant.dashboard.report.report');
+    Route::get('merchant/soa', [\App\Http\Controllers\Merchant\ReportController::class, 'soa'])->name('merchant.dashboard.report.soa');
+    Route::get('merchant/soa/{statement}', [\App\Http\Controllers\Merchant\ReportController::class, 'statement'])->name('merchant.dashboard.report.soa.show');
 });
 
-
-
-
-require __DIR__.'/auth.php';
-
-
-
-
+// Support data is always authenticated; admin routes also enforce the existing admin role.
+Route::middleware('auth')->prefix('support')->name('support.')->group(function () {
+    $controller = \App\Http\Controllers\Support\TicketController::class;
+    Route::get('options', [$controller, 'options'])->name('options');
+    Route::get('orders', [$controller, 'orders'])->name('orders');
+    Route::get('alerts', [$controller, 'alerts'])->name('alerts');
+    Route::get('tickets', [$controller, 'index'])->name('index');
+    Route::post('tickets', [$controller, 'store'])->middleware('throttle:10,1')->name('store');
+    Route::get('tickets/{ticket}', [$controller, 'show'])->name('show');
+    Route::post('tickets/{ticket}/replies', [$controller, 'reply'])->middleware('throttle:20,1')->name('reply');
+    Route::get('tickets/{ticket}/attachments/{attachment}', [$controller, 'attachment'])->name('attachment');
+});
+Route::middleware('auth')->prefix('data/dashboard/support')->name('support.admin.')->group(function () {
+    $controller = \App\Http\Controllers\Support\TicketController::class;
+    Route::get('/', [$controller, 'page'])->name('index');
+    Route::get('options', [$controller, 'options'])->name('options');
+    Route::get('alerts', [$controller, 'alerts'])->name('alerts');
+    Route::get('tickets', [$controller, 'index'])->name('tickets');
+    Route::get('tickets/{ticket}', [$controller, 'show'])->name('show');
+    Route::patch('tickets/{ticket}', [$controller, 'update'])->name('update');
+    Route::post('tickets/{ticket}/replies', [$controller, 'reply'])->middleware('throttle:30,1')->name('reply');
+    Route::get('tickets/{ticket}/attachments/{attachment}', [$controller, 'attachment'])->name('attachment');
+});

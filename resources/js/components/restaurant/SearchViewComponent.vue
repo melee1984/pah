@@ -88,7 +88,7 @@
         },
         props: ['restaurants'],
         mounted() {
-            Event.$emit('CheckUserLocation');
+            window.AppEvents.$emit('CheckUserLocation');
         },
         created() {
             

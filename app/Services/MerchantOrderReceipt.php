@@ -1,0 +1,201 @@
+<?php
+
+namespace App\Services;
+
+use App\Model\Cart;
+use App\Model\Orders\Orders;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+
+class MerchantOrderReceipt
+{
+    private const PAPER_WIDTH = 32;
+
+    public function printJob(Orders $order): array
+    {
+        $order->loadMissing([
+            'cart.partner',
+            'cart.payment',
+            'cart.diningTable',
+            'cart.details.item',
+        ]);
+
+        $cart = $order->cart;
+        $amounts = $cart->cartItemAmounts();
+        $orderNumber = $cart->order_no ?: $order->id;
+        $lines = [];
+
+        $lines[] = str_repeat('*', self::PAPER_WIDTH);
+        $lines[] = $this->center('PahatudFood');
+        $lines[] = str_repeat('*', self::PAPER_WIDTH);
+        $lines[] = $this->center($cart->partner?->restaurant_name ?: 'PAHATUD MERCHANT');
+        $lines[] = $this->center('ORDER #'.$orderNumber);
+        $lines[] = $this->center($this->fulfillmentLabel($cart));
+
+        if (in_array($cart->fulfillment_type, [Cart::FULFILLMENT_PICKUP, Cart::FULFILLMENT_DINE_IN], true)
+            && filled($cart->fullname)) {
+            $lines[] = $this->center('Order For:');
+            $lines[] = $this->center((string) $cart->fullname);
+        }
+
+        if ($cart->fulfillment_type === Cart::FULFILLMENT_DINE_IN && $cart->dining_table_id) {
+            $tableNumber = $cart->diningTable?->name ?: $cart->dining_table_id;
+            $lines[] = $this->center('Table No: '.$tableNumber);
+        }
+
+        if ($cart->fulfillment_type === Cart::FULFILLMENT_PICKUP) {
+            $lines[] = $this->center('Be Ready by:');
+            $lines[] = $this->center($this->pickupSchedule($cart));
+        }
+
+        $lines[] = str_repeat('-', self::PAPER_WIDTH);
+        $lines[] = $this->columns('QTY ITEM', 'AMOUNT');
+        $lines[] = str_repeat('-', self::PAPER_WIDTH);
+
+        foreach ($cart->details as $detail) {
+            $quantity = max(1, (int) $detail->qty);
+            $name = $detail->item?->title ?: 'Item #'.$detail->item_id;
+            $unitPrice = (float) $detail->price + (float) $detail->variance_total;
+            $lines[] = $this->columns(
+                $quantity.'x '.$name,
+                $this->money($quantity * $unitPrice),
+            );
+
+            foreach ($this->variantTitles($detail->variance_content) as $variantTitle) {
+                $lines[] = $this->wrapLine('  + '.$variantTitle);
+            }
+
+            if (filled($detail->instruction)) {
+                $lines[] = $this->wrapLine('  Note: '.$detail->instruction);
+            }
+        }
+
+        $lines[] = str_repeat('-', self::PAPER_WIDTH);
+        $lines[] = $this->columns('Subtotal', $this->money($amounts['sub_total']));
+
+        if ($amounts['delivery_fee'] > 0) {
+            $lines[] = $this->columns('Delivery', $this->money($amounts['delivery_fee']));
+        }
+
+        $lines[] = $this->columns('Convenience fee', $this->money($amounts['convenience_fee']));
+        $lines[] = $this->columns('VAT', $this->money($amounts['vat_amount']));
+        $lines[] = $this->columns('Discount', '-'.$this->money($amounts['discount']));
+
+        $lines[] = $this->columns('TOTAL', $this->money($amounts['total']));
+        $lines[] = str_repeat('-', self::PAPER_WIDTH);
+
+        if (filled($cart->payment?->title)) {
+            $lines[] = $this->wrapLine('Payment: '.$cart->payment->title);
+        }
+
+        $acceptedAt = $order->store_accepted_at
+            ? Carbon::parse($order->store_accepted_at)
+            : now();
+        $lines[] = $this->wrapLine('Accepted: '.$acceptedAt->format('M d, Y h:i A'));
+        $lines[] = '';
+        $lines[] = $this->center('Thank you!');
+
+        return [
+            'id' => 'order-'.$order->id.'-accept',
+            'format' => 'plain_text',
+            'content' => implode("\n", $lines)."\n",
+            'copies' => 1,
+            'feed_lines' => 3,
+        ];
+    }
+
+    private function fulfillmentLabel(Cart $cart): string
+    {
+        return match ($cart->fulfillment_type) {
+            Cart::FULFILLMENT_PICKUP => 'PICKUP',
+            Cart::FULFILLMENT_DINE_IN => 'DINE IN',
+            default => 'DELIVERY',
+        };
+    }
+
+    private function money(float|int|string $amount): string
+    {
+        return 'PHP '.number_format((float) $amount, 2, '.', ',');
+    }
+
+    private function pickupSchedule(Cart $cart): string
+    {
+        $date = filled($cart->delivery_date)
+            ? $this->formatScheduleValue((string) $cart->delivery_date, 'M d, Y')
+            : null;
+        $time = filled($cart->delivery_time)
+            ? $this->formatScheduleValue((string) $cart->delivery_time, 'h:i A')
+            : null;
+
+        return collect([$date, $time])
+            ->filter()
+            ->implode(' at ') ?: 'Time not specified';
+    }
+
+    private function formatScheduleValue(string $value, string $format): string
+    {
+        if (strtoupper(trim($value)) === 'ASAP') {
+            return 'ASAP';
+        }
+
+        try {
+            return Carbon::parse($value)->format($format);
+        } catch (\Throwable) {
+            return trim($value);
+        }
+    }
+
+    private function center(string $text): string
+    {
+        $text = Str::limit(trim($text), self::PAPER_WIDTH, '');
+        $padding = max(0, intdiv(self::PAPER_WIDTH - mb_strlen($text), 2));
+
+        return str_repeat(' ', $padding).$text;
+    }
+
+    private function columns(string $left, string $right): string
+    {
+        $right = trim($right);
+        $leftWidth = max(1, self::PAPER_WIDTH - mb_strlen($right) - 1);
+        $left = Str::limit(trim($left), $leftWidth, '');
+        $spaces = max(1, self::PAPER_WIDTH - mb_strlen($left) - mb_strlen($right));
+
+        return $left.str_repeat(' ', $spaces).$right;
+    }
+
+    private function wrapLine(string $text): string
+    {
+        return collect(explode("\n", wordwrap(trim($text), self::PAPER_WIDTH, "\n", true)))
+            ->map(fn (string $line) => rtrim($line))
+            ->implode("\n");
+    }
+
+    private function variantTitles(mixed $content): array
+    {
+        if (is_string($content)) {
+            if (trim($content) === '') {
+                return [];
+            }
+
+            try {
+                $content = unserialize($content, ['allowed_classes' => false]);
+            } catch (\Throwable) {
+                return [];
+            }
+        }
+
+        if (! is_iterable($content)) {
+            return [];
+        }
+
+        return collect($content)
+            ->map(function (mixed $variant): ?string {
+                $title = is_string($variant) ? $variant : data_get($variant, 'title');
+
+                return is_string($title) && filled(trim($title)) ? trim($title) : null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+}

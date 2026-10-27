@@ -58,7 +58,6 @@ class Products extends Model
 
         if ($product->img !="") {
             if (!$size) {
-                // $product->img_large = asset('uploads/'.$product->id."/".$product->img) ;    
                 $product->imgname = URL::to('imager?name='.$product->id."/".$product->img);
             }
             else {
@@ -71,6 +70,16 @@ class Products extends Model
         return $product;
         
     }
+
+    public function getProductImage()
+    {
+        $image = !empty($this->img)
+            ? $this->id . '/' . $this->img
+            : 'no-img.png';
+
+        return URL::to('imager?name=' . $image);
+    }
+
     public static function amountConvertion($product) {
 
         $product->price = str_replace(",", "", $product->price);
@@ -86,20 +95,26 @@ class Products extends Model
     }
 
     public function getPriceDisplay($saveDb = false) {
+        $basePrice = (float) ($this->getRawOriginal('price') ?? $this->price);
+        $baseMarkdownPrice = $this->getRawOriginal('markdown_price');
+
+        if ($baseMarkdownPrice === null && ! $this->exists) {
+            $baseMarkdownPrice = $this->markdown_price;
+        }
 
         if ($this->user->merchant->addup) {
-            $this->price = number_format((float)$this->price + $this->price_comm,2);        
+            $this->price = number_format($basePrice + (float) $this->price_comm, 2);
         }
         else {
-            $this->price = number_format((float)$this->price ,2);
+            $this->price = number_format($basePrice, 2);
         }
         
-        if ($this->markdown_price!="") {
+        if ($baseMarkdownPrice !== null && $baseMarkdownPrice !== '') {
              if ($this->user->merchant->addup) {
-                $this->markdown_price = number_format((float)$this->markdown_price + (float)$this->markdown_price_comm,2);    
+                $this->markdown_price = number_format((float) $baseMarkdownPrice + (float) $this->markdown_price_comm, 2);
             }
             else {
-                $this->markdown_price = number_format((float)$this->markdown_price ,2);
+                $this->markdown_price = number_format((float) $baseMarkdownPrice, 2);
             }
         }
         
@@ -119,6 +134,8 @@ class Products extends Model
         else if ($this->user->merchant->pahatud_discount!="") {
             $this->markdown_price = number_format((float)$this->price - $this->user->merchant->pahatud_discount,2);   
         }
+
+        return $this->price;
 
     }
 

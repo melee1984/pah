@@ -1,83 +1,88 @@
-<ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-          <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
-          <li class="nav-item has-treeview menu-open">
-            <a href="{{ URL::to('data/dashboard') }}" class="nav-link {{ Request::is('data/dashboard') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>Dashboard</p>
-            </a>
-          </li>
-          
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/orders') }}" class="nav-link {{ Request::is('data/dashboard/orders') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th"></i>
-              <p>
-                Orders
-<!--                 <span class="right badge badge-danger">New</span>
- -->              </p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/bookings') }}" class="nav-link {{ Request::is('data/dashboard/bookings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th"></i>
-              <p>Bookings</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/users') }}" class="nav-link {{ Request::is('data/dashboard/users') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th"></i>
-              <p>
-                Member
-<!--                 <span class="right badge badge-danger">New</span>
- -->              </p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/merchant') }}" class="nav-link {{ Request::is('data/dashboard/merchant') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th"></i>
-              <p>
-                Merchant Partner</p>
-            </a>
-          </li>
+<ul class="nav nav-pills nav-sidebar flex-column nav-flat" data-widget="treeview" role="menu" data-accordion="false">
+    <li class="nav-item"><a href="{{ route('support.admin.index') }}" class="nav-link {{ Request::is('data/dashboard/support*') ? 'active' : '' }}"><i class="nav-icon fas fa-headset"></i><p>Support Tickets <support-badge></support-badge></p></a></li>
+    <li class="nav-header">Overview</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.data') }}" class="nav-link {{ Request::is('data/dashboard') ? 'active' : '' }}"><i class="nav-icon fas fa-chart-pie"></i><p>Dashboard</p></a>
+    </li>
 
-           <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/settings') }}" class="nav-link {{ Request::is('data/dashboard/settings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-th"></i>
-              <p>Settings </p>
-            </a>
-          </li>
+    <li class="nav-header">Marketplace</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.orders') }}" class="nav-link {{ Request::is('data/dashboard/orders') ? 'active' : '' }}"><i class="nav-icon fas fa-shopping-bag"></i><p>Orders</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.bookings') }}" class="nav-link {{ Request::is('data/dashboard/bookings') ? 'active' : '' }}"><i class="nav-icon fas fa-route"></i><p>Bookings</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.merchant') }}" class="nav-link {{ Request::is('data/dashboard/merchant') ? 'active' : '' }}"><i class="nav-icon fas fa-store"></i><p>Merchant partners</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.merchant-applications.index') }}" class="nav-link {{ Request::is('data/dashboard/merchant-applications*') ? 'active' : '' }}"><i class="nav-icon fas fa-store-alt"></i><p>Merchant applications</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.promotions.index') }}" class="nav-link {{ Request::is('data/dashboard/promotions*') ? 'active' : '' }}"><i class="nav-icon fas fa-bullhorn"></i><p>Promotions</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.coupons.index') }}" class="nav-link {{ Request::is('data/dashboard/coupons*') ? 'active' : '' }}"><i class="nav-icon fas fa-ticket-alt"></i><p>Discount coupons</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.push-notifications.index') }}" class="nav-link {{ Request::is('data/dashboard/push-notifications*') ? 'active' : '' }}"><i class="nav-icon fas fa-bell"></i><p>Push notifications</p></a>
+    </li>
 
-          <li class="nav-header">RIDERS</li>
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="fas fa-circle nav-icon"></i>
-              <p>Remittances</p>
-            </a>
-          </li>
+    <li class="nav-header">People</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.agents.index') }}" class="nav-link {{ Request::is('data/dashboard/agents*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-tie"></i><p>Agents</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.user') }}" class="nav-link {{ Request::is('data/dashboard/users') ? 'active' : '' }}"><i class="nav-icon fas fa-users"></i><p>Members</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.rider') }}" class="nav-link {{ Request::is('data/dashboard/riders') ? 'active' : '' }}"><i class="nav-icon fas fa-motorcycle"></i><p>Riders</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.riders.available') }}" class="nav-link {{ Request::is('data/dashboard/available-riders') ? 'active' : '' }}"><i class="nav-icon fas fa-broadcast-tower"></i><p>Available riders</p></a>
+    </li>
 
-          <li class="nav-header">REPORTS</li>
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/report/orders') }}" class="nav-link {{ Request::is('data/dashboard/report/orders') ? 'active' : '' }}" >
-              <i class="fas fa-circle nav-icon"></i>
-              <p>Orders</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/report/bookings') }}" class="nav-link {{ Request::is('data/dashboard/report/bookings') ? 'active' : '' }}" >
-              <i class="fas fa-circle nav-icon"></i>
-              <p>Bookings</p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ URL::to('data/dashboard/report/riders') }}" class="nav-link {{ Request::is('data/dashboard/report/riders') ? 'active' : '' }}">
-              <i class="fas fa-circle nav-icon"></i>
-              <p>Riders</p>
-            </a>
-          </li>
-           <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon far fa-circle text-info"></i>
-              <p>Logout</p>
-            </a>
-          </li>
-        </ul>
+    <li class="nav-header">Reporting</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.orders') }}" class="nav-link {{ Request::is('data/dashboard/report/orders') ? 'active' : '' }}"><i class="nav-icon fas fa-file-invoice"></i><p>Order reports</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.bookings') }}" class="nav-link {{ Request::is('data/dashboard/report/bookings') ? 'active' : '' }}"><i class="nav-icon fas fa-clipboard-list"></i><p>Booking reports</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.riders') }}" class="nav-link {{ Request::is('data/dashboard/report/riders') ? 'active' : '' }}"><i class="nav-icon fas fa-coins"></i><p>Rider commissions</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.agents') }}" class="nav-link {{ Request::is('data/dashboard/report/agent') ? 'active' : '' }}"><i class="nav-icon fas fa-hand-holding-usd"></i><p>Agent commissions</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.favorites') }}" class="nav-link {{ Request::is('data/dashboard/report/favorites') ? 'active' : '' }}"><i class="nav-icon fas fa-heart"></i><p>Merchant favorites</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.report.user-rewards') }}" class="nav-link {{ Request::is('data/dashboard/report/user-rewards') ? 'active' : '' }}"><i class="nav-icon fas fa-star"></i><p>User reward points</p></a>
+    </li>
+
+    <li class="nav-header">Billing</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.statements.index') }}" class="nav-link {{ Request::is('data/dashboard/statements*') ? 'active' : '' }}"><i class="nav-icon fas fa-file-invoice-dollar"></i><p>Statements of account</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.agent-statements.index') }}" class="nav-link {{ Request::is('data/dashboard/agent-statements*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Agent statements</p></a>
+    </li>
+
+    <li class="nav-header">System</li>
+    @if (request()->attributes->get('can_manage_managers', false))
+    <li class="nav-item">
+        <a href="{{ route('dashboard.cities.index') }}" class="nav-link {{ Request::is('data/dashboard/cities*') ? 'active' : '' }}"><i class="nav-icon fas fa-city"></i><p>Cities</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.managers.index') }}" class="nav-link {{ Request::is('data/dashboard/managers*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-shield"></i><p>Manager access</p></a>
+    </li>
+    @endif
+    <li class="nav-item">
+        <a href="{{ route('dashboard.settings') }}" class="nav-link {{ Request::is('data/dashboard/settings') ? 'active' : '' }}"><i class="nav-icon fas fa-cog"></i><p>Settings</p></a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.logout') }}" class="nav-link"><i class="nav-icon fas fa-sign-out-alt"></i><p>Logout</p></a>
+    </li>
+</ul>

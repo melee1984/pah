@@ -9,16 +9,21 @@ use App\User;
 use Auth;
 use Session;
 use Validator;
+use Illuminate\Support\Facades\DB;
 use App\Model\User\UserAddress;
 
 use App\Model\Cart;
 use App\Coupon;
+use App\PartnerLocationTable;
+use App\PartnerLocationCheckoutOption;
+use App\Support\DeliveryZone;
+use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
-    public function __construct(){
-		$this->middleware('auth');
-	}
+    public function __construct(private DeliveryZone $deliveryZone)
+    {
+    }
 	/**
 	 * Checkout process 
 	 * @return [type] [description]
@@ -26,7 +31,6 @@ class CheckoutController extends Controller
     public function checkout() {
     	die();
     }
-
 
     public function deleteAddress(Request $request) {
 
@@ -51,6 +55,178 @@ class CheckoutController extends Controller
 		return response()->json($data, 200);
 
     }
+
+	public function updateAddressSelected(Request $request)
+	{
+		// Validation
+		$validator = Validator::make($request->all(), [
+			'address' => 'required',
+		]);
+
+		if ($validator->fails()) {
+			return response()->json([
+				'status'  => 0,
+				'message' => "Missing required information.",
+			], 200);
+		}
+
+		// Fetch user's address
+		$userAddress = UserAddress::where('user_id', Auth::id())
+			->find($request->address);
+
+		if (!$userAddress) {
+			return response()->json([
+				'status'  => 0,
+				'message' => "Address not found.",
+			], 200);
+		}
+
+		// Fetch cart
+		$cart = Cart::whereSessionId(Session::getId())
+            ->whereUserId(Auth::id())
+            ->first();
+
+		if (!$cart) {
+			return response()->json([
+				'status'  => 0,
+				'message' => "Cart not found.",
+			], 200);
+		}
+
+        if ($cart->requiresDelivery()) {
+            $location = $cart->partnerlocation;
+            if (! $location
+                || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
+                || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Valid merchant and delivery-address map pins are required before selecting this address.',
+                ], 422);
+            }
+
+            $deliveryCheck = $this->deliveryZone->check(
+                (float) $location->latitude,
+                (float) $location->longtitude,
+                (float) $userAddress->lat,
+                (float) $userAddress->long,
+            );
+
+            if (! $deliveryCheck['allowed']) {
+                return response()->json($this->deliveryZone->failureResponse($deliveryCheck), 422);
+            }
+        }
+
+		// Prepare data for cart address
+		$data = $userAddress->only([
+			'address_1',
+			'address_2',
+			'zip_code',
+			'mobile',
+			'landmark',
+			'country_id',
+			'province_id',
+			'city_id',
+			'barangay_id',
+			'lat',
+			'long'
+		]);
+
+		$data['user_id'] = Auth::id();
+
+		// Update or create cart address
+		$address = $cart->address()->updateOrCreate(
+			['cart_id' => $cart->id],
+			$data
+		);
+
+		$cart->address_id = $userAddress->id;
+		$cart->save();
+
+		// Build response
+		return response()->json([
+			'status'    => $address ? 1 : 0,
+			'message'   => $address
+				? "Successfully updated record"
+				: "We've encountered an issue during the process. Please refresh the page and try again.",
+			'addresses' => $address ? $userAddress : null,
+		], 200);
+	}
+
+    public function updateFulfillment(Request $request)
+    {
+        $validated = $request->validate([
+            'fulfillment_type' => ['required', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'dining_table_id' => ['nullable', 'integer'],
+        ]);
+
+        $cart = Cart::query()
+            ->whereSessionId(Session::getId())
+            ->whereUserId(Auth::id())
+            ->first();
+
+        if (! $cart) {
+            return response()->json(['status' => 0, 'message' => 'Cart not found.'], 404);
+        }
+
+        if (! $cart->partner_location_address_id
+            || ! PartnerLocationCheckoutOption::enabledForLocation(
+                (int) $cart->partner_location_address_id,
+                $validated['fulfillment_type']
+            )) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'This checkout option is not available at the selected merchant location.',
+            ], 422);
+        }
+
+        $table = null;
+        if ($validated['fulfillment_type'] === Cart::FULFILLMENT_DINE_IN) {
+            if (! isset($validated['dining_table_id'])) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Please select an available table for dine-in.',
+                    'errors' => ['dining_table_id' => ['A dining table is required for dine-in.']],
+                ], 422);
+            }
+
+            $table = PartnerLocationTable::query()
+                ->whereKey($validated['dining_table_id'])
+                ->where('partner_location_id', $cart->partner_location_address_id)
+                ->where('active', true)
+                ->where('is_available', true)
+                ->first();
+
+            if (! $table) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected table is not available at this merchant location.',
+                ], 422);
+            }
+        }
+
+        $cart->fulfillment_type = $validated['fulfillment_type'];
+        $cart->dining_table_id = $table?->id;
+        $cart->save();
+
+        if ($cart->requiresDelivery()) {
+            $cart->deliveryRate($cart->partner_location_address_id);
+        } else {
+            $cart->delivery_fee = 0;
+            $cart->distance_rate = 0;
+            $cart->duration = null;
+            $cart->origin = null;
+            $cart->destination = null;
+            $cart->save();
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Order option updated.',
+            'cart' => $cart->fresh(['diningTable']),
+            'summary' => $cart->fresh()->cartItemSummary(),
+        ]);
+    }
+
     /**
      * [updateAddress description]
      * @param  Request $request [description]
@@ -76,20 +252,20 @@ class CheckoutController extends Controller
 	    } 
 	    else {
 
-	    	$userAddress->address_1 = $request->input('address');
-	    	$userAddress->landmark = $request->input('landmark');
-	    	$userAddress->title = $request->input('title');
-	    	$userAddress->lat = $request->input('latitude');
-	    	$userAddress->long = $request->input('longtitude');
+	    	$userAddress->address_1 = $request->address_1;
+	    	$userAddress->landmark = $request->landmark;
+	    	$userAddress->title = $request->title;
+	    	$userAddress->lat = $request->latitude;	
+	    	$userAddress->long = $request->longtitude;
 
+			$cart = Cart::whereSessionId(Session::getId())->first();
+			
 	    	$status = $userAddress->save();
 
 	    	if ($status) {
-
 				$data['message'] = "Successfully updated record";
 				$data['status'] = 1;
 				$data['addresses'] = Auth::User()->addresses;
-
 			}
 			else {
 				$data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
@@ -132,7 +308,6 @@ class CheckoutController extends Controller
 	    	$session_id = Session::getId();
 			$cart = Cart::whereSessionId($session_id)->first();
 			
-
 			$userAddress = UserAddress::updateOrCreate(
 			    ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => Auth::User()->id],
 			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id, 'status' => ' 1']);
@@ -144,10 +319,8 @@ class CheckoutController extends Controller
 				$cart->user_long = $userAddress->long;
 				$cart->user_lat = $userAddress->lat;
 				$cart->save();
-
 				// reloadingrate after wards
 				$cart->deliveryRate();
-
 			}
 
 			$data['message'] = "Successfully insert record";
@@ -211,30 +384,102 @@ class CheckoutController extends Controller
     }
 
     public function couponCode(Request $request) {
+		$request->validate(['coupon' => ['required', 'string', 'max:255']]);
+		$cart = Cart::query()->whereSessionId(Session::getId())->first();
 
-    	$data = array();
-    	$data['status'] = 0;
+		if (! $cart) {
+			return response()->json(['status' => 0, 'message' => 'Cart not found.'], 200);
+		}
 
-    	$coupon = Coupon::whereActive(1)
-    				->whereCoupon($request->input('coupon'))
-    				->first();
+		$code = strtoupper(trim((string) $request->input('coupon')));
+		$coupon = Coupon::query()
+			->available($cart->partner_id ? (int) $cart->partner_id : null)
+			->whereRaw('UPPER(coupon) = ?', [$code])
+			->first();
 
-    	if ($coupon) {
-    		
-    		$session_id = Session::getId();
-			$cart = Cart::whereSessionId($session_id)->first();
+		if (! $coupon) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'The coupon code is invalid, inactive, expired, or unavailable for this merchant.',
+			], 200);
+		}
 
-			$cart->discount_amount = $coupon->discount_value;
-			$cart->discount_code = $coupon->coupon;
-			$cart->save();
-			$data['status'] = 1;
-    	}
-    	else {
-    		$data['message'] = "The coupon code that you entered does not exist or might be expired.";
-    	}
+		if ($coupon->hasReachedUsageLimit()) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'This coupon has reached its usage limit.',
+			], 200);
+		}
 
-		return response()->json($data, 200);
+		$subtotal = $this->discountableSubtotal($cart);
+		if ($coupon->condition !== null && $subtotal < (float) $coupon->condition) {
+			return response()->json([
+				'status' => 0,
+				'message' => 'This coupon requires a minimum order of ₱'.number_format((float) $coupon->condition, 2).'.',
+			], 200);
+		}
+
+		$discount = $coupon->discountFor($subtotal);
+		$cart->discount_amount = $discount;
+		$cart->discount_code = $coupon->coupon;
+		$cart->save();
+
+		return response()->json([
+			'status' => 1,
+			'message' => 'Coupon applied successfully.',
+			'coupon' => $this->couponPayload($coupon),
+			'discount_amount' => $discount,
+			'cart_summary' => $this->checkoutSummary($cart->fresh()),
+		], 200);
     	
     }
+
+	public function availableCoupons(Request $request)
+	{
+		$cart = Cart::query()->whereSessionId(Session::getId())->first();
+		$partnerId = $cart?->partner_id ?: $request->integer('partner_id') ?: null;
+
+		$coupons = Coupon::query()
+			->available($partnerId ? (int) $partnerId : null)
+			->orderBy('valid_until')
+			->get()
+			->reject(fn (Coupon $coupon) => $coupon->hasReachedUsageLimit())
+			->map(fn (Coupon $coupon) => $this->couponPayload($coupon))
+			->values();
+
+		return response()->json(['data' => $coupons]);
+	}
+
+	private function discountableSubtotal(Cart $cart): float
+	{
+		$amounts = $cart->cartItemAmounts();
+		$itemDiscount = (float) DB::table('cart_details')
+			->where('cart_id', $cart->id)
+			->get()
+			->sum(fn ($item) => (int) $item->qty * (float) $item->discount_amount);
+
+		return round(max(0, $amounts['sub_total'] - $amounts['fulfillment_discount'] - $itemDiscount), 2);
+	}
+
+	private function checkoutSummary(Cart $cart): array
+	{
+		return $cart->cartItemSummary();
+	}
+
+	private function couponPayload(Coupon $coupon): array
+	{
+		return [
+			'id' => $coupon->id,
+			'code' => $coupon->coupon,
+			'partner_id' => $coupon->partner_id,
+			'scope' => $coupon->partner_id ? 'partner' : 'pahatud',
+			'discount_value' => $coupon->discount_value !== null ? (float) $coupon->discount_value : null,
+			'discount_percentage' => $coupon->discount_percentage !== null ? (float) $coupon->discount_percentage : null,
+			'minimum_order' => $coupon->condition !== null ? (float) $coupon->condition : null,
+			'valid_from' => $coupon->valid_from?->toIso8601String(),
+			'valid_until' => ($coupon->valid_until ?? $coupon->valid_at)?->toIso8601String(),
+			'limit' => $coupon->limit,
+		];
+	}
 
 }

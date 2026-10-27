@@ -1,11 +1,5 @@
 <tr>
-	<td class="header">
-	<a href="{{ $url }}" style="display: inline-block;">
-	@if (trim($slot) === 'Laravel')
-		<img src="https://laravel.com/img/notification-logo.png" class="logo" alt="Laravel Logo">
-	@else
-		<img src="{{ asset('images/logo-medium.png') }}">
-	@endif
-	</a>
-	</td>
+<td class="header">
+<a href="{{ $url }}" aria-label="Visit Pahatud"><img src="cid:pahatud-logo@pahatud" class="logo" width="48" height="48" alt="Pahatud logo"></a>
+</td>
 </tr>

@@ -2,13 +2,23 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Agent;
+use App\AgentCommission;
 use App\Http\Controllers\Controller;
+use App\LibraryStatus;
+use App\Model\Orders\Orders;
+use App\Partners;
+use App\Services\AdminCityScope;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use User;
 
 use Auth;
 class DashboardController extends Controller
 {	
+    public function __construct(private readonly AdminCityScope $cityScope) {}
+
 	/**
      * Login Merchant Account
      * @return view 
@@ -59,9 +69,203 @@ class DashboardController extends Controller
      * Index Dashboard Page 
      * @return [type] [description]
      */
-    public function index() 
+    public function index()
     {
-    	return view('dashboard.pages.main');
+        $agentQuery = fn () => $this->cityScope->agents(Agent::query());
+        $agentCommissionQuery = AgentCommission::query()->earned();
+        if ($this->cityScope->restricted()) {
+            $agentCommissionQuery->whereHas('agent', fn ($query) => $this->cityScope->agents($query));
+        }
+        $agentMetrics = [
+            'total' => $agentQuery()->count(),
+            'active' => $agentQuery()->where('active', true)->count(),
+            'setup_pending' => $agentQuery()->where('must_change_password', true)->count(),
+            'commission' => (float) $agentCommissionQuery->sum('commission_amount'),
+        ];
+
+        $orderQuery = Orders::query()
+            ->with(['cart.details', 'partner', 'status'])
+            ->whereNotNull('submitted_at')
+            ->latest('submitted_at');
+        $orders = $this->cityScope->orders($orderQuery)->get();
+
+        $now = now();
+        $startOfToday = $now->copy()->startOfDay();
+        $startOfWeek = $now->copy()->startOfWeek();
+        $startOfMonth = $now->copy()->startOfMonth();
+
+        $orders->each(function ($order) {
+            $summary = $order->cart ? $order->cart->cartItemSummary() : [];
+            $order->dashboard_status_id = (int) ($order->order_status_id ?: $order->status_id);
+            $order->dashboard_total = $this->moneyValue($summary['total'] ?? 0);
+            $order->dashboard_commission = $this->moneyValue($summary['total_comm'] ?? 0);
+        });
+
+        $completedOrders = $orders->whereIn('dashboard_status_id', LibraryStatus::COMPLETED_STATUSES);
+        $incomingOrders = $orders
+            ->whereNotIn('dashboard_status_id', [
+                ...LibraryStatus::COMPLETED_STATUSES,
+                LibraryStatus::STATUS_CANCELLED,
+            ]);
+
+        $salesForPeriod = function (Carbon $start) use ($completedOrders, $now) {
+            return $completedOrders
+                ->filter(function ($order) use ($start, $now) {
+                    $date = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
+
+                    return $date && Carbon::parse($date)->between($start, $now);
+                })
+                ->sum('dashboard_total');
+        };
+
+        $dashboardMetrics = [
+            'total_orders' => $orders->count(),
+            'incoming_orders' => $incomingOrders->count(),
+            'today_sales' => $salesForPeriod($startOfToday),
+            'weekly_sales' => $salesForPeriod($startOfWeek),
+            'monthly_sales' => $salesForPeriod($startOfMonth),
+            'total_revenue' => $completedOrders->sum('dashboard_total'),
+            'total_commission' => $completedOrders->sum('dashboard_commission'),
+            'merchant_payout' => $completedOrders->sum('dashboard_total') - $completedOrders->sum('dashboard_commission'),
+            'average_order' => $completedOrders->count() ? $completedOrders->avg('dashboard_total') : 0,
+            'completion_rate' => $orders->count() ? ($completedOrders->count() / $orders->count()) * 100 : 0,
+            'cancellation_rate' => $orders->count() ? ($orders->where('dashboard_status_id', LibraryStatus::STATUS_CANCELLED)->count() / $orders->count()) * 100 : 0,
+            'active_merchants' => $this->cityScope->partners(Partners::query())->where('active', true)->whereNotNull('verified_at')->count(),
+        ];
+
+        $statusBreakdown = $orders
+            ->groupBy('dashboard_status_id')
+            ->map(function ($statusOrders) use ($orders) {
+                $status = $statusOrders->first()->status;
+
+                return [
+                    'title' => $status->title ?? 'Unknown',
+                    'count' => $statusOrders->count(),
+                    'percentage' => $orders->count() ? ($statusOrders->count() / $orders->count()) * 100 : 0,
+                ];
+            })
+            ->sortByDesc('count')
+            ->values();
+
+        $topMerchants = $completedOrders
+            ->groupBy('partner_id')
+            ->map(function ($merchantOrders) {
+                return [
+                    'name' => $merchantOrders->first()->partner->restaurant_name ?? 'Unknown merchant',
+                    'orders' => $merchantOrders->count(),
+                    'revenue' => $merchantOrders->sum('dashboard_total'),
+                ];
+            })
+            ->sortByDesc('revenue')
+            ->take(5)
+            ->values();
+
+        $salesTrend = collect(range(6, 0))->map(function ($daysAgo) use ($completedOrders, $now) {
+            $date = $now->copy()->subDays($daysAgo);
+            $sales = $completedOrders
+                ->filter(function ($order) use ($date) {
+                    $completedAt = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
+
+                    return $completedAt && Carbon::parse($completedAt)->isSameDay($date);
+                })
+                ->sum('dashboard_total');
+
+            return ['label' => $date->format('D'), 'sales' => $sales];
+        });
+        $salesTrendMax = max(1, (float) $salesTrend->max('sales'));
+
+        $recentActivity = $orders->sortByDesc('updated_at')->take(7);
+
+        $availableMerchantsQuery = Partners::query()
+            ->where('active', true)
+            ->whereNotNull('verified_at')
+            ->where('store_open', true);
+        $this->cityScope->partners($availableMerchantsQuery);
+
+        $availableMerchantCount = (clone $availableMerchantsQuery)->count();
+        $availableMerchants = $availableMerchantsQuery
+            ->withCount([
+                'orders as orders_today_count' => fn ($query) => $query
+                    ->whereNotNull('submitted_at')
+                    ->whereBetween('submitted_at', [$startOfToday, $now]),
+            ])
+            ->orderByDesc('orders_today_count')
+            ->orderBy('restaurant_name')
+            ->limit(6)
+            ->get();
+
+        $maxPendingOffers = max(1, (int) config('rider.offer_max_pending_per_rider', 3));
+        $availableRidersQuery = DB::table('rider as riders')
+            ->join('rider_api_availability as availability', 'availability.rider_id', '=', 'riders.id')
+            ->where('riders.active', true)
+            ->whereNull('riders.archived_at')
+            ->where('availability.state', 'available')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_locations as location')
+                    ->whereColumn('location.rider_id', 'riders.id');
+            })
+            ->whereNotExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('rider_api_deliveries as active_delivery')
+                    ->whereColumn('active_delivery.rider_id', 'riders.id')
+                    ->whereNotIn('active_delivery.current_state', ['delivered', 'cancelled', 'failed']);
+            })
+            ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = riders.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', [
+                'pending', $now, 'offered', $maxPendingOffers,
+            ]);
+        $this->cityScope->riders($availableRidersQuery, 'riders.city');
+
+        $availableRiderCount = (clone $availableRidersQuery)->count();
+        $availableRiders = $availableRidersQuery
+            ->select([
+                'riders.id',
+                'riders.name',
+                'riders.mobile',
+                'availability.heartbeat_at',
+            ])
+            ->selectSub(function ($query) {
+                $query->from('rider_api_locations as latest_location')
+                    ->whereColumn('latest_location.rider_id', 'riders.id')
+                    ->orderByDesc('latest_location.recorded_at')
+                    ->orderByDesc('latest_location.id')
+                    ->limit(1)
+                    ->select('latest_location.recorded_at');
+            }, 'location_recorded_at')
+            ->orderByDesc('availability.heartbeat_at')
+            ->orderBy('riders.name')
+            ->limit(6)
+            ->get();
+
+        return view('dashboard.pages.main', compact(
+            'agentMetrics',
+            'availableMerchantCount',
+            'availableMerchants',
+            'availableRiderCount',
+            'availableRiders',
+            'dashboardMetrics',
+            'incomingOrders',
+            'recentActivity',
+            'salesTrend',
+            'salesTrendMax',
+            'statusBreakdown',
+            'topMerchants'
+        ));
+    }
+
+    private function moneyValue($value): float
+    {
+        return (float) str_replace(',', '', (string) $value);
+    }
+
+    public function orders()
+    {
+        return view('dashboard.pages.orders.index');
+    }
+
+    public function bookings()
+    {
+        return view('dashboard.pages.bookings.index');
     }
 
     public function reportOrder() {

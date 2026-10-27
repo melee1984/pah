@@ -71,10 +71,10 @@
               <div class="card card-primary card-outline">
                 <div class="card-header">
                   <h3 class="card-title" v-if="actionStatus=='add'">
-                    Adding Location
+                    Adding Branch
                   </h3>
                   <h3 class="card-title" v-if="actionStatus=='edit'">
-                    Edit Location
+                    Edit Branch
                   </h3>
                   <div class="card-tools">
                     <a href="javascript:void(0)" v-if="actionStatus=='edit'" class="btn btn-danger btn-sm" v-on:click="onDelete()"><i class="fas fa-close"></i> DELETE</a>
@@ -359,4 +359,3 @@
     }
 
 </script>
-

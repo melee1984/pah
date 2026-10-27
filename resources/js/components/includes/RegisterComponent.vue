@@ -29,6 +29,9 @@
             <div class="form-group">
               <input type="text" class="form-control" id="password" name="password" placeholder="Enter your password *" required v-model="field.password"> 
             </div>
+
+            <turnstile-widget ref="turnstile" v-model="turnstileToken" action="customer_register" />
+            <p class="text-danger" v-if="turnstileError" role="alert">{{ turnstileError }}</p>
           
             <button type="submit" class="btn-block btn-xs food-btn style-2"><span v-if="!isSubmit">Submit</span> <span v-if="isSubmit">Please wait...</span></button> 
 
@@ -46,7 +49,12 @@
     </div>
 </template>
 <script>
+    import TurnstileWidget from '../TurnstileWidget.vue';
+
     export default {
+      components: {
+        TurnstileWidget,
+      },
       data() {
             return {
                 field: {
@@ -60,6 +68,8 @@
                 isSubmit: false,
                 display: {},
                 actionSuccess: false,
+                turnstileToken: '',
+                turnstileError: '',
             }
         },
         mounted() {
@@ -67,6 +77,13 @@
         },
         methods: {
           submitRecord: function() {
+
+                this.turnstileError = '';
+
+                if (document.querySelector('meta[name="turnstile-site-key"]') && !this.turnstileToken) {
+                  this.turnstileError = 'Please complete the security verification.';
+                  return false;
+                }
 
                 this.isSubmit = true;
 
@@ -76,7 +93,8 @@
                         lastname: this.field.lastname,
                         email: this.field.email,
                         mobile: this.field.mobile,
-                        password: this.field.password
+                        password: this.field.password,
+                        'cf-turnstile-response': this.turnstileToken,
                       })
                       .then((response) => {
                         if (response.data.status) {
@@ -85,11 +103,12 @@
                           this.clearForm();
                         }
                         else {
-
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                         }
                       }).catch((errors) => {
                           console.log('There was an error => ', errors);
                           this.isSubmit = false;
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                       }); 
                 }
                 return false;
@@ -158,5 +177,3 @@
         }
     }
 </script>
-
-

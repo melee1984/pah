@@ -3,102 +3,434 @@
 namespace App\Model;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 use Carbon\Carbon;
 use DateTime;
 use DateInterval;
 use DatePeriod;
 
-
 class DeliveryDistance extends Model
 {
-    public static function getCoordinateComputation($from_coordinates, $to_coordinates) {
-
-	   	try {
-	   		
-		$from_latlong = $from_coordinates;
-	   	$to_latlong = $to_coordinates;
-
-	   	// echo $from_latlong;
-	   	// echo "<br>";
-	   	// echo $to_latlong;
-	   	// die();
-	   	
-	   	$distance = "";
-
-	   	$unit = 'K';
-		$apiKey = 'AIzaSyBSGeqs54fvHY42AS3-VuZr-D5agAuM43U'; // Demo 
-		
-		// $distance_data = file_get_contents('https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='.$from_latlong.'&destinations='.$to_latlong.'&key='.$apiKey
-  //           );
-  	
-  		$Url = 'https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins='.$from_latlong.'&destinations='.$to_latlong.'&key='.$apiKey;
-
-		if (!function_exists('curl_init')){ 
-	        die('CURL is not installed!');
-	    }
-	    $ch = curl_init();
-	    curl_setopt($ch, CURLOPT_URL, $Url);
-	    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	    $distance_data = curl_exec($ch);
-	    curl_close($ch);
-
-		$distance_arr = json_decode($distance_data);
-
-		$destination = $distance_arr->destination_addresses[0];
-		$origin = $distance_arr->origin_addresses[0];
-
-	    $distance = $distance_arr->rows[0]->elements[0]->distance->text;
-	    $duration = $distance_arr->rows[0]->elements[0]->duration->text;
-	   
-	    $distance = preg_replace("/[^0-9.]/", "",  $distance);
-	    $duration = preg_replace("/[^0-9.]/", "",  $duration);
-	   	
-	   	// conver to KM
-	    $distance=$distance * 1.609344;
-	   
-		$distance=number_format($distance, 1, '.', '');
-		$duration=number_format($duration, 1, '.', '');   
-
-		if (ceil($distance) <=1) {
-			$rate = 25;
-		}
-		else {
-			$rate = ((ceil($distance) - 1) * 10);	
-			$rate = 25 + $rate;
+	public static function getBatchCoordinateComputations(array $origins, $to_coordinates): array
+	{
+		if (empty(config('services.google.maps_key')) || empty($origins)) {
+			return [];
 		}
 
-		// 1 - 25.00 
-		// 2 - 35.00 
-		// 3 - 45.00 
-		// 4 - 55.00 
-		// 5 - 65.00 
-		// 6 - 75.00 
-		// 7 - 85.00 
-		// 8 - 95.00 
-		// 9 - 105.00 
+		try {
+			[$toLatitude, $toLongitude] = self::parseCoordinates($to_coordinates);
+		} catch (\InvalidArgumentException $exception) {
+			return [];
+		}
 
-		$data['status'] = 1;
-		$data['distance'] = $distance . "km";
-        $data['duration'] = $duration;
-        $data['origin'] = $origin;
-        $data['destination'] = $destination;
+		$destinationCoordinates = self::formatCoordinates(
+			$toLatitude,
+			$toLongitude,
+			6
+		);
+		$results = [];
+		$validOrigins = [];
 
-        $data['rate'] = number_format($rate,2);
+		foreach ($origins as $key => $coordinates) {
+			try {
+				[$latitude, $longitude] = self::parseCoordinates($coordinates);
+			} catch (\InvalidArgumentException $exception) {
+				continue;
+			}
 
+			$originCoordinates = self::formatCoordinates(
+				$latitude,
+				$longitude,
+				6
+			);
+			$validOrigins[$key] = $originCoordinates;
+		}
 
-	   	} catch (Exception $e) {
-	   		
-	   		$data['status'] = 0;
-	   		$data['message'] = "Sorry, please pin your delivery location.";
+		$batchSize = min(
+			25,
+			max(1, (int) config('services.google.distance_matrix_batch_size', 25))
+		);
+		$maximumBatches = max(
+			0,
+			(int) config('services.google.distance_matrix_max_batches', 1)
+		);
+		$batches = array_slice(
+			array_chunk($validOrigins, $batchSize, true),
+			0,
+			$maximumBatches
+		);
 
-	   		die(json_encode($data));
+		foreach ($batches as $batch) {
+			if (!self::reserveDistanceMatrixElements(count($batch))) {
+				break;
+			}
 
-	   	}
+			try {
+				$response = Http::timeout(10)->get(
+					'https://maps.googleapis.com/maps/api/distancematrix/json',
+					[
+						'units' => 'metric',
+						'origins' => implode('|', $batch),
+						'destinations' => $destinationCoordinates,
+						'key' => config('services.google.maps_key'),
+					]
+				);
+				$responseData = $response->json();
 
-		return $data;
+				if (
+					!$response->successful()
+					|| data_get($responseData, 'status') !== 'OK'
+				) {
+					throw new \RuntimeException(
+						data_get($responseData, 'error_message', 'Distance route data was not available.')
+					);
+				}
 
+				foreach (array_keys($batch) as $rowIndex => $key) {
+					$element = data_get($responseData, "rows.{$rowIndex}.elements.0");
+
+					if (
+						data_get($element, 'status') !== 'OK'
+						|| !is_numeric(data_get($element, 'distance.value'))
+						|| !is_numeric(data_get($element, 'duration.value'))
+					) {
+						continue;
+					}
+
+					$result = [
+						'distance_km' => round(
+							(float) data_get($element, 'distance.value') / 1000,
+							2
+						),
+						'duration_minutes' => (int) ceil(
+							(float) data_get($element, 'duration.value') / 60
+						),
+					];
+					$results[$key] = $result;
+				}
+			} catch (\Throwable $exception) {
+				\Log::warning('Distance Matrix batch failed; using restaurant distance fallback.', [
+					'message' => $exception->getMessage(),
+					'origin_count' => count($batch),
+				]);
+			}
+		}
+
+		return $results;
 	}
+
+	private static function reserveDistanceMatrixElements(int $elementCount): bool
+	{
+		$dailyLimit = max(
+			0,
+			(int) config('services.google.distance_matrix_daily_element_limit', 1000)
+		);
+
+		if ($elementCount < 1 || $dailyLimit < $elementCount) {
+			return false;
+		}
+
+		$cacheKey = 'google_distance_matrix_elements:' . now()->format('Y-m-d');
+		$expiresAt = now()->endOfDay();
+
+		try {
+			Cache::add($cacheKey, 0, $expiresAt);
+			$usedElements = Cache::increment($cacheKey, $elementCount);
+
+			if ($usedElements <= $dailyLimit) {
+				return true;
+			}
+
+			Cache::decrement($cacheKey, $elementCount);
+		} catch (\Throwable $exception) {
+			\Log::warning('Distance Matrix budget counter failed; skipping Google request.', [
+				'message' => $exception->getMessage(),
+			]);
+		}
+
+		return false;
+	}
+
+	public static function getCoordinateComputation($from_coordinates, $to_coordinates)
+	{
+		try {
+			[$fromLatitude, $fromLongitude] = self::parseCoordinates($from_coordinates);
+			[$toLatitude, $toLongitude] = self::parseCoordinates($to_coordinates);
+		} catch (\InvalidArgumentException $exception) {
+			return [
+				'status' => 0,
+				'message' => $exception->getMessage(),
+			];
+		}
+
+		$originCoordinates = $fromLatitude . ',' . $fromLongitude;
+		$destinationCoordinates = $toLatitude . ',' . $toLongitude;
+		$apiKey = config('services.google.maps_key');
+
+		// \Log::info('Starting getCoordinateComputation', [
+		// 	'from' => $originCoordinates,
+		// 	'to' => $destinationCoordinates,
+		// ]);
+
+		if (!empty($apiKey)) {
+			try {
+				$response = Http::timeout(10)->get(
+					'https://maps.googleapis.com/maps/api/distancematrix/json',
+					[
+						'units' => 'metric',
+						'origins' => $originCoordinates,
+						'destinations' => $destinationCoordinates,
+						'key' => $apiKey,
+					]
+				);
+
+				$responseData = $response->json();
+				$elementStatus = data_get($responseData, 'rows.0.elements.0.status');
+
+				\Log::info('Distance Matrix API response', [
+					'http_status' => $response->status(),
+					'status' => data_get($responseData, 'status'),
+					'element_status' => $elementStatus,
+				]);
+
+				if (
+					!$response->successful()
+					|| data_get($responseData, 'status') !== 'OK'
+					|| $elementStatus !== 'OK'
+				) {
+					throw new \RuntimeException(
+						data_get($responseData, 'error_message', 'Distance route data was not available.')
+					);
+				}
+
+				$distanceMeters = data_get($responseData, 'rows.0.elements.0.distance.value');
+				$durationSeconds = data_get($responseData, 'rows.0.elements.0.duration.value');
+
+				if (!is_numeric($distanceMeters) || !is_numeric($durationSeconds)) {
+					throw new \RuntimeException('Distance route data was incomplete.');
+				}
+
+				return self::buildCoordinateComputationResult(
+					(float) $distanceMeters / 1000,
+					(int) ceil((float) $durationSeconds / 60),
+					(string) data_get($responseData, 'origin_addresses.0', $originCoordinates),
+					(string) data_get($responseData, 'destination_addresses.0', $destinationCoordinates)
+				);
+			} catch (\Throwable $exception) {
+				\Log::warning('Distance Matrix API failed; using coordinate distance fallback.', [
+					'message' => $exception->getMessage(),
+					'from' => $originCoordinates,
+					'to' => $destinationCoordinates,
+				]);
+			}
+		}
+
+		$distanceKilometers = self::getStraightLineDistanceKilometers(
+			$fromLatitude,
+			$fromLongitude,
+			$toLatitude,
+			$toLongitude
+		);
+		$estimatedSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.fast_speed_kph', 30)
+		);
+		$durationMinutes = (int) ceil(
+			($distanceKilometers / $estimatedSpeedKilometersPerHour) * 60
+		);
+
+		return self::buildCoordinateComputationResult(
+			$distanceKilometers,
+			$durationMinutes,
+			$originCoordinates,
+			$destinationCoordinates
+		);
+	}
+
+	public static function getRateFromDistanceKilometers($distanceKilometers): float
+	{
+		if (is_string($distanceKilometers)) {
+			$distanceKilometers = str_replace(',', '', trim($distanceKilometers));
+		}
+
+		if (!is_numeric($distanceKilometers) || (float) $distanceKilometers < 0) {
+			return 0.0;
+		}
+
+		$distanceKilometers = (float) $distanceKilometers; 
+		$baseRate = (float) config('services.delivery.rate', 0);
+		$additionalKilometerRate = (float) config('services.delivery.additional_km_rate', 0);
+		$billableKilometers = max(1, (int) ceil($distanceKilometers));
+
+		$rate = $baseRate + max(0, ($billableKilometers - 1) * $additionalKilometerRate);
+
+		return round($rate, 2);
+	}
+
+	public static function getEstimatedDeliveryTimeFromDistanceKilometers($distanceKilometers): array
+	{
+		$minimumPreparationMinutes = max(
+			0,
+			(int) config('services.delivery.preparation_min_minutes', 30)
+		);
+		$maximumPreparationMinutes = max(
+			$minimumPreparationMinutes,
+			(int) config('services.delivery.preparation_max_minutes', 45)
+		);
+
+		if (is_string($distanceKilometers)) {
+			$distanceKilometers = str_replace(',', '', trim($distanceKilometers));
+		}
+
+		if (!is_numeric($distanceKilometers) || (float) $distanceKilometers < 0) {
+			return [
+				'min_minutes' => $minimumPreparationMinutes,
+				'max_minutes' => $maximumPreparationMinutes,
+			];
+		}
+
+		$distanceKilometers = (float) $distanceKilometers;
+		$fastSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.fast_speed_kph', 30)
+		);
+		$slowSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.slow_speed_kph', 20)
+		);
+
+		$minimumTravelMinutes = (int) ceil(
+			($distanceKilometers / $fastSpeedKilometersPerHour) * 60
+		);
+		$maximumTravelMinutes = (int) ceil(
+			($distanceKilometers / $slowSpeedKilometersPerHour) * 60
+		);
+
+		return [
+			'min_minutes' => $minimumPreparationMinutes + $minimumTravelMinutes,
+			'max_minutes' => $maximumPreparationMinutes + $maximumTravelMinutes,
+		];
+	}
+
+	public static function getEstimatedDeliveryTimeFromDurationMinutes($durationMinutes): array
+	{
+		$minimumPreparationMinutes = max(
+			0,
+			(int) config('services.delivery.preparation_min_minutes', 30)
+		);
+		$maximumPreparationMinutes = max(
+			$minimumPreparationMinutes,
+			(int) config('services.delivery.preparation_max_minutes', 45)
+		);
+		$durationMinutes = is_numeric($durationMinutes)
+			? max(0, (int) ceil((float) $durationMinutes))
+			: 0;
+
+		return [
+			'min_minutes' => $minimumPreparationMinutes + $durationMinutes,
+			'max_minutes' => $maximumPreparationMinutes + $durationMinutes,
+		];
+	}
+
+	private static function parseCoordinates($coordinates): array
+	{
+		if (is_string($coordinates)) {
+			$coordinates = array_map('trim', explode(',', $coordinates));
+		}
+
+		if (!is_array($coordinates)) {
+			throw new \InvalidArgumentException(
+				'The delivery coordinates are invalid.'
+			);
+		}
+
+		$latitude = $coordinates['latitude']
+			?? $coordinates['lat']
+			?? $coordinates[0]
+			?? null;
+
+		$longitude = $coordinates['longitude']
+			?? $coordinates['longtitude']
+			?? $coordinates['lng']
+			?? $coordinates['long']
+			?? $coordinates[1]
+			?? null;
+
+		if (
+			!is_numeric($latitude)
+			|| !is_numeric($longitude)
+			|| (float) $latitude < -90
+			|| (float) $latitude > 90
+			|| (float) $longitude < -180
+			|| (float) $longitude > 180
+		) {
+			throw new \InvalidArgumentException(
+				'The delivery coordinates are invalid.'
+			);
+		}
+
+		return [
+			(float) $latitude,
+			(float) $longitude,
+		];
+	}
+
+	private static function formatCoordinates(
+		float $latitude,
+		float $longitude,
+		int $precision
+	): string {
+		return number_format($latitude, $precision, '.', '')
+			. ','
+			. number_format($longitude, $precision, '.', '');
+	}
+
+	private static function getStraightLineDistanceKilometers(
+		float $fromLatitude,
+		float $fromLongitude,
+		float $toLatitude,
+		float $toLongitude
+	): float {
+		$earthRadiusKilometers = 6371;
+		$latitudeDifference = deg2rad($toLatitude - $fromLatitude);
+		$longitudeDifference = deg2rad($toLongitude - $fromLongitude);
+		$fromLatitudeRadians = deg2rad($fromLatitude);
+		$toLatitudeRadians = deg2rad($toLatitude);
+
+		$haversine = sin($latitudeDifference / 2) ** 2
+			+ cos($fromLatitudeRadians)
+			* cos($toLatitudeRadians)
+			* sin($longitudeDifference / 2) ** 2;
+
+		return round(
+			2 * $earthRadiusKilometers * asin(min(1, sqrt($haversine))),
+			2
+		);
+	}
+
+	private static function buildCoordinateComputationResult(
+		float $distanceKilometers,
+		int $durationMinutes,
+		string $origin,
+		string $destination
+	): array {
+		$distanceKilometers = round(max(0, $distanceKilometers), 2);
+		$data = [
+			'status' => 1,
+			'distance' => number_format($distanceKilometers, 2, '.', '') . 'km',
+			'duration' => max(0, $durationMinutes),
+			'origin' => $origin,
+			'destination' => $destination,
+			'rate' => self::getRateFromDistanceKilometers($distanceKilometers),
+		];
+
+		\Log::info('Computed delivery distance and rate', $data);
+		
+		return $data;
+	}
+
 
 	public static function getCalendarDelivery($merchant = "") {
 
@@ -156,5 +488,45 @@ class DeliveryDistance extends Model
         }
 		return $datePicker;
     }
+
+	public static function getDashboardCoordinateComputations(
+		array $origins,
+		$to_coordinates
+	): array {
+		try {
+			[$toLatitude, $toLongitude] = self::parseCoordinates($to_coordinates);
+		} catch (\InvalidArgumentException $exception) {
+			return [];
+		}
+
+		$estimatedSpeedKilometersPerHour = max(
+			1,
+			(float) config('services.delivery.fast_speed_kph', 30)
+		);
+		$results = [];
+
+		foreach ($origins as $key => $coordinates) {
+			try {
+				[$fromLatitude, $fromLongitude] = self::parseCoordinates($coordinates);
+			} catch (\InvalidArgumentException $exception) {
+				continue;
+			}
+
+			$distanceKilometers = self::getStraightLineDistanceKilometers(
+				$fromLatitude,
+				$fromLongitude,
+				$toLatitude,
+				$toLongitude
+			);
+			$results[$key] = [
+				'distance_km' => $distanceKilometers,
+				'duration_minutes' => (int) ceil(
+					($distanceKilometers / $estimatedSpeedKilometersPerHour) * 60
+				),
+			];
+		}
+
+		return $results;
+	}
 
 }

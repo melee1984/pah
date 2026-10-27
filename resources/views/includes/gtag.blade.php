@@ -8,3 +8,6 @@
   gtag('config', 'G-0V1NSF9NNP');
 </script>
 
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google.maps_key') }}&v=weekly&libraries=maps,marker,places&loading=async">
+</script>

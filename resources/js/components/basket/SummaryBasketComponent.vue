@@ -25,7 +25,7 @@
           }
         },
         created() {
-          Event.$on('app-summary-cart', (summary) => {
+          window.AppEvents.$on('app-summary-cart', (summary) => {
             this.total = summary.total;
             this.sub_total = summary.sub_total;
             this.qty = summary.qty;
@@ -39,7 +39,7 @@
           displayCart: function() {
 
             $('#cart-summary').modal('toggle');
-            // Event.$emit('proceed-to-cart');  
+            // window.AppEvents.$emit('proceed-to-cart');
           }
           
         }

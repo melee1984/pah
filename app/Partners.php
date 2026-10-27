@@ -6,6 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Partners extends Model
 {
+    public const APPLICATION_SOURCE_REGISTRATION = 'merchant_registration';
+
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_DECLINED = 'declined';
+
+    public const SERVICES = [
+        'dine_in' => 'Dine-in',
+        'pickup' => 'Pickup',
+        'delivery' => 'Delivery',
+    ];
+
     protected $fillable = array(
                                 'user_id',
                                 'restaurant_name',
@@ -24,7 +38,27 @@ class Partners extends Model
                                 'account_type_id',
                                 'percentage',
                                 'addup',
-                                'is_pre_order'
+                                'is_pre_order',
+                                'agent_id'
+                                ,'business_structure'
+                                ,'enrolling_as'
+                                ,'registered_business_name'
+                                ,'tin'
+                                ,'business_registration_number'
+                                ,'payout_account_name'
+                                ,'application_status'
+                                ,'application_remarks'
+                                ,'application_source'
+                                ,'recruitment_status'
+                                ,'recruitment_review_message'
+                                ,'recruitment_submitted_at'
+                                ,'owner_name'
+                                ,'cuisine'
+                                ,'branch_count'
+                                ,'services'
+                                ,'website'
+                                ,'recruitment_reviewed_by'
+                                ,'recruitment_reviewed_at'
                             );
     
 	public $timestamps = true;
@@ -33,6 +67,10 @@ class Partners extends Model
         'archive_at' => 'datetime',
         'verified_at' => 'datetime',
         'sms_verified' => 'datetime',
+        'services' => 'array',
+        'percentage' => 'decimal:2',
+        'recruitment_reviewed_at' => 'datetime',
+        'recruitment_submitted_at' => 'datetime',
     ];
     
     protected $hidden = ['verified_at', 'updated_at', 'created_at' , 'archive_at', 'deleted_at'];
@@ -58,6 +96,178 @@ class Partners extends Model
     public function foodType() {
         return $this->hasMany('App\PartnerFoodType', 'partner_id', 'id');
     }
+
+    public function topPicks()
+    {
+        return $this->hasMany(PartnerTopPick::class, 'partner_id');
+    }
+
+    public function promotions()
+    {
+        return $this->hasMany(PartnerPromotion::class, 'partner_id');
+    }
+
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function isPending(): bool
+    {
+        return $this->recruitment_status === self::STATUS_PENDING;
+    }
+
+    public function recruitmentStatusLabel(): string
+    {
+        return match ($this->recruitment_status) {
+            self::STATUS_PENDING => 'Pending Approval',
+            self::STATUS_APPROVED => 'Approved',
+            self::STATUS_DECLINED => 'Declined',
+            default => 'Not Submitted',
+        };
+    }
+
+    public function serviceLabels(): array
+    {
+        return collect($this->services ?? [])
+            ->map(fn (string $service) => self::SERVICES[$service] ?? str($service)->headline()->toString())
+            ->all();
+    }
+
+    public function scopeVisibleInMerchantDirectory($query)
+    {
+        return $query->where(function ($query) {
+            $query->whereNull('application_source')
+                ->orWhere('application_source', '!=', self::APPLICATION_SOURCE_REGISTRATION)
+                ->orWhere('recruitment_status', self::STATUS_APPROVED);
+        });
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(\App\Model\Orders\Orders::class, 'partner_id');
+    }
+
+    public function agentCommissions()
+    {
+        return $this->hasMany(AgentCommission::class, 'restaurant_id');
+    }
+
+    public function statements()
+    {
+        return $this->hasMany(StatementAccount::class, 'partner_id');
+    }
+
+    public function enrollmentDocuments()
+    {
+        return $this->hasMany(RestaurantEnrollmentDocument::class, 'partner_id');
+    }
+
+    public function enrollmentContact()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function missingEnrollmentDocuments(): array
+    {
+        if (! $this->agent_id) {
+            return [];
+        }
+
+        $required = RestaurantEnrollmentDocument::REQUIRED_TYPES;
+
+        if ($this->enrolling_as === 'authorized_representative') {
+            $required[] = 'authorization_document';
+        }
+
+        $available = $this->enrollmentDocuments()->get()
+            ->filter(fn ($document) => \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path))
+            ->pluck('document_type')
+            ->all();
+
+        return array_values(array_diff($required, $available));
+    }
+
+    public function requiredEnrollmentDocumentTypes(): array
+    {
+        $types = RestaurantEnrollmentDocument::REQUIRED_TYPES;
+
+        if ($this->enrolling_as === 'authorized_representative') {
+            $types[] = 'authorization_document';
+        }
+
+        return $types;
+    }
+
+    public function documentsReadyForApproval(): bool
+    {
+        $documents = $this->enrollmentDocuments()->get()->keyBy('document_type');
+
+        foreach ($this->requiredEnrollmentDocumentTypes() as $type) {
+            $document = $documents->get($type);
+
+            if (! $document || $document->currentStatus() !== 'approved'
+                || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function applicationReadyForApproval(): bool
+    {
+        return $this->applicationApprovalBlockers() === [];
+    }
+
+    public function applicationApprovalBlockers(): array
+    {
+        $blockers = [];
+        $requiredFields = [
+            'restaurant_name' => 'Restaurant name',
+            'registered_business_name' => 'Registered business name',
+            'tin' => 'TIN',
+            'payout_account_name' => 'Payout account name and details',
+            'email' => 'Email',
+            'mobile' => 'Mobile',
+            'address' => 'Address',
+            'city' => 'City',
+            'business_structure' => 'Business structure',
+            'enrolling_as' => 'Enrollment authority',
+        ];
+
+        foreach ($requiredFields as $field => $label) {
+            if (blank($this->$field)) {
+                $blockers[] = $label.' is missing.';
+            }
+        }
+
+        if ($this->business_structure && $this->business_structure !== 'sole_proprietorship'
+            && $this->enrolling_as !== 'authorized_representative') {
+            $blockers[] = 'A non-sole-proprietorship must be enrolled by an authorized representative.';
+        }
+
+        $documents = $this->enrollmentDocuments()->get()->keyBy('document_type');
+
+        foreach ($this->requiredEnrollmentDocumentTypes() as $type) {
+            $label = RestaurantEnrollmentDocument::label($type);
+            $document = $documents->get($type);
+
+            if (! $document || ! \Illuminate\Support\Facades\Storage::disk('local')->exists($document->file_path)) {
+                $blockers[] = $label.' is missing.';
+                continue;
+            }
+
+            $status = $document->currentStatus();
+
+            if ($status !== 'approved') {
+                $blockers[] = $label.' is '.strtolower(str_replace('_', ' ', $status)).'.';
+            }
+        }
+
+        return $blockers;
+    }
+
     /**
      * [category description]
      * @return [type] [description]
@@ -129,6 +339,7 @@ class Partners extends Model
             else {
                 return asset('uploads/no-img.png') ;   
             }
+            
 
          }
 

@@ -1,0 +1,209 @@
+{
+  "schema": "openai.presentation.layout/v4",
+  "unit": "px",
+  "slide": {
+    "aid": "sl/gnmp4jqx",
+    "id": "gnmp4jqx",
+    "slide": 7,
+    "layoutId": "/ppt/slideLayouts/slideLayout1.xml",
+    "layoutName": "TITLE",
+    "layoutType": "title",
+    "masterLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+    "frame": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "theme": {
+    "colorSchemeName": "ChatGPT",
+    "colors": {
+      "accent1": "#156082",
+      "accent2": "#E97132",
+      "accent3": "#196B24",
+      "accent4": "#0F9ED5",
+      "accent5": "#A02B93",
+      "accent6": "#4EA72E",
+      "dk1": "#000000",
+      "lt1": "#FFFFFF",
+      "dk2": "#0E2841",
+      "lt2": "#E8E8E8",
+      "hlink": "#467886",
+      "folHlink": "#96607D"
+    },
+    "fontScheme": {
+      "name": "Office",
+      "majorFont": {
+        "latinTypeface": "Arial"
+      },
+      "minorFont": {
+        "latinTypeface": "Arial"
+      }
+    },
+    "typefaces": [
+      "Arial",
+      "DM Sans"
+    ]
+  },
+  "inheritedLayers": [
+    {
+      "scope": "layout",
+      "id": "/ppt/slideLayouts/slideLayout1.xml",
+      "name": "TITLE",
+      "type": "title",
+      "parentLayoutId": "/ppt/slideMasters/slideMaster1.xml",
+      "elements": []
+    },
+    {
+      "scope": "master",
+      "id": "/ppt/slideMasters/slideMaster1.xml",
+      "type": "master",
+      "backgroundColor": "lt1",
+      "elements": []
+    }
+  ],
+  "elements": [
+    {
+      "order": 1,
+      "kind": "shape",
+      "scope": "slide",
+      "aid": "sh/xsripwve",
+      "id": "173",
+      "name": "Google Shape;173;h9b7b9f87d858b0_1_0",
+      "bbox": [
+        76,
+        48.87,
+        1080,
+        411.59
+      ],
+      "geometry": "rect",
+      "text": "Range of PahatudFood Commision\n\nMerchant Dashboard\n\nDine in thru to table, Pickup and Delivery explain more \n\n15% PahatudFood Commision",
+      "textPreview": "Range of PahatudFood Commision |  | Merchant Dashboard |  | Dine in thru to table, Pickup and Delivery explain more  |  | 15% PahatudFood...",
+      "resolvedFontSize": 18.67,
+      "resolvedTextStyle": {
+        "anchor": 1,
+        "fontSize": 18.67,
+        "typeface": "Arial",
+        "color": "#000000",
+        "alignment": "left",
+        "verticalAlignment": "top",
+        "textTransform": "none",
+        "wrap": "square",
+        "autoFit": "none",
+        "insets": {
+          "top": 0,
+          "right": 0,
+          "bottom": 0,
+          "left": 0
+        },
+        "useParagraphSpacing": true
+      },
+      "textLayout": {
+        "lineCount": 7,
+        "lines": [
+          {
+            "index": 1,
+            "text": "Range of PahatudFood Commision"
+          },
+          {
+            "index": 2,
+            "text": ""
+          },
+          {
+            "index": 3,
+            "text": "Merchant Dashboard"
+          },
+          {
+            "index": 4,
+            "text": ""
+          },
+          {
+            "index": 5,
+            "text": "Dine in thru to table, Pickup and Delivery explain more"
+          },
+          {
+            "index": 6,
+            "text": ""
+          },
+          {
+            "index": 7,
+            "text": "15% PahatudFood Commision"
+          }
+        ]
+      },
+      "paragraphs": [
+        {
+          "index": 1,
+          "text": "Range of PahatudFood Commision",
+          "lineSpacingPercent": 106000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Range of PahatudFood Commision",
+              "fontSize": 17,
+              "typeface": "DM Sans",
+              "color": "#62696D"
+            }
+          ]
+        },
+        {
+          "index": 3,
+          "text": "Merchant Dashboard",
+          "lineSpacingPercent": 106000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Merchant Dashboard",
+              "fontSize": 17,
+              "typeface": "DM Sans",
+              "color": "#62696D"
+            }
+          ]
+        },
+        {
+          "index": 5,
+          "text": "Dine in thru to table, Pickup and Delivery explain more ",
+          "lineSpacingPercent": 106000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "Dine in thru to table, Pickup and Delivery explain more ",
+              "fontSize": 17,
+              "typeface": "DM Sans",
+              "color": "#62696D"
+            }
+          ]
+        },
+        {
+          "index": 7,
+          "text": "15% PahatudFood Commision",
+          "lineSpacingPercent": 106000,
+          "resolvedTextStyle": {
+            "alignment": "left"
+          },
+          "runs": [
+            {
+              "index": 1,
+              "text": "15% PahatudFood Commision",
+              "fontSize": 17,
+              "typeface": "DM Sans",
+              "color": "#62696D"
+            }
+          ]
+        }
+      ],
+      "lineWidth": 0
+    }
+  ],
+  "composeRuns": []
+}

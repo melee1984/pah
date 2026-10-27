@@ -2,17 +2,12 @@
 
 @section('content')
   
-   <div class="content-wrapper" style="min-height: 1416.81px;">
+   <div class="content-wrapper admin-content-wrapper">
 
     <section class="content-header">
       <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1>Member</h1>
-          </div>
-          <div class="col-sm-6">
-          
-          </div>
+        <div class="admin-page-heading">
+          <div><span class="admin-eyebrow">Customer directory</span><h1>Members</h1><p>Browse registered Pahatud customer accounts.</p></div>
         </div>
       </div><!-- /.container-fluid -->
     </section>
@@ -31,4 +26,3 @@
 
 
 @endsection
-

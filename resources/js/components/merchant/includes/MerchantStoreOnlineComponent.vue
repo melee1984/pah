@@ -1,7 +1,7 @@
 <template>
-  <span>
-      <a href="javascript:void(0)" v-if="store_online" class="btn btn-success" v-on:click="updateStore">Store is Online</a>
-      <a href="javascript:void(0)" v-if="!store_online" class="btn btn-danger" v-on:click="updateStore">Store is Offline</a>
+  <span class="merchant-store-control">
+      <button type="button" v-if="store_online" class="merchant-store-toggle is-online" v-on:click="updateStore"><i class="fas fa-circle"></i> Store online</button>
+      <button type="button" v-if="!store_online" class="merchant-store-toggle is-offline" v-on:click="updateStore"><i class="fas fa-circle"></i> Store offline</button>
   </span>
 </template>
 <script>
@@ -34,4 +34,3 @@ export default {
     }
 }
 </script>
-

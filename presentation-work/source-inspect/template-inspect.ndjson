@@ -1,0 +1,143 @@
+{"kind":"slide","id":"sl/y90nupkv","slide":1,"title":"PAHATUD AGENT PROGRAM","textShapes":3}
+{"kind":"shape","id":"sh/ipovexwn","slide":1,"name":"Google Shape;16;p1","bbox":[748,-86,630,830]}
+{"kind":"shape","id":"sh/3qxwn2x8","slide":1,"name":"Google Shape;17;p1","bbox":[800,61,405.01,594.02]}
+{"kind":"shape","id":"sh/sfqdkrep","slide":1,"name":"Google Shape;18;p1","bbox":[72,52,74,74]}
+{"kind":"textbox","id":"sh/1cvuxc7e","slide":1,"textChars":21,"textLines":1}
+{"kind":"textbox","id":"sh/0bmd476t","slide":1,"textChars":28,"textLines":2}
+{"kind":"textbox","id":"sh/zadcv2p8","slide":1,"textChars":58,"textLines":1}
+{"kind":"image","id":"im/dgvyd8fa","slide":1,"name":"Google Shape;19;p1","bbox":[79,59,60,60]}
+{"kind":"slide","id":"sl/hwbqtkby","slide":2,"title":"The PahatudFood agent role","textShapes":12}
+{"kind":"shape","id":"sh/p0vy54na","slide":2,"name":"Google Shape;28;p2","bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/4zmxwzmp","slide":2,"textChars":26,"textLines":1}
+{"kind":"textbox","id":"sh/mlgvq147","slide":2,"textChars":79,"textLines":1}
+{"kind":"textbox","id":"sh/nmpcj6ls","slide":2,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/onydsbmd","slide":2,"textChars":9,"textLines":1}
+{"kind":"textbox","id":"sh/9o7ulg3y","slide":2,"textChars":68,"textLines":1}
+{"kind":"textbox","id":"sh/a9gvulkj","slide":2,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/ba9cn6l4","slide":2,"textChars":5,"textLines":1}
+{"kind":"textbox","id":"sh/wbidwb29","slide":2,"textChars":66,"textLines":1}
+{"kind":"textbox","id":"sh/xcrupg3u","slide":2,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/id0vylkf","slide":2,"textChars":15,"textLines":1}
+{"kind":"textbox","id":"sh/je9crql0","slide":2,"textChars":64,"textLines":1}
+{"kind":"shape","id":"sh/ru5cbqd4","slide":2,"name":"Google Shape;40;p2","bbox":[775,50,420,620]}
+{"kind":"textbox","id":"sh/69wbilcj","slide":2,"textChars":2,"textLines":1}
+{"kind":"slide","id":"sl/ofy9wn61","slide":3,"title":"Benefits of being an agent","textShapes":15}
+{"kind":"shape","id":"sh/rql0nmds","slide":3,"name":"Google Shape;47;p3","bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/0ve10ru9","slide":3,"textChars":26,"textLines":1}
+{"kind":"textbox","id":"sh/1wnitwvu","slide":3,"textChars":83,"textLines":1}
+{"kind":"shape","id":"sh/v29cfu18","slide":3,"name":"Google Shape;50;p3","bbox":[72,182,344,472]}
+{"kind":"textbox","id":"sh/xoruhkje","slide":3,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/w3it8zit","slide":3,"textChars":27,"textLines":1}
+{"kind":"textbox","id":"sh/nypcba1c","slide":3,"textChars":109,"textLines":1}
+{"kind":"textbox","id":"sh/mxgb250r","slide":3,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/90rudkji","slide":3,"textChars":33,"textLines":1}
+{"kind":"textbox","id":"sh/8zit4fix","slide":3,"textChars":73,"textLines":1}
+{"kind":"textbox","id":"sh/7utcne1g","slide":3,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/6tkve90v","slide":3,"textChars":16,"textLines":1}
+{"kind":"textbox","id":"sh/2p4f6dk3","slide":3,"textChars":78,"textLines":1}
+{"kind":"textbox","id":"sh/3qxwfilo","slide":3,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/or6x8329","slide":3,"textChars":24,"textLines":1}
+{"kind":"textbox","id":"sh/psfeh83u","slide":3,"textChars":74,"textLines":1}
+{"kind":"textbox","id":"sh/qtofadkf","slide":3,"textChars":2,"textLines":1}
+{"kind":"image","id":"im/kralkrud","slide":3,"name":"Google Shape;51;p3","bbox":[148,204.67,192,426.67]}
+{"kind":"slide","id":"sl/jyx0ra1s","slide":4,"title":"Agent application process","textShapes":16}
+{"kind":"shape","id":"sh/6psve183","slide":4,"name":"Google Shape;70;p4","bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/7a1cn6po","slide":4,"textChars":25,"textLines":1}
+{"kind":"textbox","id":"sh/8badgbq9","slide":4,"textChars":82,"textLines":1}
+{"kind":"textbox","id":"sh/tcjupg7u","slide":4,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/udcvil8z","slide":4,"textChars":26,"textLines":1}
+{"kind":"textbox","id":"sh/velcrqpk","slide":4,"textChars":70,"textLines":1}
+{"kind":"textbox","id":"sh/gfudkvq5","slide":4,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/hg3et07q","slide":4,"textChars":18,"textLines":1}
+{"kind":"textbox","id":"sh/ihcvml8b","slide":4,"textChars":90,"textLines":1}
+{"kind":"textbox","id":"sh/3ilwvqpw","slide":4,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/na18b2tc","slide":4,"textChars":22,"textLines":1}
+{"kind":"textbox","id":"sh/29srixcr","slide":4,"textChars":68,"textLines":1}
+{"kind":"textbox","id":"sh/pcjadsb2","slide":4,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/oba9k7uh","slide":4,"textChars":21,"textLines":1}
+{"kind":"textbox","id":"sh/bylsf2t8","slide":4,"textChars":81,"textLines":1}
+{"kind":"shape","id":"sh/axsrmxcn","slide":4,"name":"Google Shape;85;p4","bbox":[72,610,1136,58]}
+{"kind":"textbox","id":"sh/x03ahcbe","slide":4,"textChars":57,"textLines":1}
+{"kind":"textbox","id":"sh/czu9o7ut","slide":4,"textChars":2,"textLines":1}
+{"kind":"slide","id":"sl/i107q5of","slide":5,"title":"Restaurant enrollment and approval","textShapes":16}
+{"kind":"shape","id":"sh/zu98jax8","slide":5,"name":"Google Shape;93;p5","bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/8z29gfep","slide":5,"textChars":34,"textLines":1}
+{"kind":"textbox","id":"sh/9kbqpkfa","slide":5,"textChars":89,"textLines":1}
+{"kind":"textbox","id":"sh/mx0repwz","slide":5,"textChars":15,"textLines":1}
+{"kind":"textbox","id":"sh/ny98nuxk","slide":5,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/o3yp4vel","slide":5,"textChars":20,"textLines":1}
+{"kind":"textbox","id":"sh/po7qd0f6","slide":5,"textChars":86,"textLines":1}
+{"kind":"textbox","id":"sh/e1w7y5w7","slide":5,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/f25oraxs","slide":5,"textChars":18,"textLines":1}
+{"kind":"textbox","id":"sh/g3ep0fed","slide":5,"textChars":57,"textLines":1}
+{"kind":"textbox","id":"sh/14n6tkfy","slide":5,"textChars":2,"textLines":1}
+{"kind":"textbox","id":"sh/25w725wj","slide":5,"textChars":25,"textLines":1}
+{"kind":"textbox","id":"sh/36povax4","slide":5,"textChars":105,"textLines":1}
+{"kind":"shape","id":"sh/o7yp4fe9","slide":5,"name":"Google Shape;106;p5","bbox":[674,195,532,434]}
+{"kind":"textbox","id":"sh/ps76xkfu","slide":5,"textChars":13,"textLines":1}
+{"kind":"textbox","id":"sh/i9cnqlwz","slide":5,"textChars":92,"textLines":1}
+{"kind":"textbox","id":"sh/jalojqxk","slide":5,"textChars":133,"textLines":1}
+{"kind":"shape","id":"sh/lorapoz2","slide":5,"name":"Google Shape;110;p5","bbox":[784.42,572.74,90.02,90.02]}
+{"kind":"shape","id":"sh/zm98nehc","slide":5,"name":"Google Shape;112;p5","bbox":[898.25,572.74,90.02,90.02]}
+{"kind":"shape","id":"sh/9sbatoze","slide":5,"name":"Google Shape;114;p5","bbox":[1010.99,576,90.02,90.02]}
+{"kind":"textbox","id":"sh/nqtsryh8","slide":5,"textChars":2,"textLines":1}
+{"kind":"image","id":"im/zyx0by9o","slide":5,"name":"Google Shape;111;p5","geometry":"ellipse","bbox":[790.99,576,78.02,78.02]}
+{"kind":"image","id":"im/4vq1g7qd","slide":5,"name":"Google Shape;113;p5","geometry":"ellipse","bbox":[904.25,576,78.02,78.02]}
+{"kind":"image","id":"im/5wj2psry","slide":5,"name":"Google Shape;115;p5","geometry":"ellipse","bbox":[1017,582.01,78.02,78.02]}
+{"kind":"slide","id":"sl/x8f69ofe","slide":6,"title":"Commission tiers","textShapes":35}
+{"kind":"shape","id":"sh/dkfe50be","slide":6,"name":"Google Shape;122;p6","bbox":[72,39,8,50]}
+{"kind":"textbox","id":"sh/sj6xwfa9","slide":6,"textChars":16,"textLines":1}
+{"kind":"textbox","id":"sh/jedwzqtc","slide":6,"textChars":21,"textLines":1}
+{"kind":"textbox","id":"sh/id4vqlsr","slide":6,"textChars":110,"textLines":1}
+{"kind":"shape","id":"sh/5gve10bi","slide":6,"name":"Google Shape;126;p6","bbox":[72,188,360,246]}
+{"kind":"textbox","id":"sh/4fmdsvax","slide":6,"textChars":20,"textLines":1}
+{"kind":"textbox","id":"sh/nahwbutw","slide":6,"textChars":17,"textLines":1}
+{"kind":"textbox","id":"sh/298f2psb","slide":6,"textChars":4,"textLines":1}
+{"kind":"textbox","id":"sh/0jylgnmh","slide":6,"textChars":6,"textLines":1}
+{"kind":"textbox","id":"sh/lk729sn2","slide":6,"textChars":23,"textLines":1}
+{"kind":"shape","id":"sh/yhgjed4b","slide":6,"name":"Google Shape;132;p6","bbox":[96,365,312,0]}
+{"kind":"textbox","id":"sh/zipk7i5w","slide":6,"textChars":87,"textLines":1}
+{"kind":"textbox","id":"sh/87ilk7md","slide":6,"textChars":6,"textLines":1}
+{"kind":"shape","id":"sh/98r2dcny","slide":6,"name":"Google Shape;135;p6","bbox":[452,188,360,246]}
+{"kind":"textbox","id":"sh/ml03ix4n","slide":6,"textChars":20,"textLines":1}
+{"kind":"textbox","id":"sh/n69kb25s","slide":6,"textChars":5,"textLines":1}
+{"kind":"textbox","id":"sh/wbilo7mp","slide":6,"textChars":6,"textLines":1}
+{"kind":"textbox","id":"sh/xcb2hcna","slide":6,"textChars":23,"textLines":1}
+{"kind":"shape","id":"sh/hkj2xsra","slide":6,"name":"Google Shape;140;p6","bbox":[476,365,312,0]}
+{"kind":"textbox","id":"sh/gjal47qp","slide":6,"textChars":87,"textLines":1}
+{"kind":"textbox","id":"sh/vi1kv294","slide":6,"textChars":5,"textLines":1}
+{"kind":"shape","id":"sh/uhs32x8z","slide":6,"name":"Google Shape;143;p6","bbox":[832,188,360,246]}
+{"kind":"textbox","id":"sh/tgj2tsre","slide":6,"textChars":20,"textLines":1}
+{"kind":"textbox","id":"sh/8fal0nqt","slide":6,"textChars":10,"textLines":1}
+{"kind":"textbox","id":"sh/7ehkri98","slide":6,"textChars":6,"textLines":1}
+{"kind":"textbox","id":"sh/6t83yd8n","slide":6,"textChars":23,"textLines":1}
+{"kind":"shape","id":"sh/dc3m5wri","slide":6,"name":"Google Shape;148;p6","bbox":[856,365,312,0]}
+{"kind":"textbox","id":"sh/sbulcrqx","slide":6,"textChars":87,"textLines":1}
+{"kind":"textbox","id":"sh/axoz69of","slide":6,"textChars":6,"textLines":1}
+{"kind":"shape","id":"sh/byx0zep0","slide":6,"name":"Google Shape;151;p6","bbox":[72,456,558,100]}
+{"kind":"textbox","id":"sh/wz6h8j6l","slide":6,"textChars":1,"textLines":1}
+{"kind":"textbox","id":"sh/xkfi1o76","slide":6,"textChars":29,"textLines":1}
+{"kind":"textbox","id":"sh/mt4z29oj","slide":6,"textChars":146,"textLines":1}
+{"kind":"shape","id":"sh/nud0vep4","slide":6,"name":"Google Shape;155;p6","bbox":[650,456,558,100]}
+{"kind":"textbox","id":"sh/ovmh4j69","slide":6,"textChars":1,"textLines":1}
+{"kind":"textbox","id":"sh/9wfixo7u","slide":6,"textChars":43,"textLines":1}
+{"kind":"textbox","id":"sh/6p8jeton","slide":6,"textChars":143,"textLines":1}
+{"kind":"shape","id":"sh/7qh07yp8","slide":6,"name":"Google Shape;159;p6","bbox":[72,572,558,100]}
+{"kind":"textbox","id":"sh/jypoj618","slide":6,"textChars":1,"textLines":1}
+{"kind":"textbox","id":"sh/ixgna10n","slide":6,"textChars":33,"textLines":1}
+{"kind":"textbox","id":"sh/5kr6lgje","slide":6,"textChars":160,"textLines":1}
+{"kind":"shape","id":"sh/4ji5cbit","slide":6,"name":"Google Shape;163;p6","bbox":[650,572,558,100]}
+{"kind":"textbox","id":"sh/rm9on61k","slide":6,"textChars":1,"textLines":1}
+{"kind":"textbox","id":"sh/6l0ne10z","slide":6,"textChars":35,"textLines":1}
+{"kind":"textbox","id":"sh/tor6pgja","slide":6,"textChars":128,"textLines":1}
+{"kind":"textbox","id":"sh/snipgbi5","slide":6,"textChars":2,"textLines":1}
+{"kind":"slide","id":"sl/gnmp4jqx","slide":7,"title":"Range of PahatudFood Commision","textShapes":1}
+{"kind":"textbox","id":"sh/xsripwve","slide":7,"textChars":135,"textLines":7}
+{"kind":"slide","id":"sl/fu1gfa1s","slide":8,"title":"What the Agent Dashboard tracks","textShapes":16}
+{"kind":"shape","id":"sh/upwni143","slide":8,"name":"Google Shape;179;p7","bbox":[72,54,8,50]}
+{"kind":"textbox","id":"sh/61cbutob","slide":8,"textChars":31,"textLines":1}
+{"kind":"textbox","id":"sh/r2lcny5g","slide":8,"textChars":83,"textLines":1}
+{"kind":"textbox","id":"sh/s3utw361","slide":8,"textChars":20,"textLines":1}
+{"kind":"textbox","id":"sh/t43up8nm","slide":8,"textChars":43,"textLines":1}
+{"kind":"textbox","id":"sh/idsbq9oz","slide":8,"textChars":24,"textLines":1}
+{"kind":"notice","message":"Truncated: omitted 31 lines. Increase maxChars or narrow target."}

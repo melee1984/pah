@@ -4,37 +4,52 @@
  * building robust, powerful web applications using Vue and Laravel.
  */
 
-require('./bootstrap');
+import 'bootstrap';
+import '../css/order-details.css';
+import axios from 'axios';
 
-window.Vue = require('vue');
-window.Event = new Vue();
-// import * as VueGoogleMaps from 'vue2-google-maps';
-import VueGeolocation from 'vue-browser-geolocation';
+window.axios = axios;
+
+import Vue from 'vue';
+window.AppEvents = new Vue();
 
 // Restaurants 
-import detailedView from './components/restaurant/DetailedComponent.vue';
-import restaurantView from './components/restaurant/ViewComponent.vue';
-// Checkout 
-import cartCheckout from './components/checkout/SummaryComponent.vue';
-// Merchant Admin Form 
-import merchantForm from './components/merchant/RegisterComponent.vue';
-import merchantForgotForm from './components/merchant/form/ResetPasswordComponent.vue';
-// Products 
-import productsViewForm from './components/merchant/pages/products/ViewComponent.vue';
-import productsEditForm from './components/merchant/pages/products/EditComponent.vue';
-import CategoryViewForm from './components/merchant/pages/category/ViewComponent.vue';
-import LocationViewForm from './components/merchant/pages/location/ViewComponent.vue';
-import VoucherViewForm from './components/merchant/pages/voucher/ViewComponent.vue';
-import OrderView from './components/merchant/pages/orders/ViewComponent.vue';
-import ProfileViewForm from './components/merchant/pages/profile/ViewComponent.vue';
-import OrderSummary from './components/merchant/pages/orders/SummaryComponent.vue';
-// Reporting
-import OrderListing from './components/merchant/pages/report/OrderListComponent.vue';
-import StoreOnline from './components/merchant/includes/MerchantStoreOnlineComponent.vue';
-import TodayReport from './components/merchant/pages/report/OrderReportTodayComponent.vue';
+// Restaurants
+import detailedView from '@/components/restaurant/DetailedComponent.vue';
+import restaurantView from '@/components/restaurant/ViewComponent.vue';
 
-Vue.use(VueGeolocation);
-Vue.component('pagination-display', require('laravel-vue-pagination'));
+// Checkout
+import cartCheckout from '@/components/checkout/SummaryComponent.vue';
+
+// Merchant Admin Form
+import merchantForm from '@/components/merchant/RegisterComponent.vue';
+import merchantForgotForm from '@/components/merchant/form/ResetPasswordComponent.vue';
+
+// Products
+import productsViewForm from '@/components/merchant/pages/products/ViewComponent.vue';
+import productsEditForm from '@/components/merchant/pages/products/EditComponent.vue';
+
+// Categories, Locations, Vouchers
+import CategoryViewForm from '@/components/merchant/pages/category/ViewComponent.vue';
+import LocationViewForm from '@/components/merchant/pages/location/ViewComponent.vue';
+import TablesViewForm from '@/components/merchant/pages/tables/ViewComponent.vue';
+import VoucherViewForm from '@/components/merchant/pages/voucher/ViewComponent.vue';
+
+// Orders & Summary
+import OrderView from '@/components/merchant/pages/orders/ViewComponent.vue';
+import OrderSummary from '@/components/merchant/pages/orders/SummaryComponent.vue';
+
+// Profile
+import ProfileViewForm from '@/components/merchant/pages/profile/ViewComponent.vue';
+
+// Reporting
+import OrderListing from '@/components/merchant/pages/report/OrderListComponent.vue';
+import TodayReport from '@/components/merchant/pages/report/OrderReportTodayComponent.vue';
+
+// Store Online
+import StoreOnline from '@/components/merchant/includes/MerchantStoreOnlineComponent.vue';
+
+// Vue.component('pagination-display', require('laravel-vue-pagination'));
 
 // Restaurant 
 Vue.component('front-restaurant-list', restaurantView);
@@ -52,6 +67,7 @@ Vue.component('order-listing-view', OrderListing);
 // Category 
 Vue.component('merchant-category-view', CategoryViewForm);
 Vue.component('merchant-location-view', LocationViewForm);
+Vue.component('merchant-tables-view', TablesViewForm);
 Vue.component('merchant-voucher-view', VoucherViewForm);
 Vue.component('merchant-profile-view', ProfileViewForm);
 Vue.component('order-summary-view', OrderSummary);
@@ -64,11 +80,9 @@ Vue.component('today-report', TodayReport);
  * or customize the JavaScript scaffolding to fit your unique needs.
 
  */
-window.base_url = process.env.BASE_URL
+// window.base_url = process.env.BASE_URL
 
 const app = new Vue({
     el: '#app',
 });
-
-
 

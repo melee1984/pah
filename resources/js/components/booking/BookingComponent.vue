@@ -327,8 +327,9 @@
                   this.fields.address = this.dropoff.address;
                   this.fields.landmark =  this.dropoff.landmark;
               }
-              $('#displayMapModal').modal();
-
+              
+              var myModal = new bootstrap.Modal(document.getElementById('displayMapModal'));
+              myModal.show();
             },
             validate: function() {
             },
@@ -375,9 +376,8 @@
                  }
                }
 
-
-                $('#displayMapModal').modal('hide');
-
+              var myModal = new bootstrap.Modal(document.getElementById('displayMapModal'));
+              myModal.hide();
             }
         }
     }

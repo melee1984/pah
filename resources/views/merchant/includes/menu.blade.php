@@ -1,93 +1,87 @@
-<ul class="nav nav-pills nav-sidebar flex-column nav-flat nav-compact" data-widget="treeview" role="menu" data-accordion="false">
-          <!-- Add icons to the links using the .nav-icon class
-               with font-awesome or any other icon font library -->
-         <li class="nav-item">
-            <a href="{{ URL::to('merchant/dashboard') }}" class="nav-link {{ Request::is('merchant/dashboard') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-chalkboard-teacher"></i>
-              <p>Dashboard </p>
-            </a>
-          </li>
+<ul class="nav nav-pills nav-sidebar flex-column nav-flat nav-compact merchant-sidebar-menu" role="menu">
+  <li class="nav-header merchant-nav-section">Overview</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.index') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.index') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-home"></i><p>Dashboard</p>
+    </a>
+  </li>
 
-            <li class="nav-header">PRODUCTS</li>
-          <li class="nav-item">
-            <a href="{{ URL::to('merchant/products') }}" class="nav-link {{ Request::is('merchant/products') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-hamburger"></i>
-              <p>
-                Manage
-              </p>
-            </a>
-          </li>
+  <li class="nav-header merchant-nav-section">Manage store</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.orders') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.orders') || request()->routeIs('merchant.orders.*') || request()->routeIs('merchant.dashboard.previous-order') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-shopping-bag"></i><p>Orders</p>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.product') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.product*') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-utensils"></i><p>Products</p>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.category') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.category') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-layer-group"></i><p>Categories</p>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.promotions.index') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.promotions.*') || request()->routeIs('merchant.dashboard.coupons.*') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-bullhorn"></i><p>Promotions</p>
+    </a>
+  </li>
 
-         <li class="nav-header">ORDERS</li>
-          <li class="nav-item">
-            <a href="{{ URL::to('merchant/orders') }}" class="nav-link {{ Request::is('merchant/orders') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-shopping-cart"></i>
-              <p>
-                Order
-              </p>
-            </a>
-          </li>
-        <!--   <li class="nav-item">
-            <a href="{{ URL::to('merchant/previous-orders') }}" class="nav-link {{ Request::is('merchant/previous-orders') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-shopping-cart"></i>
-              <p>
-                Previous Order
-              </p>
-            </a> -->
-          </li>
+  <li class="nav-header merchant-nav-section">Locations</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.location') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.location') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-map-marker-alt"></i><p>Branches</p>
+    </a>
+  </li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.tables') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.tables') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-chair"></i><p>Dining tables</p>
+    </a>
+  </li>
+  @if ((int) Auth::User()->merchant?->user_id === (int) Auth::id())
+    <li class="nav-item">
+      <a href="{{ route('merchant.dashboard.users.index') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.users.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-users-cog"></i><p>Branch users</p>
+      </a>
+    </li>
+  @endif
 
-          <li class="nav-header">SETTINGS</li>
-          <!-- <li class="nav-item">
-            <a href="{{ URL::to('merchant/voucher') }}" class="nav-link {{ Request::is('merchant/voucher') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-check-double"></i>
-              <p>
-                Voucher
-              </p>
-            </a>
-          </li> -->
-          <li class="nav-item">
-            <a href="{{ URL::to('merchant/location') }}" class="nav-link {{ Request::is('merchant/location') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-map"></i>
-              <p>Location </p>
-            </a>
-          </li>
-           <li class="nav-item">
-            <a href="{{ URL::to('merchant/category') }}" class="nav-link {{ Request::is('merchant/category') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-layer-group"></i>
-              <p>Category </p>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="{{ URL::to('merchant/settings') }}" class="nav-link {{ Request::is('merchant/settings') ? 'active' : '' }}">
-              <i class="nav-icon fas fa-users-cog"></i>
-              <p>Profile </p>
-            </a>
-          </li>
-          <li class="nav-header">REPORTS</li>
-          <li class="nav-item">
-            <a href="{{ URL::to('merchant/report-sales-for-today') }}" class="nav-link {{ Request::is('merchant/report-sales-for-today') ? 'active' : '' }}">
-              <i class="fas fa-circle nav-icon"></i>
-              <p>Sales</p>
-            </a>
-          </li>
-        <!--   <li class="nav-item">
-            <a href="{{ URL::to('merchant/report-sales') }}" class="nav-link {{ Request::is('merchant/report-sales') ? 'active' : '' }}">
-              <i class="fas fa-circle nav-icon"></i>
-              <p>Sales Report</p>
-            </a>
-          </li>
+  <li class="nav-header merchant-nav-section">Insights</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.report.salestoday') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.report.salestoday') || request()->routeIs('merchant.dashboard.report.report') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-chart-line"></i><p>Sales report</p>
+    </a>
+  </li>
 
-          <li class="nav-item">
-            <a href="{{ URL::to('merchant/soa') }}" class="nav-link {{ Request::is('merchant/soa') ? 'active' : '' }}">
-              <i class="fas fa-circle nav-icon"></i>
-              <p>SOA</p>
-            </a>
-          </li> -->
-          <li class="nav-header"><hr></li>
-           <li class="nav-item">
-            <a href="{{ route('merchant.logout') }}" class="nav-link">
-              <i class="nav-icon far fa-circle text-info"></i>
-              <p>Logout</p>
-            </a>
-          </li>
-        </ul>
+  <li class="nav-header merchant-nav-section">Finance</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.report.soa') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.report.soa*') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-file-invoice-dollar"></i><p>Statements of account</p>
+    </a>
+  </li>
+
+  <li class="nav-header merchant-nav-section">Business account</li>
+  <li class="nav-item">
+    <a href="{{ route('merchant.dashboard.settings') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.settings') ? 'active' : '' }}">
+      <i class="nav-icon fas fa-store"></i><p>Business profile</p>
+    </a>
+  </li>
+  @if (Auth::User()->merchant?->agent_id)
+    <li class="nav-item">
+      <a href="{{ route('merchant.application.show') }}" class="nav-link {{ request()->routeIs('merchant.application.*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-file-alt"></i><p>Application documents</p>
+      </a>
+    </li>
+  @endif
+</ul>
+
+<div class="merchant-sidebar-footer">
+  <p class="merchant-sidebar-section-label">Support</p>
+  <a href="{{ route('merchant.help') }}" class="nav-link {{ request()->routeIs('merchant.help') ? 'active' : '' }}">
+    <i class="nav-icon fas fa-life-ring"></i><p>Help center</p>
+  </a>
+  <a href="{{ route('merchant.logout') }}" class="nav-link merchant-logout-link">
+    <i class="nav-icon fas fa-sign-out-alt"></i><p>Log out</p>
+  </a>
+</div>

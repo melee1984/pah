@@ -1657,7 +1657,6 @@ aside {
     justify-content: space-between;
     align-items: center; }
   .header-section .logo {
-    width: 300px;
     text-align: center; }
   .header-section .main-menu {
    /* width: calc(100% - 300px); */

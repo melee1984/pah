@@ -20,6 +20,9 @@
 
 <meta property="fb:app_id" content="591633281717714"/>
 <meta name="csrf-token" content="{{ csrf_token() }}">
+@if (config('services.turnstile.enabled'))
+<meta name="turnstile-site-key" content="{{ config('services.turnstile.site_key') }}">
+@endif
 <!-- favicon -->
 <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" type="image/ico">
 <!-- animate scss -->

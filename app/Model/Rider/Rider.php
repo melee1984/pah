@@ -3,9 +3,54 @@
 namespace App\Model\Rider;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Rider extends Model
 {
-   	protected $table = 'rider';
-	public $timestamps = true;
+    protected $table = 'rider';
+
+    public $timestamps = true;
+
+    protected $fillable = [
+        'name',
+        'mobile',
+        'city',
+        'user_id',
+        'date_join',
+        'license_no',
+        'active',
+        'is_active',
+        'approved_at',
+        'archived_at',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+        'is_active' => 'boolean',
+        'date_join' => 'datetime',
+        'approved_at' => 'datetime',
+        'archived_at' => 'datetime',
+    ];
+
+    public function wallet(): HasOne
+    {
+        return $this->hasOne(RiderApiWallet::class, 'rider_id');
+    }
+
+    public function locations(): HasMany
+    {
+        return $this->hasMany(RiderApiLocation::class, 'rider_id');
+    }
+
+    public function deliveries(): HasMany
+    {
+        return $this->hasMany(RiderApiDelivery::class, 'rider_id');
+    }
+
+    public function location(): HasOne
+    {
+        return $this->hasOne(RiderApiLocation::class, 'rider_id')
+            ->ofMany(['recorded_at' => 'max', 'id' => 'max']);
+    }
 }

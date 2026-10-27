@@ -6,6 +6,7 @@
   <meta http-equiv="x-ua-compatible" content="ie=edge">
 
   <title>Pahatud | Admin Dashboard</title>
+  <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
   <!-- overlayScrollbars -->
@@ -20,32 +21,32 @@
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css') }}">
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
 
-  @vite('resources/js/app.js')
+  @vite('resources/js/dashboard.js')
 
   <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
 
 </head>
-<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm">
+<body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed text-sm pahatud-admin">
 <div class="wrapper" id="app">
   <!-- Navbar -->
   
   @include('dashboard.includes.header')
 
-   <aside class="main-sidebar elevation-4 sidebar-dark-primary">
+   <aside class="main-sidebar elevation-4 sidebar-light-danger">
     <!-- Brand Logo -->
-    <a href="{{ route('merchant.dashboard.index') }}" class="brand-link">
-    <span class="brand-text font-weight-light">Admin Dashboard v.1.0</span>
+    <a href="{{ route('dashboard.data') }}" class="brand-link">
+      <img src="{{ asset('images/logo.jpg') }}" alt="Pahatud" class="brand-image">
+      <span class="brand-copy"><strong>Pahatud</strong><small>Administration</small></span>
     </a>
     <!-- Sidebar -->
     <div class="sidebar">
       <!-- Sidebar user panel (optional) -->
       <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="text-success" style="font-size: 20px;margin-left: 18px;">
-                    <img src="{{ asset('adminlte/dist/img/user2-160x160.jpg') }}" class="img-circle elevation-2" alt="User Image">
-
-        </div>
+        <div class="admin-user-avatar">{{ mb_strtoupper(mb_substr(Auth::User()->fullname, 0, 1)) }}</div>
         <div class="info">
           <a href="#" class="d-block">{{ Auth::User()->fullname }}</a>
+          <small>Administrator</small>
         </div>
       </div>
 
@@ -70,7 +71,7 @@
 
   <!-- Main Footer -->
   <footer class="main-footer">
-    <strong>Copyright &copy; <?=date('Y')?> <a href="http://pahatud.com\">Pahatud.com</a>.</strong>
+    <strong>Copyright &copy; {{ date('Y') }} <a href="https://pahatud.com">Pahatud.com</a>.</strong>
     All rights reserved.
     <div class="float-right d-none d-sm-inline-block">
       <b>Version</b> 1.0.0
@@ -81,9 +82,12 @@
 
 <!-- REQUIRED SCRIPTS -->
 <!-- jQuery -->
-<script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script>
+<!-- <script src="{{ asset('adminlte/plugins/jquery/jquery.min.js') }}"></script> -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <!-- jQuery UI 1.11.4 -->
-<script src="{{ asset('adminlte/plugins/jquery-ui/jquery-ui.min.js') }}"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+
 <!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
 <script>
   $.widget.bridge('uibutton', $.ui.button)
@@ -100,12 +104,8 @@
 <script src="{{ asset('adminlte/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js') }}"></script>
 <!-- AdminLTE App -->
 <script src="{{ asset('adminlte/dist/js/adminlte.js') }}"></script>
-<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
-<script src="{{ asset('adminlte/dist/js/pages/dashboard.js') }}"></script>
 <!-- AdminLTE for demo purposes -->
 <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
-<script src="{{ asset('adminlte/dist/js/demo.js') }}"></script>
-<script src="{{ asset('js/dashboard.js') }}" defer></script>
 
 <script type="text/javascript">
   var page_url = "{{ Request::path() }}";
@@ -130,8 +130,6 @@
     })
 
     $('#reservationdate').inputmask('dd/mm/yyyy', { 'placeholder': 'dd/mm/yyyy' })
-
-  
 
   });
    

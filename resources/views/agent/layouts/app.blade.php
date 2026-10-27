@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" type="image/ico">
+    <title>@yield('title', 'Agent Portal') | Pahatud</title>
+    @include('agent.partials.styles')
+    <link rel="stylesheet" href="{{ asset('css/restaurant-application.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/restaurant-file-preview.css') }}">
+</head>
+<body class="agent-body">
+@php
+    $portalAgent = auth('agent')->user();
+    $portalApprovedRestaurantCount = $portalAgent->approvedRestaurantCount();
+@endphp
+<div class="agent-shell">
+    <aside class="agent-sidebar">
+        <a class="agent-brand" href="{{ route('agent.dashboard') }}">
+            <img src="{{ asset('images/logo.jpg') }}" alt="Pahatud">
+            <span class="agent-brand-copy"><strong>Pahatud</strong><span>Agent Portal</span></span>
+        </a>
+
+        <p class="agent-nav-label">Workspace</p>
+        <nav class="agent-nav" aria-label="Agent navigation">
+            <a class="agent-nav-link {{ request()->routeIs('agent.dashboard') ? 'active' : '' }}" href="{{ route('agent.dashboard') }}">
+                <span class="agent-nav-icon">⌂</span><span>Dashboard</span>
+            </a>
+            <a class="agent-nav-link {{ request()->routeIs('agent.restaurants.index', 'agent.restaurants.show', 'agent.merchant-applications.*') ? 'active' : '' }}" href="{{ route('agent.restaurants.index') }}">
+                <span class="agent-nav-icon">▦</span><span>Restaurants</span>
+            </a>
+            <a class="agent-nav-link {{ request()->routeIs('agent.reports.*') ? 'active' : '' }}" href="{{ route('agent.reports.index') }}">
+                <span class="agent-nav-icon">↗</span><span>Reports</span>
+            </a>
+            <a class="agent-nav-link {{ request()->routeIs('agent.statements.*') ? 'active' : '' }}" href="{{ route('agent.statements.index') }}">
+                <span class="agent-nav-icon">▤</span><span>Statements</span>
+            </a>
+            <a class="agent-nav-link {{ request()->routeIs('agent.restaurants.create') ? 'active' : '' }}" href="{{ route('agent.restaurants.create') }}">
+                <span class="agent-nav-icon">＋</span><span>Enroll</span>
+            </a>
+            <a class="agent-nav-link agent-mobile-help {{ request()->routeIs('agent.help') ? 'active' : '' }}" href="{{ route('agent.help') }}"><span class="agent-nav-icon">?</span><span>Help</span></a>
+        </nav>
+
+        <div class="agent-sidebar-footer">
+            <a class="agent-nav-link {{ request()->routeIs('agent.help') ? 'active' : '' }}" href="{{ route('agent.help') }}"><span class="agent-nav-icon">?</span><span>Help &amp; FAQ</span></a>
+            <form method="POST" action="{{ route('agent.logout') }}">
+                @csrf
+                <button class="agent-nav-link agent-logout" type="submit"><span class="agent-nav-icon">↪</span><span>Sign out</span></button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="agent-main">
+        <header class="agent-topbar">
+            <span class="agent-mobile-brand">Pahatud <span style="color:#ef3b35">Agent</span></span>
+            <span class="agent-topbar-note">Only approved restaurants count toward your automatic commission tier.</span>
+            <div class="agent-profile">
+                <span class="agent-avatar">{{ mb_strtoupper(mb_substr($portalAgent->name, 0, 1)) }}</span>
+                <div><strong>{{ $portalAgent->name }}</strong><span>{{ number_format($portalAgent->commissionPercentage($portalApprovedRestaurantCount), 2) }}% share · {{ number_format($portalApprovedRestaurantCount) }} approved</span></div>
+            </div>
+        </header>
+
+        <div class="agent-content">
+            @if (session('success'))
+                <div class="agent-alert agent-alert-success" role="status">{{ session('success') }}</div>
+            @endif
+            @if (session('warning'))
+                <div class="agent-alert agent-alert-warning" role="alert">{{ session('warning') }}</div>
+            @endif
+            @yield('content')
+        </div>
+    </main>
+</div>
+@if (request()->routeIs('agent.restaurants.show', 'agent.merchant-applications.edit'))
+    <script src="{{ asset('js/restaurant-file-preview.js') }}" defer></script>
+@endif
+</body>
+</html>

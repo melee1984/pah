@@ -40,6 +40,7 @@
                     <td width="15%">
                         {{ order.submitted_date }}<br>
                         <a href="javascript:void(0)" class="btn btn-xs btn-danger" v-on:click="displayOrderDetails(order)"><strong>Order # {{ order.cart.order_no }}  </strong></a>
+                        <small v-if="order.cart.discount_code" class="d-block mt-1">Coupon: <strong>{{ order.cart.discount_code }}</strong></small>
                     </td>
                     <td width="25%">
                         Restaurant: <strong>{{ order.partner.restaurant_name }} </strong> <br> <br>
@@ -183,6 +184,10 @@
                                                             <th colspan="2" class="text-right">Discount:</th>
                                                             <th class="text-center">{{ selectedOrder.summary.discount }} PHP</th>
                                                         </tr>
+                                                        <tr v-if="selectedOrder.cart.discount_code">
+                                                            <th colspan="2" class="text-right">Coupon code:</th>
+                                                            <th class="text-center">{{ selectedOrder.cart.discount_code }}</th>
+                                                        </tr>
                                                         <tr>
                                                             <th colspan="2" class="text-right">Total:</th>
                                                             <th class="text-center">{{ selectedOrder.summary.total }} PHP</th>
@@ -223,26 +228,42 @@
                 },
                 errors: {},
                 orders: {},
-                timerInterval: 60,
+                timerInterval: 15,
+                refreshTimer: null,
                 riders: {},
                 selectedOrder: {},
                 statuses: {},
+                modalInstance: null,
             }
         },
         mounted() {
             console.log('Mounted Order List View Component')
-              this.fetchData();
-              this.selectedOrder = this.orders[0];  
-             this.startTimer();
+            this.fetchData();
+            this.selectedOrder = this.orders[0];  
+            this.startTimer();
+            
+            const modalEl = document.getElementById("orderDetails");
+            this.modalInstance = new bootstrap.Modal(modalEl, {
+              backdrop: "static", // optional
+              keyboard: true,
+            });
+            document.addEventListener('keydown', this.handleEscapeKey);
         },
-        
+        beforeDestroy() {
+            window.clearInterval(this.refreshTimer);
+            document.removeEventListener('keydown', this.handleEscapeKey);
+
+            if (this.modalInstance) {
+              this.modalInstance.dispose();
+              this.modalInstance = null;
+            }
+        },
         methods: {
           startTimer: function () {
-           setInterval(() => {
+           this.refreshTimer = window.setInterval(() => {
                 this.timerInterval--;
-                if (this.timerInterval ==0) {
-                  this.timerInterval = 60;
-                  toastr.info("Refreshing...");
+                if (this.timerInterval === 0) {
+                  this.timerInterval = 15;
                   this.fetchData();
                 }
            }, 1000)
@@ -294,11 +315,34 @@
           },
           displayOrderDetails: function(order) {
               this.selectedOrder = order;
-              $('#orderDetails').modal('toggle');
-          }
+              this.openModal();
+          },
+          openModal() {
+            if (!this.modalInstance) {
+              const modalEl = document.getElementById("orderDetails");
+              this.modalInstance = new bootstrap.Modal(modalEl);
+            }
+            this.modalInstance.show();
+          },
+          closeModal() {
+            if (this.modalInstance) {
+              this.modalInstance.hide();
+            }
+          },
+          handleEscapeKey(event) {
+            if (event.key !== 'Escape' && event.key !== 'Esc' && event.keyCode !== 27) {
+              return;
+            }
+
+            const modalEl = document.getElementById('orderDetails');
+
+            if (modalEl && modalEl.classList.contains('show')) {
+              event.preventDefault();
+              this.closeModal();
+            }
+          },
           
         }
     }
 
 </script>
-

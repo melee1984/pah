@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="{{ asset('adminlte/plugins/toastr/toastr.min.css') }}">
 
     <!-- Scripts -->
-    <script src="{{ asset('js/app.js') }}" defer></script>
+    @vite('resources/js/app.js')
     <body>
         <!-- preloader -->
         <!-- <div class="preloader"><div class="load loade"><hr/><hr/><hr/><hr/></div></div> -->
@@ -37,6 +37,7 @@
         </div>
         <!-- search area -->
         <div id="app">
+        <support-center :authenticated="{{ auth()->check() ? 'true' : 'false' }}"></support-center>
     		@include('includes.nav2')
     		<!-- search area -->
             @yield('content')
@@ -47,9 +48,7 @@
         <!-- scrollToTop start here -->
 		<a href="#" class="scrollToTop"><i class="icofont-swoosh-up"></i></a>
 		<!-- scrollToTop ending here -->
-
 		@include('pages.includes.js')
-
         <script src="{{ asset('adminlte/plugins/toastr/toastr.min.js') }}"></script>
         
 	</body>

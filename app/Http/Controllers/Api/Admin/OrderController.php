@@ -8,50 +8,162 @@ use Illuminate\Http\Request;
 use App\Model\Orders\Orders;
 use App\Model\Cart;
 use App\Model\Riders;
-use App\LibraryStatus;
 use App\Model\Orders\OrderProcess;
 use App\Partners;
 use Auth;
 use Validator;
 use App\User;
+use App\LibraryStatus;
+use App\Services\RiderOfferDispatcher;
+use App\Services\RiderDispatchStatus;
+use App\Services\AdminCityScope;
+use Carbon\Carbon;
 
 use App\PushNotification;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
 class OrderController extends Controller
 {
    
-    public function getList() 
+    public function getList(RiderDispatchStatus $dispatchStatus, AdminCityScope $cityScope)
     {	 
-         $orders = Orders::with('cart')
-            ->whereNotNull('submitted_at') 
-            ->whereNull('delivered_at')
-            // ->whereRaw('status_id != 8')
-            ->with('partner')
-            ->orderBy('created_at', 'desc')->get();
+         $ordersQuery = Orders::with(['cart.payment', 'cart.diningTable', 'orderStatus'])
+                ->whereNotNull('submitted_at') 
+                ->with(['partner', 'rider', 'status'])
+                ->orderBy('created_at', 'desc');
+         $orders = $cityScope->orders($ordersQuery)->get();
+
+        $deliveries = DB::table('rider_api_deliveries')
+            ->whereIn('legacy_order_id', $orders->pluck('id'))
+            ->get(['id', 'reference', 'legacy_order_id', 'rider_id', 'current_state']);
+
+        $dispatchStatuses = $dispatchStatus->forOrders($orders);
+
+        $proofsByDelivery = DB::table('rider_api_delivery_proofs')
+            ->whereIn('delivery_id', $deliveries->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('delivery_id');
+
+        $proofsByOrder = $deliveries
+            ->groupBy('legacy_order_id')
+            ->map(function ($orderDeliveries) use ($proofsByDelivery) {
+                return $orderDeliveries->flatMap(function ($delivery) use ($proofsByDelivery) {
+                    return $proofsByDelivery->get($delivery->id, collect())->map(function ($proof) use ($delivery) {
+                        return [
+                            'id' => $proof->reference,
+                            'method' => $proof->method,
+                            'processing_status' => $proof->processing_status,
+                            'created_at' => $proof->created_at,
+                            'file_url' => $proof->path
+                                ? route('dashboard.orders.delivery-proof', [
+                                    'delivery' => $delivery->reference,
+                                    'proof' => $proof->reference,
+                                ])
+                                : null,
+                        ];
+                    });
+                })->values();
+            });
 
         foreach($orders as $order) {
 
-            $order->rider;
-        	$order->status;
             $order->cart->address;
             $order->cart->partnerlocation;
 
             $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
+            $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
+            $order->rider_dispatch = $dispatchStatuses->get($order->id);
         }
 
-        $data['orders'] = $orders;
-        $data['riders'] = Riders::active()->get();
+        $data['orders'] = $orders->whereNotIn('order_status_id', [
+            ...LibraryStatus::COMPLETED_STATUSES,
+            LibraryStatus::STATUS_CANCELLED,
+        ])->values();
+
+        // Pickup and dine-in orders do not move through the rider booking statuses,
+        // so the order status is the shared source of truth for every option.
+        $data['completedOrders'] = $orders->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES)->values();
+        $data['cancelledOrders'] = $orders->where('order_status_id', LibraryStatus::STATUS_CANCELLED)->values();
+
+        $data['riders'] = $cityScope->riders(Riders::active())->get();
         $data['statuses'] = LibraryStatus::orderBy('sorting','asc')->get();
 
     	return response()->json($data, 200);
     }   
 
-     public function getListwithFilter(Request $request) {
+    public function viewDeliveryProof(string $delivery, string $proof): StreamedResponse
+    {
+        $attachedProof = DB::table('rider_api_delivery_proofs as proofs')
+            ->join('rider_api_deliveries as deliveries', 'deliveries.id', '=', 'proofs.delivery_id')
+            ->where('deliveries.reference', $delivery)
+            ->where('proofs.reference', $proof)
+            ->select('proofs.path')
+            ->first();
+
+        abort_if(! $attachedProof || ! $attachedProof->path, 404);
+        abort_unless(Storage::disk('local')->exists($attachedProof->path), 404);
+
+        return Storage::disk('local')->response($attachedProof->path);
+    }
+
+    public function retryRiderOffers(Orders $order, RiderOfferDispatcher $dispatcher)
+    {
+        if (! $order->submitted_at || ! $order->store_accepted_at
+            || ! in_array((int) $order->order_status_id, [
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+            return response()->json(['message' => 'Only accepted orders awaiting pickup can be sent to riders.'], 409);
+        }
+
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        if ($order->rider_id || $order->accepted_by_rider_id || $delivery?->rider_id
+            || ($delivery && $delivery->current_state !== 'offered')) {
+            return response()->json(['message' => 'This order already has a rider or is no longer available.'], 409);
+        }
+
+        $before = $delivery
+            ? DB::table('rider_api_offers')->where('delivery_id', $delivery->id)
+                ->where('status', 'pending')->where('expires_at', '>', now())->count()
+            : 0;
+        $reference = $dispatcher->dispatchOrder($order);
+        if (! $reference) {
+            return response()->json(['message' => 'Rider dispatch is currently unavailable.'], 503);
+        }
+
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        $activeOffers = DB::table('rider_api_offers')->where('delivery_id', $delivery->id)
+            ->where('status', 'pending')->where('expires_at', '>', now())->count();
+        $newOffers = max(0, $activeOffers - $before);
+
+        return response()->json([
+            'new_offers' => $newOffers,
+            'active_offers' => $activeOffers,
+            'message' => $newOffers > 0
+                ? "Sent this order to {$newOffers} available rider(s)."
+                : ($activeOffers > 0
+                    ? 'No new riders found. Existing rider offers are still active.'
+                    : 'No eligible riders are available nearby right now. Try again later.'),
+        ]);
+    }
+
+     public function getListwithFilter(Request $request, AdminCityScope $cityScope) {
+
+        $request->validate([
+            'fulfillment_type' => ['nullable', 'in:delivery,pickup,dine_in'],
+        ]);
 
         $totalSummary = array();
         $qty =0;
         $fee =0;
+        $convenienceFee = 0;
+        $vat = 0;
         $sub_total =0;
         $total =0;
         $discount =0;
@@ -61,19 +173,18 @@ class OrderController extends Controller
 
         $merchant = "";
 
-        $query = Orders::query();
+        $completedAt = DB::raw('COALESCE(delivered_at, updated_at, submitted_at)');
+        $query = Orders::with(['cart', 'partner'])
+            ->whereNotNull('submitted_at')
+            ->whereIn('order_status_id', LibraryStatus::COMPLETED_STATUSES);
+        $cityScope->orders($query);
      
         if ($request->has('dateFilter')) {
 
             $dataFilterArray = explode('-', $request->input('dateFilter'));    
 
-            $query->with('cart')
-                ->with('partner')
-                ->whereNotNull('submitted_at') 
-                ->whereNull('delivered_at')
-                ->where('submitted_at','>=', date('Y-m-d G:i', strtotime($dataFilterArray[0]) ))
-                ->where('submitted_at','<=', date('Y-m-d G:i', strtotime($dataFilterArray[1]) ))
-                ->orderBy('created_at', 'asc');
+            $query->where($completedAt, '>=', date('Y-m-d G:i', strtotime($dataFilterArray[0])))
+                ->where($completedAt, '<=', date('Y-m-d G:i', strtotime($dataFilterArray[1])));
 
             // $query = Orders::with('cart')
             //     ->with('partner')
@@ -88,12 +199,7 @@ class OrderController extends Controller
             //     ->whereDay('submitted_at', '=', date('d'))
             //     ->orderBy('created_at', 'asc');
                
-             $query->with('cart')
-                    ->with('partner')
-                    ->whereNotNull('submitted_at') 
-                    ->whereNull('delivered_at')
-                    ->whereDay('submitted_at', '=', date('d'))
-                    ->orderBy('created_at', 'asc');
+             $query->whereBetween($completedAt, [now()->startOfDay(), now()->endOfDay()]);
         }
 
         if ($request->has('merchant')) { 
@@ -102,8 +208,23 @@ class OrderController extends Controller
             }
         }
 
+        if ($request->filled('fulfillment_type')) {
+            $fulfillmentType = $request->input('fulfillment_type');
 
-        $orders = $query->get();
+            $query->whereHas('cart', function ($cartQuery) use ($fulfillmentType) {
+                $cartQuery->where(function ($typeQuery) use ($fulfillmentType) {
+                    $typeQuery->where('fulfillment_type', $fulfillmentType);
+
+                    if ($fulfillmentType === Cart::FULFILLMENT_DELIVERY) {
+                        $typeQuery->orWhereNull('fulfillment_type');
+                    }
+                });
+            });
+        }
+
+
+        $orders = $query->orderByDesc($completedAt)->get();
+        $number = fn ($value) => (float) str_replace(',', '', (string) $value);
 
 
         if (!$orders) return response()->json($data, 200);
@@ -115,24 +236,29 @@ class OrderController extends Controller
             $order->status;
             $order->cart->address;
 
-            $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
+            $completedDate = $order->delivered_at ?: $order->updated_at ?: $order->submitted_at;
+            $order->submitted_date = Carbon::parse($completedDate)->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
             $order->cart->cartItemVariance();
 
             $qty+= (int)$summary['qty'];
-            $fee+= number_format((float)$summary['delivery_fee'],2);
-            $sub_total+= number_format((float)$summary['sub_total'],2);
-            $total+= number_format((float)$summary['total'],2);
-            $discount+= number_format((float)$summary['discount'],2);
-            $total_comm += number_format((float)$summary['total_comm'],2);
-            $total_net += number_format((float)$summary['total'] - (float)$summary['total_comm'],2);
+            $fee += $number($summary['delivery_fee']);
+            $convenienceFee += $number($summary['convenience_fee']);
+            $vat += $number($summary['vat_amount']);
+            $sub_total += $number($summary['sub_total']);
+            $total += $number($summary['total']);
+            $discount += $number($summary['discount']);
+            $total_comm += $number($summary['total_comm']);
+            $total_net += $number($summary['total']) - $number($summary['total_comm']);
 
             $order->summary = $summary;
         }
 
         $totalSummary['qty'] = $qty;
         $totalSummary['fee'] = number_format($fee,2);
+        $totalSummary['convenience_fee'] = number_format($convenienceFee, 2);
+        $totalSummary['vat_amount'] = number_format($vat, 2);
         $totalSummary['discount'] = number_format($discount,2);
         $totalSummary['sub_total'] = number_format($sub_total,2);
         $totalSummary['total'] = number_format($total,2);
@@ -141,45 +267,67 @@ class OrderController extends Controller
         
         $data['totalSummary'] = $totalSummary;
         $data['orders'] = $orders;
-        $data['partners'] = Partners::whereNotNull('verified_at')->whereActive(1)->get(['id','restaurant_name']);
+        $data['partners'] = $cityScope->partners(
+            Partners::whereNotNull('verified_at')->whereActive(1)
+        )->get(['id','restaurant_name']);
 
         return response()->json($data, 200);
 
     }
 
-    public function getListMemberwithFilter() {
+    public function getListMemberwithFilter(Request $request, AdminCityScope $cityScope)
+    {
+        $data = [];
+        $search = trim((string) $request->query('search', ''));
 
-        $data = array();
+        $users = User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email', 'city')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('firstname', 'like', "%{$search}%")
+                        ->orWhere('lastname', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%");
+                });
+            });
+        $cityScope->users($users);
+        $users = $users->orderBy('created_at', 'desc')
+            ->paginate(25);
 
-        $users =  User::select('id', 'created_at', 'firstname', 'lastname', 'mobile', 'email')
-                    ->orderBy('created_at', 'desc')
-                    ->paginate(100);
-
-        foreach($users as $user) {
-
+        foreach ($users as $user) {
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
         }
 
         $data['members'] = $users;
+
         return response()->json($data, 200);
-
     }
-    public function getListMerchantwithFilter() {
 
-        $data = array();
+    public function getListMerchantwithFilter(Request $request, AdminCityScope $cityScope)
+    {
+        $data = [];
+        $search = trim((string) $request->query('search', ''));
 
-        $users =  Partners::orderBy('created_at', 'desc')
-                    ->paginate(100);
+        $users = Partners::with('accoutType')
+            ->visibleInMerchantDirectory()
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('restaurant_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('mobile', 'like', "%{$search}%")
+                        ->orWhere('telephone', 'like', "%{$search}%")
+                        ->orWhere('city', 'like', "%{$search}%");
+                });
+            });
+        $cityScope->partners($users);
+        $users = $users->orderBy('created_at', 'desc')
+            ->paginate(25);
 
-        foreach($users as $user) {
-
+        foreach ($users as $user) {
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
-            $user->isverified = $user->verified_at?1:0;
-            $user->istoreopen = $user->store_open?1:0;
-            $user->accoutType;
+            $user->isverified = $user->verified_at ? 1 : 0;
+            $user->istoreopen = $user->store_open ? 1 : 0;
         }
 
-        
         $data['members'] = $users;
 
         return response()->json($data, 200);
@@ -196,6 +344,11 @@ class OrderController extends Controller
 
             if ($request->input('status_id')!=null) {
                 $order->status_id = $request->input('status_id');    
+                $order->order_status_id = $request->input('status_id');
+
+                if (in_array((int) $request->input('status_id'), LibraryStatus::COMPLETED_STATUSES, true)) {
+                    $order->delivered_at = $order->delivered_at ?: now();
+                }
             }
             else {
                 $order->status_id = "";
@@ -222,32 +375,50 @@ class OrderController extends Controller
 
         return response()->json($data, 200);
     }
-    public function updateOrderRider(Request $request, Orders $order) {
 
-        if ($request->input('rider_id')!=null) {
-            $order->rider_id = $request->input('rider_id');    
-        }
-        else {
-            $order->rider_id = "";
-        }
-        
-        $status = $order->save();
+    public function updateOrderRider(
+        Request $request,
+        Orders $order,
+        RiderOfferDispatcher $dispatcher,
+    ) {
+        $validated = $request->validate([
+            'rider_id' => ['required', 'integer', 'min:1', 'exists:rider,id'],
+        ]);
 
-        if ($status) {
-
-            // Send Push Notification to Rider 
-          
-            PushNotification::sendPushToRider($order);
-
-            $data['message'] = "Successfully updated rider";
-            $data['status'] = 1;
-        }
-        else {
-            $data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
-            $data['status'] = 0;    
+        if (! $order->submitted_at || ! $order->store_accepted_at
+            || ! in_array((int) $order->order_status_id, [
+                LibraryStatus::STATUS_ORDER_ACCEPTED,
+                LibraryStatus::STATUS_PROCESSING,
+                LibraryStatus::STATUS_READY_FOR_PICKUP,
+            ], true)) {
+            return response()->json([
+                'message' => 'Only accepted delivery orders awaiting pickup can be offered to a rider.',
+            ], 409);
         }
 
-        return response()->json($data, 200);
+        $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $order->id)->first();
+        if ($order->rider_id || $order->accepted_by_rider_id || $delivery?->rider_id
+            || ($delivery && $delivery->current_state !== 'offered')) {
+            return response()->json([
+                'message' => 'This order already has a rider or is no longer available.',
+            ], 409);
+        }
+
+        $riderId = (int) $validated['rider_id'];
+        if (! Riders::active()->whereKey($riderId)->exists()) {
+            return response()->json(['message' => 'The selected rider is not active.'], 422);
+        }
+
+        if (! $dispatcher->dispatchOrderToRider($order, $riderId)) {
+            return response()->json([
+                'message' => 'The selected rider is not currently eligible. Ask the rider to go online and refresh their location, then try again.',
+            ], 409);
+        }
+
+        return response()->json([
+            'message' => 'Offer sent to the selected rider.',
+            'status' => 1,
+        ]);
     }
 
     public function orderSummary() {

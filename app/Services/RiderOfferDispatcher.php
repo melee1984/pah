@@ -1,0 +1,430 @@
+<?php
+
+namespace App\Services;
+
+use App\Jobs\SendRiderOfferPush;
+use App\Model\Orders\Orders;
+use App\PaymentMethod;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
+
+class RiderOfferDispatcher
+{
+    private readonly RiderBatchingService $batching;
+
+    public function __construct(?RiderBatchingService $batching = null)
+    {
+        $this->batching = $batching ?? app(RiderBatchingService::class);
+    }
+
+    public function dispatchOrder(Orders $order): ?string
+    {
+        if (! $this->tablesAvailable()) {
+            return null;
+        }
+
+        $delivery = $this->deliveryForOrder($order);
+
+        if (! $delivery->rider_id && $delivery->current_state === 'offered') {
+            foreach ($this->nearbyRiderIds($delivery) as $riderId) {
+                \Log::info("Dispatching delivery {$delivery->id} to rider {$riderId}");
+                $this->offerDeliveryToRider($delivery->id, $riderId);
+            }
+        }
+
+        return $delivery->reference;
+    }
+
+    public function dispatchOrderToRider(Orders $order, int $riderId): ?string
+    {
+        if (! $this->tablesAvailable()) {
+            return null;
+        }
+
+        $delivery = $this->deliveryForOrder($order);
+        if ($delivery->rider_id || $delivery->current_state !== 'offered'
+            || ! in_array($riderId, $this->nearbyRiderIds($delivery), true)) {
+            return null;
+        }
+
+        $this->offerDeliveryToRider((int) $delivery->id, $riderId);
+        $offer = DB::table('rider_api_offers')
+            ->where('delivery_id', $delivery->id)
+            ->where('rider_id', $riderId)
+            ->where('status', 'pending')
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (! $offer) {
+            return null;
+        }
+
+        DB::table('rider_api_offers')
+            ->where('delivery_id', $delivery->id)
+            ->where('rider_id', '!=', $riderId)
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'expired',
+                'responded_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return $delivery->reference;
+    }
+
+    public function dispatchPendingForRider(int $riderId): void
+    {
+        if (! $this->tablesAvailable()) {
+            return;
+        }
+
+        $deliveries = DB::table('rider_api_deliveries')
+            ->whereNull('rider_id')
+            ->where('current_state', 'offered')
+            ->where('created_at', '>=', now()->subDay())
+            ->orderBy('created_at')
+            ->limit(20)
+            ->get();
+
+        foreach ($deliveries as $delivery) {
+            if (in_array($riderId, $this->nearbyRiderIds($delivery), true)) {
+                $this->offerDeliveryToRider((int) $delivery->id, $riderId);
+            }
+        }
+    }
+
+    public function cancelOrder(int $orderId): void
+    {
+        if (! $this->tablesAvailable()) {
+            return;
+        }
+        $delivery = DB::table('rider_api_deliveries')
+            ->where('legacy_order_id', $orderId)
+            ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+            ->first();
+        if (! $delivery) {
+            return;
+        }
+
+        DB::transaction(function () use ($delivery) {
+            DB::table('rider_api_deliveries')->where('id', $delivery->id)->update([
+                'current_state' => 'cancelled',
+                'completed_at' => now(),
+                'updated_at' => now(),
+            ]);
+            DB::table('rider_api_offers')
+                ->where('delivery_id', $delivery->id)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'expired',
+                    'responded_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            if ($delivery->rider_id) {
+                $hasAnotherActiveDelivery = DB::table('rider_api_deliveries')
+                    ->where('rider_id', $delivery->rider_id)
+                    ->where('id', '!=', $delivery->id)
+                    ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+                    ->exists();
+                DB::table('rider_api_availability')
+                    ->where('rider_id', $delivery->rider_id)
+                    ->update([
+                        'state' => $hasAnotherActiveDelivery ? 'active_delivery' : 'available',
+                        'updated_at' => now(),
+                    ]);
+                $this->batching->markActiveBatch((int) $delivery->rider_id);
+            }
+        });
+    }
+
+    public function pickupCode(int $orderId): string
+    {
+        return $this->code($orderId, 'pickup');
+    }
+
+    public function customerCode(int $orderId): string
+    {
+        return $this->code($orderId, 'customer');
+    }
+
+    private function offerDeliveryToRider(int $deliveryId, int $riderId): void
+    {
+        DB::transaction(function () use ($deliveryId, $riderId) {
+            // Lock the delivery so concurrent dispatches cannot exceed the rider limit.
+            $delivery = DB::table('rider_api_deliveries')->where('id', $deliveryId)->lockForUpdate()->first();
+            if (! $delivery || $delivery->rider_id || $delivery->current_state !== 'offered') {
+                return;
+            }
+
+            $availability = DB::table('rider_api_availability')
+                ->where('rider_id', $riderId)
+                ->lockForUpdate()
+                ->first();
+            if (! $availability || ! in_array($availability->state, ['available', 'active_delivery'], true)
+                || $this->pendingOfferCount($riderId) >= $this->maxPendingOffersPerRider()) {
+                return;
+            }
+
+            $activeDeliveries = DB::table('rider_api_deliveries')
+                ->where('rider_id', $riderId)
+                ->whereNotIn('current_state', ['delivered', 'cancelled', 'failed'])
+                ->lockForUpdate()
+                ->get();
+            if ($activeDeliveries->count() >= $this->batching->maxActiveDeliveries()) {
+                return;
+            }
+            if ($activeDeliveries->isNotEmpty() && ! $this->batching->addOnPlan($riderId, $delivery)) {
+                return;
+            }
+
+            $existingOffer = DB::table('rider_api_offers')
+                ->where('rider_id', $riderId)
+                ->where('delivery_id', $deliveryId)
+                ->lockForUpdate()
+                ->first();
+            if ($existingOffer && ($existingOffer->status !== 'expired'
+                && ! ($existingOffer->status === 'pending' && now()->greaterThanOrEqualTo($existingOffer->expires_at)))) {
+                return;
+            }
+
+            // Limit concurrent offers, not historical attempts. Expired offers are
+            // renewed in place because the schema allows one row per rider/delivery.
+            if (DB::table('rider_api_offers')->where('delivery_id', $deliveryId)
+                ->where('status', 'pending')->where('expires_at', '>', now())->count()
+                >= max(1, (int) config('rider.offer_nearby_limit', 10))) {
+                return;
+            }
+
+            $reference = (string) Str::uuid();
+            if ($existingOffer) {
+                DB::table('rider_api_offers')->where('id', $existingOffer->id)->update([
+                    'reference' => $reference,
+                    'status' => 'pending',
+                    'decline_reason' => null,
+                    'expires_at' => now()->addMinutes(15),
+                    'responded_at' => null,
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('rider_api_offers')->insert([
+                    'rider_id' => $riderId,
+                    'delivery_id' => $deliveryId,
+                    'reference' => $reference,
+                    'status' => 'pending',
+                    'expires_at' => now()->addMinutes(15),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            if (Schema::hasTable('rider_api_notifications')) {
+                $isAddOn = $activeDeliveries->isNotEmpty();
+                DB::table('rider_api_notifications')->insert([
+                    'reference' => (string) Str::uuid(),
+                    'rider_id' => $riderId,
+                    'type' => 'delivery_offer',
+                    'title' => $isAddOn ? 'Add-on delivery available' : 'New delivery offer',
+                    'body' => 'A delivery from '.($delivery->merchant_name ?: 'a nearby merchant')
+                        .($isAddOn ? ' fits your current route.' : ' is available.'),
+                    'deep_link' => '/app/home',
+                    'data' => json_encode(['offer_id' => $reference, 'delivery_id' => $delivery->reference], JSON_THROW_ON_ERROR),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            \Log::info("Dispatching delivery {$deliveryId} to rider {$riderId} with offer reference {$reference}");
+            SendRiderOfferPush::dispatch($riderId, $reference)->afterCommit();
+
+        });
+    }
+
+    private function deliveryForOrder(Orders $order): object
+    {
+        $delivery = DB::table('rider_api_deliveries')
+            ->where('legacy_order_id', $order->getKey())
+            ->first();
+
+        if ($delivery) {
+            return $delivery;
+        }
+
+        $order = Orders::query()
+            ->with(['cart.address', 'cart.partnerlocation', 'cart.partner', 'user'])
+            ->findOrFail($order->getKey());
+        $cart = $order->cart;
+        $partner = $cart?->partner ?? $order->partner;
+        $pickup = $cart?->partnerlocation ?? $partner?->location;
+        $dropoff = $cart?->address;
+        $totalCentavos = $cart ? (int) round($cart->cartItemTotal() * 100) : 0;
+        $deliveryId = DB::table('rider_api_deliveries')->insertGetId([
+            'reference' => (string) Str::uuid(),
+            'legacy_order_id' => $order->getKey(),
+            'current_state' => 'offered',
+            'merchant_name' => $partner?->restaurant_name ?? 'Pahatud merchant',
+            'pickup_area' => $pickup?->city ?? $partner?->city,
+            'pickup_address' => $this->address($pickup?->address_1, $pickup?->address_2, $partner?->address),
+            'pickup_latitude' => $pickup?->latitude ?? $partner?->latitude,
+            'pickup_longitude' => $pickup?->longtitude ?? $partner?->longtitude,
+            'dropoff_area' => $dropoff?->address_2,
+            'dropoff_address' => $this->address($dropoff?->address_1, $dropoff?->address_2, $dropoff?->landmark),
+            'dropoff_latitude' => $dropoff?->lat ?? $cart?->user_lat,
+            'dropoff_longitude' => $dropoff?->long ?? $cart?->user_long,
+            'customer_name' => trim((string) ($order->user?->full_name ?? 'Pahatud customer')),
+            'customer_mobile' => $dropoff?->mobile ?? $order->user?->mobile,
+            'distance_meters' => $this->distanceMeters(
+                $pickup?->latitude ?? $partner?->latitude,
+                $pickup?->longtitude ?? $partner?->longtitude,
+                $dropoff?->lat ?? $cart?->user_lat,
+                $dropoff?->long ?? $cart?->user_long,
+            ),
+            'eta_seconds' => $this->etaSeconds($cart?->duration),
+            'earnings_centavos' => max(0, (int) round(((float) ($cart?->delivery_fee ?? 0)) * 100)),
+            'commission_percentage' => config('rider.pahatud_commission_percentage', 20),
+            'commission_centavos' => max(0, (int) round(
+                ((float) ($cart?->delivery_fee ?? 0))
+                * 100
+                * ((float) config('rider.pahatud_commission_percentage', 20) / 100)
+            )),
+            'cod_centavos' => (int) ($cart?->payment_id) === PaymentMethod::CHECKOUT_COD ? $totalCentavos : 0,
+            'order_count' => 1,
+            'is_batched' => false,
+            'pickup_code_hash' => hash('sha256', $this->pickupCode($order->getKey())),
+            'customer_code_hash' => hash('sha256', $this->customerCode($order->getKey())),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return DB::table('rider_api_deliveries')->where('id', $deliveryId)->first();
+    }
+
+    private function maxPendingOffersPerRider(): int
+    {
+        return max(1, (int) config('rider.offer_max_pending_per_rider', 3));
+    }
+
+    private function pendingOfferCount(int $riderId): int
+    {
+        return DB::table('rider_api_offers as pending_offer')
+            ->join('rider_api_deliveries as pending_delivery', 'pending_delivery.id', '=', 'pending_offer.delivery_id')
+            ->where('pending_offer.rider_id', $riderId)
+            ->where('pending_offer.status', 'pending')
+            ->where('pending_offer.expires_at', '>', now())
+            ->where('pending_delivery.current_state', 'offered')
+            ->whereNull('pending_delivery.rider_id')
+            ->count();
+    }
+
+    /** @return list<int> */
+    private function nearbyRiderIds(object $delivery): array
+    {
+        if (! is_numeric($delivery->pickup_latitude) || ! is_numeric($delivery->pickup_longitude)) {
+            return [];
+        }
+
+        $maxAgeMinutes = max(1, (int) config('rider.offer_location_max_age_minutes', 5));
+        $maxDistanceMeters = max(0, (float) config('rider.offer_max_distance_km', 20)) * 1000;
+        $limit = max(1, (int) config('rider.offer_nearby_limit', 10));
+        $maxPendingOffers = $this->maxPendingOffersPerRider();
+
+        // Use each rider's most recently recorded fix, not an older nearby fix.
+        $riders = DB::table('rider')
+            ->join('rider_api_availability', 'rider_api_availability.rider_id', '=', 'rider.id')
+            ->join('rider_api_locations as location', 'location.rider_id', '=', 'rider.id')
+            ->whereRaw('location.id = (SELECT latest.id FROM rider_api_locations AS latest WHERE latest.rider_id = rider.id ORDER BY latest.recorded_at DESC, latest.id DESC LIMIT 1)')
+            ->where('rider.active', true)
+            ->whereNull('rider.archived_at')
+            ->whereIn('rider_api_availability.state', ['available', 'active_delivery'])
+            ->whereBetween('location.recorded_at', [now()->subMinutes($maxAgeMinutes), now()->addMinute()])
+            ->whereRaw('(SELECT COUNT(*) FROM rider_api_offers AS pending_offer JOIN rider_api_deliveries AS pending_delivery ON pending_delivery.id = pending_offer.delivery_id WHERE pending_offer.rider_id = rider.id AND pending_offer.status = ? AND pending_offer.expires_at > ? AND pending_delivery.current_state = ? AND pending_delivery.rider_id IS NULL) < ?', ['pending', now(), 'offered', $maxPendingOffers])
+            ->select('rider.id', 'location.latitude', 'location.longitude')
+            ->get();
+
+        \Log::info('Nearby riders for delivery '.$delivery->id.': '.implode(', ', $riders->pluck('id')->all()));
+
+        return $riders
+            ->map(function (object $rider) use ($delivery) {
+                $activeCount = $this->batching->activeCount((int) $rider->id);
+                if ($activeCount > 0) {
+                    $rider->batch_plan = $this->batching->addOnPlan((int) $rider->id, $delivery);
+
+                    return $rider;
+                }
+                $rider->distance_meters = $this->distanceMeters(
+                    $delivery->pickup_latitude,
+                    $delivery->pickup_longitude,
+                    $rider->latitude,
+                    $rider->longitude,
+                );
+
+                return $rider;
+            })
+            ->filter(fn (object $rider) => property_exists($rider, 'batch_plan')
+                ? $rider->batch_plan !== null
+                : ($rider->distance_meters !== null && $rider->distance_meters <= $maxDistanceMeters))
+            ->sort(fn (object $a, object $b) => ($a->batch_plan['pickup_detour_meters'] ?? $a->distance_meters ?? PHP_INT_MAX)
+                <=> ($b->batch_plan['pickup_detour_meters'] ?? $b->distance_meters ?? PHP_INT_MAX)
+                ?: $a->id <=> $b->id)
+            ->take($limit)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    private function tablesAvailable(): bool
+    {
+        return Schema::hasTable('rider_api_deliveries')
+            && Schema::hasTable('rider_api_offers')
+            && Schema::hasTable('rider_api_availability')
+            && Schema::hasTable('rider_api_devices')
+            && Schema::hasTable('rider_api_locations')
+            && Schema::hasTable('rider');
+    }
+
+    private function code(int $orderId, string $purpose): string
+    {
+        $digest = hash_hmac('sha256', "{$purpose}:{$orderId}", (string) config('app.key'));
+
+        return str_pad((string) (hexdec(substr($digest, 0, 8)) % 1000000), 6, '0', STR_PAD_LEFT);
+    }
+
+    private function address(?string ...$parts): ?string
+    {
+        $parts = array_values(array_filter(array_map(
+            fn (?string $part) => $part ? trim($part) : null,
+            $parts,
+        )));
+
+        return $parts === [] ? null : implode(', ', array_unique($parts));
+    }
+
+    private function etaSeconds(mixed $duration): ?int
+    {
+        if (is_numeric($duration)) {
+            return max(0, (int) round((float) $duration));
+        }
+        if (is_string($duration) && preg_match('/(\d+)/', $duration, $matches)) {
+            return (int) $matches[1] * 60;
+        }
+
+        return null;
+    }
+
+    private function distanceMeters(mixed $fromLat, mixed $fromLng, mixed $toLat, mixed $toLng): ?int
+    {
+        foreach ([$fromLat, $fromLng, $toLat, $toLng] as $coordinate) {
+            if (! is_numeric($coordinate)) {
+                return null;
+            }
+        }
+        $fromLat = deg2rad((float) $fromLat);
+        $toLat = deg2rad((float) $toLat);
+        $latDelta = $toLat - $fromLat;
+        $lngDelta = deg2rad((float) $toLng - (float) $fromLng);
+        $value = sin($latDelta / 2) ** 2
+            + cos($fromLat) * cos($toLat) * sin($lngDelta / 2) ** 2;
+
+        return (int) round(6371000 * 2 * atan2(sqrt($value), sqrt(1 - $value)));
+    }
+}

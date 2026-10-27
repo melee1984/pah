@@ -3,43 +3,29 @@
 namespace App\Http\Controllers\Order;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-
-use App\Model\Orders\Orders;
 use App\Model\Cart;
-use Auth;
+use App\Model\Orders\Orders;
+use Illuminate\Http\Request;
 
 class OrderHistoryController extends Controller
 {
-     /**
-    * View 
-    * @return [type] [description]
-    */
-    public function view(Cart $cart) 
+    public function index(Request $request)
     {
-    	$orders = Orders::with('cart')
-                    ->whereUserId(Auth::User()->id)
-                    ->orderBy('created_at', 'desc')->get();
+        $orders = Orders::with(['cart', 'orderStatus', 'status'])
+            ->where('user_id', $request->user()->id)->latest()->paginate(15);
 
-		return view('pages.profile.orders.single', compact('orders', 'cart'));
+        return view('customer.orders', compact('orders'));
     }
 
+    public function view(Request $request, Cart $cart)
+    {
+        // Authorize before loading items, addresses or payment information.
+        abort_unless((int) $cart->user_id === (int) $request->user()->id, 404);
+        $order = Orders::where('cart_id', $cart->id)->where('user_id', $request->user()->id)
+            ->with(['orderStatus', 'status'])->firstOrFail();
+        $cart->load(['partner', 'details.item', 'address', 'payment']);
+        $summary = $cart->cartItemSummary();
 
-     /**
-    * View 
-    * @return [type] [description]
-    */
-    public function index() 
-    {       
-        $cart = Cart::whereUserId(Auth::User()->id)
-                    ->orderBy('created_at', 'desc')
-                    ->first();
-
-        $orders = Orders::with('cart')
-                    ->whereUserId(Auth::User()->id)
-                    ->orderBy('created_at', 'desc')->get();
-
-		return view('pages.profile.orders.listing', compact('orders','cart'));
+        return view('customer.order', compact('order', 'cart', 'summary'));
     }
-    
 }

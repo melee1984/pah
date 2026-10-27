@@ -2,31 +2,20 @@
 
 @section('content')
     
-    <div class="content-wrapper" style="min-height: 1416.81px;">
+    <div class="content-wrapper admin-content-wrapper">
 
     <section class="content-header">
       <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1>Today Sales</h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item"><a href="{{ URL::to('merchant/dashboard') }}">Home</a></li>
-              <li class="breadcrumb-item active">Today Sales</li>
-            </ol>
-          </div>
+        <div class="admin-page-heading">
+          <div><span class="admin-eyebrow">Sales reporting</span><h1>Completed sales</h1><p>Review completed orders, fees, commission, and net earnings by date.</p></div>
+          <ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ route('merchant.dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Sales</li></ol>
         </div>
-      </div><!-- /.container-fluid -->
+      </div>
     </section>
 
     <section class="content">
       <div class="container-fluid">
-        <div class="row">
-          <div class="col-md-12">
-              <today-report></today-report>
-          </div>
-        </div>
+        <today-report></today-report>
       </div>
   </section>
 </div>

@@ -9,6 +9,8 @@
           </div>
         </div>
       </div>
+      <turnstile-widget ref="turnstile" v-model="turnstileToken" action="merchant_password_reset" />
+      <p class="text-danger" v-if="turnstileError" role="alert">{{ turnstileError }}</p>
        <div class="row">
          <!-- /.col -->
         <div class="col-12">
@@ -22,8 +24,12 @@
 </template>
 
 <script>
+     import TurnstileWidget from '../../TurnstileWidget.vue';
 
      export default {
+       components: {
+         TurnstileWidget,
+       },
         
        data() {
             return {
@@ -34,6 +40,8 @@
                 isSubmit: false,
                 display: {},
                 actionSuccess: false,
+                turnstileToken: '',
+                turnstileError: '',
             }
         },
         mounted() {
@@ -45,24 +53,35 @@
           },
           submitRecord: function() {
 
+                this.turnstileError = '';
+
+                if (document.querySelector('meta[name="turnstile-site-key"]') && !this.turnstileToken) {
+                  this.turnstileError = 'Please complete the security verification.';
+                  return false;
+                }
+
                 this.isSubmit = true;
 
                 if (this.validateForm()) {
                      axios.post('/api/merchant/forgot/submit', {
                         
                         email: this.field.email,
+                        'cf-turnstile-response': this.turnstileToken,
                        
                       }).then((response) => {
                         if (response.data.status) {
                           toastr.success(response.data.message);
                           this.clearForm();
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                         }
                         else {
                           toastr.info(response.data.message);
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                         }
                       }).catch((errors) => {
                           toastr.error(errors);
                           this.isSubmit = false;
+                          this.$refs.turnstile && this.$refs.turnstile.reset();
                       }); 
                 }
                 return false;

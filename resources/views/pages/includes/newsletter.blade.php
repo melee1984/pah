@@ -11,6 +11,7 @@
                     <label>
                         <input type="email" name="email" placeholder="Enter Your Email">
                     </label>
+                    @include('components.turnstile', ['action' => 'newsletter'])
                     <input type="submit" name="submit" value="Subscribe now">
                 </form>
                 
