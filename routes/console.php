@@ -3,6 +3,7 @@
 use App\AdminPushNotification;
 use App\Jobs\SendAdminPushNotification;
 use App\RestaurantEnrollmentDocument;
+use App\Services\BlogImageManager;
 use App\Services\RestaurantApplicationNotifier;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -34,6 +35,13 @@ Artisan::command('restaurants:expire-documents', function () {
 })->purpose('Mark expired restaurant documents and notify applicants');
 
 Schedule::command('restaurants:expire-documents')->daily();
+
+Artisan::command('blog:cleanup-temporary-images', function (BlogImageManager $images) {
+    $images->cleanupExpired();
+    $this->info('Expired temporary blog images were removed.');
+})->purpose('Remove expired temporary blog image uploads');
+
+Schedule::command('blog:cleanup-temporary-images')->hourly()->withoutOverlapping();
 
 Schedule::call(function () {
     AdminPushNotification::query()

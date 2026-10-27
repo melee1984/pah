@@ -55,6 +55,12 @@ Route::get('/terms-of-use', [PageController::class, 'termsofuse'])->name('termso
 Route::get('/fraud-prevention', [PageController::class, 'fraudprevention'])->name('fraudprevention');
 Route::get('/payment-method', [PageController::class, 'paymentmethod'])->name('paymentmethod');
 
+Route::get('/blog', [\App\Http\Controllers\BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/images/{image}', [\App\Http\Controllers\BlogController::class, 'image'])
+    ->whereNumber('image')
+    ->name('blog.images.show');
+Route::get('/blog/{blogPost:slug}', [\App\Http\Controllers\BlogController::class, 'show'])->name('blog.show');
+
 // Frontend Restaurant
 Route::get('/restaurant/{partner:slug}', [RestaurantPageController::class, 'view'])->name('restaurant.view');
 Route::get('/restaurants', [RestaurantPageController::class, 'show'])->name('restaurant.show');
@@ -184,6 +190,19 @@ Route::get('/data/dashboard/logout', [DashboardController::class, 'logout'])->na
 Route::middleware('admin')->group(function () {
 
     Route::middleware('admin.manage')->group(function () {
+        Route::get('data/dashboard/blog', [\App\Http\Controllers\Admin\BlogPostController::class, 'index'])->name('dashboard.blog.index');
+        Route::get('data/dashboard/blog/create', [\App\Http\Controllers\Admin\BlogPostController::class, 'create'])->name('dashboard.blog.create');
+        Route::post('data/dashboard/blog', [\App\Http\Controllers\Admin\BlogPostController::class, 'store'])->name('dashboard.blog.store');
+        Route::post('data/dashboard/blog/uploads', [\App\Http\Controllers\Admin\BlogUploadController::class, 'store'])
+            ->middleware('throttle:30,1')
+            ->name('dashboard.blog.uploads.store');
+        Route::get('data/dashboard/blog/uploads/{upload}', [\App\Http\Controllers\Admin\BlogUploadController::class, 'show'])->name('dashboard.blog.uploads.show');
+        Route::delete('data/dashboard/blog/uploads/{upload}', [\App\Http\Controllers\Admin\BlogUploadController::class, 'destroy'])->name('dashboard.blog.uploads.destroy');
+        Route::get('data/dashboard/blog/{blogPost}/edit', [\App\Http\Controllers\Admin\BlogPostController::class, 'edit'])->name('dashboard.blog.edit');
+        Route::put('data/dashboard/blog/{blogPost}', [\App\Http\Controllers\Admin\BlogPostController::class, 'update'])->name('dashboard.blog.update');
+        Route::patch('data/dashboard/blog/{blogPost}/publish', [\App\Http\Controllers\Admin\BlogPostController::class, 'publish'])->name('dashboard.blog.publish');
+        Route::patch('data/dashboard/blog/{blogPost}/unpublish', [\App\Http\Controllers\Admin\BlogPostController::class, 'unpublish'])->name('dashboard.blog.unpublish');
+        Route::delete('data/dashboard/blog/{blogPost}', [\App\Http\Controllers\Admin\BlogPostController::class, 'destroy'])->name('dashboard.blog.destroy');
         Route::get('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'index'])->name('dashboard.managers.index');
         Route::post('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'store'])->name('dashboard.managers.store');
         Route::put('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'update'])->name('dashboard.managers.update');

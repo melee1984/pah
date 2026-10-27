@@ -13,6 +13,7 @@
     $socialImageAlt = trim($__env->yieldContent('social_image_alt')) ?: 'PahatudFood local food delivery across the Philippines';
     $socialImageWidth = trim($__env->yieldContent('social_image_width')) ?: ($customSocialImage === '' ? '1200' : '');
     $socialImageHeight = trim($__env->yieldContent('social_image_height')) ?: ($customSocialImage === '' ? '630' : '');
+    $openGraphType = trim($__env->yieldContent('og_type')) ?: 'website';
     $seoRobots = trim($__env->yieldContent('robots')) ?: ($defaultRobots ?? 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
 
     $structuredData = [
@@ -66,7 +67,7 @@
 <link rel="canonical" href="{{ $canonicalUrl }}">
 
 <meta property="og:locale" content="en_PH">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{{ $openGraphType }}">
 <meta property="og:site_name" content="PahatudFood">
 <meta property="og:title" content="{{ $seoTitle }}">
 <meta property="og:description" content="{{ $seoDescription }}">
