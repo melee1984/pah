@@ -1,7 +1,7 @@
 @extends('templates.inside')
 
 @section('title', 'About us')
-@section('description', 'Learn how Pahatud connects Davao customers with local restaurants, merchants, and reliable delivery while helping neighborhood businesses grow.')
+@section('description', 'Learn how Pahatud connects customers across the Philippines with local restaurants, merchants, and reliable delivery while helping neighborhood businesses grow.')
 
 @section('content')
     @include('pages.partials.public-page-header', ['title' => 'About Pahatud', 'kicker' => 'Local delivery, meaningful connections', 'description' => 'We connect customers with neighborhood restaurants and merchants while creating opportunities for local partners.'])

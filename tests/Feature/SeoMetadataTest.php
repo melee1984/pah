@@ -13,7 +13,7 @@ class SeoMetadataTest extends TestCase
         $response
             ->assertOk()
             ->assertSee('<title>About us | PahatudFood</title>', false)
-            ->assertSee('<meta name="description" content="Learn how Pahatud connects Davao customers with local restaurants, merchants, and reliable delivery while helping neighborhood businesses grow.">', false)
+            ->assertSee('<meta name="description" content="Learn how Pahatud connects customers across the Philippines with local restaurants, merchants, and reliable delivery while helping neighborhood businesses grow.">', false)
             ->assertSee('<link rel="canonical" href="http://localhost/about-us">', false)
             ->assertSee('<meta property="og:title" content="About us | PahatudFood">', false)
             ->assertSee('<meta property="og:image" content="http://localhost/images/pahatud-social.jpg">', false)

@@ -1,6 +1,6 @@
 @extends('templates.inside')
-@section('title', 'Flower delivery in Davao City')
-@section('description', 'Order affordable flowers, gifts, and cakes from local florists with convenient same-day delivery in Davao City through Pahatud.')
+@section('title', 'Flower Delivery Near You')
+@section('description', 'Order affordable flowers, gifts, and cakes from local florists with convenient same-day delivery through Pahatud.')
 @section('social_image', asset('images/flowerstore-banner.png'))
 @section('social_image_alt', 'Flowers, gifts, and cakes available for delivery through Pahatud')
 @section('social_image_width', '1200')
