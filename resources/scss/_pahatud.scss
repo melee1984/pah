@@ -1784,3 +1784,44 @@ a.customer-card:hover { border-color: #ef3b35; color: #171b1d; }
     .landing-logo strong { font-size: 14px; }
 }
 @media (max-width: 575px) { .public-mobile-header:has(.customer-account-menu) .public-brand-copy { display: none; } }
+
+// Public blog listing and article pages.
+.public-blog-page { background: #fffaf7; font-family: 'DM Sans', sans-serif; padding: 72px 0 90px; }
+.public-blog-grid { display: grid; gap: 28px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.public-blog-card { background: #fff; border: 1px solid #eee7e2; border-radius: 18px; box-shadow: 0 14px 36px rgba(39, 25, 19, .045); min-width: 0; overflow: hidden; }
+.public-blog-card-image { background: linear-gradient(135deg, #fff0ee, #ffe0dc); display: block; overflow: hidden; }
+.public-blog-card-image img, .public-blog-card-image > span { aspect-ratio: 16 / 10; display: block; width: 100%; }
+.public-blog-card-image img { object-fit: cover; transition: transform .3s ease; }
+.public-blog-card-image > span { align-items: center; color: #ef3b35; display: flex; font-size: 52px; justify-content: center; }
+.public-blog-card:hover .public-blog-card-image img { transform: scale(1.025); }
+.public-blog-card-copy { padding: 25px; }
+.public-blog-card-copy time { color: #c52d28; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.public-blog-card-copy h2 { font-family: 'Manrope', sans-serif; font-size: 21px; font-weight: 800; letter-spacing: -.45px; line-height: 1.3; margin: 10px 0 12px; }
+.public-blog-card-copy h2 a { color: #171b1d; }
+.public-blog-card-copy p { color: #667074; font-size: 14px; line-height: 1.75; margin: 0 0 18px; }
+.public-blog-read, .public-blog-back { color: #c52d28; font-size: 13px; font-weight: 800; }
+.public-blog-read i { margin-left: 6px; }
+.public-blog-pagination { margin-top: 45px; }
+.public-blog-pagination .pagination { justify-content: center; }
+.public-blog-pagination .page-link { border-color: #eee7e2; color: #c52d28; }
+.public-blog-pagination .active .page-link { background: #ef3b35; border-color: #ef3b35; }
+.public-blog-empty { background: #fff; border: 1px solid #eee7e2; border-radius: 18px; padding: 70px 25px; text-align: center; }
+.public-blog-empty > i { color: #ef3b35; font-size: 50px; }
+.public-blog-empty h2 { font-family: 'Manrope', sans-serif; font-size: 27px; font-weight: 800; margin: 16px 0 7px; }
+.public-blog-empty p { color: #667074; margin: 0; }
+.public-blog-article { background: #fffaf7; color: #171b1d; font-family: 'DM Sans', sans-serif; padding-bottom: 90px; }
+.public-blog-article-header { background: linear-gradient(135deg, #fff9f5 0%, #fff 58%, #fff0ee 100%); border-bottom: 1px solid #eee7e2; padding: 52px 0 60px; }
+.public-blog-article-header h1 { font-family: 'Manrope', sans-serif; font-size: clamp(38px, 5.2vw, 66px); font-weight: 800; letter-spacing: -2.4px; line-height: 1.08; margin: 15px 0 20px; max-width: 980px; }
+.public-blog-byline { align-items: center; color: #747d81; display: flex; font-size: 13px; gap: 10px; }
+.public-blog-lead { color: #596367; font-size: clamp(17px, 2vw, 21px); line-height: 1.7; margin: 25px 0 0; max-width: 780px; }
+.public-blog-article-layout { max-width: 960px; }
+.public-blog-cover { border-radius: 21px; box-shadow: 0 20px 50px rgba(39, 25, 19, .08); margin: 55px 0 45px; overflow: hidden; }
+.public-blog-cover img { display: block; max-height: 620px; object-fit: cover; width: 100%; }
+.public-blog-body { color: #394145; font-size: 18px; line-height: 1.95; margin: 48px auto; max-width: 780px; overflow-wrap: anywhere; }
+.public-blog-gallery { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 45px 0; }
+.public-blog-gallery figure { border-radius: 15px; margin: 0; overflow: hidden; }
+.public-blog-gallery img { aspect-ratio: 4 / 3; display: block; object-fit: cover; width: 100%; }
+.public-blog-back { border-top: 1px solid #e8e1dc; display: block; margin-top: 52px; padding-top: 28px; }
+.public-blog-back i { margin-right: 6px; }
+@media (max-width: 991px) { .public-blog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 575px) { .public-blog-page { padding: 42px 0 60px; } .public-blog-grid, .public-blog-gallery { grid-template-columns: 1fr; } .public-blog-card-copy { padding: 21px; } .public-blog-article-header { padding: 35px 0 45px; } .public-blog-article-header h1 { font-size: 38px; letter-spacing: -1.3px; } .public-blog-body { font-size: 16px; line-height: 1.85; } .public-blog-cover { border-radius: 14px; margin: 35px 0; } }

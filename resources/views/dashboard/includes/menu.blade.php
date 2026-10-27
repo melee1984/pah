@@ -70,6 +70,13 @@
         <a href="{{ route('dashboard.agent-statements.index') }}" class="nav-link {{ Request::is('data/dashboard/agent-statements*') ? 'active' : '' }}"><i class="nav-icon fas fa-receipt"></i><p>Agent statements</p></a>
     </li>
 
+    @if (request()->attributes->get('can_manage_managers', false))
+    <li class="nav-header">Content</li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.blog.index') }}" class="nav-link {{ Request::is('data/dashboard/blog*') ? 'active' : '' }}"><i class="nav-icon fas fa-newspaper"></i><p>Blog posts</p></a>
+    </li>
+    @endif
+
     <li class="nav-header">System</li>
     @if (request()->attributes->get('can_manage_managers', false))
     <li class="nav-item">

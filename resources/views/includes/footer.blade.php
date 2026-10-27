@@ -22,7 +22,7 @@
                     <a href="mailto:info@pahatud.com" aria-label="Email Pahatud"><i class="icofont-email"></i></a>
                 </div>
             </div>
-            <div class="public-footer-links"><strong>Company</strong><a href="{{ route('aboutus') }}">About us</a><a href="{{ route('contactus') }}">Contact us</a><a href="{{ route('agent.register') }}">Become an agent</a><a href="{{ route('home') }}#become-a-partner">Partner with us</a></div>
+            <div class="public-footer-links"><strong>Company</strong><a href="{{ route('aboutus') }}">About us</a><a href="{{ route('blog.index') }}">Blog</a><a href="{{ route('contactus') }}">Contact us</a><a href="{{ route('agent.register') }}">Become an agent</a><a href="{{ route('home') }}#become-a-partner">Partner with us</a></div>
             <div class="public-footer-links"><strong>Trust &amp; safety</strong><a href="{{ route('privacypolicy') }}">Privacy policy</a><a href="{{ route('termsofuse') }}">Terms of use</a><a href="{{ route('fraudprevention') }}">Fraud prevention</a></div>
             <div class="public-footer-app"><strong>Order on the go</strong><p>Browse restaurants and manage deliveries from your phone.</p><a href="https://play.google.com/store/apps/details?id=io.pahatud.com" target="_blank" rel="noopener noreferrer"><img src="{{ asset('images/google-play.png') }}" alt="Get Pahatud on Google Play"></a></div>
         </div>
