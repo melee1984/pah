@@ -22,7 +22,7 @@ class ResourcesController extends Controller
             ],
             [
                 'id' => 'Pizza',
-                'label' => 'Pizza xxx',
+                'label' => 'Pizza',
                 'icon_key' => 'pizza',
             ],
             [
