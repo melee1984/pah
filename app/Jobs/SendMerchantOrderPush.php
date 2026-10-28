@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\FirebasePushException;
 use App\Model\Orders\Orders;
 use App\Services\FirebaseMerchantOrderPush;
 use Illuminate\Bus\Queueable;
@@ -9,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -39,14 +41,38 @@ class SendMerchantOrderPush implements ShouldQueue
                 (int) $order->id,
                 (int) $location->id,
             );
+        } catch (FirebasePushException $exception) {
+            if ($exception->hasInvalidToken()) {
+                DB::table('partner_location')
+                    ->where('id', $location->id)
+                    ->where('device_token', $token)
+                    ->update(['device_token' => null]);
+
+                Log::notice('Removed an invalid merchant push token.', [
+                    'order_id' => $order->id,
+                    'partner_location_id' => $location->id,
+                    'firebase_error_code' => $exception->firebaseErrorCode,
+                ]);
+
+                return;
+            }
+
+            $this->reportFailure($order->id, $location->id, $exception);
+
+            throw $exception;
         } catch (Throwable $exception) {
-            Log::warning('Merchant order push failed.', [
-                'order_id' => $order->id,
-                'partner_location_id' => $location->id,
-                'error' => $exception->getMessage(),
-            ]);
+            $this->reportFailure($order->id, $location->id, $exception);
 
             throw $exception;
         }
+    }
+
+    private function reportFailure(int $orderId, int $locationId, Throwable $exception): void
+    {
+        Log::warning('Merchant order push failed.', [
+            'order_id' => $orderId,
+            'partner_location_id' => $locationId,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

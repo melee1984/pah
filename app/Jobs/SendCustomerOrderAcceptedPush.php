@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\FirebasePushException;
 use App\Model\Orders\Orders;
 use App\Services\FirebaseMerchantOrderPush;
 use Illuminate\Bus\Queueable;
@@ -9,6 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -35,13 +37,37 @@ class SendCustomerOrderAcceptedPush implements ShouldQueue
                 (string) ($order->cart?->order_no ?: $order->id),
                 (int) $order->id,
             );
+        } catch (FirebasePushException $exception) {
+            if ($exception->hasInvalidToken()) {
+                DB::table('users')
+                    ->where('id', $order->user->id)
+                    ->where('device_token_food', $token)
+                    ->update(['device_token_food' => null]);
+
+                Log::notice('Removed an invalid customer push token.', [
+                    'order_id' => $order->id,
+                    'user_id' => $order->user->id,
+                    'firebase_error_code' => $exception->firebaseErrorCode,
+                ]);
+
+                return;
+            }
+
+            $this->reportFailure($order->id, $exception);
+
+            throw $exception;
         } catch (Throwable $exception) {
-            Log::warning('Customer order accepted push failed.', [
-                'order_id' => $order->id,
-                'error' => $exception->getMessage(),
-            ]);
+            $this->reportFailure($order->id, $exception);
 
             throw $exception;
         }
+    }
+
+    private function reportFailure(int $orderId, Throwable $exception): void
+    {
+        Log::warning('Customer order accepted push failed.', [
+            'order_id' => $orderId,
+            'error' => $exception->getMessage(),
+        ]);
     }
 }

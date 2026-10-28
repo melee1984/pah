@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Exceptions\FirebasePushException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -65,7 +67,7 @@ class FirebaseMerchantOrderPush
             ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException('Firebase rejected the customer order notification (HTTP '.$response->status().').');
+            throw $this->pushException($response, 'customer order');
         }
     }
 
@@ -97,8 +99,21 @@ class FirebaseMerchantOrderPush
             ]);
 
         if (! $response->successful()) {
-            throw new RuntimeException('Firebase rejected the merchant order notification (HTTP '.$response->status().').');
+            throw $this->pushException($response, 'merchant order');
         }
+    }
+
+    private function pushException(Response $response, string $notificationType): FirebasePushException
+    {
+        $firebaseErrorCode = collect($response->json('error.details', []))
+            ->firstWhere('@type', 'type.googleapis.com/google.firebase.fcm.v1.FcmError')['errorCode'] ?? null;
+
+        return new FirebasePushException(
+            $response->status(),
+            is_string($firebaseErrorCode) ? $firebaseErrorCode : null,
+            (string) $response->json('error.message', ''),
+            $notificationType,
+        );
     }
 
     /** @return array{project_id: string, client_email: string, private_key: string} */

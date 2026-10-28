@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api;
 
 use App\Events\SendPushNotificationEvent;
+use App\Exceptions\FirebasePushException;
 use App\Jobs\SendMerchantOrderPush;
 use App\Model\Orders\Orders;
 use App\Services\FirebaseMerchantOrderPush;
@@ -95,6 +96,25 @@ class MerchantOrderPushTest extends TestCase
         (new SendMerchantOrderPush($orderId))->handle($push);
     }
 
+    public function test_job_removes_an_unregistered_branch_token_without_retrying(): void
+    {
+        $orderId = $this->createOrder(10);
+        $push = Mockery::mock(FirebaseMerchantOrderPush::class);
+        $push->shouldReceive('send')->once()->andThrow(new FirebasePushException(
+            404,
+            'UNREGISTERED',
+            'Requested entity was not found.',
+            'merchant order',
+        ));
+
+        (new SendMerchantOrderPush($orderId))->handle($push);
+
+        $this->assertDatabaseHas('partner_location', [
+            'id' => 10,
+            'device_token' => null,
+        ]);
+    }
+
     public function test_firebase_message_includes_the_order_and_partner_location(): void
     {
         $key = openssl_pkey_new(['private_key_bits' => 2048]);
@@ -126,6 +146,47 @@ class MerchantOrderPushTest extends TestCase
         } finally {
             unlink($path);
             Cache::forget('firebase-messaging-token:merchant-push-test');
+        }
+    }
+
+    public function test_firebase_unregistered_response_exposes_the_provider_error_code(): void
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048]);
+        openssl_pkey_export($key, $privateKey);
+        $path = tempnam(sys_get_temp_dir(), 'merchant-push-error-');
+        file_put_contents($path, json_encode([
+            'project_id' => 'merchant-push-error-test',
+            'client_email' => 'test@example.com',
+            'private_key' => $privateKey,
+        ]));
+        config(['services.firebase.service_account' => $path]);
+        Cache::forget('firebase-messaging-token:merchant-push-error-test');
+        Http::fake([
+            'oauth2.googleapis.com/token' => Http::response(['access_token' => 'test-access-token']),
+            'fcm.googleapis.com/*' => Http::response([
+                'error' => [
+                    'code' => 404,
+                    'message' => 'Requested entity was not found.',
+                    'status' => 'NOT_FOUND',
+                    'details' => [[
+                        '@type' => 'type.googleapis.com/google.firebase.fcm.v1.FcmError',
+                        'errorCode' => 'UNREGISTERED',
+                    ]],
+                ],
+            ], 404),
+        ]);
+
+        try {
+            (new FirebaseMerchantOrderPush)->send('expired-token', 'TEST-100', 42, 10);
+            $this->fail('An unregistered Firebase token should be rejected.');
+        } catch (FirebasePushException $exception) {
+            $this->assertSame(404, $exception->httpStatus);
+            $this->assertSame('UNREGISTERED', $exception->firebaseErrorCode);
+            $this->assertTrue($exception->hasInvalidToken());
+            $this->assertStringContainsString('Requested entity was not found.', $exception->getMessage());
+        } finally {
+            unlink($path);
+            Cache::forget('firebase-messaging-token:merchant-push-error-test');
         }
     }
 

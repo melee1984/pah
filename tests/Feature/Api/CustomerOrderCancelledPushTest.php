@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Exceptions\FirebasePushException;
 use App\Jobs\SendCustomerOrderCancelledPush;
 use App\LibraryStatus;
 use App\Services\FirebaseMerchantOrderPush;
@@ -76,6 +77,24 @@ class CustomerOrderCancelledPushTest extends TestCase
         $push->shouldNotReceive('sendCustomerCancelled');
 
         (new SendCustomerOrderCancelledPush(30))->handle($push);
+    }
+
+    public function test_job_removes_an_unregistered_customer_token_without_retrying(): void
+    {
+        $push = Mockery::mock(FirebaseMerchantOrderPush::class);
+        $push->shouldReceive('sendCustomerCancelled')->once()->andThrow(new FirebasePushException(
+            404,
+            'UNREGISTERED',
+            'Requested entity was not found.',
+            'customer order',
+        ));
+
+        (new SendCustomerOrderCancelledPush(30))->handle($push);
+
+        $this->assertDatabaseHas('users', [
+            'id' => 10,
+            'device_token_food' => null,
+        ]);
     }
 
     public function test_firebase_message_identifies_the_merchant_cancellation(): void
