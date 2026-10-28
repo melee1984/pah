@@ -313,6 +313,27 @@ a.dashboard-availability-row:hover { color: var(--admin-ink); text-decoration: n
 .dashboard-page-note > span { align-items: center; background: #fff; border-radius: 9px; color: var(--admin-red); display: flex; height: 36px; justify-content: center; min-width: 36px; }
 .dashboard-page-note strong { display: block; font-size: 11px; }
 .dashboard-page-note p { color: var(--admin-muted); font-size: 10px; margin: 2px 0 0; }
+.system-status-admin-summary { align-items: center; background: #fff; border: 1px solid var(--admin-line); border-radius: 14px; display: flex; gap: 14px; margin-bottom: 18px; padding: 18px 20px; }
+.system-status-admin-summary > span { align-items: center; background: #eaf8ef; border-radius: 11px; color: #1c6b3a; display: flex; font-size: 17px; height: 44px; justify-content: center; width: 44px; }
+.system-status-admin-summary small { color: var(--admin-muted); display: block; font-size: 9px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
+.system-status-admin-summary strong { display: block; font-family: 'Manrope', sans-serif; font-size: 17px; margin-top: 2px; }
+.system-status-admin-summary p { color: var(--admin-muted); font-size: 10px; margin: 2px 0 0; }
+.system-status-admin-summary.is-issues > span { background: #fff0ef; color: #a92924; }
+.system-status-admin-summary.is-maintenance > span { background: #fff5dc; color: #8b5914; }
+.system-incident-form-grid, .system-incident-admin-fields { display: grid; gap: 13px; grid-template-columns: minmax(260px, 1.4fr) minmax(150px, .55fr) minmax(170px, .65fr); }
+.system-incident-form-grid .form-group, .system-incident-admin-fields .form-group { margin-bottom: 0; }
+.system-incident-description { grid-column: 1 / -1; }
+.system-incident-submit { display: flex; grid-column: 1 / -1; justify-content: flex-end; }
+.system-incident-admin-row { border-top: 1px solid var(--admin-line); padding: 20px; }
+.system-incident-admin-meta { align-items: center; display: flex; gap: 9px; margin-bottom: 13px; }
+.system-incident-admin-meta small { color: var(--admin-muted); font-size: 9px; }
+.system-incident-admin-action { display: flex; justify-content: flex-end; margin-top: 13px; }
+@media (max-width: 767px) {
+    .system-incident-form-grid, .system-incident-admin-fields { grid-template-columns: 1fr; }
+    .system-incident-description { grid-column: auto; }
+    .system-incident-submit, .system-incident-admin-action { justify-content: stretch; }
+    .system-incident-submit .btn, .system-incident-admin-action .btn { width: 100%; }
+}
 .pahatud-merchant .main-header { padding-left: 12px; padding-right: 18px; }
 .pahatud-merchant .main-header .navbar-nav:first-child { align-items: center; gap: 12px; }
 .pahatud-merchant .main-header .navbar-nav:first-child .nav-link { align-items: center; display: flex; justify-content: center; margin-right: 4px; min-width: 40px; }

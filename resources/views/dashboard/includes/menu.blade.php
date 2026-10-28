@@ -85,6 +85,9 @@
     <li class="nav-item">
         <a href="{{ route('dashboard.managers.index') }}" class="nav-link {{ Request::is('data/dashboard/managers*') ? 'active' : '' }}"><i class="nav-icon fas fa-user-shield"></i><p>Manager access</p></a>
     </li>
+    <li class="nav-item">
+        <a href="{{ route('dashboard.system-status.index') }}" class="nav-link {{ Request::is('data/dashboard/system-status*') ? 'active' : '' }}"><i class="nav-icon fas fa-heartbeat"></i><p>System Status</p></a>
+    </li>
     @endif
     <li class="nav-item">
         <a href="{{ route('dashboard.settings') }}" class="nav-link {{ Request::is('data/dashboard/settings') ? 'active' : '' }}"><i class="nav-icon fas fa-cog"></i><p>Settings</p></a>
