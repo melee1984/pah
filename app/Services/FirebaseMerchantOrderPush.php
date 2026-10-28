@@ -8,8 +8,38 @@ use RuntimeException;
 
 class FirebaseMerchantOrderPush
 {
+    public function sendCustomerCancelled(string $deviceToken, string $orderNo, int $orderId): void
+    {
+        $this->sendCustomerOrderStatus(
+            $deviceToken,
+            'Order cancelled',
+            'Your order '.$orderNo.' has been cancelled by the merchant.',
+            'order_cancelled',
+            $orderNo,
+            $orderId,
+        );
+    }
+
     public function sendCustomerAccepted(string $deviceToken, string $orderNo, int $orderId): void
     {
+        $this->sendCustomerOrderStatus(
+            $deviceToken,
+            'Order accepted',
+            'Your order '.$orderNo.' has been accepted by the merchant.',
+            'order_accepted',
+            $orderNo,
+            $orderId,
+        );
+    }
+
+    private function sendCustomerOrderStatus(
+        string $deviceToken,
+        string $title,
+        string $body,
+        string $type,
+        string $orderNo,
+        int $orderId,
+    ): void {
         $credentials = $this->credentials();
         $accessToken = Cache::remember(
             'firebase-messaging-token:'.$credentials['project_id'],
@@ -22,11 +52,11 @@ class FirebaseMerchantOrderPush
                 'message' => [
                     'token' => $deviceToken,
                     'notification' => [
-                        'title' => 'Order accepted',
-                        'body' => 'Your order '.$orderNo.' has been accepted by the merchant.',
+                        'title' => $title,
+                        'body' => $body,
                     ],
                     'data' => [
-                        'type' => 'order_accepted',
+                        'type' => $type,
                         'order_id' => (string) $orderId,
                         'order_no' => $orderNo,
                     ],

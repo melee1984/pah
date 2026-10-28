@@ -6,10 +6,12 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PartnerPromotionController;
 use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RiderManagementController;
+use App\Http\Controllers\Admin\SystemIncidentController;
 use App\Http\Controllers\Booking\RequestController;
 use App\Http\Controllers\Flower\FlowerstoreController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SystemStatusController;
 use App\Http\Controllers\Customer\AccountController;
 use App\Http\Controllers\Restaurant\PageController as RestaurantPageController;
 use Illuminate\Foundation\Application;
@@ -54,6 +56,7 @@ Route::get('/privacy-policy', [PageController::class, 'privacypolicy'])->name('p
 Route::get('/terms-of-use', [PageController::class, 'termsofuse'])->name('termsofuse');
 Route::get('/fraud-prevention', [PageController::class, 'fraudprevention'])->name('fraudprevention');
 Route::get('/payment-method', [PageController::class, 'paymentmethod'])->name('paymentmethod');
+Route::get('/status', SystemStatusController::class)->name('system-status.index');
 
 Route::get('/blog', [\App\Http\Controllers\BlogController::class, 'index'])->name('blog.index');
 Route::get('/blog/images/{image}', [\App\Http\Controllers\BlogController::class, 'image'])
@@ -207,6 +210,9 @@ Route::middleware('admin')->group(function () {
         Route::post('data/dashboard/managers', [\App\Http\Controllers\Admin\ManagerController::class, 'store'])->name('dashboard.managers.store');
         Route::put('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'update'])->name('dashboard.managers.update');
         Route::delete('data/dashboard/managers/{manager}', [\App\Http\Controllers\Admin\ManagerController::class, 'destroy'])->name('dashboard.managers.destroy');
+        Route::get('data/dashboard/system-status', [SystemIncidentController::class, 'index'])->name('dashboard.system-status.index');
+        Route::post('data/dashboard/system-status', [SystemIncidentController::class, 'store'])->name('dashboard.system-status.store');
+        Route::put('data/dashboard/system-status/{systemIncident}', [SystemIncidentController::class, 'update'])->name('dashboard.system-status.update');
         Route::get('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'index'])->name('dashboard.cities.index');
         Route::post('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'store'])->name('dashboard.cities.store');
         Route::put('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'update'])->name('dashboard.cities.update');

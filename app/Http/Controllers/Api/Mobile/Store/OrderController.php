@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use App\Products;
 use App\PushNotification;
 use App\Jobs\SendCustomerOrderAcceptedPush;
+use App\Jobs\SendCustomerOrderCancelledPush;
 use App\Services\MerchantOrderReceipt;
 use App\Services\RiderOfferDispatcher;
 use App\Services\RiderDispatchStatus;
@@ -798,9 +799,9 @@ class OrderController extends Controller
         if (! $result['already_cancelled']) {
             app(RiderOfferDispatcher::class)->cancelOrder((int) $result['order']->id);
             try {
-                PushNotification::sendPushOrder($result['order']);
+                SendCustomerOrderCancelledPush::dispatch((int) $result['order']->id)->afterCommit();
             } catch (\Throwable $exception) {
-                Log::warning('Order cancelled, but the customer notification failed.', [
+                Log::warning('Order cancelled, but the customer notification could not be queued.', [
                     'order_id' => $result['order']->id,
                     'exception' => $exception->getMessage(),
                 ]);
