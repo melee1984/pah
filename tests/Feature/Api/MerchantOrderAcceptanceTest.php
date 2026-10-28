@@ -3,12 +3,14 @@
 namespace Tests\Feature\Api;
 
 use App\Http\Controllers\Api\Mobile\Store\OrderController;
+use App\Jobs\SendCustomerOrderCancelledPush;
 use App\LibraryStatus;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Cart;
 use App\Model\Orders\Orders;
 use App\Partners;
 use App\Services\AgentCommissionService;
+use App\Services\RiderOfferDispatcher;
 use App\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Schema\Blueprint;
@@ -451,6 +453,27 @@ class MerchantOrderAcceptanceTest extends TestCase
             'id' => $order->id,
             'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
         ]);
+    }
+
+    public function test_merchant_cancellation_queues_one_customer_push(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $this->mock(RiderOfferDispatcher::class, function ($mock) use ($order) {
+            $mock->shouldReceive('cancelOrder')->once()->with($order->id);
+        });
+
+        $controller = new OrderController;
+        $response = $controller->cancelOrder($order, $this->merchantRequest());
+        $repeatResponse = $controller->cancelOrder($order, $this->merchantRequest());
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('Order cancelled successfully.', $response->getData(true)['message']);
+        $this->assertSame('Order was already cancelled.', $repeatResponse->getData(true)['message']);
+        Queue::assertPushed(
+            SendCustomerOrderCancelledPush::class,
+            fn ($job) => $job->orderId === $order->id,
+        );
+        Queue::assertPushed(SendCustomerOrderCancelledPush::class, 1);
     }
 
     private function createOrder(string $fulfillmentType): Orders
