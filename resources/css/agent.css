@@ -305,6 +305,20 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
 
 /* Public PahatudFood Merchant Program */
 .merchant-program-body .agent-program-hero { background: linear-gradient(130deg, #fff 35%, #fff4f1); }
+.merchant-terms-body { background: var(--agent-bg); margin: 0; }
+.merchant-terms-nav { position: static; }
+.merchant-terms-shell { margin: 0 auto; max-width: 960px; padding: 64px 32px 84px; }
+.merchant-terms-card { background: #fff; border: 1px solid var(--agent-line); border-radius: 20px; box-shadow: var(--agent-shadow); padding: 54px 64px; }
+.merchant-terms-heading { border-bottom: 1px solid var(--agent-line); margin-bottom: 38px; padding-bottom: 34px; }
+.merchant-terms-heading h1 { font-family: 'Manrope', sans-serif; font-size: clamp(36px, 5vw, 54px); letter-spacing: -2px; line-height: 1.08; margin: 8px 0 17px; }
+.merchant-terms-heading > p:last-child,
+.merchant-terms-card section p { color: var(--agent-muted); font-size: 15px; line-height: 1.75; }
+.merchant-terms-card section { margin-top: 32px; }
+.merchant-terms-card section h2 { font-family: 'Manrope', sans-serif; font-size: 21px; letter-spacing: -.35px; margin: 0 0 10px; }
+.merchant-terms-card section p { margin: 9px 0 0; }
+.merchant-terms-card .agent-text-link,
+.agent-terms .agent-text-link { color: var(--agent-red); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.merchant-terms-action { border-top: 1px solid var(--agent-line); margin-top: 42px; padding-top: 32px; }
 .merchant-service-grid { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
 .merchant-service-grid article { align-items: flex-start; background: #fff; border: 1px solid var(--agent-line); border-radius: 16px; display: flex; gap: 20px; overflow: hidden; padding: 27px; position: relative; transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease; }
 .merchant-service-grid article::after { background: radial-gradient(circle, rgba(239, 59, 53, .12) 0 2px, transparent 2.5px); background-size: 12px 12px; content: ''; height: 55px; opacity: 0; pointer-events: none; position: absolute; right: -6px; top: -5px; transform: translate(10px, -10px); transition: opacity .25s ease, transform .25s ease; width: 72px; }
@@ -395,6 +409,11 @@ textarea.agent-input { min-height: 115px; resize: vertical; }
     .agent-program-footer .agent-brand { justify-content: center; }
     .agent-program-footer > span { text-align: center; }
     .merchant-service-grid, .merchant-service-options { grid-template-columns: 1fr; }
+    .merchant-terms-shell { padding: 30px 15px 55px; }
+    .merchant-terms-card { border-radius: 14px; padding: 32px 22px; }
+    .merchant-terms-heading { margin-bottom: 30px; padding-bottom: 27px; }
+    .merchant-terms-card section { margin-top: 27px; }
+    .merchant-terms-nav .agent-button { font-size: 11px; min-height: 36px; padding: 0 11px; }
     .merchant-requirements-section { padding-left: 20px; padding-right: 20px; }
     .agent-referral-card { grid-template-columns: 1fr; }
     .agent-referral-actions { grid-template-columns: 1fr 1fr; }

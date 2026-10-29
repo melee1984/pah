@@ -157,6 +157,8 @@
                 </div>
                 <label class="agent-checkbox agent-terms"><input name="terms" type="checkbox" value="1" @checked(old('terms')) required><span>I confirm that these details are accurate, I am authorized to apply for this business, and I understand that submission does not guarantee approval or immediate activation.</span></label>
                 @error('terms')<span class="agent-error">{{ $message }}</span>@enderror
+                <label class="agent-checkbox agent-terms"><input name="merchant_terms" type="checkbox" value="1" @checked(old('merchant_terms')) required><span>I have read and agree to the <a class="agent-text-link" href="{{ route('merchant.terms') }}" target="_blank" rel="noopener">Merchant Terms and Conditions</a>.</span></label>
+                @error('merchant_terms')<span class="agent-error">{{ $message }}</span>@enderror
                 @include('components.turnstile', ['action' => 'merchant_application'])
                 <button class="agent-button agent-button-primary agent-login-submit" type="submit">Submit merchant application</button>
                 <p class="agent-application-login">Already a merchant? <a class="agent-text-link" href="{{ route('merchant.login') }}">Sign in to the Merchant Dashboard</a></p>

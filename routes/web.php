@@ -373,6 +373,8 @@ Route::get('/login/{social}/callback', [\App\Http\Controllers\SocialLoginControl
 Route::get('/merchant/dashboard/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.dashboard.login');
 Route::get('/merchant/login', [\App\Http\Controllers\Merchant\DashboardController::class, 'login'])->name('merchant.login');
 Route::get('/merchant/register', [\App\Http\Controllers\MerchantApplicationController::class, 'create'])->name('merchant.register');
+Route::get('/merchant/terms-and-conditions', [\App\Http\Controllers\MerchantApplicationController::class, 'terms'])
+    ->name('merchant.terms');
 Route::get('/merchant/register/thank-you', [\App\Http\Controllers\MerchantApplicationController::class, 'success'])
     ->name('merchant.register.success');
 

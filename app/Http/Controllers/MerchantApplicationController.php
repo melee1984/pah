@@ -34,6 +34,11 @@ class MerchantApplicationController extends Controller
         ]);
     }
 
+    public function terms(): View
+    {
+        return view('merchant-program.terms');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $referralCode = $this->normalizeReferralCode($request->input('referral_code'));
@@ -70,11 +75,13 @@ class MerchantApplicationController extends Controller
             'website' => ['nullable', 'url:http,https', 'max:255'],
             'business_description' => ['nullable', 'string', 'max:2000'],
             'terms' => ['accepted'],
+            'merchant_terms' => ['accepted'],
         ], [
             'referral_code.exists' => 'Enter a valid referral code from an active Pahatud agent.',
             'city.exists' => 'Select an active city.',
             'services.required' => 'Choose at least one service you want to offer.',
             'services.min' => 'Choose at least one service you want to offer.',
+            'merchant_terms.accepted' => 'You must accept the Merchant Terms and Conditions before submitting your application.',
         ]);
 
         $referralAgent = blank($validated['referral_code'] ?? null) ? null : Agent::query()

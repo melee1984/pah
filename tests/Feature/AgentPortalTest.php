@@ -275,6 +275,10 @@ class AgentPortalTest extends TestCase
             ->assertSee('35–49')
             ->assertSee('50 or more')
             ->assertSee('What does “approved restaurant” mean for my tier?', false)
+            ->assertSee('Can I try the Merchant Dashboard?')
+            ->assertSee('m@pahatud.com')
+            ->assertSee('letmein')
+            ->assertSee(route('merchant.login'), false)
             ->assertSee('Existing commission entries keep the rate originally recorded');
     }
 

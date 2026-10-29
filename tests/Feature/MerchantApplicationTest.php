@@ -76,7 +76,31 @@ class MerchantApplicationTest extends TestCase
             ->assertSee('Delivery')
             ->assertSee(number_format(config('agent.pahatud_commission_percentage'), 2).'%')
             ->assertSee('Business registration')
-            ->assertSee('Payout details');
+            ->assertSee('Payout details')
+            ->assertSee(route('merchant.terms'), false)
+            ->assertSee('Merchant Terms and Conditions');
+    }
+
+    public function test_merchant_terms_page_is_publicly_available(): void
+    {
+        $this->get(route('merchant.terms'))
+            ->assertOk()
+            ->assertSee('Merchant Terms and Conditions')
+            ->assertSee('Your responsibilities')
+            ->assertSee('Fees and payments');
+    }
+
+    public function test_merchant_must_accept_terms_before_applying(): void
+    {
+        $payload = $this->validApplication();
+        unset($payload['merchant_terms']);
+
+        $this->from(route('merchant.register'))
+            ->post(route('merchant.register.submit'), $payload)
+            ->assertRedirect(route('merchant.register'))
+            ->assertSessionHasErrors('merchant_terms');
+
+        $this->assertDatabaseCount('partners', 0);
     }
 
     public function test_merchant_can_apply_only_in_an_active_city(): void
@@ -346,7 +370,7 @@ class MerchantApplicationTest extends TestCase
 
         $legacy = $this->validApplication();
         DB::table('merchant_applications')->insert([
-            ...collect($legacy)->except(['terms', 'services'])->all(),
+            ...collect($legacy)->except(['terms', 'merchant_terms', 'services'])->all(),
             'services' => json_encode($legacy['services'], JSON_THROW_ON_ERROR),
             'commission_percentage' => 20,
             'status' => 'approved',
@@ -393,12 +417,13 @@ class MerchantApplicationTest extends TestCase
             'website' => 'https://example.com/restaurant',
             'business_description' => 'A neighborhood Filipino restaurant.',
             'terms' => '1',
+            'merchant_terms' => '1',
         ];
     }
 
     private function modelAttributes(array $overrides = []): array
     {
-        $application = collect($this->validApplication())->except('terms')->all();
+        $application = collect($this->validApplication())->except(['terms', 'merchant_terms'])->all();
 
         return [...[
             'restaurant_name' => $application['business_name'],

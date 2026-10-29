@@ -1558,12 +1558,14 @@ html {
 
     h2 { margin-bottom: 8px; }
     > p { color: #697276; margin-bottom: 26px; }
-    form { gap: 16px; }
-    label { color: #343a3d; display: block; font-size: 13px; font-weight: 700; margin: 0; width: calc(50% - 8px); }
+    form.public-contact-form-fields { display: grid; gap: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    label { color: #343a3d; display: block; font-size: 13px; font-weight: 700; margin: 0; min-width: 0; width: 100%; }
     label span { display: block; margin-bottom: 7px; }
-    input, textarea { border: 1px solid #ddd8d4; border-radius: 9px; font-family: 'DM Sans', sans-serif; margin: 0; padding: 13px 14px; width: 100%; }
+    form.public-contact-form-fields input,
+    form.public-contact-form-fields textarea { border: 1px solid #ddd8d4; border-radius: 9px; font-family: 'DM Sans', sans-serif; margin: 0; padding: 13px 14px; width: 100%; }
+    .public-contact-field-full { grid-column: 1 / -1; }
     input:focus, textarea:focus { border-color: #ef3b35; box-shadow: 0 0 0 3px rgba(239, 59, 53, .1); outline: 0; }
-    button { border: 0; margin-top: 4px; }
+    button { border: 0; justify-self: start; margin-top: 4px; }
 }
 
 .public-about-page { background: #fff; padding: 80px 0 95px; }
@@ -1707,6 +1709,7 @@ body.home-dialog-open { overflow: hidden; }
     .public-support-card { border-radius: 20px; padding: 25px 22px 20px; }
     .public-contact-page, .public-policy-page, .public-about-page { padding: 50px 0 70px; }
     .public-contact-form { margin-top: 30px; }
+    .public-contact-form form.public-contact-form-fields { grid-template-columns: 1fr; }
     .public-contact-form label { width: 100%; }
     .public-value-grid, .public-footer-grid { grid-template-columns: 1fr; }
     .public-footer-callout { align-items: flex-start; flex-direction: column; gap: 22px; padding: 28px; }
