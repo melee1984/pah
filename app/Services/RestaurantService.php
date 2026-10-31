@@ -44,19 +44,7 @@ class RestaurantService
                         ->where('partners.account_type_id', '<>', 4)
                         ->where('partners.active', 1)
                         ->whereNotNull('partners.verified_at')
-                        ->when($city, function ($query, $city) {
-                            $cityWithoutSuffix = preg_replace('/\s+city$/i', '', trim($city)) ?: trim($city);
-                            $cityVariants = array_values(array_unique([
-                                mb_strtolower(trim($city)),
-                                mb_strtolower($cityWithoutSuffix),
-                                mb_strtolower($cityWithoutSuffix.' city'),
-                            ]));
-
-                            $query->whereIn(
-                                DB::raw('LOWER(TRIM(partner_location.city))'),
-                                $cityVariants
-                            );
-                        })
+                        ->when($city, fn ($query, $city) => self::filterByCity($query, $city))
                         ->with('products', 'products.variants', 'category', 'foodType', 'locations')
                         ->orderBy('partners.store_open', 'desc')
                         ->orderBy('distance_km', 'asc')
@@ -213,6 +201,21 @@ class RestaurantService
 
         return $restaurants;
 
+    }
+
+    private static function filterByCity($query, string $city)
+    {
+        $cityWithoutSuffix = preg_replace('/\s+city$/i', '', trim($city)) ?: trim($city);
+        $cityVariants = array_values(array_unique([
+            mb_strtolower(trim($city)),
+            mb_strtolower($cityWithoutSuffix),
+            mb_strtolower($cityWithoutSuffix.' city'),
+        ]));
+
+        return $query->whereIn(
+            DB::raw("LOWER(COALESCE(NULLIF(TRIM(partner_location.city), ''), TRIM(partners.city)))"),
+            $cityVariants
+        );
     }
 
     private static function getCuisineTagsByPartner($partnerIds)
