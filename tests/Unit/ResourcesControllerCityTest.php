@@ -12,6 +12,34 @@ use Tests\TestCase;
 
 class ResourcesControllerCityTest extends TestCase
 {
+    public function test_selected_delivery_coordinates_enable_the_city_filter_without_a_client_flag(): void
+    {
+        $reverseGeocoder = Mockery::mock(ReverseGeocodingService::class);
+        $reverseGeocoder->shouldReceive('city')
+            ->once()
+            ->with(6.1164, 125.1716)
+            ->andReturn('General Santos City');
+
+        $request = Request::create('/api/mobile/data/dashboard', 'GET', [
+            'latitude' => 6.1164,
+            'longitude' => 125.1716,
+        ]);
+
+        $method = new ReflectionMethod(ResourcesController::class, 'restaurantCity');
+        $method->setAccessible(true);
+
+        $city = $method->invoke(
+            new ResourcesController($reverseGeocoder),
+            $request,
+            [
+                'latitude' => 6.1164,
+                'longitude' => 125.1716,
+            ]
+        );
+
+        $this->assertSame('General Santos City', $city);
+    }
+
     public function test_it_uses_delivery_coordinates_instead_of_the_registered_users_city(): void
     {
         $reverseGeocoder = Mockery::mock(ReverseGeocodingService::class);

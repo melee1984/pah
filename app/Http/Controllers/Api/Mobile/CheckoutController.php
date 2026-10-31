@@ -693,6 +693,8 @@ class CheckoutController extends Controller
 
             }
 
+            $userAddress->makeDefault();
+
             $data['message'] = "Successfully insert record";
             $data['status'] = 1;
             $data['addresses'] = $user->addresses;

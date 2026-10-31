@@ -202,11 +202,16 @@ class ResourcesController extends Controller
 
     private function restaurantCity(Request $request, array $validated): ?string
     {
-        if (! $request->boolean('current_city_only')) {
+        [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
+
+        // Once a customer has selected delivery coordinates, the restaurant
+        // directory must stay inside that city. Older app versions do not send
+        // current_city_only, so coordinates themselves enable the filter.
+        if (! $request->boolean('current_city_only')
+            && ($latitude === null || $longitude === null)) {
             return null;
         }
 
-        [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
         $city = $this->reverseGeocoder->city($latitude, $longitude) ?? '';
 
         if ($city === '') {
