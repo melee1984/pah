@@ -567,12 +567,22 @@ class CartController extends Controller
 
             $userAddress = null;
             if ($cart->requiresDelivery()) {
-                $userAddress = UserAddress::whereUserId($cart->user_id)->find($cart->address_id);
+                $userAddress = UserAddress::whereUserId($cart->user_id)
+                    ->with('city')
+                    ->find($cart->address_id);
 
                 if (! $userAddress) {
                     return response()->json([
                         'status' => 0,
                         'message' => 'Please select a valid delivery address.',
+                    ], 422);
+                }
+
+                if (! $userAddress->city?->active) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'This address is outside our currently active service cities.',
+                        'serviceable' => false,
                     ], 422);
                 }
 

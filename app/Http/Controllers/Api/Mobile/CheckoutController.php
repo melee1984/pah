@@ -573,6 +573,14 @@ class CheckoutController extends Controller
 
     private function deliveryAddressFailure(Cart $cart, UserAddress $userAddress): ?array
     {
+        if (! $userAddress->loadMissing('city')->city?->active) {
+            return [
+                'status' => 0,
+                'message' => 'This address is outside our currently active service cities.',
+                'serviceable' => false,
+            ];
+        }
+
         $location = $cart->partnerlocation;
 
         if (! $location
@@ -649,7 +657,7 @@ class CheckoutController extends Controller
          $rules = [
             'title'=>'required',
             'address'=>'required',
-            'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')->where('active', true)],
+            'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')],
             'latitude' => 'required',
             'longtitude' => 'required',
         ];
@@ -676,29 +684,43 @@ class CheckoutController extends Controller
             
             $userAddress = UserAddress::updateOrCreate(
                 ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => $user->id],
-                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->active()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id]);
+                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id]);
+
+            $deliveryFailure = $userAddress->load('city')->city?->active
+                ? null
+                : [
+                    'status' => 0,
+                    'message' => 'Address saved, but this city is not currently serviceable.',
+                    'serviceable' => false,
+                ];
 
             if ($cart) {
-                if ($cart->requiresDelivery()
+                if (! $deliveryFailure
+                    && $cart->requiresDelivery()
                     && ($failure = $this->deliveryAddressFailure($cart, $userAddress))) {
-                    return response()->json($failure, 200);
+                    $deliveryFailure = $failure;
                 }
-                
-                // Updating rate 
-                $cart->address_id = $userAddress->id;
-                $cart->user_long = $userAddress->long;
-                $cart->user_lat = $userAddress->lat;
-                $cart->save();
 
-                // reloadingrate after wards
-                $cart->deliveryRate();
+                if (! $deliveryFailure) {
+                    // Updating rate
+                    $cart->address_id = $userAddress->id;
+                    $cart->user_long = $userAddress->long;
+                    $cart->user_lat = $userAddress->lat;
+                    $cart->save();
+
+                    // reloading rate afterwards
+                    $cart->deliveryRate();
+                }
 
             }
 
-            $userAddress->makeDefault();
+            if (! $deliveryFailure) {
+                $userAddress->makeDefault();
+            }
 
-            $data['message'] = "Successfully insert record";
+            $data['message'] = $deliveryFailure['message'] ?? "Successfully added address";
             $data['status'] = 1;
+            $data['serviceable'] = ! $deliveryFailure;
             $data['addresses'] = $user->addresses()->with('city')->get();
             $data['address'] = $userAddress->load('city');
             

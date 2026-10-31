@@ -32,7 +32,7 @@ class CityManagementTest extends TestCase
             ->assertSee('Cities');
 
         $this->actingAs($admin)
-            ->post(route('dashboard.cities.store'), ['name' => 'Davao City'])
+            ->post(route('dashboard.cities.store'), ['name' => 'Davao City', 'active' => '1'])
             ->assertRedirect()
             ->assertSessionHas('success');
 
@@ -52,6 +52,25 @@ class CityManagementTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success');
         $this->assertModelMissing($city);
+    }
+
+    public function test_administrator_can_add_an_address_only_city(): void
+    {
+        $admin = $this->user('admin@example.com');
+        $admin->assignRole('admin');
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.cities.store'), [
+                'name' => 'Digos City',
+                'active' => '0',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('cities', [
+            'name' => 'Digos City',
+            'active' => false,
+        ]);
     }
 
     public function test_city_manager_cannot_manage_cities(): void

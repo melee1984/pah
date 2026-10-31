@@ -23,14 +23,15 @@ class CityController extends Controller
         $request->merge(['name' => trim((string) $request->input('name'))]);
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:120', Rule::unique('cities', 'name')],
+            'active' => ['required', 'boolean'],
         ]);
 
-        City::query()->create([
-            'name' => $validated['name'],
-            'active' => true,
-        ]);
+        $city = City::query()->create($validated);
 
-        return back()->with('success', $validated['name'].' is now active.');
+        return back()->with(
+            'success',
+            $city->name.($city->active ? ' is now active.' : ' was added as an address-only city.')
+        );
     }
 
     public function update(Request $request, City $city): RedirectResponse

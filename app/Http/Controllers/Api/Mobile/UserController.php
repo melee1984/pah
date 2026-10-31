@@ -63,26 +63,31 @@ class UserController extends Controller
 		$request->validate([
 			'title' => 'required|string|max:255',
 			'address' => 'required|string|max:255',
-			'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')->where('active', true)],
+			'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')],
 			'latitude' => 'required|numeric',
 			'longitude' => 'required|numeric',
 		], [
-			'city.exists' => "The city you've selected is currently not active as of the moment.",
+			'city.exists' => "The city you've selected is invalid.",
 		]);
 		
 		$address = new UserAddress();
 		$address->user_id = $user->id;
 		$address->title =  $request->input('title');
 		$address->address_1 = $request->input('address');
-		$address->city_id = City::query()->active()->where('name', $request->input('city'))->value('id');
+		$address->city_id = City::query()->where('name', $request->input('city'))->value('id');
 		$address->lat = $request->input('latitude');
 		$address->long = $request->input('longitude');
 		$address->active = 1;
 		$address->default = 0;
 
 		if ($address->save()) {
-			$address->makeDefault();
+			$serviceable = (bool) $address->load('city')->city?->active;
+			if ($serviceable) {
+				$address->makeDefault();
+			}
+
 			$data['status'] = 1;
+			$data['serviceable'] = $serviceable;
 			$data['address'] = $address->load('city');
 			$data['addresses'] = UserAddress::query()
 				->whereUserId($user->id)

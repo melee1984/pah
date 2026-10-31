@@ -26,6 +26,9 @@
           <h5 class="mb-1">{{ address.title }}</h5>
           <p class="mb-1">{{ address.address_1 }}</p>
           <small v-if="address.city"><strong>City:</strong> {{ address.city.name }}</small><br v-if="address.city">
+          <small v-if="address.city && !address.city.active" class="text-danger">
+            Not currently serviceable
+          </small><br v-if="address.city && !address.city.active">
           <small><strong>Note:</strong> {{ address.landmark }}</small>
         </div>
 
@@ -70,7 +73,9 @@
         <div class="form-group col-md-12 mb-1 pb-1">
           <select class="form-control" name="city" id="city" v-model="address.city_name">
             <option value="" disabled>Select city</option>
-            <option v-for="city in cities" :key="city.id" :value="city.name">{{ city.name }}</option>
+            <option v-for="city in cities" :key="city.id" :value="city.name">
+              {{ city.name }}{{ city.active ? '' : ' — Not currently serviceable' }}
+            </option>
           </select>
         </div>
         <div class="form-group col-md-12 mb-1 pb-1">
@@ -145,7 +150,7 @@
               window.AppEvents.$emit('PinMapUserLocation');
             },  
             fetchCities: function() {
-              axios.get('/api/cities').then((response) => {
+              axios.get('/api/address-cities').then((response) => {
                 this.cities = response.data.cities || [];
               }).catch((error) => {
                 console.log(error);
@@ -174,6 +179,10 @@
               });
             },
             selectAddress: function(address) {
+              if (!address.city || !address.city.active) {
+                toastr.error('This address is outside our currently active service cities.');
+                return;
+              }
             
               $('#delivery_address .card').removeClass('border-danger active');
               $('#address_'+address.id).addClass('border-danger active');
@@ -250,8 +259,10 @@
                     if (response.data.status) {
                         toastr.success(response.data.message);
                         this.$emit('onUpdateCustomer', response.data.addresses);
-                        this.$emit('updateCartAddress', response.data.address_id);
-                        this.$emit('onUpdateCartAddress', response.data.address_id);
+                        if (response.data.serviceable !== false) {
+                          this.$emit('updateCartAddress', response.data.address_id);
+                          this.$emit('onUpdateCartAddress', response.data.address_id);
+                        }
                         this.addressAction = "view";
                     }
                     else {

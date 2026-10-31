@@ -19,6 +19,8 @@ class MobileCheckoutFulfillmentTest extends TestCase
 
     private int $partnerId;
 
+    private int $cityId;
+
     private User $user;
 
     protected function setUp(): void
@@ -88,11 +90,19 @@ class MobileCheckoutFulfillmentTest extends TestCase
         Schema::create('user_address', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('city_id')->nullable();
             $table->boolean('active')->default(true);
             $table->decimal('lat', 10, 7)->nullable();
             $table->decimal('long', 10, 7)->nullable();
             $table->timestamps();
         });
+
+        $this->cityId = DB::table('cities')->insertGetId([
+            'name' => 'Cebu City',
+            'active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
 
         $this->partnerId = DB::table('partners')->insertGetId([
             'account_type_id' => 1,
@@ -253,6 +263,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $optionId = $this->createCheckoutOption('delivery');
         $addressId = DB::table('user_address')->insertGetId([
             'user_id' => $this->user->id,
+            'city_id' => $this->cityId,
             'active' => true,
             'lat' => 10.3257000,
             'long' => 123.8954000,
@@ -279,6 +290,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $optionId = $this->createCheckoutOption('delivery');
         $addressId = DB::table('user_address')->insertGetId([
             'user_id' => $this->user->id,
+            'city_id' => $this->cityId,
             'active' => true,
             'lat' => 7.0731000,
             'long' => 125.6128000,
@@ -298,6 +310,37 @@ class MobileCheckoutFulfillmentTest extends TestCase
             'address_id' => null,
             'user_lat' => null,
             'user_long' => null,
+        ]);
+    }
+
+    public function test_updating_the_delivery_address_rejects_an_inactive_city(): void
+    {
+        DB::table('cities')->where('id', $this->cityId)->update(['active' => false]);
+
+        $optionId = $this->createCheckoutOption('delivery');
+        $addressId = DB::table('user_address')->insertGetId([
+            'user_id' => $this->user->id,
+            'city_id' => $this->cityId,
+            'active' => true,
+            'lat' => 10.3257000,
+            'long' => 123.8954000,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $cartId = $this->createCart('inactive-city-session');
+        $this->createCartItem($cartId);
+
+        $response = $this->updateOrderOption('inactive-city-session', $optionId, $addressId);
+
+        $this->assertSame(0, $response['status']);
+        $this->assertFalse($response['serviceable']);
+        $this->assertSame(
+            'This address is outside our currently active service cities.',
+            $response['message']
+        );
+        $this->assertDatabaseHas('cart', [
+            'id' => $cartId,
+            'address_id' => null,
         ]);
     }
 

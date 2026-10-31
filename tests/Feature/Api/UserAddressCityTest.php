@@ -8,7 +8,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class UserAddressCityTest extends TestCase
@@ -43,7 +42,7 @@ class UserAddressCityTest extends TestCase
         });
     }
 
-    public function test_adding_an_address_requires_and_saves_an_active_city(): void
+    public function test_adding_an_address_saves_an_active_city(): void
     {
         $cityId = DB::table('cities')->insertGetId([
             'name' => 'Davao City',
@@ -64,17 +63,19 @@ class UserAddressCityTest extends TestCase
         $response = app(UserController::class)->addAddress($request);
 
         $this->assertSame(1, $response->getData(true)['status']);
+        $this->assertTrue($response->getData(true)['serviceable']);
         $this->assertSame('Davao City', $response->getData(true)['address']['city']['name']);
         $this->assertDatabaseHas('user_address', [
             'user_id' => 10,
             'city_id' => $cityId,
             'address_1' => '123 Sample Street',
+            'default' => true,
         ]);
     }
 
-    public function test_adding_an_address_rejects_a_city_that_is_not_active(): void
+    public function test_adding_an_address_saves_a_city_that_is_not_active(): void
     {
-        DB::table('cities')->insert([
+        $cityId = DB::table('cities')->insertGetId([
             'name' => 'Inactive City',
             'active' => false,
             'created_at' => now(),
@@ -90,14 +91,16 @@ class UserAddressCityTest extends TestCase
         ]);
         $request->setUserResolver(fn () => (new User)->forceFill(['id' => 10]));
 
-        try {
-            app(UserController::class)->addAddress($request);
-            $this->fail('An inactive city should fail validation.');
-        } catch (ValidationException $exception) {
-            $this->assertSame(
-                "The city you've selected is currently not active as of the moment.",
-                $exception->errors()['city'][0]
-            );
-        }
+        $response = app(UserController::class)->addAddress($request);
+
+        $this->assertSame(1, $response->getData(true)['status']);
+        $this->assertFalse($response->getData(true)['serviceable']);
+        $this->assertFalse($response->getData(true)['address']['city']['active']);
+        $this->assertDatabaseHas('user_address', [
+            'user_id' => 10,
+            'city_id' => $cityId,
+            'address_1' => '123 Sample Street',
+            'default' => false,
+        ]);
     }
 }

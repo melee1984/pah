@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\PartnerLocationCheckoutOptionController;
 // -------------------------------------------------------------
 
 Route::get('cities', \App\Http\Controllers\Api\CityController::class)->name('api.cities.index');
+Route::get('address-cities', \App\Http\Controllers\Api\AddressCityController::class)->name('api.address-cities.index');
 Route::get('promotions', [ResourcesController::class, 'getPromoBanner']);
 Route::get('home-promo-banner', [ResourcesController::class, 'getPromoBanner']);
 

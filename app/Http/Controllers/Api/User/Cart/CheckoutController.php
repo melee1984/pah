@@ -73,6 +73,7 @@ class CheckoutController extends Controller
 
 		// Fetch user's address
 		$userAddress = UserAddress::where('user_id', Auth::id())
+			->with('city')
 			->find($request->address);
 
 		if (!$userAddress) {
@@ -95,25 +96,8 @@ class CheckoutController extends Controller
 		}
 
         if ($cart->requiresDelivery()) {
-            $location = $cart->partnerlocation;
-            if (! $location
-                || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
-                || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
-                return response()->json([
-                    'status' => 0,
-                    'message' => 'Valid merchant and delivery-address map pins are required before selecting this address.',
-                ], 422);
-            }
-
-            $deliveryCheck = $this->deliveryZone->check(
-                (float) $location->latitude,
-                (float) $location->longtitude,
-                (float) $userAddress->lat,
-                (float) $userAddress->long,
-            );
-
-            if (! $deliveryCheck['allowed']) {
-                return response()->json($this->deliveryZone->failureResponse($deliveryCheck), 422);
+            if ($failure = $this->deliveryAddressFailure($cart, $userAddress)) {
+                return response()->json($failure, 422);
             }
         }
 
@@ -238,13 +222,13 @@ class CheckoutController extends Controller
     	 $rules = [
 	    	'title'=>'required',
 	    	'address'=>'required',
-	    'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')->where('active', true)],
+	    'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')],
 	    	'latitude' => 'required',
 	    	'longtitude' => 'required',
 	    ];
 
 	    $validator = Validator::make($request->all(), $rules, [
-	        'city.exists' => "The city you've selected is currently not active as of the moment.",
+	        'city.exists' => "The city you've selected is invalid.",
 	    ]);
 
 	    if ($validator->fails()) {
@@ -259,7 +243,7 @@ class CheckoutController extends Controller
 	    	$userAddress->address_1 = $request->address;
 	    	$userAddress->landmark = $request->landmark;
 	    	$userAddress->title = $request->title;
-	    $userAddress->city_id = City::query()->active()->where('name', $request->city)->value('id');
+	    $userAddress->city_id = City::query()->where('name', $request->city)->value('id');
 	    	$userAddress->lat = $request->latitude;	
 	    	$userAddress->long = $request->longtitude;
 
@@ -291,7 +275,7 @@ class CheckoutController extends Controller
     	 $rules = [
 	    	'title'=>'required',
 	    	'address'=>'required',
-	    'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')->where('active', true)],
+	    'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')],
 	    	'latitude' => 'required',
 	    	'longtitude' => 'required',
 	    ];
@@ -301,7 +285,7 @@ class CheckoutController extends Controller
 		$data['status'] = 0;	
 
 	    $validator = Validator::make($request->all(), $rules, [
-	        'city.exists' => "The city you've selected is currently not active as of the moment.",
+	        'city.exists' => "The city you've selected is invalid.",
 	    ]);
 
 	    if ($validator->fails()) {
@@ -318,10 +302,24 @@ class CheckoutController extends Controller
 			
 			$userAddress = UserAddress::updateOrCreate(
 			    ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => Auth::User()->id],
-			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->active()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id]);
-			$userAddress->makeDefault();
+			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id]);
 
-			if ($cart) {
+			$deliveryFailure = null;
+			if ($cart?->requiresDelivery()) {
+				$deliveryFailure = $this->deliveryAddressFailure($cart, $userAddress);
+			} elseif (! $userAddress->load('city')->city?->active) {
+				$deliveryFailure = [
+					'status' => 0,
+					'message' => 'This city is not currently serviceable.',
+					'serviceable' => false,
+				];
+			}
+
+			if (! $deliveryFailure) {
+				$userAddress->makeDefault();
+			}
+
+			if ($cart && ! $deliveryFailure) {
 				
 				// Updating rate 
 				$cart->address_id = $userAddress->id;
@@ -332,10 +330,13 @@ class CheckoutController extends Controller
 				$cart->deliveryRate();
 			}
 
-			$data['message'] = "Successfully insert record";
+			$data['message'] = $deliveryFailure
+				? 'Address saved, but it cannot be used for this delivery. '.$deliveryFailure['message']
+				: "Successfully added address";
 			$data['status'] = 1;
+			$data['serviceable'] = ! $deliveryFailure;
 			$data['addresses'] = Auth::User()->addresses()->with('city')->get();
-			$data['address_id'] = $userAddress->id;
+			$data['address_id'] = $deliveryFailure ? null : $userAddress->id;
 			
 		}
 
@@ -468,6 +469,42 @@ class CheckoutController extends Controller
 			->sum(fn ($item) => (int) $item->qty * (float) $item->discount_amount);
 
 		return round(max(0, $amounts['sub_total'] - $amounts['fulfillment_discount'] - $itemDiscount), 2);
+	}
+
+	private function deliveryAddressFailure(Cart $cart, UserAddress $userAddress): ?array
+	{
+		if (! $userAddress->loadMissing('city')->city?->active) {
+			return [
+				'status' => 0,
+				'message' => 'This address is outside our currently active service cities.',
+				'serviceable' => false,
+			];
+		}
+
+		$location = $cart->partnerlocation;
+		if (! $location
+			|| ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
+			|| ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
+			return [
+				'status' => 0,
+				'message' => 'Valid merchant and delivery-address map pins are required before selecting this address.',
+				'serviceable' => false,
+			];
+		}
+
+		$deliveryCheck = $this->deliveryZone->check(
+			(float) $location->latitude,
+			(float) $location->longtitude,
+			(float) $userAddress->lat,
+			(float) $userAddress->long,
+		);
+
+		return $deliveryCheck['allowed']
+			? null
+			: array_merge(
+				$this->deliveryZone->failureResponse($deliveryCheck),
+				['serviceable' => false],
+			);
 	}
 
 	private function checkoutSummary(Cart $cart): array

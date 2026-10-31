@@ -10,7 +10,7 @@ class CityEndpointTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_it_returns_only_active_cities_in_alphabetical_order(): void
+    public function test_general_city_endpoint_returns_only_active_cities(): void
     {
         $zamboanga = City::query()->create(['name' => 'Zamboanga City', 'active' => true]);
         City::query()->create(['name' => 'Inactive City', 'active' => false]);
@@ -29,13 +29,20 @@ class CityEndpointTest extends TestCase
             ]);
     }
 
-    public function test_it_returns_an_empty_list_when_no_city_is_active(): void
+    public function test_address_city_endpoint_returns_all_cities_with_service_status(): void
     {
-        City::query()->create(['name' => 'Inactive City', 'active' => false]);
+        $active = City::query()->create(['name' => 'Davao City', 'active' => true]);
+        $inactive = City::query()->create(['name' => 'Inactive City', 'active' => false]);
 
-        $this->getJson(route('api.cities.index'))
+        $this->getJson(route('api.address-cities.index'))
             ->assertOk()
             ->assertJsonPath('status', 1)
-            ->assertJsonCount(0, 'cities');
+            ->assertExactJson([
+                'status' => 1,
+                'cities' => [
+                    ['id' => $active->id, 'name' => 'Davao City', 'active' => true],
+                    ['id' => $inactive->id, 'name' => 'Inactive City', 'active' => false],
+                ],
+            ]);
     }
 }
