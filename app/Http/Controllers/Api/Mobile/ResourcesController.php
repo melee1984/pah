@@ -8,10 +8,14 @@ use App\PartnerPromotion;
 use App\Partners;
 use App\PartnerTopPick;
 use App\Services\RestaurantService;
+use App\Services\ReverseGeocodingService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ResourcesController extends Controller
 {
+    public function __construct(private readonly ReverseGeocodingService $reverseGeocoder) {}
+
     public function getCategories()
     {
         return response()->json([
@@ -174,6 +178,13 @@ class ResourcesController extends Controller
 
     public function getDashboardData(Request $request)
     {
+        $validated = $request->validate([
+            'current_city_only' => ['sometimes', 'boolean'],
+            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+        ]);
+        $restaurantCity = $this->restaurantCity($request, $validated);
+
         $categories = $this->getCategories()->getData();
         $cuisines = $this->getCuisines()->getData();
         $promoBanners = $this->getPromoBanner()->getData();
@@ -184,9 +195,47 @@ class ResourcesController extends Controller
             'cuisines' => $cuisines,
             'promo_banners' => $promoBanners,
             'top_picks' => $topPicks,
-            'restaurants' => RestaurantService::getRestaurants($request), // Call the RestaurantService to get restaurants
+            'restaurants' => RestaurantService::getRestaurants($request, $restaurantCity),
         ]);
 
+    }
+
+    private function restaurantCity(Request $request, array $validated): ?string
+    {
+        if (! $request->boolean('current_city_only')) {
+            return null;
+        }
+
+        [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
+        $city = $this->reverseGeocoder->city($latitude, $longitude) ?? '';
+
+        if ($city === '') {
+            throw ValidationException::withMessages([
+                'city' => 'The city could not be determined from the current delivery coordinates.',
+            ]);
+        }
+
+        return $city;
+    }
+
+    private function restaurantCoordinates(Request $request, array $validated): array
+    {
+        $latitude = $validated['latitude'] ?? null;
+        $longitude = $validated['longitude'] ?? null;
+
+        if ($latitude !== null && $longitude !== null) {
+            return [$latitude, $longitude];
+        }
+
+        $sessionId = trim((string) $request->input('session_id'));
+
+        if ($sessionId === '') {
+            return [null, null];
+        }
+
+        $cart = Cart::whereSessionId($sessionId)->first(['user_lat', 'user_long']);
+
+        return [$cart?->user_lat, $cart?->user_long];
     }
 
     public function updateUserCoordinates(Request $request)
