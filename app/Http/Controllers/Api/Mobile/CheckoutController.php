@@ -38,9 +38,7 @@ use Illuminate\Validation\Rule;
 
 class CheckoutController extends Controller
 {
-    public function __construct(private DeliveryZone $deliveryZone)
-    {
-    }
+    public function __construct(private DeliveryZone $deliveryZone) {}
     
     public function checkout(Request $request) {
 
@@ -299,25 +297,8 @@ class CheckoutController extends Controller
                 ], 200);
             }
 
-            $location = $cart->partnerlocation;
-            if (! $location
-                || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
-                || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
-                return response()->json([
-                    'status' => 0,
-                    'message' => 'Valid merchant and delivery-address map pins are required before checkout.',
-                ], 200);
-            }
-
-            $deliveryCheck = $this->deliveryZone->check(
-                (float) $location->latitude,
-                (float) $location->longtitude,
-                (float) $userAddress->lat,
-                (float) $userAddress->long,
-            );
-
-            if (! $deliveryCheck['allowed']) {
-                return response()->json($this->deliveryZone->failureResponse($deliveryCheck), 200);
+            if ($failure = $this->deliveryAddressFailure($cart, $userAddress)) {
+                return response()->json($failure, 200);
             }
 
             $cart->user_lat = $userAddress->lat;

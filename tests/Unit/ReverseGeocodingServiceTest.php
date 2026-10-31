@@ -29,6 +29,17 @@ class ReverseGeocodingServiceTest extends TestCase
 
         $this->assertSame('Davao City', $service->city(7.0731, 125.6128));
         $this->assertSame('Davao City', $service->city(7.0731, 125.6128));
+
         Http::assertSentCount(1);
+    }
+
+    public function test_it_returns_null_for_invalid_coordinates_without_making_a_request(): void
+    {
+        config()->set('services.google.maps_key', 'test-key');
+        Http::fake();
+
+        $this->assertNull(app(ReverseGeocodingService::class)->city(200, 125.6128));
+
+        Http::assertNothingSent();
     }
 }

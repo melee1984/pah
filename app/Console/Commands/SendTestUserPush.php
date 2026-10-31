@@ -39,6 +39,7 @@ class SendTestUserPush extends Command
             try {
                 $user = User::query()->find($userId);
                 $token = $user?->device_token_food;
+                $token = $user?->device;
             } catch (Throwable $exception) {
                 $this->error('Could not look up the user. Check the database connection.');
 

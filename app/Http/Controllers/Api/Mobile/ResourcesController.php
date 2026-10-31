@@ -206,27 +206,36 @@ class ResourcesController extends Controller
             return null;
         }
 
-        $latitude = $validated['latitude'] ?? null;
-        $longitude = $validated['longitude'] ?? null;
+        [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
+        $city = $this->reverseGeocoder->city($latitude, $longitude) ?? '';
 
-        if ($latitude === null || $longitude === null) {
-            $sessionId = trim((string) $request->input('session_id'));
-            $cart = $sessionId !== ''
-                ? Cart::whereSessionId($sessionId)->first(['user_lat', 'user_long'])
-                : null;
-            $latitude = $cart?->user_lat;
-            $longitude = $cart?->user_long;
-        }
-
-        $city = $this->reverseGeocoder->city($latitude, $longitude);
-
-        if ($city === null) {
+        if ($city === '') {
             throw ValidationException::withMessages([
                 'city' => 'The city could not be determined from the current delivery coordinates.',
             ]);
         }
 
         return $city;
+    }
+
+    private function restaurantCoordinates(Request $request, array $validated): array
+    {
+        $latitude = $validated['latitude'] ?? null;
+        $longitude = $validated['longitude'] ?? null;
+
+        if ($latitude !== null && $longitude !== null) {
+            return [$latitude, $longitude];
+        }
+
+        $sessionId = trim((string) $request->input('session_id'));
+
+        if ($sessionId === '') {
+            return [null, null];
+        }
+
+        $cart = Cart::whereSessionId($sessionId)->first(['user_lat', 'user_long']);
+
+        return [$cart?->user_lat, $cart?->user_long];
     }
 
     public function updateUserCoordinates(Request $request)

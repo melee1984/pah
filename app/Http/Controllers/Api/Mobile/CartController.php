@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Api\Mobile;
 use App\Http\Controllers\Controller;
 use App\Model\Cart;
 use App\Model\CartItem;
-use App\Partners;
 use App\PartnerLocation;
+use App\Partners;
 use App\Products;
 use App\Support\DeliveryZone;
 use Illuminate\Http\Request;
@@ -17,9 +17,7 @@ use Validator;
 
 class CartController extends Controller
 {
-    public function __construct(private DeliveryZone $deliveryZone)
-    {
-    }
+    public function __construct(private DeliveryZone $deliveryZone) {}
 
     /**
      * Add cart Item
@@ -50,7 +48,7 @@ class CartController extends Controller
         if ($request->action === 'new') {
             $action = 'new';
         }
-        
+
         if ($request->has('is_not_available')) {
             $unavailableItemAction = CartItem::resolveUnavailableItemAction(
                 $request->input('is_not_available')
@@ -254,7 +252,7 @@ class CartController extends Controller
                 if (! $cart) {
                     $cart = new Cart;
                     $cart->session_id = $sessionId;
-                }   
+                }
 
                 if ($action === 'new' && $cart->exists) {
                     $cart->details()->delete();
@@ -286,8 +284,8 @@ class CartController extends Controller
 
                 $cart->ip_address = $request->ip();
                 $cart->partner_id = $partnerId;
-                // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that. 
-                // dapat makuha niya nag iyaha order if multiple location and merchant 
+                // makuha na man kung kinsa ang iyaha location but possible na multiple location sya. need to recheck that.
+                // dapat makuha niya nag iyaha order if multiple location and merchant
                 $cart->partner_location_address_id = $partnerLocationId;
                 $cart->active = $user ? 1 : 0;
 
@@ -330,7 +328,7 @@ class CartController extends Controller
                 $cartItem->variance_total_comm_total = $variantCommissionTotal;
                 $cartItem->discount_amount = $item->getDiscountAmount();
                 $cartItem->qty = (int) $cartItem->qty + $quantity;
-                
+
                 $cartItem->save();
 
                 return $cart;
@@ -365,7 +363,7 @@ class CartController extends Controller
                 // Calculate the delivery fee for the cart
                 // This will update the cart's delivery_fee, distance_rate, and duration fields
                 $cart->deliveryRate($partnerLocationId);
-                // 
+                //
             } catch (Throwable $exception) {
                 \Log::warning('Unable to calculate the mobile cart delivery fee.', [
                     'exception' => $exception,

@@ -10,7 +10,13 @@ class ReverseGeocodingService
 {
     public function city($latitude, $longitude): ?string
     {
-        if (! $this->validCoordinates($latitude, $longitude) || blank(config('services.google.maps_key'))) {
+        if (! $this->validCoordinates($latitude, $longitude)) {
+            return null;
+        }
+
+        $apiKey = config('services.google.maps_key');
+
+        if (blank($apiKey)) {
             return null;
         }
 
@@ -28,7 +34,7 @@ class ReverseGeocodingService
                 'https://maps.googleapis.com/maps/api/geocode/json',
                 [
                     'latlng' => $latitude.','.$longitude,
-                    'key' => config('services.google.maps_key'),
+                    'key' => $apiKey,
                 ]
             );
             $responseData = $response->json();
@@ -37,27 +43,38 @@ class ReverseGeocodingService
                 return null;
             }
 
-            $components = collect(data_get($responseData, 'results', []))
-                ->flatMap(fn (array $result) => $result['address_components'] ?? []);
+            $city = $this->cityFromResults(data_get($responseData, 'results', []));
 
-            foreach (['locality', 'postal_town', 'administrative_area_level_3', 'administrative_area_level_2'] as $type) {
-                $component = $components->first(
-                    fn (array $component) => in_array($type, $component['types'] ?? [], true)
-                );
-                $city = trim((string) ($component['long_name'] ?? ''));
-
-                if ($city !== '') {
-                    Cache::put($cacheKey, $city, now()->addDay());
-
-                    return $city;
-                }
+            if ($city !== null) {
+                Cache::put($cacheKey, $city, now()->addDay());
             }
+
+            return $city;
         } catch (\Throwable $exception) {
             Log::warning('Reverse geocoding failed while resolving the customer city.', [
                 'message' => $exception->getMessage(),
                 'latitude' => $latitude,
                 'longitude' => $longitude,
             ]);
+
+            return null;
+        }
+    }
+
+    private function cityFromResults(array $results): ?string
+    {
+        $components = collect($results)
+            ->flatMap(fn (array $result) => $result['address_components'] ?? []);
+
+        foreach (['locality', 'postal_town', 'administrative_area_level_3', 'administrative_area_level_2'] as $type) {
+            $component = $components->first(
+                fn (array $component) => in_array($type, $component['types'] ?? [], true)
+            );
+            $city = trim((string) ($component['long_name'] ?? ''));
+
+            if ($city !== '') {
+                return $city;
+            }
         }
 
         return null;
