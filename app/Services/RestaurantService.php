@@ -51,13 +51,33 @@ class RestaurantService
                         ->limit(15)
                         ->get();
             
-            \Log::info([
-                'message' => 'Fetched restaurants for the mobile app',
+            \Log::info('Restaurant service city-filter result.', [
                 'cart_id' => $cart->id ?? null,
                 'user_lat' => $userLat,
                 'user_long' => $userLong,
                 'session_id' => $session_id,
+                'city_filter' => $city,
+                'restaurant_count' => $restaurants->count(),
+                'matches' => $restaurants->map(function ($restaurant) {
+                    $location = $restaurant->locations->firstWhere('id', $restaurant->location_id);
+
+                    return [
+                        'partner_id' => $restaurant->id,
+                        'restaurant_name' => $restaurant->restaurant_name,
+                        'merchant_city' => $restaurant->city,
+                        'branch_id' => $restaurant->location_id,
+                        'branch_city' => $location?->city,
+                        'branch_active' => $location?->active,
+                    ];
+                })->values()->all(),
             ]);
+
+            if ($city && $restaurants->isEmpty()) {
+                \Log::warning('Restaurant city filter returned no records.', [
+                    'city_filter' => $city,
+                    'merchant_candidates' => self::merchantCandidatesForDiagnostics(),
+                ]);
+            }
 
         // display only the active restaurants and not the ghost restaurants
         // $restaurants = Partners::select('user_id', 'restaurant_name', 'id', 'img', 'address', 'slug', 'address', 'city', 'budget_id', 'account_type_id')
@@ -216,6 +236,28 @@ class RestaurantService
             DB::raw("LOWER(COALESCE(NULLIF(TRIM(partner_location.city), ''), TRIM(partners.city)))"),
             $cityVariants
         );
+    }
+
+    private static function merchantCandidatesForDiagnostics(): array
+    {
+        return DB::table('partners')
+            ->leftJoin('partner_location', 'partner_location.partner_id', '=', 'partners.id')
+            ->select(
+                'partners.id as partner_id',
+                'partners.restaurant_name',
+                'partners.city as merchant_city',
+                'partners.active as merchant_active',
+                'partners.verified_at',
+                'partners.account_type_id',
+                'partner_location.id as branch_id',
+                'partner_location.city as branch_city',
+                'partner_location.active as branch_active'
+            )
+            ->orderBy('partners.id')
+            ->limit(50)
+            ->get()
+            ->map(fn ($candidate) => (array) $candidate)
+            ->all();
     }
 
     private static function getCuisineTagsByPartner($partnerIds)

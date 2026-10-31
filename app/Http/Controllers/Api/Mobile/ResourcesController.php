@@ -10,6 +10,7 @@ use App\PartnerTopPick;
 use App\Services\RestaurantService;
 use App\Services\ReverseGeocodingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class ResourcesController extends Controller
@@ -184,18 +185,43 @@ class ResourcesController extends Controller
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
         ]);
         $restaurantCity = $this->restaurantCity($request, $validated);
+        [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
+
+        Log::info('Mobile dashboard merchant pull started.', [
+            'user_id' => $request->user()?->id,
+            'session_id' => $request->input('session_id'),
+            'latitude' => $latitude,
+            'longitude' => $longitude,
+            'resolved_city' => $restaurantCity,
+            'current_city_only' => $request->boolean('current_city_only'),
+        ]);
 
         $categories = $this->getCategories()->getData();
         $cuisines = $this->getCuisines()->getData();
         $promoBanners = $this->getPromoBanner()->getData();
         $topPicks = $this->getTopPicks()->getData();
+        $restaurants = RestaurantService::getRestaurants($request, $restaurantCity);
+
+        Log::info('Mobile dashboard merchant pull completed.', [
+            'resolved_city' => $restaurantCity,
+            'restaurant_count' => $restaurants->count(),
+            'restaurants' => $restaurants->map(fn ($restaurant) => [
+                'partner_id' => $restaurant->id,
+                'restaurant_name' => $restaurant->restaurant_name,
+                'merchant_city' => $restaurant->getRawOriginal('city'),
+                'branch_id' => $restaurant->location_id,
+                'branch_city' => $restaurant->location?->city,
+                'display_city' => $restaurant->city,
+                'distance_km' => $restaurant->distance_km,
+            ])->values()->all(),
+        ]);
 
         return response()->json([
             'categories' => $categories,
             'cuisines' => $cuisines,
             'promo_banners' => $promoBanners,
             'top_picks' => $topPicks,
-            'restaurants' => RestaurantService::getRestaurants($request, $restaurantCity),
+            'restaurants' => $restaurants,
         ]);
 
     }
