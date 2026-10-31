@@ -68,9 +68,9 @@
           <input type="text" class="form-control" name="txtAddress"  id="txtAddress" placeholder="Delivery Address eg. Barangay, Street, lot, building no , room no " v-model="address.address_1">
         </div>
         <div class="form-group col-md-12 mb-1 pb-1">
-          <select class="form-control" name="city" id="city" v-model="address.city_id">
+          <select class="form-control" name="city" id="city" v-model="address.city_name">
             <option value="" disabled>Select city</option>
-            <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
+            <option v-for="city in cities" :key="city.id" :value="city.name">{{ city.name }}</option>
           </select>
         </div>
         <div class="form-group col-md-12 mb-1 pb-1">
@@ -125,7 +125,7 @@
             else if (!this.address.address_1) {
               return false;
             }
-            else if (!this.address.city_id) {
+            else if (!this.address.city_name) {
               return false;
             }
             else if (!this.address.landmark) {
@@ -203,6 +203,7 @@
               this.addressAction = "edit";
               this.buttonString = "Update Address";
               this.address = address;
+              this.$set(this.address, 'city_name', address.city ? address.city.name : '');
             },
             addAddress: function() {
                
@@ -225,7 +226,7 @@
 
                     formData.append('title', this.address.title);
                     formData.append('address', this.address.address_1);
-                    formData.append('city_id', this.address.city_id);
+                    formData.append('city', this.address.city_name);
                     formData.append('landmark', this.address.landmark);
                     formData.append('latitude', coordinates.lat);
                     formData.append('longtitude', coordinates.lng);
@@ -236,7 +237,7 @@
 
                     formData.append('title', this.address.title);
                     formData.append('address', this.address.address_1);
-                    formData.append('city_id', this.address.city_id);
+                    formData.append('city', this.address.city_name);
                     formData.append('landmark', this.address.landmark);
                     formData.append('latitude', coordinates.lat);
                     formData.append('longtitude', coordinates.lng);
@@ -275,7 +276,7 @@
                 messageString = "address";
                 isValid = false;
               }
-              else if (!this.address.city_id) {
+              else if (!this.address.city_name) {
                 messageString = "city";
                 isValid = false;
               }

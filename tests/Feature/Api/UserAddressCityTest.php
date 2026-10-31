@@ -54,7 +54,7 @@ class UserAddressCityTest extends TestCase
         $request = Request::create('/api/mobile/address/submit', 'POST', [
             'title' => 'Home',
             'address' => '123 Sample Street',
-            'city_id' => $cityId,
+            'city' => 'Davao City',
             'latitude' => 7.0731,
             'longitude' => 125.6128,
         ]);
@@ -69,5 +69,28 @@ class UserAddressCityTest extends TestCase
             'city_id' => $cityId,
             'address_1' => '123 Sample Street',
         ]);
+    }
+
+    public function test_adding_an_address_rejects_a_city_that_is_not_active(): void
+    {
+        DB::table('cities')->insert([
+            'name' => 'Inactive City',
+            'active' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $request = Request::create('/api/mobile/address/submit', 'POST', [
+            'title' => 'Home',
+            'address' => '123 Sample Street',
+            'city' => 'Inactive City',
+            'latitude' => 7.0731,
+            'longitude' => 125.6128,
+        ]);
+        $request->setUserResolver(fn () => (new User)->forceFill(['id' => 10]));
+
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        app(UserController::class)->addAddress($request);
     }
 }

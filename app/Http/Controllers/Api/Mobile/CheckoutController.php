@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
+use App\City;
 use App\Coupon;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -646,7 +647,7 @@ class CheckoutController extends Controller
          $rules = [
             'title'=>'required',
             'address'=>'required',
-            'city_id' => ['required', Rule::exists('cities', 'id')->where('active', true)],
+            'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')->where('active', true)],
             'latitude' => 'required',
             'longtitude' => 'required',
         ];
@@ -673,7 +674,7 @@ class CheckoutController extends Controller
             
             $userAddress = UserAddress::updateOrCreate(
                 ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => $user->id],
-                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => $request->input('city_id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id]);
+                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->active()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id]);
 
             if ($cart) {
                 if ($cart->requiresDelivery()
