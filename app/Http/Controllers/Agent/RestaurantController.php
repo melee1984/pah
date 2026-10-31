@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Agent;
 
+use App\City;
 use App\Http\Controllers\Controller;
 use App\Partners;
 use App\RestaurantEnrollmentDocument;
@@ -30,13 +31,16 @@ class RestaurantController extends Controller
 
     public function create(): View
     {
-        return view('agent.restaurants.create');
+        return view('agent.restaurants.create', [
+            'cities' => City::query()->active()->orderBy('name')->get(),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         abort_unless(Schema::hasTable('users'), 503, 'The Pahatud partner user schema is unavailable.');
 
+        $request->merge(['city' => trim((string) $request->input('city'))]);
         $validated = $request->validate([
             'restaurant_name' => ['required', 'string', 'max:255'],
             'firstname' => ['required', 'string', 'max:75'],
@@ -51,7 +55,12 @@ class RestaurantController extends Controller
             'mobile' => ['required', 'string', 'max:30'],
             'telephone' => ['nullable', 'string', 'max:30'],
             'address' => ['required', 'string', 'max:500'],
-            'city' => ['required', 'string', 'max:120'],
+            'city' => [
+                'required',
+                'string',
+                'max:120',
+                Rule::exists('cities', 'name')->where('active', true),
+            ],
             'description' => ['nullable', 'string', 'max:2000'],
             'business_structure' => ['required', Rule::in(['sole_proprietorship', 'corporation', 'partnership', 'cooperative'])],
             'enrolling_as' => [

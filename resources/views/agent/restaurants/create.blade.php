@@ -54,8 +54,16 @@
                 </div>
                 <div class="agent-field">
                     <label for="city">City <span class="agent-required">*</span></label>
-                    <input class="agent-input @error('city') agent-input-error @enderror" id="city" name="city" value="{{ old('city', 'Davao City') }}" required>
+                    <select class="agent-input @error('city') agent-input-error @enderror" id="city" name="city" autocomplete="address-level2" required>
+                        <option value="" disabled @selected(! old('city'))>Select a city</option>
+                        @foreach ($cities as $city)
+                            <option value="{{ $city->name }}" @selected(old('city') === $city->name)>{{ $city->name }}</option>
+                        @endforeach
+                    </select>
                     @error('city')<span class="agent-error">{{ $message }}</span>@enderror
+                    @if ($cities->isEmpty())
+                        <span class="agent-error">Restaurant enrollment is not available in any city yet.</span>
+                    @endif
                 </div>
                 <div class="agent-field agent-field-full">
                     <label for="address">Complete business address <span class="agent-required">*</span></label>

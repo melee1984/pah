@@ -30,7 +30,7 @@ class MerchantLocationCheckoutOptionsTest extends TestCase
             $table->unsignedBigInteger('partner_id');
             $table->string('address_1');
             $table->string('address_2')->nullable();
-            $table->string('city');
+            $table->string('city', 100);
             $table->string('zip_code');
             $table->string('mobile');
             $table->string('telephone');
@@ -81,6 +81,39 @@ class MerchantLocationCheckoutOptionsTest extends TestCase
             ->getJson('/api/merchant/location/list')
             ->assertOk()
             ->assertJsonCount(3, 'location.data.0.checkout_options');
+    }
+
+    public function test_branch_city_accepts_up_to_one_hundred_characters(): void
+    {
+        $acceptedPayload = $this->branchPayload(['pickup']);
+        $acceptedPayload['city'] = str_repeat('A', 100);
+
+        $this->actingAs($this->merchantUser)
+            ->postJson('/api/merchant/location/submit', $acceptedPayload)
+            ->assertOk()
+            ->assertJsonPath('status', 1);
+
+        $locationId = DB::table('partner_location')->value('id');
+        $updatedPayload = $this->branchPayload(['pickup']);
+        $updatedPayload['city'] = str_repeat('B', 100);
+
+        $this->actingAs($this->merchantUser)
+            ->putJson("/api/merchant/location/{$locationId}/submit", $updatedPayload)
+            ->assertOk()
+            ->assertJsonPath('status', 1);
+
+        $this->assertDatabaseHas('partner_location', [
+            'id' => $locationId,
+            'city' => str_repeat('B', 100),
+        ]);
+
+        $rejectedPayload = $this->branchPayload(['pickup']);
+        $rejectedPayload['city'] = str_repeat('A', 101);
+
+        $this->actingAs($this->merchantUser)
+            ->postJson('/api/merchant/location/submit', $rejectedPayload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('city');
     }
 
     private function branchPayload(array $checkoutOptions): array

@@ -69,7 +69,7 @@ class LocationController extends Controller
 		$validatedData = $request->validate([
 			'address_1' => 'required',
 			'zip' => 'required|max:75',
-			'city' => 'required|max:75',
+			'city' => 'required|string|max:100',
 			'mobile' => 'required|max:75',
 			'telephone' => 'required|max:75',
 			'latitude' => ['required', 'numeric', 'between:-90,90'],
@@ -116,7 +116,7 @@ class LocationController extends Controller
 		$validatedData = $request->validate([
 			'address_1' => 'required',
 			'zip' => 'required|max:15',
-			'city' => 'required|max:15',
+			'city' => 'required|string|max:100',
 			'mobile' => 'required|max:25',
 			'telephone' => 'required|max:25',
 			'latitude' => ['required', 'numeric', 'between:-90,90'],

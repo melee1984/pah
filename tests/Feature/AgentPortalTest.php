@@ -130,6 +130,8 @@ class AgentPortalTest extends TestCase
             $table->unsignedInteger('booking_status_id')->nullable();
             $table->timestamps();
         });
+
+        City::query()->create(['name' => 'Davao City', 'active' => true]);
     }
 
     public function test_agent_can_log_in_and_inactive_agent_cannot(): void
@@ -264,7 +266,6 @@ class AgentPortalTest extends TestCase
 
     public function test_agent_registration_page_explains_the_commission_tiers(): void
     {
-        City::query()->create(['name' => 'Davao City', 'active' => true]);
         City::query()->create(['name' => 'Inactive City', 'active' => false]);
 
         $this->get(route('agent.register'))
@@ -285,7 +286,6 @@ class AgentPortalTest extends TestCase
     public function test_agent_can_register_only_in_an_active_city(): void
     {
         Mail::fake();
-        City::query()->create(['name' => 'Davao City', 'active' => true]);
         City::query()->create(['name' => 'Inactive City', 'active' => false]);
 
         $application = [
@@ -792,10 +792,13 @@ class AgentPortalTest extends TestCase
     public function test_enrollment_form_only_shows_the_simplified_documents_and_payout_textarea(): void
     {
         $agent = $this->agent();
+        City::query()->updateOrCreate(['name' => 'Tagum City'], ['active' => true]);
 
         $this->actingAs($agent, 'agent')
             ->get(route('agent.restaurants.create'))
             ->assertOk()
+            ->assertSee('<select class="agent-input " id="city" name="city"', false)
+            ->assertSee('<option value="Tagum City"', false)
             ->assertSee('Payout account name and account details')
             ->assertSee('name="payout_account_name"', false)
             ->assertSee('Valid government-issued ID')
@@ -805,6 +808,23 @@ class AgentPortalTest extends TestCase
             ->assertDontSee('BIR Certificate of Registration')
             ->assertDontSee('Sanitary Permit')
             ->assertDontSee('Proof of payout account');
+    }
+
+    public function test_enrollment_rejects_a_city_outside_the_active_service_areas(): void
+    {
+        $agent = $this->agent();
+
+        $this->actingAs($agent, 'agent')->post(route('agent.restaurants.store'), array_merge($this->enrollmentDocuments(), [
+            'restaurant_name' => 'Outside Cafe',
+            'firstname' => 'Maria',
+            'lastname' => 'Santos',
+            'email' => 'outside@example.com',
+            'mobile' => '09171234567',
+            'address' => '123 Test Street',
+            'city' => 'Unlisted City',
+        ]))->assertSessionHasErrors('city');
+
+        $this->assertDatabaseMissing('partners', ['email' => 'outside@example.com']);
     }
 
     public function test_enrollment_allows_missing_documents_for_later_upload(): void
