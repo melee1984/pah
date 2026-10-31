@@ -3,12 +3,14 @@
 namespace Tests\Feature\Api;
 
 use App\Http\Controllers\Api\Mobile\CheckoutController;
+use App\Services\ReverseGeocodingService;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Mockery;
 use Tests\TestCase;
 
 class MobileCheckoutFulfillmentTest extends TestCase
@@ -25,6 +27,10 @@ class MobileCheckoutFulfillmentTest extends TestCase
     {
         parent::setUp();
 
+        $reverseGeocoder = Mockery::mock(ReverseGeocodingService::class);
+        $reverseGeocoder->shouldReceive('city')->byDefault()->andReturn('Cebu City');
+        app()->instance(ReverseGeocodingService::class, $reverseGeocoder);
+
         Schema::create('partners', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('account_type_id')->default(1);
@@ -37,6 +43,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
             $table->id();
             $table->unsignedBigInteger('partner_id');
             $table->string('address_1')->nullable();
+            $table->string('city')->nullable();
             $table->decimal('latitude', 10, 7)->nullable();
             $table->decimal('longtitude', 10, 7)->nullable();
             $table->boolean('active')->default(true);
@@ -104,6 +111,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $this->locationId = DB::table('partner_location')->insertGetId([
             'partner_id' => $this->partnerId,
             'address_1' => 'Merchant location',
+            'city' => 'Cebu City',
             'latitude' => 10.3157000,
             'longtitude' => 123.8854000,
             'active' => true,
@@ -272,6 +280,38 @@ class MobileCheckoutFulfillmentTest extends TestCase
             (float) $response['summary']['delivery_fee'],
             (float) DB::table('cart')->where('id', $cartId)->value('delivery_fee')
         );
+    }
+
+    public function test_updating_the_delivery_address_rejects_a_different_city(): void
+    {
+        $reverseGeocoder = Mockery::mock(ReverseGeocodingService::class);
+        $reverseGeocoder->shouldReceive('city')->once()->andReturn('Davao City');
+        app()->instance(ReverseGeocodingService::class, $reverseGeocoder);
+
+        $optionId = $this->createCheckoutOption('delivery');
+        $addressId = DB::table('user_address')->insertGetId([
+            'user_id' => $this->user->id,
+            'active' => true,
+            'lat' => 10.3257000,
+            'long' => 123.8954000,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $cartId = $this->createCart('different-city-session');
+        $this->createCartItem($cartId);
+
+        $response = $this->updateOrderOption('different-city-session', $optionId, $addressId);
+
+        $this->assertSame(0, $response['status']);
+        $this->assertSame('city_mismatch', $response['reason']);
+        $this->assertSame('Cebu City', $response['partner_city']);
+        $this->assertSame('Davao City', $response['delivery_city']);
+        $this->assertDatabaseHas('cart', [
+            'id' => $cartId,
+            'address_id' => null,
+            'user_lat' => null,
+            'user_long' => null,
+        ]);
     }
 
     private function createCheckoutOption(string $type): int
