@@ -8,6 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class UserAddressCityTest extends TestCase
@@ -89,8 +90,14 @@ class UserAddressCityTest extends TestCase
         ]);
         $request->setUserResolver(fn () => (new User)->forceFill(['id' => 10]));
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-
-        app(UserController::class)->addAddress($request);
+        try {
+            app(UserController::class)->addAddress($request);
+            $this->fail('An inactive city should fail validation.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                "The city you've selected is currently not active as of the moment.",
+                $exception->errors()['city'][0]
+            );
+        }
     }
 }

@@ -106,7 +106,9 @@ class CheckoutController extends Controller
             'smsCode'=>'required',
         ];
 
-        $validator = Validator::make($request->all(), $rules);
+        $validator = Validator::make($request->all(), $rules, [
+            'city.exists' => "The city you've selected is currently not active as of the moment.",
+        ]);
 
         if ($validator->fails()) {
             // Validation failed
@@ -662,7 +664,7 @@ class CheckoutController extends Controller
           // Validation failed
           return response()->json([
             'status' => 0,
-            'message' => "Missing information required"
+            'message' => $validator->errors()->first(),
           ]);
         } 
         else {

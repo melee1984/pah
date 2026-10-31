@@ -66,6 +66,8 @@ class UserController extends Controller
 			'city' => ['required', 'string', 'max:120', Rule::exists('cities', 'name')->where('active', true)],
 			'latitude' => 'required|numeric',
 			'longitude' => 'required|numeric',
+		], [
+			'city.exists' => "The city you've selected is currently not active as of the moment.",
 		]);
 		
 		$address = new UserAddress();
