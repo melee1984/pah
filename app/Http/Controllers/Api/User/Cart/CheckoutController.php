@@ -313,7 +313,7 @@ class CheckoutController extends Controller
 			
 			$userAddress = UserAddress::updateOrCreate(
 			    ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => Auth::User()->id],
-			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => $request->input('city_id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id, 'status' => ' 1']);
+			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => $request->input('city_id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id]);
 			$userAddress->makeDefault();
 
 			if ($cart) {

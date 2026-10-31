@@ -80,6 +80,12 @@ class UserController extends Controller
 		if ($address->save()) {
 			$address->makeDefault();
 			$data['status'] = 1;
+			$data['address'] = $address->load('city');
+			$data['addresses'] = UserAddress::query()
+				->whereUserId($user->id)
+				->whereActive(1)
+				->with('city')
+				->get();
 		}
 
 		return response()->json($data, 200);
