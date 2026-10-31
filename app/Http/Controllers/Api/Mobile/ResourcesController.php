@@ -179,17 +179,43 @@ class ResourcesController extends Controller
 
     public function getDashboardData(Request $request)
     {
-        $validated = $request->validate([
-            'current_city_only' => ['sometimes', 'boolean'],
-            'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
-            'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
-        ]);
-        $restaurantCity = $this->restaurantCity($request, $validated);
+        $logContext = [
+            'session_id' => $request->input('session_id'),
+            'latitude' => $request->input('latitude'),
+            'longitude' => $request->input('longitude'),
+            'has_authorization' => filled($request->bearerToken()),
+            'user_id' => $request->user()?->id,
+        ];
+
+        Log::notice('Mobile dashboard request received.', $logContext);
+
+        try {
+            $validated = $request->validate([
+                'current_city_only' => ['sometimes', 'boolean'],
+                'latitude' => ['nullable', 'required_with:longitude', 'numeric', 'between:-90,90'],
+                'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:-180,180'],
+            ]);
+        } catch (ValidationException $exception) {
+            Log::warning('Mobile dashboard request validation failed.', $logContext + [
+                'errors' => $exception->errors(),
+            ]);
+
+            throw $exception;
+        }
+
+        try {
+            $restaurantCity = $this->restaurantCity($request, $validated);
+        } catch (ValidationException $exception) {
+            Log::warning('Mobile dashboard city resolution failed.', $logContext + [
+                'errors' => $exception->errors(),
+            ]);
+
+            throw $exception;
+        }
+
         [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
 
-        Log::info('Mobile dashboard merchant pull started.', [
-            'user_id' => $request->user()?->id,
-            'session_id' => $request->input('session_id'),
+        Log::info('Mobile dashboard merchant pull started.', $logContext + [
             'latitude' => $latitude,
             'longitude' => $longitude,
             'resolved_city' => $restaurantCity,
@@ -202,7 +228,7 @@ class ResourcesController extends Controller
         $topPicks = $this->getTopPicks()->getData();
         $restaurants = RestaurantService::getRestaurants($request, $restaurantCity);
 
-        Log::info('Mobile dashboard merchant pull completed.', [
+        Log::info('Mobile dashboard merchant pull completed.', $logContext + [
             'resolved_city' => $restaurantCity,
             'restaurant_count' => $restaurants->count(),
             'restaurants' => $restaurants->map(fn ($restaurant) => [

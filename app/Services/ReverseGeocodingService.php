@@ -11,12 +11,19 @@ class ReverseGeocodingService
     public function city($latitude, $longitude): ?string
     {
         if (! $this->validCoordinates($latitude, $longitude)) {
+            Log::warning('Reverse geocoding received invalid coordinates.', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ]);
+
             return null;
         }
 
         $apiKey = config('services.google.maps_key');
 
         if (blank($apiKey)) {
+            Log::error('Reverse geocoding cannot run because the Google Maps key is missing.');
+
             return null;
         }
 
@@ -26,6 +33,12 @@ class ReverseGeocodingService
         $cachedCity = Cache::get($cacheKey);
 
         if (is_string($cachedCity) && $cachedCity !== '') {
+            Log::info('Reverse geocoding city cache hit.', [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'resolved_city' => $cachedCity,
+            ]);
+
             return $cachedCity;
         }
 
@@ -40,6 +53,14 @@ class ReverseGeocodingService
             $responseData = $response->json();
 
             if (! $response->successful() || data_get($responseData, 'status') !== 'OK') {
+                Log::warning('Google reverse geocoding did not return a usable result.', [
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'http_status' => $response->status(),
+                    'google_status' => data_get($responseData, 'status'),
+                    'google_error_message' => data_get($responseData, 'error_message'),
+                ]);
+
                 return null;
             }
 
@@ -47,6 +68,18 @@ class ReverseGeocodingService
 
             if ($city !== null) {
                 Cache::put($cacheKey, $city, now()->addDay());
+
+                Log::info('Reverse geocoding city resolved.', [
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'resolved_city' => $city,
+                ]);
+            } else {
+                Log::warning('Google reverse geocoding returned no city component.', [
+                    'latitude' => $latitude,
+                    'longitude' => $longitude,
+                    'result_count' => count(data_get($responseData, 'results', [])),
+                ]);
             }
 
             return $city;
