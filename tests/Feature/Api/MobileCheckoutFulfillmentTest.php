@@ -274,6 +274,33 @@ class MobileCheckoutFulfillmentTest extends TestCase
         );
     }
 
+    public function test_updating_the_delivery_address_rejects_a_different_service_area(): void
+    {
+        $optionId = $this->createCheckoutOption('delivery');
+        $addressId = DB::table('user_address')->insertGetId([
+            'user_id' => $this->user->id,
+            'active' => true,
+            'lat' => 7.0731000,
+            'long' => 125.6128000,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $cartId = $this->createCart('different-city-session');
+        $this->createCartItem($cartId);
+
+        $response = $this->updateOrderOption('different-city-session', $optionId, $addressId);
+
+        $this->assertSame(0, $response['status']);
+        $this->assertSame('service_area', $response['reason']);
+        $this->assertSame('Davao City', $response['customer_area']);
+        $this->assertDatabaseHas('cart', [
+            'id' => $cartId,
+            'address_id' => null,
+            'user_lat' => null,
+            'user_long' => null,
+        ]);
+    }
+
     private function createCheckoutOption(string $type): int
     {
         return DB::table('partner_location_checkout_options')->insertGetId([

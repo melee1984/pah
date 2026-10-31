@@ -545,6 +545,10 @@ class CheckoutController extends Controller
                     ],
                 ], 200);
             }
+
+            if ($failure = $this->deliveryAddressFailure($cart, $userAddress)) {
+                return response()->json($failure, 200);
+            }
         }
 
         $cart->fulfillment_type = $checkoutOption->type;
@@ -583,6 +587,31 @@ class CheckoutController extends Controller
             'cart' => $cart,
             'summary' => $cart->cartItemSummary(),
         ], 200);
+    }
+
+    private function deliveryAddressFailure(Cart $cart, UserAddress $userAddress): ?array
+    {
+        $location = $cart->partnerlocation;
+
+        if (! $location
+            || ! $this->deliveryZone->coordinatesAreValid($userAddress->lat, $userAddress->long)
+            || ! $this->deliveryZone->coordinatesAreValid($location->latitude, $location->longtitude)) {
+            return [
+                'status' => 0,
+                'message' => 'Valid merchant and delivery-address map pins are required before checkout.',
+            ];
+        }
+
+        $deliveryCheck = $this->deliveryZone->check(
+            (float) $location->latitude,
+            (float) $location->longtitude,
+            (float) $userAddress->lat,
+            (float) $userAddress->long,
+        );
+
+        return $deliveryCheck['allowed']
+            ? null
+            : $this->deliveryZone->failureResponse($deliveryCheck);
     }
 
     public function smsSending(Request $request) {
@@ -667,6 +696,10 @@ class CheckoutController extends Controller
                 ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id, 'status' => ' 1']);
 
             if ($cart) {
+                if ($cart->requiresDelivery()
+                    && ($failure = $this->deliveryAddressFailure($cart, $userAddress))) {
+                    return response()->json($failure, 200);
+                }
                 
                 // Updating rate 
                 $cart->address_id = $userAddress->id;
@@ -756,11 +789,26 @@ class CheckoutController extends Controller
         } 
         else {
 
-            $userAddress = UserAddress::find($request->input('address'));
+            $userAddress = UserAddress::query()
+                ->whereKey($request->input('address'))
+                ->whereUserId($request->user()->id)
+                ->first();
 
             if ($userAddress) {
                 $session_id = $request->input('session_id');
                 $cart = Cart::whereSessionId($session_id)->first();
+
+                if (! $cart) {
+                    return response()->json([
+                        'status' => 0,
+                        'message' => 'Cart not found for this session.',
+                    ], 200);
+                }
+
+                if ($cart->requiresDelivery()
+                    && ($failure = $this->deliveryAddressFailure($cart, $userAddress))) {
+                    return response()->json($failure, 200);
+                }
 
                 $cart->address_id = $userAddress->id;
 
