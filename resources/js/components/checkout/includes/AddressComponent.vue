@@ -25,6 +25,7 @@
         <div @click="selectAddress(address)" class="flex-grow-1">
           <h5 class="mb-1">{{ address.title }}</h5>
           <p class="mb-1">{{ address.address_1 }}</p>
+          <small v-if="address.city"><strong>City:</strong> {{ address.city.name }}</small><br v-if="address.city">
           <small><strong>Note:</strong> {{ address.landmark }}</small>
         </div>
 
@@ -67,6 +68,12 @@
           <input type="text" class="form-control" name="txtAddress"  id="txtAddress" placeholder="Delivery Address eg. Barangay, Street, lot, building no , room no " v-model="address.address_1">
         </div>
         <div class="form-group col-md-12 mb-1 pb-1">
+          <select class="form-control" name="city" id="city" v-model="address.city_id">
+            <option value="" disabled>Select city</option>
+            <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
+          </select>
+        </div>
+        <div class="form-group col-md-12 mb-1 pb-1">
           <textarea class="form-control" name="specialInstruction" id="specialInstruction" rows="2" placeholder="Special Instruction eg. building, landmark, or you dont have change for 1000" v-model="address.landmark"></textarea>
         </div>
       </div>
@@ -93,11 +100,13 @@
               addressList: this.addresses,
               selectedId: "",
               buttonString: "Add Address",
+              cities: [],
           }
         },
         props: ['addresses', 'selectedaddressid'],
         mounted() {
           this.fetchData();
+          this.fetchCities();
           this.validateSelectedAddress();
         },
         created() {
@@ -108,24 +117,24 @@
         },
         computed: {
           validForm: function(){
-            
-            if (localStorage.center) {
-              var coordinates = JSON.parse(localStorage.center);
-            }
+            const coordinates = localStorage.center ? JSON.parse(localStorage.center) : null;
 
-            if (!this.addresses.title) {
+            if (!this.address.title) {
               return false;
             }
-            else if (!this.addresses.address_1) {
+            else if (!this.address.address_1) {
               return false;
             }
-            else if (!this.addresses.landmark) {
+            else if (!this.address.city_id) {
               return false;
             }
-            else  if (coordinates.lat=="") {
+            else if (!this.address.landmark) {
               return false;
             }
-            else if (coordinates.lng=="") {
+            else if (!coordinates || coordinates.lat === "") {
+              return false;
+            }
+            else if (coordinates.lng === "") {
               return false;
             }
             return true;
@@ -135,6 +144,13 @@
             popMap: function() {
               window.AppEvents.$emit('PinMapUserLocation');
             },  
+            fetchCities: function() {
+              axios.get('/api/cities').then((response) => {
+                this.cities = response.data.cities || [];
+              }).catch((error) => {
+                console.log(error);
+              });
+            },
             actionAddress: function(action) {
               this.address = {};
               this.addressAction = action;
@@ -209,6 +225,7 @@
 
                     formData.append('title', this.address.title);
                     formData.append('address', this.address.address_1);
+                    formData.append('city_id', this.address.city_id);
                     formData.append('landmark', this.address.landmark);
                     formData.append('latitude', coordinates.lat);
                     formData.append('longtitude', coordinates.lng);
@@ -219,6 +236,7 @@
 
                     formData.append('title', this.address.title);
                     formData.append('address', this.address.address_1);
+                    formData.append('city_id', this.address.city_id);
                     formData.append('landmark', this.address.landmark);
                     formData.append('latitude', coordinates.lat);
                     formData.append('longtitude', coordinates.lng);
@@ -246,10 +264,7 @@
             },
             validate: function () {
               var isValid = true;
-
-              if (localStorage.center) {
-                var coordinates = JSON.parse(localStorage.center);
-              }
+              const coordinates = localStorage.center ? JSON.parse(localStorage.center) : null;
               var messageString = "";
 
               if (!this.address.title) {
@@ -260,15 +275,19 @@
                 messageString = "address";
                 isValid = false;
               }
+              else if (!this.address.city_id) {
+                messageString = "city";
+                isValid = false;
+              }
               else if (!this.address.landmark) {
                 messageString = "landmark";
                 isValid = false;
               }
-              else  if (coordinates.lat=="") {
+              else if (!coordinates || coordinates.lat === "") {
                 messageString = "location";
                 isValid = false;
               }
-              else if (coordinates.lng=="") {
+              else if (coordinates.lng === "") {
                  messageString = "location";
                 isValid = false;
               }

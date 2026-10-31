@@ -64,9 +64,7 @@ class CheckoutController extends Controller
 
             $user = $request->user();
             
-            if ($user->addresses) {
-                $user->addresses;    
-            }
+            $user->load('addresses.city');
             
             $cart->partnerlocation;
             $cart->diningTable;
@@ -648,6 +646,7 @@ class CheckoutController extends Controller
          $rules = [
             'title'=>'required',
             'address'=>'required',
+            'city_id' => ['required', Rule::exists('cities', 'id')->where('active', true)],
             'latitude' => 'required',
             'longtitude' => 'required',
         ];
@@ -674,7 +673,7 @@ class CheckoutController extends Controller
             
             $userAddress = UserAddress::updateOrCreate(
                 ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => $user->id],
-                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id, 'status' => ' 1']);
+                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => $request->input('city_id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id, 'status' => ' 1']);
 
             if ($cart) {
                 if ($cart->requiresDelivery()
@@ -697,8 +696,8 @@ class CheckoutController extends Controller
 
             $data['message'] = "Successfully insert record";
             $data['status'] = 1;
-            $data['addresses'] = $user->addresses;
-            $data['address'] = $userAddress;
+            $data['addresses'] = $user->addresses()->with('city')->get();
+            $data['address'] = $userAddress->load('city');
             
         }
 

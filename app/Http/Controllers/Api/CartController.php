@@ -110,7 +110,7 @@ class CartController extends Controller
 
             $user = Auth::user();
 
-            $user->addresses;
+            $user->load('addresses.city');
             $cart->partnerlocation;
             $cart->diningTable;
 

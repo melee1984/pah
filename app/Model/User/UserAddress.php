@@ -2,14 +2,16 @@
 
 namespace App\Model\User;
 
+use App\City;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\DB;
 
 class UserAddress extends Model
 {
     protected $table = 'user_address';
 
-    protected $fillable = ['user_id', 'active', 'address_1', 'mobile', 'landmark', 'lat', 'long', 'default', 'title'];
+    protected $fillable = ['user_id', 'active', 'address_1', 'mobile', 'landmark', 'city_id', 'lat', 'long', 'default', 'title'];
 
     public $timestamps = true;
 
@@ -17,6 +19,11 @@ class UserAddress extends Model
         'active' => 'boolean',
         'default' => 'boolean',
     ];
+
+    public function city(): BelongsTo
+    {
+        return $this->belongsTo(City::class);
+    }
 
     public function makeDefault(): self
     {

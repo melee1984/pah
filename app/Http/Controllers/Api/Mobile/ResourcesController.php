@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
 use App\Model\Cart;
+use App\Model\User\UserAddress;
 use App\PartnerPromotion;
 use App\Partners;
 use App\PartnerTopPick;
 use App\Services\RestaurantService;
 use App\Services\ReverseGeocodingService;
+use App\Support\DeliveryZone;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class ResourcesController extends Controller
@@ -184,7 +187,7 @@ class ResourcesController extends Controller
             'latitude' => $request->input('latitude'),
             'longitude' => $request->input('longitude'),
             'has_authorization' => filled($request->bearerToken()),
-            'user_id' => $request->user()?->id,
+            'user_id' => $this->authenticatedUser($request)?->id,
         ];
 
         Log::notice('Mobile dashboard request received.', $logContext);
@@ -264,15 +267,88 @@ class ResourcesController extends Controller
             return null;
         }
 
-        $city = $this->reverseGeocoder->city($latitude, $longitude) ?? '';
+        $city = $this->reverseGeocoder->city($latitude, $longitude);
 
-        if ($city === '') {
-            throw ValidationException::withMessages([
-                'city' => 'The city could not be determined from the current delivery coordinates.',
-            ]);
+        if (filled($city)) {
+            return $city;
         }
 
-        return $city;
+        $fallback = $this->fallbackRestaurantCity($request, $latitude, $longitude);
+
+        if ($fallback !== null) {
+            Log::warning('Mobile dashboard is using a fallback city.', [
+                'session_id' => $request->input('session_id'),
+                'user_id' => $this->authenticatedUser($request)?->id,
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+                'resolved_city' => $fallback['city'],
+                'city_source' => $fallback['source'],
+                'default_address_id' => $fallback['default_address_id'] ?? null,
+            ]);
+
+            return $fallback['city'];
+        }
+
+        throw ValidationException::withMessages([
+            'city' => 'The city could not be determined from the current delivery coordinates or customer profile.',
+        ]);
+    }
+
+    private function fallbackRestaurantCity(Request $request, $latitude, $longitude): ?array
+    {
+        $deliveryZone = app(DeliveryZone::class);
+        $coordinateArea = $deliveryZone->areaAt($latitude, $longitude);
+
+        if ($coordinateArea !== null) {
+            return [
+                'city' => $coordinateArea['label'],
+                'source' => 'selected_coordinates_delivery_zone',
+            ];
+        }
+
+        $user = $this->authenticatedUser($request);
+
+        if (! $user) {
+            return null;
+        }
+
+        if (Schema::hasTable('user_address')) {
+            $defaultAddressQuery = UserAddress::query()
+                ->where('user_id', $user->id)
+                ->where('active', true)
+                ->where('default', true);
+
+            if (Schema::hasColumn('user_address', 'deleted_at')) {
+                $defaultAddressQuery->whereNull('deleted_at');
+            }
+
+            $defaultAddress = $defaultAddressQuery->latest('id')->first();
+
+            if ($defaultAddress) {
+                $defaultAddressArea = $deliveryZone->areaAt($defaultAddress->lat, $defaultAddress->long);
+                $defaultAddressCity = $defaultAddressArea['label']
+                    ?? $this->reverseGeocoder->city($defaultAddress->lat, $defaultAddress->long);
+
+                if (filled($defaultAddressCity)) {
+                    return [
+                        'city' => $defaultAddressCity,
+                        'source' => 'default_delivery_address',
+                        'default_address_id' => $defaultAddress->id,
+                    ];
+                }
+            }
+        }
+
+        $profileCity = trim((string) $user->city);
+
+        return $profileCity !== ''
+            ? ['city' => $profileCity, 'source' => 'user_profile']
+            : null;
+    }
+
+    private function authenticatedUser(Request $request)
+    {
+        return $request->user('api') ?? $request->user();
     }
 
     private function restaurantCoordinates(Request $request, array $validated): array

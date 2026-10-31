@@ -23,10 +23,34 @@ class UserAddressDefaultTest extends TestCase
             $table->unsignedBigInteger('user_id');
             $table->string('title');
             $table->string('address_1');
+            $table->unsignedBigInteger('city_id')->nullable();
             $table->boolean('active')->default(true);
             $table->boolean('default')->default(false);
             $table->timestamps();
         });
+
+        Schema::create('cities', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+        });
+    }
+
+    public function test_an_address_exposes_its_city(): void
+    {
+        $cityId = \DB::table('cities')->insertGetId([
+            'name' => 'Davao City',
+            'active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $address = UserAddress::query()->create(
+            $this->addressAttributes('Home', false) + ['city_id' => $cityId]
+        );
+
+        $this->assertSame('Davao City', $address->city->name);
     }
 
     public function test_the_latest_added_address_becomes_the_only_default(): void

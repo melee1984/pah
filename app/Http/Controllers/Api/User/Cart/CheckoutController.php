@@ -237,6 +237,7 @@ class CheckoutController extends Controller
     	 $rules = [
 	    	'title'=>'required',
 	    	'address'=>'required',
+	    	'city_id' => ['required', Rule::exists('cities', 'id')->where('active', true)],
 	    	'latitude' => 'required',
 	    	'longtitude' => 'required',
 	    ];
@@ -252,9 +253,10 @@ class CheckoutController extends Controller
 	    } 
 	    else {
 
-	    	$userAddress->address_1 = $request->address_1;
+	    	$userAddress->address_1 = $request->address;
 	    	$userAddress->landmark = $request->landmark;
 	    	$userAddress->title = $request->title;
+	    	$userAddress->city_id = $request->city_id;
 	    	$userAddress->lat = $request->latitude;	
 	    	$userAddress->long = $request->longtitude;
 
@@ -265,7 +267,7 @@ class CheckoutController extends Controller
 	    	if ($status) {
 				$data['message'] = "Successfully updated record";
 				$data['status'] = 1;
-				$data['addresses'] = Auth::User()->addresses;
+				$data['addresses'] = Auth::User()->addresses()->with('city')->get();
 			}
 			else {
 				$data['message'] = "We've encounter some issue during process. Please refresh your page and try again. Thank you.";
@@ -286,6 +288,7 @@ class CheckoutController extends Controller
     	 $rules = [
 	    	'title'=>'required',
 	    	'address'=>'required',
+	    	'city_id' => ['required', Rule::exists('cities', 'id')->where('active', true)],
 	    	'latitude' => 'required',
 	    	'longtitude' => 'required',
 	    ];
@@ -310,7 +313,7 @@ class CheckoutController extends Controller
 			
 			$userAddress = UserAddress::updateOrCreate(
 			    ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => Auth::User()->id],
-			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id, 'status' => ' 1']);
+			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => $request->input('city_id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id, 'status' => ' 1']);
 			$userAddress->makeDefault();
 
 			if ($cart) {
@@ -326,7 +329,7 @@ class CheckoutController extends Controller
 
 			$data['message'] = "Successfully insert record";
 			$data['status'] = 1;
-			$data['addresses'] = Auth::User()->addresses;
+			$data['addresses'] = Auth::User()->addresses()->with('city')->get();
 			$data['address_id'] = $userAddress->id;
 			
 		}

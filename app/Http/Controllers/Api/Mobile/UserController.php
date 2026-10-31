@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\Model\User\UserAddress;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -17,6 +18,7 @@ class UserController extends Controller
 
     	$addresses = UserAddress::whereUserId($user->id)
     							->whereActive(1)->get();
+		$addresses->load('city');
 
     	$data['addresses'] = $addresses;
 
@@ -60,6 +62,7 @@ class UserController extends Controller
 		$request->validate([
 			'title' => 'required|string|max:255',
 			'address' => 'required|string|max:255',
+			'city_id' => ['required', Rule::exists('cities', 'id')->where('active', true)],
 			'latitude' => 'required|numeric',
 			'longitude' => 'required|numeric',
 		]);
@@ -68,6 +71,7 @@ class UserController extends Controller
 		$address->user_id = $user->id;
 		$address->title =  $request->input('title');
 		$address->address_1 = $request->input('address');
+		$address->city_id = $request->input('city_id');
 		$address->lat = $request->input('latitude');
 		$address->long = $request->input('longitude');
 		$address->active = 1;
