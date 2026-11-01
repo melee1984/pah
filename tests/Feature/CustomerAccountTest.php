@@ -76,6 +76,7 @@ class CustomerAccountTest extends TestCase
         Schema::create('cart_user_address', function (Blueprint $t) {
             $t->id();
             $t->unsignedBigInteger('cart_id');
+            $t->string('city_name')->nullable();
         });
         (require database_path('migrations/2026_10_02_000000_create_support_tables.php'))->up();
         $this->customer = User::create(['firstname' => 'Ana', 'lastname' => 'Cruz', 'email' => 'ana@example.test', 'mobile' => '09171234567', 'password' => Hash::make('secret-password')]);

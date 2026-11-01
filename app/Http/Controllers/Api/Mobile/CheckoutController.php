@@ -394,6 +394,7 @@ class CheckoutController extends Controller
                             'country_id'=> $userAddress->country_id,
                             'province_id'=> $userAddress->province_id,
                             'city_id' => $userAddress->city?->id,
+                            'city_name' => $userAddress->city_name,
                             'barangay_id'=> $userAddress->barangay_id,
                             'lat' => $userAddress->lat,
                             'long' => $userAddress->long,

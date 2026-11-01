@@ -116,6 +116,7 @@ class CheckoutController extends Controller
 
 		$data['user_id'] = Auth::id();
 		$data['city_id'] = $userAddress->city?->id;
+		$data['city_name'] = $userAddress->city_name;
 
 		// Update or create cart address
 		$address = $cart->address()->updateOrCreate(

@@ -53,6 +53,7 @@ class RiderBookingOrderListTest extends TestCase
         Schema::create('cart_user_address', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('cart_id');
+            $table->string('city_name')->nullable();
             $table->timestamps();
         });
 
