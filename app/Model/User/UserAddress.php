@@ -11,7 +11,7 @@ class UserAddress extends Model
 {
     protected $table = 'user_address';
 
-    protected $fillable = ['user_id', 'active', 'address_1', 'mobile', 'landmark', 'city_id', 'lat', 'long', 'default', 'title'];
+    protected $fillable = ['user_id', 'active', 'address_1', 'mobile', 'landmark', 'city_name', 'lat', 'long', 'default', 'title'];
 
     public $timestamps = true;
 
@@ -22,7 +22,7 @@ class UserAddress extends Model
 
     public function city(): BelongsTo
     {
-        return $this->belongsTo(City::class);
+        return $this->belongsTo(City::class, 'city_name', 'name');
     }
 
     public function makeDefault(): self

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
-use App\City;
 use App\Coupon;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -394,7 +393,7 @@ class CheckoutController extends Controller
                             'landmark' => $userAddress->landmark,
                             'country_id'=> $userAddress->country_id,
                             'province_id'=> $userAddress->province_id,
-                            'city_id' => $userAddress->city_id,
+                            'city_id' => $userAddress->city?->id,
                             'barangay_id'=> $userAddress->barangay_id,
                             'lat' => $userAddress->lat,
                             'long' => $userAddress->long,
@@ -684,7 +683,7 @@ class CheckoutController extends Controller
             
             $userAddress = UserAddress::updateOrCreate(
                 ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => $user->id],
-                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id]);
+                ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_name' => trim($request->input('city')), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => $user->id]);
 
             $deliveryFailure = $userAddress->load('city')->city?->active
                 ? null

@@ -23,7 +23,7 @@ class UserAddressDefaultTest extends TestCase
             $table->unsignedBigInteger('user_id');
             $table->string('title');
             $table->string('address_1');
-            $table->unsignedBigInteger('city_id')->nullable();
+            $table->string('city_name')->nullable();
             $table->boolean('active')->default(true);
             $table->boolean('default')->default(false);
             $table->timestamps();
@@ -39,7 +39,7 @@ class UserAddressDefaultTest extends TestCase
 
     public function test_an_address_exposes_its_city(): void
     {
-        $cityId = \DB::table('cities')->insertGetId([
+        \DB::table('cities')->insert([
             'name' => 'Davao City',
             'active' => true,
             'created_at' => now(),
@@ -47,7 +47,7 @@ class UserAddressDefaultTest extends TestCase
         ]);
 
         $address = UserAddress::query()->create(
-            $this->addressAttributes('Home', false) + ['city_id' => $cityId]
+            $this->addressAttributes('Home', false) + ['city_name' => 'Davao City']
         );
 
         $this->assertSame('Davao City', $address->city->name);

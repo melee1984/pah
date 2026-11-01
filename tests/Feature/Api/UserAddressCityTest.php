@@ -33,7 +33,7 @@ class UserAddressCityTest extends TestCase
             $table->unsignedBigInteger('user_id');
             $table->string('title');
             $table->string('address_1');
-            $table->unsignedBigInteger('city_id');
+            $table->string('city_name');
             $table->decimal('lat', 10, 7);
             $table->decimal('long', 10, 7);
             $table->boolean('active')->default(true);
@@ -44,7 +44,7 @@ class UserAddressCityTest extends TestCase
 
     public function test_adding_an_address_saves_an_active_city(): void
     {
-        $cityId = DB::table('cities')->insertGetId([
+        DB::table('cities')->insert([
             'name' => 'Davao City',
             'active' => true,
             'created_at' => now(),
@@ -67,7 +67,7 @@ class UserAddressCityTest extends TestCase
         $this->assertSame('Davao City', $response->getData(true)['address']['city']['name']);
         $this->assertDatabaseHas('user_address', [
             'user_id' => 10,
-            'city_id' => $cityId,
+            'city_name' => 'Davao City',
             'address_1' => '123 Sample Street',
             'default' => true,
         ]);
@@ -75,7 +75,7 @@ class UserAddressCityTest extends TestCase
 
     public function test_adding_an_address_saves_a_city_that_is_not_active(): void
     {
-        $cityId = DB::table('cities')->insertGetId([
+        DB::table('cities')->insert([
             'name' => 'Inactive City',
             'active' => false,
             'created_at' => now(),
@@ -98,7 +98,7 @@ class UserAddressCityTest extends TestCase
         $this->assertFalse($response->getData(true)['address']['city']['active']);
         $this->assertDatabaseHas('user_address', [
             'user_id' => 10,
-            'city_id' => $cityId,
+            'city_name' => 'Inactive City',
             'address_1' => '123 Sample Street',
             'default' => false,
         ]);

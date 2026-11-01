@@ -669,7 +669,7 @@ class CartController extends Controller
                                     'landmark' => $userAddress->landmark,
                                     'country_id' => $userAddress->country_id,
                                     'province_id' => $userAddress->province_id,
-                                    'city_id' => $userAddress->city_id,
+                                    'city_id' => $userAddress->city?->id,
                                     'barangay_id' => $userAddress->barangay_id,
                                     'lat' => $userAddress->lat,
                                     'long' => $userAddress->long,

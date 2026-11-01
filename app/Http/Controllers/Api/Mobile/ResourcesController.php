@@ -259,9 +259,22 @@ class ResourcesController extends Controller
     {
         [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
 
-        // Once a customer has selected delivery coordinates, the restaurant
-        // directory must stay inside that city. Older app versions do not send
-        // current_city_only, so coordinates themselves enable the filter.
+        $savedAddress = $this->savedAddressCity($request);
+
+        if ($savedAddress !== null) {
+            Log::info('Mobile dashboard is using a saved address city.', [
+                'session_id' => $request->input('session_id'),
+                'user_id' => $this->authenticatedUser($request)?->id,
+                'resolved_city' => $savedAddress['city'],
+                'city_source' => $savedAddress['source'],
+                'address_id' => $savedAddress['address_id'],
+            ]);
+
+            return $savedAddress['city'];
+        }
+
+        // Older app versions do not send current_city_only. Saved addresses or
+        // delivery coordinates are enough to enable city filtering.
         if (! $request->boolean('current_city_only')
             && ($latitude === null || $longitude === null)) {
             return null;
@@ -283,7 +296,6 @@ class ResourcesController extends Controller
                 'longitude' => $longitude,
                 'resolved_city' => $fallback['city'],
                 'city_source' => $fallback['source'],
-                'default_address_id' => $fallback['default_address_id'] ?? null,
             ]);
 
             return $fallback['city'];
@@ -312,38 +324,100 @@ class ResourcesController extends Controller
             return null;
         }
 
-        if (Schema::hasTable('user_address')) {
-            $defaultAddressQuery = UserAddress::query()
-                ->where('user_id', $user->id)
-                ->where('active', true)
-                ->where('default', true);
-
-            if (Schema::hasColumn('user_address', 'deleted_at')) {
-                $defaultAddressQuery->whereNull('deleted_at');
-            }
-
-            $defaultAddress = $defaultAddressQuery->latest('id')->first();
-
-            if ($defaultAddress) {
-                $defaultAddressArea = $deliveryZone->areaAt($defaultAddress->lat, $defaultAddress->long);
-                $defaultAddressCity = $defaultAddressArea['label']
-                    ?? $this->reverseGeocoder->city($defaultAddress->lat, $defaultAddress->long);
-
-                if (filled($defaultAddressCity)) {
-                    return [
-                        'city' => $defaultAddressCity,
-                        'source' => 'default_delivery_address',
-                        'default_address_id' => $defaultAddress->id,
-                    ];
-                }
-            }
-        }
-
         $profileCity = trim((string) $user->city);
 
         return $profileCity !== ''
             ? ['city' => $profileCity, 'source' => 'user_profile']
             : null;
+    }
+
+    private function savedAddressCity(Request $request): ?array
+    {
+        $user = $this->authenticatedUser($request);
+
+        if (! $user || ! Schema::hasTable('user_address')) {
+            return null;
+        }
+
+        $baseQuery = UserAddress::query()
+            ->where('user_id', $user->id)
+            ->where('active', true);
+
+        if (Schema::hasColumn('user_address', 'deleted_at')) {
+            $baseQuery->whereNull('deleted_at');
+        }
+
+        $selectedAddressId = $request->input('delivery_address_id')
+            ?? $request->input('address_id')
+            ?? $this->selectedCartAddressId($request, $user->id);
+
+        if ($selectedAddressId) {
+            $selectedAddress = (clone $baseQuery)->find($selectedAddressId);
+            $selectedCity = $this->addressCityName($selectedAddress);
+
+            if ($selectedCity !== null) {
+                return [
+                    'city' => $selectedCity,
+                    'source' => 'selected_delivery_address',
+                    'address_id' => $selectedAddress->id,
+                ];
+            }
+        }
+
+        $defaultAddress = (clone $baseQuery)
+            ->where('default', true)
+            ->latest('id')
+            ->first();
+        $defaultCity = $this->addressCityName($defaultAddress);
+
+        return $defaultCity === null
+            ? null
+            : [
+                'city' => $defaultCity,
+                'source' => 'default_delivery_address',
+                'address_id' => $defaultAddress->id,
+            ];
+    }
+
+    private function selectedCartAddressId(Request $request, int $userId): ?int
+    {
+        if (! Schema::hasTable('cart')) {
+            return null;
+        }
+
+        $sessionId = trim((string) $request->input('session_id'));
+
+        if ($sessionId === '') {
+            return null;
+        }
+
+        return Cart::query()
+            ->whereSessionId($sessionId)
+            ->whereUserId($userId)
+            ->value('address_id');
+    }
+
+    private function addressCityName(?UserAddress $address): ?string
+    {
+        if (! $address) {
+            return null;
+        }
+
+        if (Schema::hasColumn('user_address', 'city_name')) {
+            $cityName = trim((string) $address->city_name);
+
+            if ($cityName !== '') {
+                return $cityName;
+            }
+        }
+
+        if (! Schema::hasTable('cities')) {
+            return null;
+        }
+
+        $cityName = trim((string) $address->city?->name);
+
+        return $cityName !== '' ? $cityName : null;
     }
 
     private function authenticatedUser(Request $request)

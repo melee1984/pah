@@ -90,7 +90,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         Schema::create('user_address', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('city_id')->nullable();
+            $table->string('city_name')->nullable();
             $table->boolean('active')->default(true);
             $table->decimal('lat', 10, 7)->nullable();
             $table->decimal('long', 10, 7)->nullable();
@@ -263,7 +263,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $optionId = $this->createCheckoutOption('delivery');
         $addressId = DB::table('user_address')->insertGetId([
             'user_id' => $this->user->id,
-            'city_id' => $this->cityId,
+            'city_name' => 'Cebu City',
             'active' => true,
             'lat' => 10.3257000,
             'long' => 123.8954000,
@@ -290,7 +290,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $optionId = $this->createCheckoutOption('delivery');
         $addressId = DB::table('user_address')->insertGetId([
             'user_id' => $this->user->id,
-            'city_id' => $this->cityId,
+            'city_name' => 'Cebu City',
             'active' => true,
             'lat' => 7.0731000,
             'long' => 125.6128000,
@@ -320,7 +320,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         $optionId = $this->createCheckoutOption('delivery');
         $addressId = DB::table('user_address')->insertGetId([
             'user_id' => $this->user->id,
-            'city_id' => $this->cityId,
+            'city_name' => 'Cebu City',
             'active' => true,
             'lat' => 10.3257000,
             'long' => 123.8954000,

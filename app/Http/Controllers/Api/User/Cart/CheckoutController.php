@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use App\User;
-use App\City;
 use Auth;
 use Session;
 use Validator;
@@ -110,13 +109,13 @@ class CheckoutController extends Controller
 			'landmark',
 			'country_id',
 			'province_id',
-			'city_id',
 			'barangay_id',
 			'lat',
 			'long'
 		]);
 
 		$data['user_id'] = Auth::id();
+		$data['city_id'] = $userAddress->city?->id;
 
 		// Update or create cart address
 		$address = $cart->address()->updateOrCreate(
@@ -243,7 +242,7 @@ class CheckoutController extends Controller
 	    	$userAddress->address_1 = $request->address;
 	    	$userAddress->landmark = $request->landmark;
 	    	$userAddress->title = $request->title;
-	    $userAddress->city_id = City::query()->where('name', $request->city)->value('id');
+	    $userAddress->city_name = trim($request->city);
 	    	$userAddress->lat = $request->latitude;	
 	    	$userAddress->long = $request->longtitude;
 
@@ -302,7 +301,7 @@ class CheckoutController extends Controller
 			
 			$userAddress = UserAddress::updateOrCreate(
 			    ['address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'user_id' => Auth::User()->id],
-			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_id' => City::query()->where('name', $request->input('city'))->value('id'), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id]);
+			    ['active' => 1, 'address_1' => $request->input('address'), 'landmark' => $request->input('landmark'), 'title' => $request->input('title'), 'city_name' => trim($request->input('city')), 'lat' => $request->input('latitude'), 'long' => $request->input('longtitude'), 'user_id' => Auth::User()->id]);
 
 			$deliveryFailure = null;
 			if ($cart?->requiresDelivery()) {

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api\Mobile;
 
-use App\City;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
@@ -74,7 +73,7 @@ class UserController extends Controller
 		$address->user_id = $user->id;
 		$address->title =  $request->input('title');
 		$address->address_1 = $request->input('address');
-		$address->city_id = City::query()->where('name', $request->input('city'))->value('id');
+		$address->city_name = trim($request->input('city'));
 		$address->lat = $request->input('latitude');
 		$address->long = $request->input('longitude');
 		$address->active = 1;

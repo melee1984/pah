@@ -49,6 +49,7 @@ class ResourcesControllerCityTest extends TestCase
             $table->unsignedBigInteger('user_id');
             $table->boolean('active')->default(true);
             $table->boolean('default')->default(false);
+            $table->string('city_name')->nullable();
             $table->decimal('lat', 10, 7)->nullable();
             $table->decimal('long', 10, 7)->nullable();
             $table->timestamp('deleted_at')->nullable();
@@ -59,6 +60,7 @@ class ResourcesControllerCityTest extends TestCase
             'user_id' => 25,
             'active' => true,
             'default' => true,
+            'city_name' => 'Davao City',
             'lat' => 7.1132673,
             'long' => 125.4927311,
             'created_at' => now(),
@@ -66,10 +68,7 @@ class ResourcesControllerCityTest extends TestCase
         ]);
 
         $reverseGeocoder = Mockery::mock(ReverseGeocodingService::class);
-        $reverseGeocoder->shouldReceive('city')
-            ->once()
-            ->with(6.1164, 125.1716)
-            ->andReturnNull();
+        $reverseGeocoder->shouldNotReceive('city');
 
         $user = (new User(['city' => 'Cebu City']))->forceFill(['id' => 25]);
         $request = Request::create('/api/mobile/data/dashboard', 'GET', [
@@ -113,6 +112,71 @@ class ResourcesControllerCityTest extends TestCase
                 'latitude' => 6.1164,
                 'longitude' => 125.1716,
             ])
+        );
+    }
+
+    public function test_it_uses_the_cart_selected_address_before_the_default_address(): void
+    {
+        config([
+            'database.default' => 'sqlite',
+            'database.connections.sqlite.database' => ':memory:',
+        ]);
+
+        Schema::create('user_address', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->boolean('active')->default(true);
+            $table->boolean('default')->default(false);
+            $table->string('city_name')->nullable();
+            $table->timestamps();
+        });
+        Schema::create('cart', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->string('session_id');
+            $table->unsignedBigInteger('address_id')->nullable();
+            $table->timestamps();
+        });
+
+        DB::table('user_address')->insert([
+            [
+                'id' => 10,
+                'user_id' => 25,
+                'active' => true,
+                'default' => true,
+                'city_name' => 'Davao City',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 11,
+                'user_id' => 25,
+                'active' => true,
+                'default' => false,
+                'city_name' => 'General Santos City',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+        DB::table('cart')->insert([
+            'user_id' => 25,
+            'session_id' => 'selected-address-session',
+            'address_id' => 11,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $reverseGeocoder = Mockery::mock(ReverseGeocodingService::class);
+        $reverseGeocoder->shouldNotReceive('city');
+
+        $request = Request::create('/api/mobile/data/dashboard', 'GET', [
+            'session_id' => 'selected-address-session',
+        ]);
+        $request->setUserResolver(fn () => (new User)->forceFill(['id' => 25]));
+
+        $this->assertSame(
+            'General Santos City',
+            $this->restaurantCity($reverseGeocoder, $request, [])
         );
     }
 
