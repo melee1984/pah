@@ -12,6 +12,23 @@
       </label>
     </div>
 
+    <div class="dashboard-table-controls">
+      <ul class="nav nav-tabs dashboard-table-tabs" role="tablist" aria-label="Merchant account filters">
+        <li v-for="tab in tabs" :key="tab.value" class="nav-item">
+          <button
+            type="button"
+            class="nav-link"
+            :class="{ active: activeTab === tab.value }"
+            :aria-selected="activeTab === tab.value ? 'true' : 'false'"
+            role="tab"
+            @click="selectTab(tab.value)"
+          >
+            {{ tab.label }} <span class="badge ml-1" :class="tab.badgeClass">{{ counts[tab.value] || 0 }}</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+
     <div v-if="loading" class="dashboard-loading"><i class="fas fa-circle-notch fa-spin"></i> Loading merchant partners…</div>
 
     <div v-else-if="merchantRows.length" class="table-responsive">
@@ -110,7 +127,7 @@
     <div v-else class="admin-empty-state">
       <span><i class="fas fa-store"></i></span>
       <h3>No merchant partners found</h3>
-      <p>{{ search ? 'Try a different search term.' : 'Merchant partners will appear here after registration.' }}</p>
+      <p>{{ emptyStateMessage }}</p>
     </div>
 
     <admin-pagination v-if="!loading" :pagination="members" @pagination-change-page="fetchData" />
@@ -124,14 +141,38 @@ export default {
       members: { data: [], current_page: 1, last_page: 1, total: 0 },
       loading: true,
       search: '',
+      activeTab: 'all',
+      counts: { all: 0, store_open: 0, inactive: 0 },
       searchTimer: null,
       busy: {},
       sendingId: null,
     };
   },
   computed: {
+    tabs() {
+      return [
+        { value: 'all', label: 'All Accounts', badgeClass: 'badge-primary' },
+        { value: 'store_open', label: 'Store Open', badgeClass: 'badge-success' },
+        { value: 'inactive', label: 'Inactive', badgeClass: 'badge-secondary' },
+      ];
+    },
     merchantRows() {
       return this.members.data || [];
+    },
+    emptyStateMessage() {
+      if (this.search) {
+        return 'Try a different search term or account tab.';
+      }
+
+      if (this.activeTab === 'store_open') {
+        return 'No merchant stores are currently open.';
+      }
+
+      if (this.activeTab === 'inactive') {
+        return 'No merchant accounts are waiting for activation.';
+      }
+
+      return 'Merchant partners will appear here after registration.';
     },
   },
   watch: {
@@ -149,16 +190,25 @@ export default {
   methods: {
     fetchData(page = 1) {
       this.loading = true;
-      const query = new URLSearchParams({ api_token, page, search: this.search });
+      const query = new URLSearchParams({ api_token, page, search: this.search, status: this.activeTab });
 
       axios.get(`/api/data/merchant/search/list?${query.toString()}`)
         .then((response) => {
           this.members = response.data.members;
+          this.counts = response.data.counts || this.counts;
         })
         .catch(() => toastr.error('Unable to load merchant partners.'))
         .finally(() => {
           this.loading = false;
         });
+    },
+    selectTab(tab) {
+      if (this.activeTab === tab) {
+        return;
+      }
+
+      this.activeTab = tab;
+      this.fetchData(1);
     },
     toggleSetting(member, field, endpoint) {
       const key = `${member.id}:${field}`;
@@ -168,6 +218,9 @@ export default {
         .then((response) => {
           if (response.data.status) {
             toastr.success(response.data.message);
+            if (endpoint === 'status' || endpoint === 'online') {
+              this.fetchData(this.members.current_page || 1);
+            }
             return;
           }
 

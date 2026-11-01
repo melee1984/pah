@@ -306,6 +306,7 @@ class OrderController extends Controller
     {
         $data = [];
         $search = trim((string) $request->query('search', ''));
+        $status = (string) $request->query('status', 'all');
 
         $users = Partners::with('accoutType')
             ->visibleInMerchantDirectory()
@@ -319,6 +320,16 @@ class OrderController extends Controller
                 });
             });
         $cityScope->partners($users);
+
+        $data['counts'] = [
+            'all' => (clone $users)->count(),
+            'store_open' => (clone $users)->where('store_open', true)->count(),
+            'inactive' => (clone $users)->where('active', false)->count(),
+        ];
+
+        $users->when($status === 'store_open', fn ($query) => $query->where('store_open', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('active', false));
+
         $users = $users->orderBy('created_at', 'desc')
             ->paginate(25);
 
