@@ -345,7 +345,8 @@ class ResourcesController extends Controller
 
         $baseQuery = UserAddress::query()
             ->where('user_id', $user->id)
-            ->where('active', true);
+            ->where('active', true)
+            ->where('default', true);
 
         if (Schema::hasColumn('user_address', 'deleted_at')) {
             $baseQuery->whereNull('deleted_at');
@@ -372,6 +373,7 @@ class ResourcesController extends Controller
             ->where('default', true)
             ->latest('id')
             ->first();
+            
         $defaultCity = $this->addressCityName($defaultAddress);
 
         return $defaultCity === null
