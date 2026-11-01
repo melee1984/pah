@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Api\Mobile;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-
 use App\Model\User\UserAddress;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
@@ -97,4 +99,50 @@ class UserController extends Controller
 
 		return response()->json($data, 200);
 	}
+
+    public function updateAddressStatus(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'address_id' => ['required', 'integer'],
+            'active' => ['required', 'boolean'],
+            'default' => ['required', 'boolean'],
+        ]);
+
+        if ($validated['default'] && ! $validated['active']) {
+            throw ValidationException::withMessages([
+                'default' => 'A default address must be active.',
+            ]);
+        }
+
+        $user = $request->user();
+
+        $address = DB::transaction(function () use ($user, $validated) {
+            $address = UserAddress::query()
+                ->where('user_id', $user->id)
+                ->whereKey($validated['address_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $address->forceFill([
+                'active' => $validated['active'],
+                'default' => false,
+            ])->save();
+
+            if ($validated['default']) {
+                $address->makeDefault();
+            }
+
+            return $address->refresh()->load('city');
+        });
+
+        return response()->json([
+            'status' => 1,
+            'address' => $address,
+            'addresses' => UserAddress::query()
+                ->whereUserId($user->id)
+                ->whereActive(true)
+                ->with('city')
+                ->get(),
+        ]);
+    }
 }

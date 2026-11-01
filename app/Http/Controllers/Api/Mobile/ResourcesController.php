@@ -216,10 +216,6 @@ class ResourcesController extends Controller
             throw $exception;
         }
 
-        \Log::info('Mobile dashboard city resolved.', $logContext + [
-            'resolved_city' => $restaurantCity,
-        ]); 
-
         [$latitude, $longitude] = $this->restaurantCoordinates($request, $validated);
 
         Log::info('Mobile dashboard merchant pull started.', $logContext + [
@@ -345,8 +341,7 @@ class ResourcesController extends Controller
 
         $baseQuery = UserAddress::query()
             ->where('user_id', $user->id)
-            ->where('active', true)
-            ->where('default', true);
+            ->where('active', true);
 
         if (Schema::hasColumn('user_address', 'deleted_at')) {
             $baseQuery->whereNull('deleted_at');
@@ -373,7 +368,6 @@ class ResourcesController extends Controller
             ->where('default', true)
             ->latest('id')
             ->first();
-            
         $defaultCity = $this->addressCityName($defaultAddress);
 
         return $defaultCity === null
