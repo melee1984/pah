@@ -58,11 +58,17 @@ class MerchantApplicationTest extends TestCase
             $table->string('slug')->nullable();
             $table->text('search_string')->nullable();
             $table->boolean('active')->default(false);
+            $table->boolean('store_open')->default(false);
             $table->unsignedInteger('account_type_id')->nullable();
             $table->boolean('addup')->default(false);
             $table->timestamp('verified_at')->nullable();
             $table->unsignedBigInteger('verified_by')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('account_type', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
         });
 
         Schema::create('partner_location', function (Blueprint $table) {
@@ -235,7 +241,7 @@ class MerchantApplicationTest extends TestCase
         $response = $this->actingAs($admin)->post(route('dashboard.merchant-applications.approve', $application), [
             'message' => 'Our onboarding team will contact you next.',
         ]);
-        $response->assertRedirect(route('dashboard.merchant-applications.index'))
+        $response->assertRedirect(route('dashboard.merchant'))
             ->assertSessionHas('success');
 
         $application->refresh();
@@ -254,13 +260,7 @@ class MerchantApplicationTest extends TestCase
             ->assertSee('All-time applications')
             ->assertSee('Approved');
 
-        $pendingApplication = Partners::query()->create($this->modelAttributes([
-            'restaurant_name' => 'Still Pending Cafe',
-            'email' => 'still-pending@example.com',
-        ]));
-        $merchantDirectoryIds = Partners::query()->visibleInMerchantDirectory()->pluck('id');
-        $this->assertTrue($merchantDirectoryIds->contains($application->id));
-        $this->assertFalse($merchantDirectoryIds->contains($pendingApplication->id));
+
     }
 
     public function test_admin_can_list_and_open_merchant_applications(): void
@@ -495,6 +495,36 @@ class MerchantApplicationTest extends TestCase
         $this->assertSame(Partners::STATUS_PENDING, $application->fresh()->recruitment_status);
         $this->assertDatabaseMissing('users', ['email' => $application->email]);
         $this->assertDatabaseMissing('restaurant_invitations', ['restaurant_id' => $application->id]);
+    }
+
+    public function test_registration_appears_in_merchant_directory_before_approval(): void
+    {
+        Mail::fake();
+        $this->post(route('merchant.register.submit'), $this->validApplication())
+            ->assertRedirect(route('merchant.register.success'));
+        $application = Partners::query()->where('email', $this->validApplication()['email'])->firstOrFail();
+        $this->withoutMiddleware(isAdmin::class);
+        $admin = User::query()->forceCreate(['name' => 'Directory Admin', 'email' => 'directory-admin@example.com', 'password' => Hash::make('password')]);
+        $this->actingAs($admin);
+        $this->get(route('dashboard.merchant'))->assertOk();
+        foreach (['all', 'inactive'] as $status) {
+            $this->getJson('/api/data/merchant/search/list?status='.$status)
+                ->assertOk()
+                ->assertJsonPath('members.data.0.id', $application->id)
+                ->assertJsonPath('members.data.0.recruitment_status', Partners::STATUS_PENDING)
+                ->assertJsonPath('counts.all', 1)
+                ->assertJsonPath('counts.inactive', 1);
+        }
+        $this->getJson('/api/data/merchant/search/list?search='.urlencode($application->email))
+            ->assertOk()->assertJsonPath('members.data.0.id', $application->id);
+        $this->get(route('dashboard.merchant-applications.show', $application))
+            ->assertOk()->assertSee('Back to merchants')->assertSee('Approve');
+        $this->post(route('dashboard.merchant-applications.approve', $application))
+            ->assertRedirect(route('dashboard.merchant'))->assertSessionHasNoErrors();
+        $this->getJson('/api/data/merchant/search/list')
+            ->assertOk()->assertJsonPath('members.data.0.id', $application->id)
+            ->assertJsonPath('members.data.0.recruitment_status', Partners::STATUS_APPROVED);
+        $this->assertFalse((bool) $application->fresh()->active);
     }
 
     private function validApplication(): array

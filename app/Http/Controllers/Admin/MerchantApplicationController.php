@@ -153,7 +153,7 @@ class MerchantApplicationController extends Controller
         $success = $application->restaurant_name.' was '.$decision.' and the applicant was notified by email.';
 
         if ($decision === Partners::STATUS_APPROVED) {
-            return redirect()->route('dashboard.merchant-applications.index')->with('success', $success);
+            return redirect()->route('dashboard.merchant')->with('success', $success);
         }
 
         return back()->with('success', $success);

@@ -134,15 +134,6 @@ class Partners extends Model
             ->all();
     }
 
-    public function scopeVisibleInMerchantDirectory($query)
-    {
-        return $query->where(function ($query) {
-            $query->whereNull('application_source')
-                ->orWhere('application_source', '!=', self::APPLICATION_SOURCE_REGISTRATION)
-                ->orWhere('recruitment_status', self::STATUS_APPROVED);
-        });
-    }
-
     public function orders()
     {
         return $this->hasMany(\App\Model\Orders\Orders::class, 'partner_id');
