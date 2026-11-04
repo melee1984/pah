@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\BookingController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PartnerPromotionController;
+use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\PushNotificationController;
 use App\Http\Controllers\Admin\RiderManagementController;
 use App\Http\Controllers\Admin\SystemIncidentController;
@@ -217,6 +218,9 @@ Route::middleware('admin')->group(function () {
         Route::post('data/dashboard/cities', [\App\Http\Controllers\Admin\CityController::class, 'store'])->name('dashboard.cities.store');
         Route::put('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'update'])->name('dashboard.cities.update');
         Route::delete('data/dashboard/cities/{city}', [\App\Http\Controllers\Admin\CityController::class, 'destroy'])->name('dashboard.cities.destroy');
+        Route::get('data/dashboard/payment-gateways', [PaymentGatewayController::class, 'index'])->name('dashboard.payment-gateways.index');
+        Route::post('data/dashboard/payment-gateways', [PaymentGatewayController::class, 'store'])->name('dashboard.payment-gateways.store');
+        Route::put('data/dashboard/payment-gateways/{paymentGateway}', [PaymentGatewayController::class, 'update'])->name('dashboard.payment-gateways.update');
     });
 
     Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');

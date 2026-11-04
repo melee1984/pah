@@ -132,7 +132,7 @@ class CartController extends Controller
         $data['summary'] = $cart_summary;
         $data['customer'] = $user;
         $data['cart'] = $cart;
-        $data['payment'] = PaymentMethod::active();
+        $data['payment'] = PaymentMethod::active()->orderBy('id')->get();
         $data['delivery_time'] = $delivery_timings;
         
         return response()->json($data, 200);
@@ -427,7 +427,16 @@ class CartController extends Controller
         } else {
             $session_id = Session::getId();
             $cart = Cart::whereSessionId($session_id)->first();
-            $cart->payment_id = $request->input('payment');
+            $paymentMethod = PaymentMethod::active()->find($request->integer('payment'));
+
+            if (! $cart || ! $paymentMethod) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected payment gateway is not available.',
+                ], 422);
+            }
+
+            $cart->payment_id = $paymentMethod->id;
             $status = $cart->save();
 
             if ($status) {
@@ -622,6 +631,13 @@ class CartController extends Controller
                         'message' => 'The applied coupon is no longer available or has reached its usage limit. Please remove it and try again.',
                     ]);
                 }
+            }
+
+            if (! PaymentMethod::active()->whereKey($cart->payment_id)->exists()) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'The selected payment gateway is no longer available. Please select another one.',
+                ], 422);
             }
 
             if ($request->input('smsCode') != $cart->sms_code) {

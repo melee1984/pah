@@ -2,6 +2,7 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class PaymentMethod extends Model
@@ -23,9 +24,7 @@ class PaymentMethod extends Model
         if (is_int($paymentMethod) || (is_string($paymentMethod) && ctype_digit($paymentMethod))) {
             $paymentMethod = (int) $paymentMethod;
 
-            return in_array($paymentMethod, self::CHECKOUT_PAYMENT_METHODS, true)
-                ? $paymentMethod
-                : null;
+            return $paymentMethod > 0 ? $paymentMethod : null;
         }
 
         if (!is_string($paymentMethod)) {
@@ -38,11 +37,23 @@ class PaymentMethod extends Model
     }
 
     protected $table = 'payment_method';
-	protected $fillable = array('title','active');
-	public $timestamps = true;
-	
 
-	public function scopeActive($query) {
-		return $query->whereActive(1)->get();
-	}
+    protected $fillable = [
+        'title',
+        'description',
+        'class',
+        'active',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'active' => 'boolean',
+        ];
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', true);
+    }
 }

@@ -90,7 +90,7 @@ class CheckoutController extends Controller
         $data['customer'] = $user;
         $data['partner_order_options'] = $cart->partnerlocation->checkoutOptions ?? [];
         $data['cart'] = $cart;
-        $data['payment'] = PaymentMethod::active();
+        $data['payment'] = PaymentMethod::active()->orderBy('id')->get();
         $data['delivery_time'] = $delivery_timings;
 
         \Log::info('Checkout data: ' . json_encode($data));
@@ -180,7 +180,7 @@ class CheckoutController extends Controller
             if ($deliveryPaymentId === null) {
                 return response()->json([
                     'status' => 0,
-                    'message' => 'The delivery payment method must be credit_card, gcash, cod, 1, 2, or 3.',
+                    'message' => 'The selected delivery payment method is invalid.',
                     'errors' => [
                         'deliveryPaymentId' => [
                             'The selected delivery payment method is invalid.',
