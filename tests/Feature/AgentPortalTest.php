@@ -1411,7 +1411,13 @@ class AgentPortalTest extends TestCase
         $this->assertSame($agent->id, $futurePartner->agent_id);
     }
 
-    public function test_agent_can_update_an_owned_merchant_application_and_resubmit_it_for_approval(): void
+    public static function applicationActivationStates(): array
+    {
+        return ['inactive application' => [false], 'active approved merchant' => [true]];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('applicationActivationStates')]
+    public function test_agent_can_update_an_owned_merchant_application_and_resubmit_it_for_approval(bool $wasActive): void
     {
         Storage::fake('local');
         $agent = $this->agent('application-editor@example.com');
@@ -1461,6 +1467,10 @@ class AgentPortalTest extends TestCase
             ->assertSee('name="business_registration"', false)
             ->assertSee('Save and submit for approval');
 
+        if ($wasActive) {
+            $application->forceFill(['active' => true, 'verified_at' => now(), 'application_status' => 'approved'])->save();
+        }
+
         $response = $this->actingAs($agent, 'agent')
             ->put(route('agent.merchant-applications.update', $application), [
                 'restaurant_name' => 'Corrected Cafe',
@@ -1490,6 +1500,8 @@ class AgentPortalTest extends TestCase
         $response->assertSessionHas('success', 'The merchant application was updated and submitted as Pending Approval.');
 
         $application->refresh();
+        $this->assertFalse((bool) $application->active);
+        $this->assertNull($application->verified_at);
         $this->assertSame('Corrected Cafe', $application->restaurant_name);
         $this->assertSame('corrected-cafe@example.com', $application->email);
         $this->assertSame(['dine_in', 'delivery'], $application->services);

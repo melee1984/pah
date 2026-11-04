@@ -38,6 +38,9 @@ class MerchantApplicationTest extends TestCase
             $table->text('address')->nullable();
             $table->string('city', 120)->nullable();
             $table->string('business_structure', 30)->nullable();
+            $table->string('enrolling_as')->nullable();
+            $table->string('tin')->nullable();
+            $table->string('payout_account_name')->nullable();
             $table->string('cuisine', 120)->nullable();
             $table->unsignedSmallInteger('branch_count')->default(1);
             $table->json('services')->nullable();
@@ -57,7 +60,14 @@ class MerchantApplicationTest extends TestCase
             $table->boolean('active')->default(false);
             $table->unsignedInteger('account_type_id')->nullable();
             $table->boolean('addup')->default(false);
+            $table->timestamp('verified_at')->nullable();
+            $table->unsignedBigInteger('verified_by')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('partner_location', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('partner_id');
         });
 
         City::query()->create(['name' => 'Cebu City', 'active' => true]);
@@ -397,6 +407,94 @@ class MerchantApplicationTest extends TestCase
             Partners::query()->where('email', 'owner@example.com')->firstOrFail()->services,
         );
         $this->assertNull(Partners::query()->where('email', 'owner@example.com')->value('application_status'));
+    }
+
+    public function test_approved_applicant_can_accept_invitation_and_access_documents_without_agent(): void
+    {
+        \Illuminate\Support\Facades\Storage::fake('local');
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $admin = User::query()->forceCreate(['name' => 'Admin', 'email' => 'setup-admin@example.com', 'password' => Hash::make('password')]);
+        $application = Partners::query()->create($this->modelAttributes());
+        $this->actingAs($admin)->post(route('dashboard.merchant-applications.approve', $application))
+            ->assertSessionHasNoErrors();
+        $application->refresh();
+        $this->assertNotNull($application->user_id);
+        $this->assertTrue($application->enrollmentContact->hasRole('partner'));
+        $mail = Mail::sent(\App\Mail\RestaurantInvitationMail::class)->sole();
+        $token = basename($mail->invitationUrl);
+        $this->get($mail->invitationUrl)->assertOk();
+        $this->post(route('restaurant.invitation.update', $token), [
+            'firstname' => 'Maria', 'lastname' => 'Owner', 'mobile' => '09171234567',
+            'password' => 'new-password123', 'password_confirmation' => 'new-password123',
+        ])->assertRedirect(route('merchant.status'));
+        $this->get(route('merchant.application.show'))->assertOk();
+        $this->post(route('merchant.application.documents.store'), [
+            'document_type' => 'government_id',
+            'document' => \Illuminate\Http\UploadedFile::fake()->create('id.pdf', 10, 'application/pdf'),
+        ])->assertSessionHasNoErrors();
+        $this->get(route('dashboard.merchant.application.show', $application->id))->assertOk();
+        $this->postJson('/api/data/merchant/'.$application->id.'/status/submit')->assertStatus(422);
+        $this->postJson('/api/data/merchant/'.$application->id.'/verify/submit')->assertStatus(422);
+        $this->post(route('dashboard.merchant.application.review', $application->id), ['decision' => 'approved'])
+            ->assertSessionHasErrors('decision');
+        $this->assertFalse((bool) $application->fresh()->active);
+        $application->update(['enrolling_as' => 'owner', 'business_structure' => 'sole_proprietorship', 'tin' => '123', 'payout_account_name' => 'Maria Owner']);
+        foreach (\App\RestaurantEnrollmentDocument::REQUIRED_TYPES as $type) {
+            $path = 'enrollment/'.$type.'.pdf';
+            \Illuminate\Support\Facades\Storage::disk('local')->put($path, 'document');
+            $document = $application->enrollmentDocuments()->updateOrCreate(['document_type' => $type], [
+                'file_path' => $path, 'original_name' => $type.'.pdf', 'status' => 'pending_verification',
+            ]);
+            $this->actingAs($admin)->post(route('dashboard.merchant.documents.review', [$application->id, $document]), ['status' => 'approved'])
+                ->assertSessionHasNoErrors();
+        }
+        $this->post(route('dashboard.merchant.application.review', $application->id), ['decision' => 'approved'])
+            ->assertSessionHasNoErrors();
+        $this->assertTrue((bool) $application->fresh()->active);
+        $this->assertNotNull($application->fresh()->verified_at);
+    }
+
+    public function test_previously_approved_applicant_can_get_account_once(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $admin = User::query()->forceCreate(['name' => 'Admin', 'email' => 'repair-admin@example.com', 'password' => Hash::make('password')]);
+        $this->actingAs($admin);
+        $application = Partners::query()->create($this->modelAttributes(['recruitment_status' => Partners::STATUS_APPROVED]));
+        $this->get(route('dashboard.merchant.application.show', $application->id))
+            ->assertOk()->assertSee('Create account and send setup invitation');
+        $this->post(route('dashboard.merchant-applications.approve', $application))->assertSessionHasNoErrors();
+        $userId = $application->fresh()->user_id;
+        $this->assertNotNull($userId);
+        $this->post(route('dashboard.merchant-applications.approve', $application))->assertSessionHasErrors('review');
+        $this->assertSame($userId, $application->fresh()->user_id);
+        Mail::assertSent(\App\Mail\RestaurantInvitationMail::class, 1);
+    }
+
+    public function test_approval_does_not_take_over_an_existing_user_email(): void
+    {
+        Mail::fake();
+        $this->withoutMiddleware(isAdmin::class);
+        $application = Partners::query()->create($this->modelAttributes());
+        User::query()->forceCreate(['name' => 'Existing customer', 'email' => $application->email, 'password' => Hash::make('password')]);
+        $this->post(route('dashboard.merchant-applications.approve', $application))->assertSessionHasErrors('review');
+        $this->assertNull($application->fresh()->user_id);
+        $this->assertSame(Partners::STATUS_PENDING, $application->fresh()->recruitment_status);
+        Mail::assertNothingSent();
+    }
+
+    public function test_failed_invitation_delivery_rolls_back_account_and_approval(): void
+    {
+        $this->withoutMiddleware(isAdmin::class);
+        $application = Partners::query()->create($this->modelAttributes());
+        Mail::shouldReceive('to')->once()->andReturnSelf();
+        Mail::shouldReceive('send')->once()->andThrow(new \RuntimeException('Mail unavailable'));
+        $this->post(route('dashboard.merchant-applications.approve', $application))->assertSessionHasErrors('review');
+        $this->assertNull($application->fresh()->user_id);
+        $this->assertSame(Partners::STATUS_PENDING, $application->fresh()->recruitment_status);
+        $this->assertDatabaseMissing('users', ['email' => $application->email]);
+        $this->assertDatabaseMissing('restaurant_invitations', ['restaurant_id' => $application->id]);
     }
 
     private function validApplication(): array

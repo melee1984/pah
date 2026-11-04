@@ -168,9 +168,14 @@ class Partners extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
+    public function requiresEnrollmentReview(): bool
+    {
+        return (bool) $this->agent_id || $this->application_source === self::APPLICATION_SOURCE_REGISTRATION;
+    }
+
     public function missingEnrollmentDocuments(): array
     {
-        if (! $this->agent_id) {
+        if (! $this->requiresEnrollmentReview()) {
             return [];
         }
 
@@ -223,6 +228,14 @@ class Partners extends Model
     public function applicationApprovalBlockers(): array
     {
         $blockers = [];
+        if ($this->application_source === self::APPLICATION_SOURCE_REGISTRATION) {
+            if ($this->recruitment_status !== self::STATUS_APPROVED) {
+                $blockers[] = 'The merchant application must receive recruitment approval first.';
+            }
+            if (! $this->user_id) {
+                $blockers[] = 'The merchant login account has not been created.';
+            }
+        }
         $requiredFields = [
             'restaurant_name' => 'Restaurant name',
             'registered_business_name' => 'Registered business name',

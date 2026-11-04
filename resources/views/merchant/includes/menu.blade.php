@@ -67,7 +67,7 @@
       <i class="nav-icon fas fa-store"></i><p>Business profile</p>
     </a>
   </li>
-  @if (Auth::User()->merchant?->agent_id)
+  @if (Auth::User()->merchant?->requiresEnrollmentReview())
     <li class="nav-item">
       <a href="{{ route('merchant.application.show') }}" class="nav-link {{ request()->routeIs('merchant.application.*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-file-alt"></i><p>Application documents</p>

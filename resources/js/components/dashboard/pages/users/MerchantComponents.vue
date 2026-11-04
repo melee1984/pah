@@ -52,7 +52,7 @@
                 <div>
                   <strong>{{ member.restaurant_name }}</strong>
                   <small>Joined {{ member.created_at_format }}</small>
-                  <span v-if="member.agent_id" class="merchant-application-status" :class="'merchant-application-status-' + (member.application_status || 'pending_review')">
+                  <span v-if="requiresReview(member)" class="merchant-application-status" :class="'merchant-application-status-' + (member.application_status || 'pending_review')">
                     {{ (member.application_status || 'pending_review').replace(/_/g, ' ') }}
                   </span>
                   <a v-if="member.facebook && member.accout_type" :href="member.facebook" target="_blank" rel="noopener" class="dashboard-inline-link">
@@ -74,12 +74,12 @@
               <div class="dashboard-toggle-list">
                 <label>
                   <span>Account active</span>
-                  <input v-model="member.active" type="checkbox" :disabled="Boolean(member.agent_id) || isBusy(member, 'active')" @change="toggleSetting(member, 'active', 'status')">
+                  <input v-model="member.active" type="checkbox" :disabled="requiresReview(member) || isBusy(member, 'active')" @change="toggleSetting(member, 'active', 'status')">
                   <i></i>
                 </label>
                 <label>
                   <span>Verified</span>
-                  <input v-model="member.isverified" type="checkbox" :disabled="Boolean(member.agent_id) || isBusy(member, 'isverified')" @change="toggleSetting(member, 'isverified', 'verify')">
+                  <input v-model="member.isverified" type="checkbox" :disabled="requiresReview(member) || isBusy(member, 'isverified')" @change="toggleSetting(member, 'isverified', 'verify')">
                   <i></i>
                 </label>
               </div>
@@ -110,7 +110,7 @@
             </td>
             <td>
               <div class="dashboard-actions">
-                <a v-if="member.agent_id" :href="`/data/dashboard/merchant/${member.id}/application`" class="dashboard-action-primary"><i class="fas fa-clipboard-check"></i><span>Review application</span></a>
+                <a v-if="requiresReview(member)" :href="`/data/dashboard/merchant/${member.id}/application`" class="dashboard-action-primary"><i class="fas fa-clipboard-check"></i><span>Review application</span></a>
                 <a v-if="member.user_id" :href="'/merchant/aulogin/' + member.user_id" class="dashboard-action-secondary" title="Open merchant dashboard">
                   <i class="fas fa-external-link-alt"></i><span>Open</span>
                 </a>
@@ -188,6 +188,9 @@ export default {
     window.clearTimeout(this.searchTimer);
   },
   methods: {
+    requiresReview(member) {
+      return Boolean(member.agent_id) || member.application_source === 'merchant_registration';
+    },
     fetchData(page = 1) {
       this.loading = true;
       const query = new URLSearchParams({ api_token, page, search: this.search, status: this.activeTab });
