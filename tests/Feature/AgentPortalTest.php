@@ -1239,7 +1239,7 @@ class AgentPortalTest extends TestCase
             'mobile' => '09171111111',
             'password' => 'new-password-123',
             'password_confirmation' => 'new-password-123',
-        ])->assertRedirect(route('merchant.status'));
+        ])->assertRedirect(route('merchant.application.show'));
 
         $user = User::query()->where('email', 'invited@example.com')->firstOrFail();
         $this->assertTrue(Hash::check('new-password-123', $user->password));

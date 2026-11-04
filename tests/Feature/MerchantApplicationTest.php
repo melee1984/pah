@@ -7,14 +7,20 @@ use App\City;
 use App\Http\Middleware\isAdmin;
 use App\Mail\MerchantApplicationReceivedMail;
 use App\Mail\MerchantApplicationStatusMail;
+use App\Mail\RestaurantInvitationMail;
 use App\Partners;
+use App\RestaurantEnrollmentDocument;
+use App\RestaurantInvitation;
 use App\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Mail\MailManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MerchantApplicationTest extends TestCase
@@ -260,7 +266,6 @@ class MerchantApplicationTest extends TestCase
             ->assertSee('All-time applications')
             ->assertSee('Approved');
 
-
     }
 
     public function test_admin_can_list_and_open_merchant_applications(): void
@@ -411,7 +416,7 @@ class MerchantApplicationTest extends TestCase
 
     public function test_approved_applicant_can_accept_invitation_and_access_documents_without_agent(): void
     {
-        \Illuminate\Support\Facades\Storage::fake('local');
+        Storage::fake('local');
         Mail::fake();
         $this->withoutMiddleware(isAdmin::class);
         $admin = User::query()->forceCreate(['name' => 'Admin', 'email' => 'setup-admin@example.com', 'password' => Hash::make('password')]);
@@ -421,17 +426,17 @@ class MerchantApplicationTest extends TestCase
         $application->refresh();
         $this->assertNotNull($application->user_id);
         $this->assertTrue($application->enrollmentContact->hasRole('partner'));
-        $mail = Mail::sent(\App\Mail\RestaurantInvitationMail::class)->sole();
+        $mail = Mail::sent(RestaurantInvitationMail::class)->sole();
         $token = basename($mail->invitationUrl);
         $this->get($mail->invitationUrl)->assertOk();
         $this->post(route('restaurant.invitation.update', $token), [
             'firstname' => 'Maria', 'lastname' => 'Owner', 'mobile' => '09171234567',
             'password' => 'new-password123', 'password_confirmation' => 'new-password123',
-        ])->assertRedirect(route('merchant.status'));
+        ])->assertRedirect(route('merchant.application.show'));
         $this->get(route('merchant.application.show'))->assertOk();
         $this->post(route('merchant.application.documents.store'), [
             'document_type' => 'government_id',
-            'document' => \Illuminate\Http\UploadedFile::fake()->create('id.pdf', 10, 'application/pdf'),
+            'document' => UploadedFile::fake()->create('id.pdf', 10, 'application/pdf'),
         ])->assertSessionHasNoErrors();
         $this->get(route('dashboard.merchant.application.show', $application->id))->assertOk();
         $this->postJson('/api/data/merchant/'.$application->id.'/status/submit')->assertStatus(422);
@@ -440,9 +445,9 @@ class MerchantApplicationTest extends TestCase
             ->assertSessionHasErrors('decision');
         $this->assertFalse((bool) $application->fresh()->active);
         $application->update(['enrolling_as' => 'owner', 'business_structure' => 'sole_proprietorship', 'tin' => '123', 'payout_account_name' => 'Maria Owner']);
-        foreach (\App\RestaurantEnrollmentDocument::REQUIRED_TYPES as $type) {
+        foreach (RestaurantEnrollmentDocument::REQUIRED_TYPES as $type) {
             $path = 'enrollment/'.$type.'.pdf';
-            \Illuminate\Support\Facades\Storage::disk('local')->put($path, 'document');
+            Storage::disk('local')->put($path, 'document');
             $document = $application->enrollmentDocuments()->updateOrCreate(['document_type' => $type], [
                 'file_path' => $path, 'original_name' => $type.'.pdf', 'status' => 'pending_verification',
             ]);
@@ -469,7 +474,7 @@ class MerchantApplicationTest extends TestCase
         $this->assertNotNull($userId);
         $this->post(route('dashboard.merchant-applications.approve', $application))->assertSessionHasErrors('review');
         $this->assertSame($userId, $application->fresh()->user_id);
-        Mail::assertSent(\App\Mail\RestaurantInvitationMail::class, 1);
+        Mail::assertSent(RestaurantInvitationMail::class, 1);
     }
 
     public function test_approval_does_not_take_over_an_existing_user_email(): void
@@ -525,6 +530,101 @@ class MerchantApplicationTest extends TestCase
             ->assertOk()->assertJsonPath('members.data.0.id', $application->id)
             ->assertJsonPath('members.data.0.recruitment_status', Partners::STATUS_APPROVED);
         $this->assertFalse((bool) $application->fresh()->active);
+    }
+
+    public function test_public_registration_email_completes_account_without_waiting_for_approval(): void
+    {
+        Mail::fake();
+        $this->post(route('merchant.register.submit'), $this->validApplication())
+            ->assertRedirect(route('merchant.register.success'));
+        $application = Partners::query()->firstOrFail();
+        $this->assertNotNull($application->user_id);
+        $this->assertSame(Partners::STATUS_PENDING, $application->recruitment_status);
+        $this->assertFalse((bool) $application->active);
+        Mail::assertSentCount(1);
+        $mail = Mail::sent(MerchantApplicationReceivedMail::class)->sole();
+        $this->assertStringContainsString($mail->invitationUrl, $mail->render());
+        $this->assertStringContainsString('Complete registration', $mail->render());
+        $token = basename($mail->invitationUrl);
+        $this->get($mail->invitationUrl)->assertOk();
+        $this->post(route('restaurant.invitation.update', $token), [
+            'firstname' => 'Maria', 'lastname' => 'Owner', 'mobile' => '09171234567',
+            'password' => 'secure-password123', 'password_confirmation' => 'secure-password123',
+        ])->assertRedirect(route('merchant.application.show'));
+        $this->get(route('merchant.application.show'))->assertOk()->assertSee('Submitted business information');
+        $this->assertAuthenticatedAs($application->enrollmentContact);
+        $this->assertNotNull($application->enrollmentContact->fresh()->email_verified_at);
+        $this->assertFalse((bool) $application->fresh()->active);
+        $this->post(route('merchant.register.resend-link'), ['email' => $application->email])->assertSessionHas('status');
+        Mail::assertSentCount(1);
+    }
+
+    public function test_expired_registration_link_can_be_replaced_without_duplicate_accounts(): void
+    {
+        Mail::fake();
+        $this->post(route('merchant.register.submit'), $this->validApplication());
+        $application = Partners::query()->firstOrFail();
+        $oldMail = Mail::sent(MerchantApplicationReceivedMail::class)->sole();
+        $invitation = RestaurantInvitation::query()->firstOrFail();
+        $invitation->update(['expires_at' => now()->subMinute()]);
+        $this->get($oldMail->invitationUrl)->assertRedirect(route('merchant.register.request-link'));
+        $this->post(route('restaurant.invitation.update', basename($oldMail->invitationUrl)), [
+            'firstname' => 'Maria', 'lastname' => 'Owner', 'mobile' => '09171234567',
+            'password' => 'secure-password123', 'password_confirmation' => 'secure-password123',
+        ])->assertGone();
+        $this->post(route('merchant.register.resend-link'), ['email' => $application->email])->assertSessionHas('status');
+        $newMail = Mail::sent(MerchantApplicationReceivedMail::class)->last();
+        $this->assertNotSame($oldMail->invitationUrl, $newMail->invitationUrl);
+        $this->get($newMail->invitationUrl)->assertOk();
+        $this->get($oldMail->invitationUrl)->assertRedirect(route('merchant.register.request-link'));
+        $this->assertDatabaseCount('partners', 1);
+        $this->assertDatabaseCount('restaurant_invitations', 1);
+        $this->assertSame($application->user_id, $invitation->fresh()->user_id);
+        $this->post(route('merchant.register.resend-link'), ['email' => $application->email]);
+        Mail::assertSentCount(2);
+        $this->post(route('merchant.register.resend-link'), ['email' => 'unknown@example.com'])->assertSessionHas('status');
+        Mail::assertSentCount(2);
+    }
+
+    public function test_registration_email_failure_keeps_application_and_shows_recovery_instructions(): void
+    {
+        Mail::shouldReceive('to')->once()->andReturnSelf();
+        Mail::shouldReceive('send')->once()->andThrow(new \RuntimeException('Mail unavailable'));
+        $this->post(route('merchant.register.submit'), $this->validApplication())
+            ->assertRedirect(route('merchant.register.success'))->assertSessionHas('merchant_application_mail_sent', false);
+        $this->get(route('merchant.register.success'))->assertOk()
+            ->assertSee('We could not send your registration email')->assertSee('Request a new registration link');
+        $this->assertDatabaseCount('partners', 1);
+        $this->assertDatabaseCount('restaurant_invitations', 1);
+        Mail::swap(new MailManager($this->app));
+        Mail::fake();
+        $this->post(route('merchant.register.resend-link'), ['email' => $this->validApplication()['email']])
+            ->assertSessionHasNoErrors();
+        Mail::assertSent(MerchantApplicationReceivedMail::class, 1);
+    }
+
+    public function test_existing_pending_applicant_can_request_a_setup_link(): void
+    {
+        Mail::fake();
+        $application = Partners::query()->create($this->modelAttributes());
+        $this->assertNull($application->user_id);
+        $this->get(route('merchant.register.request-link'))->assertOk()->assertSee('Email me a registration link');
+        $this->post(route('merchant.register.resend-link'), ['email' => $application->email])
+            ->assertSessionHasNoErrors()->assertSessionHas('status');
+        $this->assertNotNull($application->fresh()->user_id);
+        $this->assertSame(Partners::STATUS_PENDING, $application->fresh()->recruitment_status);
+        $mail = Mail::sent(MerchantApplicationReceivedMail::class)->sole();
+        $this->get($mail->invitationUrl)->assertOk();
+        $this->assertDatabaseCount('partners', 1);
+    }
+
+    public function test_registration_rejects_existing_user_email_before_saving_application(): void
+    {
+        Mail::fake();
+        User::query()->forceCreate(['name' => 'Customer', 'email' => $this->validApplication()['email'], 'password' => Hash::make('password')]);
+        $this->post(route('merchant.register.submit'), $this->validApplication())->assertSessionHasErrors('email');
+        $this->assertDatabaseCount('partners', 0);
+        Mail::assertNothingSent();
     }
 
     private function validApplication(): array

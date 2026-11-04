@@ -47,7 +47,7 @@
         <div class="agent-program-heading"><p class="agent-eyebrow">A straightforward partnership</p><h2>How PahatudFood works</h2></div>
         <div class="agent-step-grid">
             <article><span>1</span><div><h3>Send your application</h3><p>Share your contact, business, location, and preferred service details.</p></div></article>
-            <article><span>2</span><div><h3>Complete verification</h3><p>After initial approval, our team will request and verify the required business documents.</p></div></article>
+            <article><span>2</span><div><h3>Complete verification</h3><p>Use the link emailed after submission to set your password, complete your details, and upload your business documents.</p></div></article>
             <article><span>3</span><div><h3>Build your storefront</h3><p>Add your locations, operating hours, menu items, prices, and available fulfillment options.</p></div></article>
             <article><span>4</span><div><h3>Receive orders</h3><p>Use the merchant dashboard to confirm, prepare, and complete customer orders.</p></div></article>
             <article><span>5</span><div><h3>Review and grow</h3><p>Track sales and statements, run promotions, and refine your offering as demand grows.</p></div></article>
@@ -80,7 +80,7 @@
 
     <section class="agent-program-section merchant-requirements-section" id="requirements">
         <div class="merchant-requirements-layout">
-            <div class="agent-program-heading"><p class="agent-eyebrow">Prepare for verification</p><h2>What you will need</h2><p>The application below is the first step. If it is approved, the onboarding team will guide you through document upload and account activation.</p></div>
+            <div class="agent-program-heading"><p class="agent-eyebrow">Prepare for verification</p><h2>What you will need</h2><p>Submit the application below, then follow your email link to complete your details and upload these documents.</p></div>
             <div class="merchant-requirement-list">
                 <div><span>01</span><p><strong>Business registration</strong>DTI, SEC, CDA, or the registration that applies to your business structure.</p></div>
                 <div><span>02</span><p><strong>Tax information</strong>BIR registration and TIN details matching the registered business.</p></div>
@@ -108,15 +108,15 @@
     <section class="agent-program-section agent-faq-section">
         <div class="agent-program-heading"><p class="agent-eyebrow">Questions, answered</p><h2>Merchant FAQs</h2></div>
         <div class="agent-faq-list">
-            <details open><summary>Does applying create a live merchant account?</summary><p>No. This form creates an application for review. Approved applicants receive next-step instructions for document verification, account setup, menu preparation, and activation.</p></details>
+            <details open><summary>Does applying create a live merchant account?</summary><p>Your storefront stays inactive. After submission, we email a secure link to set your password and complete your details and documents before verification.</p></details>
             <details><summary>Can I offer only pickup or dine-in?</summary><p>Yes. Select the services that fit your business. PahatudFood will confirm which options can be activated for each location during onboarding.</p></details>
             <details><summary>When will my restaurant appear to customers?</summary><p>Your storefront goes live only after the application, required documents, location, menu, and operating setup have been reviewed and activated.</p></details>
-            <details><summary>How will I know the decision?</summary><p>You will receive a confirmation after submission and another email after an administrator approves or declines your application.</p></details>
+            <details><summary>How will I know the decision?</summary><p>Your first email contains a link to complete registration. We then email you when the team reviews your application.</p></details>
         </div>
     </section>
 
     <section class="agent-program-apply" id="apply">
-        <div class="agent-apply-copy"><p class="agent-eyebrow">Start your application</p><h2>Become a PahatudFood merchant</h2><p>Tell us about your food business. This initial form takes only a few minutes; documents are requested after the first review.</p><ol><li>Submit your business details</li><li>Receive an email confirmation</li><li>Wait for the review decision</li><li>Complete onboarding and verification</li></ol></div>
+        <div class="agent-apply-copy"><p class="agent-eyebrow">Start your application</p><h2>Become a PahatudFood merchant</h2><p>Tell us about your food business. This initial form takes only a few minutes; we email your completion link immediately after submission.</p><ol><li>Submit your business details</li><li>Open your email link and choose a password</li><li>Complete details and upload documents</li><li>Receive verification updates</li></ol></div>
         <div class="agent-application-card">
             @if ($errors->any())
                 <div class="agent-alert agent-alert-error" role="alert">Please review the highlighted fields and try again.</div>
@@ -124,6 +124,7 @@
             @if ($referralAgent)
                 <div class="merchant-referral-applied"><strong>Agent referral applied</strong><span>{{ $referralAgent->name }} · {{ $referralAgent->referral_code }}</span></div>
             @endif
+            <p>Already applied? <a href="{{ route('merchant.register.request-link') }}">Request a registration link</a> or <a href="{{ route('merchant.login') }}">sign in</a>.</p>
             <form class="agent-login-form" method="POST" action="{{ route('merchant.register.submit') }}">
                 @csrf
                 <div class="agent-form-grid">

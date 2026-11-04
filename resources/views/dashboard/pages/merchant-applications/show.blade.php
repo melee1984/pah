@@ -66,7 +66,7 @@
             <div class="col-lg-5">
                 <div class="card admin-card"><div class="admin-card-header"><div><h2>Application review</h2><p>The decision and message are emailed to the applicant</p></div></div><div class="card-body">
                     @if ($application->isPending())
-                        <div class="admin-form-note mb-3"><i class="fas fa-info-circle"></i><span>Approval advances this lead to document verification and onboarding. It creates a merchant account and sends a setup invitation. The storefront stays inactive until final verification.</span></div>
+                        <div class="admin-form-note mb-3"><i class="fas fa-info-circle"></i><span>Approval advances this lead to document verification and onboarding. Applicants can already complete their account and documents using the registration email. The storefront stays inactive until final verification.</span></div>
                         <form method="POST" action="{{ route('dashboard.merchant-applications.approve', $application) }}">
                             @csrf
                             <div class="form-group"><label for="reviewMessage">Message to applicant <small>(required when declining)</small></label><textarea class="form-control" id="reviewMessage" name="message" rows="6" maxlength="2000" placeholder="Share next steps or explain what is missing">{{ old('message') }}</textarea></div>

@@ -6,7 +6,12 @@ Hello {{ $application->owner_name }},
 
 Your application for **{{ $application->restaurant_name }}** has been approved for the next stage of PahatudFood onboarding.
 
-Approval of this application does not activate the storefront yet. The PahatudFood team will guide you through business-document verification, merchant account setup, menu preparation, and final activation.
+Approval of this application does not activate the storefront yet. Sign in to complete your business details, upload any missing documents, and prepare your menu. If you have not set your password yet, use the setup link sent when you applied.
+<x-mail::button :url="route('merchant.application.show')">
+Continue your application
+</x-mail::button>
+
+Need a new setup link? [Request one here]({{ route('merchant.register.request-link') }}).
 @else
 # Update on your merchant application
 

@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Throwable;
@@ -126,15 +127,15 @@ class RestaurantEnrollmentService
         return ['restaurant' => $restaurant, 'invitation' => $invitation, 'mail_sent' => $mailSent];
     }
 
-    /** Called while the application row is locked in the approval transaction. */
-    public function provisionApplication(Partners $restaurant, Request $request): void
+    /** Call inside a transaction; lock existing application rows before provisioning. */
+    public function provisionApplication(Partners $restaurant, Request $request, bool $sendMail = true): ?RestaurantInvitationMail
     {
         if ($restaurant->user_id) {
-            return;
+            return null;
         }
 
         if (User::query()->where('email', $restaurant->email)->exists()) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+            throw ValidationException::withMessages([
                 'review' => 'This email already belongs to a user account. Update the application to use a unique merchant email before account setup.',
             ]);
         }
@@ -159,9 +160,14 @@ class RestaurantEnrollmentService
             'expires_at' => now()->addHours(config('agent.restaurant_invitation_expire_hours')),
         ]);
         $invitation->setRelation('restaurant', $restaurant);
-        Mail::to($restaurant->email)->send(new RestaurantInvitationMail(
+        $mail = new RestaurantInvitationMail(
             $invitation, $plainToken, $restaurant->owner_name ?? $restaurant->restaurant_name,
-        ));
+        );
+        if ($sendMail) {
+            Mail::to($restaurant->email)->send($mail);
+        }
+
+        return $mail;
     }
 
     private function createPartnerUser(array $validated, Request $request): User

@@ -13,9 +13,13 @@ use Illuminate\View\View;
 
 class RestaurantInvitationController extends Controller
 {
-    public function show(string $token): View
+    public function show(string $token): View|RedirectResponse
     {
-        $invitation = $this->validInvitation($token);
+        $invitation = RestaurantInvitation::query()->where('token_hash', hash('sha256', $token))->first();
+        if (! $invitation || ! $invitation->isValid()) {
+            return redirect()->route('merchant.register.request-link')
+                ->with('status', 'This link has expired or was already used. Request a new link, or sign in if you already set your password.');
+        }
         $invitation->load(['restaurant:id,restaurant_name,mobile', 'user']);
 
         return view('merchant.pages.invitation', compact('invitation', 'token'));
@@ -68,18 +72,7 @@ class RestaurantInvitationController extends Controller
         $request->session()->regenerate();
 
         return redirect()
-            ->route('merchant.status')
-            ->with('success', 'Your Pahatud merchant account is ready. The restaurant remains under review until activation.');
-    }
-
-    private function validInvitation(string $token): RestaurantInvitation
-    {
-        $invitation = RestaurantInvitation::query()
-            ->where('token_hash', hash('sha256', $token))
-            ->firstOrFail();
-
-        abort_unless($invitation->isValid(), 410, 'This invitation has expired or has already been used.');
-
-        return $invitation;
+            ->route('merchant.application.show')
+            ->with('success', 'Your account is ready. Complete your business details and upload the required documents below. Your storefront stays inactive until verification.');
     }
 }

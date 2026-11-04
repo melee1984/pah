@@ -69,7 +69,7 @@
         <div class="agent-login-visual-copy">
             <span class="agent-login-kicker">Your restaurant, delivered</span>
             <h2>Let’s bring your menu to more customers.</h2>
-            <p>Finish setting up your secure merchant account, then the Pahatud team will guide you through restaurant activation.</p>
+            <p>Finish setting up your secure merchant account, then complete your business details and upload documents on the next page.</p>
         </div>
         <div class="agent-login-flow">
             <div><span>01</span><strong>Secure your account</strong></div>
