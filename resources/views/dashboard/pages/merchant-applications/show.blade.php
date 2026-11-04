@@ -4,7 +4,7 @@
 <div class="content-wrapper admin-content-wrapper">
     <section class="content-header admin-page-header"><div class="container-fluid"><div class="admin-page-heading">
         <div><span class="admin-eyebrow">Merchant recruitment / Application #{{ $application->id }}</span><h1>{{ $application->restaurant_name }}</h1><p>Review the initial application and send the applicant a decision.</p></div>
-        <a class="btn admin-btn-secondary" href="{{ route('dashboard.merchant-applications.index') }}"><i class="fas fa-arrow-left mr-2"></i>All applications</a>
+        <a class="btn admin-btn-secondary" href="{{ route('dashboard.merchant') }}"><i class="fas fa-arrow-left mr-2"></i>Back to merchants</a>
     </div></div></section>
 
     <section class="content"><div class="container-fluid">
@@ -66,7 +66,7 @@
             <div class="col-lg-5">
                 <div class="card admin-card"><div class="admin-card-header"><div><h2>Application review</h2><p>The decision and message are emailed to the applicant</p></div></div><div class="card-body">
                     @if ($application->isPending())
-                        <div class="admin-form-note mb-3"><i class="fas fa-info-circle"></i><span>Approval advances this lead to document verification and onboarding. It does not create a merchant account or activate a storefront.</span></div>
+                        <div class="admin-form-note mb-3"><i class="fas fa-info-circle"></i><span>Approval advances this lead to document verification and onboarding. It creates a merchant account and sends a setup invitation. The storefront stays inactive until final verification.</span></div>
                         <form method="POST" action="{{ route('dashboard.merchant-applications.approve', $application) }}">
                             @csrf
                             <div class="form-group"><label for="reviewMessage">Message to applicant <small>(required when declining)</small></label><textarea class="form-control" id="reviewMessage" name="message" rows="6" maxlength="2000" placeholder="Share next steps or explain what is missing">{{ old('message') }}</textarea></div>

@@ -16,7 +16,7 @@ class RestaurantApplicationReviewController extends Controller
 {
     public function show(Partners $restaurant): View
     {
-        abort_unless($restaurant->agent_id, 404);
+        abort_unless($restaurant->requiresEnrollmentReview(), 404);
         $restaurant->load(['enrollmentDocuments', 'agent', 'enrollmentContact']);
         $documents = $restaurant->enrollmentDocuments->keyBy('document_type');
         $approvalBlockers = $restaurant->applicationApprovalBlockers();
@@ -26,7 +26,7 @@ class RestaurantApplicationReviewController extends Controller
 
     public function document(Request $request, Partners $restaurant, RestaurantEnrollmentDocument $document): RedirectResponse
     {
-        abort_unless($restaurant->agent_id && $document->partner_id === $restaurant->id, 404);
+        abort_unless($restaurant->requiresEnrollmentReview() && $document->partner_id === $restaurant->id, 404);
         $validated = $request->validate([
             'status' => ['required', Rule::in(['approved', 'rejected'])],
             'remarks' => ['required_if:status,rejected', 'nullable', 'string', 'max:2000'],
@@ -55,7 +55,7 @@ class RestaurantApplicationReviewController extends Controller
 
     public function application(Request $request, Partners $restaurant): RedirectResponse
     {
-        abort_unless($restaurant->agent_id, 404);
+        abort_unless($restaurant->requiresEnrollmentReview(), 404);
         $validated = $request->validate([
             'decision' => ['required', Rule::in(['approved', 'declined'])],
             'remarks' => ['required_if:decision,declined', 'nullable', 'string', 'max:2000'],

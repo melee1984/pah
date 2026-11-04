@@ -104,7 +104,8 @@ class MerchantApplicationController extends Controller
         ]);
         $message = trim($validated['message'] ?? '') ?: null;
 
-        if (! $application->isPending()) {
+        if (! $application->isPending() && ! ($decision === Partners::STATUS_APPROVED
+            && $application->recruitment_status === Partners::STATUS_APPROVED && ! $application->user_id)) {
             return back()->withErrors(['review' => 'This merchant application has already been reviewed.']);
         }
 
@@ -115,7 +116,8 @@ class MerchantApplicationController extends Controller
                     ->lockForUpdate()
                     ->findOrFail($application->id);
 
-                if (! $pendingApplication->isPending()) {
+                if (! $pendingApplication->isPending() && ! ($decision === Partners::STATUS_APPROVED
+                    && $pendingApplication->recruitment_status === Partners::STATUS_APPROVED && ! $pendingApplication->user_id)) {
                     throw new LogicException('This merchant application has already been reviewed.');
                 }
 
@@ -129,8 +131,14 @@ class MerchantApplicationController extends Controller
                         : []),
                 ]);
 
+                if ($decision === Partners::STATUS_APPROVED) {
+                    app(\App\Services\RestaurantEnrollmentService::class)->provisionApplication($pendingApplication, $request);
+                }
+
                 Mail::to($pendingApplication->email)->send(new MerchantApplicationStatusMail($pendingApplication, $message));
             });
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             Log::error('Merchant application review could not be completed.', [
                 'merchant_application_id' => $application->id,
@@ -145,7 +153,7 @@ class MerchantApplicationController extends Controller
         $success = $application->restaurant_name.' was '.$decision.' and the applicant was notified by email.';
 
         if ($decision === Partners::STATUS_APPROVED) {
-            return redirect()->route('dashboard.merchant-applications.index')->with('success', $success);
+            return redirect()->route('dashboard.merchant')->with('success', $success);
         }
 
         return back()->with('success', $success);

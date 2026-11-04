@@ -309,7 +309,6 @@ class OrderController extends Controller
         $status = (string) $request->query('status', 'all');
 
         $users = Partners::with('accoutType')
-            ->visibleInMerchantDirectory()
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('restaurant_name', 'like', "%{$search}%")

@@ -40,7 +40,7 @@ class MerchantController extends Controller
    	}
 
     public function updateStatus(Partners $partner, Request $request) {
-      if ($partner->agent_id) {
+      if ($partner->requiresEnrollmentReview()) {
         return response()->json(['status' => 0, 'message' => 'Use the restaurant application review to change this account status.'], 422);
       }
       if (! $partner->active && $partner->missingEnrollmentDocuments()) {
@@ -66,7 +66,7 @@ class MerchantController extends Controller
       }
 
       public function verify(Partners $partner, Request $request) {
-        if ($partner->agent_id) {
+        if ($partner->requiresEnrollmentReview()) {
           return response()->json(['status' => 0, 'message' => 'Use the restaurant application review to change verification status.'], 422);
         }
         if (! $partner->verified_at && $partner->missingEnrollmentDocuments()) {

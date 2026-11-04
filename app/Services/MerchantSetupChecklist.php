@@ -61,7 +61,7 @@ class MerchantSetupChecklist
             ],
         ];
 
-        if ($merchant->agent_id) {
+        if ($merchant->requiresEnrollmentReview()) {
             $tasks[] = $this->applicationTask($merchant);
         }
 

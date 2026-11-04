@@ -206,6 +206,6 @@ class RestaurantApplicationController extends Controller
 
     private function merchantRestaurant(Request $request): Partners
     {
-        return Partners::query()->where('user_id', $request->user()->id)->whereNotNull('agent_id')->firstOrFail();
+        return Partners::query()->where('user_id', $request->user()->id)->where(fn ($query) => $query->whereNotNull('agent_id')->orWhere('application_source', Partners::APPLICATION_SOURCE_REGISTRATION))->firstOrFail();
     }
 }

@@ -126,6 +126,44 @@ class RestaurantEnrollmentService
         return ['restaurant' => $restaurant, 'invitation' => $invitation, 'mail_sent' => $mailSent];
     }
 
+    /** Called while the application row is locked in the approval transaction. */
+    public function provisionApplication(Partners $restaurant, Request $request): void
+    {
+        if ($restaurant->user_id) {
+            return;
+        }
+
+        if (User::query()->where('email', $restaurant->email)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'review' => 'This email already belongs to a user account. Update the application to use a unique merchant email before account setup.',
+            ]);
+        }
+
+        $names = preg_split('/\s+/', trim($restaurant->owner_name ?? ''), 2);
+        $user = $this->createPartnerUser([
+            'firstname' => Str::substr($names[0] ?? '', 0, 75),
+            'lastname' => Str::substr($names[1] ?? '', 0, 75),
+            'email' => $restaurant->email,
+            'mobile' => $restaurant->mobile,
+        ], $request);
+        Role::findOrCreate('partner', 'web');
+        $user->assignRole('partner');
+        $restaurant->update(['user_id' => $user->getKey()]);
+
+        $plainToken = Str::random(64);
+        $invitation = RestaurantInvitation::query()->create([
+            'user_id' => $user->getKey(),
+            'restaurant_id' => $restaurant->getKey(),
+            'email' => $restaurant->email,
+            'token_hash' => hash('sha256', $plainToken),
+            'expires_at' => now()->addHours(config('agent.restaurant_invitation_expire_hours')),
+        ]);
+        $invitation->setRelation('restaurant', $restaurant);
+        Mail::to($restaurant->email)->send(new RestaurantInvitationMail(
+            $invitation, $plainToken, $restaurant->owner_name ?? $restaurant->restaurant_name,
+        ));
+    }
+
     private function createPartnerUser(array $validated, Request $request): User
     {
         $attributes = [

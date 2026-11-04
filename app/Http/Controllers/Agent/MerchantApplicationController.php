@@ -94,6 +94,19 @@ class MerchantApplicationController extends Controller
                     404
                 );
 
+                if ($ownedApplication->user_id && $applicationAttributes['email'] !== $ownedApplication->email) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'email' => 'This merchant already has a login account. Update the email through the restaurant application contact form so account access stays in sync.',
+                    ]);
+                }
+
+                $ownedApplication->forceFill([
+                    'application_status' => 'pending_review',
+                    'active' => false,
+                    'verified_at' => null,
+                    'verified_by' => null,
+                ]);
+
                 $ownedApplication->update([
                     ...$applicationAttributes,
                     'telephone' => $applicationAttributes['telephone'] ?? null,

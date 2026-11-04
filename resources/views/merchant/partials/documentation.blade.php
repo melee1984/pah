@@ -11,7 +11,7 @@
   </div>
   <div class="merchant-guide-bottom">
     <div><h3>Application documents</h3><p>Agent-enrolled restaurants only need a valid government-issued ID and a DTI, SEC, or CDA business registration certificate for the standard document review. An authorization document is also needed when an authorized representative is enrolling the business.</p>
-      @if (Auth::User()->merchant?->agent_id)<a href="{{ route('merchant.application.show') }}">View application and document status</a>@endif
+      @if (Auth::User()->merchant?->requiresEnrollmentReview())<a href="{{ route('merchant.application.show') }}">View application and document status</a>@endif
     </div>
     <div><h3>Need help from Pahatud?</h3><p>Include your restaurant name, account email, order number when applicable, and a short description of what happened.</p><div class="merchant-guide-contact"><a href="mailto:info@pahatud.com"><i class="fas fa-envelope"></i> info@pahatud.com</a><a href="tel:+639162986547"><i class="fas fa-phone"></i> +63 916 298 6547</a></div></div>
   </div>

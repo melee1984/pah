@@ -13,6 +13,9 @@
     </section>
 
     <section class="content">
+      @if (session('success'))
+        <div class="container-fluid"><div class="alert alert-success">{{ session('success') }}</div></div>
+      @endif
       <div class="container-fluid">
         <div class="row">
           <div class="col-md-12">

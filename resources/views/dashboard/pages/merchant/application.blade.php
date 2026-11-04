@@ -6,6 +6,13 @@
     <section class="content"><div class="container-fluid">
         @if (session('success')) <div class="alert alert-success">{{ session('success') }}</div> @endif
         @if ($errors->any()) <div class="alert alert-danger">{{ $errors->first() }}</div> @endif
+        @if ($restaurant->application_source === \App\Partners::APPLICATION_SOURCE_REGISTRATION && $restaurant->recruitment_status === \App\Partners::STATUS_APPROVED && ! $restaurant->user_id)
+            <form method="POST" action="{{ route('dashboard.merchant-applications.approve', $restaurant) }}" class="alert alert-info">
+                @csrf
+                <p>This approved merchant still needs a login account.</p>
+                <button type="submit" class="btn btn-primary">Create account and send setup invitation</button>
+            </form>
+        @endif
         <div class="card admin-card application-review-guide" id="approval-guide"><div class="card-body">
             <div class="application-review-guide-heading"><div><span class="admin-eyebrow">Approval guide</span><h2>How to approve this application</h2></div><span class="application-review-progress {{ empty($approvalBlockers) ? 'is-ready' : '' }}">{{ empty($approvalBlockers) ? 'Ready to approve' : count($approvalBlockers).' item(s) remaining' }}</span></div>
             <ol class="application-review-steps">
