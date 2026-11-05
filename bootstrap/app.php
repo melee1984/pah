@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->group('merchant', [
             \App\Http\Middleware\isMerchant::class,
+            \App\Http\Middleware\EnsureMerchantPasswordChanged::class,
         ]);
 
         $middleware->group('logged', [

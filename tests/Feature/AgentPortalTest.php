@@ -12,8 +12,8 @@ use App\Mail\AgentApprovedMail;
 use App\Mail\AgentDeclinedMail;
 use App\Mail\AgentRegistrationReceivedMail;
 use App\Mail\AgentTemporaryPasswordMail;
+use App\Mail\MerchantTemporaryPasswordMail;
 use App\Mail\RestaurantApplicationStatusMail;
-use App\Mail\RestaurantInvitationMail;
 use App\Model\Bookings\BookingStatus;
 use App\Model\Cart;
 use App\Model\CartItem;
@@ -770,6 +770,8 @@ class AgentPortalTest extends TestCase
         $user = User::query()->where('email', 'inasal@example.com')->firstOrFail();
         $restaurant = Partners::query()->where('email', 'inasal@example.com')->firstOrFail();
         $this->assertSame($user->id, $restaurant->user_id);
+        $this->assertTrue($user->must_change_password);
+        $this->assertNotNull($user->temporary_password_created_at);
         $this->assertCount(2, $restaurant->enrollmentDocuments);
         $this->assertEqualsCanonicalizing(
             RestaurantEnrollmentDocument::REQUIRED_TYPES,
@@ -780,13 +782,14 @@ class AgentPortalTest extends TestCase
             $this->assertSame('pending_verification', $document->status);
             Storage::disk('local')->assertExists($document->file_path);
         }
-        $this->assertDatabaseHas('restaurant_invitations', [
-            'user_id' => $user->id,
-            'restaurant_id' => $restaurant->id,
-            'email' => 'inasal@example.com',
-            'accepted_at' => null,
-        ]);
-        Mail::assertSent(RestaurantInvitationMail::class, fn ($mail) => $mail->hasTo('inasal@example.com'));
+        $this->assertDatabaseMissing('restaurant_invitations', ['restaurant_id' => $restaurant->id]);
+        Mail::assertSent(MerchantTemporaryPasswordMail::class, function ($mail) use ($user) {
+            $this->assertTrue(Hash::check($mail->temporaryPassword, $user->password));
+            $this->assertStringContainsString('Inasal House', $mail->render());
+            $this->assertStringContainsString('inasal@example.com', $mail->render());
+
+            return $mail->hasTo('inasal@example.com');
+        });
     }
 
     public function test_enrollment_form_only_shows_the_simplified_documents_and_payout_textarea(): void
@@ -800,6 +803,7 @@ class AgentPortalTest extends TestCase
             ->assertSee('<select class="agent-input " id="city" name="city"', false)
             ->assertSee('<option value="Tagum City"', false)
             ->assertSee('Payout account name and account details')
+            ->assertSee('temporary password')
             ->assertSee('name="payout_account_name"', false)
             ->assertSee('Valid government-issued ID')
             ->assertSee('Business registration certificate')
@@ -1203,7 +1207,7 @@ class AgentPortalTest extends TestCase
         $this->assertSame('approved', $restaurant->fresh()->application_status);
     }
 
-    public function test_restaurant_contact_can_complete_the_one_time_invitation(): void
+    public function test_agent_enrolled_merchant_must_replace_the_temporary_password_on_first_login(): void
     {
         Mail::fake();
         Storage::fake('local');
@@ -1219,42 +1223,45 @@ class AgentPortalTest extends TestCase
             'city' => 'Davao City',
         ]))->assertRedirect(route('agent.restaurants.index'));
 
-        $token = null;
-        Mail::assertSent(RestaurantInvitationMail::class, function ($mail) use (&$token) {
-            $token = basename(parse_url($mail->invitationUrl, PHP_URL_PATH));
+        $temporaryPassword = null;
+        Mail::assertSent(MerchantTemporaryPasswordMail::class, function ($mail) use (&$temporaryPassword) {
+            $temporaryPassword = $mail->temporaryPassword;
             $this->assertStringContainsString('Invitation Cafe', $mail->render());
+            $this->assertStringContainsString('invited@example.com', $mail->render());
 
             return $mail->hasTo('invited@example.com');
         });
 
-        $this->assertNotNull($token);
-        $this->get(route('restaurant.invitation.show', $token))
-            ->assertOk()
-            ->assertSee('Invitation Cafe')
-            ->assertSee('invited@example.com');
+        $this->assertNotNull($temporaryPassword);
+        $user = User::query()->where('email', 'invited@example.com')->firstOrFail();
+        $this->assertTrue($user->must_change_password);
+        $this->assertTrue($user->hasRole('partner'));
+        $this->assertTrue(Hash::check($temporaryPassword, $user->password));
 
-        $this->post(route('restaurant.invitation.update', $token), [
-            'firstname' => 'Ana',
-            'lastname' => 'Reyes',
-            'mobile' => '09171111111',
+        $this->post(route('merchant.login.submit'), [
+            'email' => $user->email,
+            'password' => $temporaryPassword,
+        ])->assertRedirect(route('merchant.password.edit'));
+
+        $this->assertAuthenticatedAs($user, 'web');
+        $this->get(route('merchant.dashboard.index'))
+            ->assertRedirect(route('merchant.password.edit'));
+        $this->get(route('merchant.password.edit'))
+            ->assertOk()
+            ->assertSee('Temporary password')
+            ->assertSee('Save password and continue');
+
+        $this->post(route('merchant.password.update'), [
+            'current_password' => $temporaryPassword,
             'password' => 'new-password-123',
             'password_confirmation' => 'new-password-123',
-        ])->assertRedirect(route('merchant.application.show'));
+        ])->assertRedirect(route('merchant.dashboard.index'));
 
-        $user = User::query()->where('email', 'invited@example.com')->firstOrFail();
+        $user->refresh();
+        $this->assertFalse($user->must_change_password);
+        $this->assertNotNull($user->password_changed_at);
         $this->assertTrue(Hash::check('new-password-123', $user->password));
-        $this->assertAuthenticatedAs($user, 'web');
-        $this->assertDatabaseMissing('restaurant_invitations', [
-            'email' => 'invited@example.com',
-            'accepted_at' => null,
-        ]);
-        $this->post(route('restaurant.invitation.update', $token), [
-            'firstname' => 'Ana',
-            'lastname' => 'Reyes',
-            'mobile' => '09171111111',
-            'password' => 'another-password',
-            'password_confirmation' => 'another-password',
-        ])->assertGone();
+        $this->assertFalse(Hash::check($temporaryPassword, $user->password));
     }
 
     public function test_commission_report_only_contains_the_logged_in_agents_transactions(): void

@@ -25,7 +25,8 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'firstname','lastname', 'email', 'mobile', 'city', 'managed_city', 'password','ip_address', 'api_token', 'description', 'telephone','account_type_id', 'provider', 'provider_id', 'avatar', 'device_token','device_id'
+        'firstname','lastname', 'email', 'mobile', 'city', 'managed_city', 'password','ip_address', 'api_token', 'description', 'telephone','account_type_id', 'provider', 'provider_id', 'avatar', 'device_token','device_id',
+        'must_change_password', 'temporary_password_created_at', 'password_changed_at',
     ];
 
     /**
@@ -46,6 +47,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'birth_of_date' => 'datetime',
         'sms_verified' => 'datetime',
+        'must_change_password' => 'boolean',
+        'temporary_password_created_at' => 'datetime',
+        'password_changed_at' => 'datetime',
     ];
 
      /**
@@ -85,7 +89,7 @@ class User extends Authenticatable
      */
     public function isMerchant() 
     {
-        return Auth::User()->hasRole('partner');
+        return $this->hasRole('partner');
     }
     
     /**

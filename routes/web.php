@@ -405,6 +405,11 @@ Route::post('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\
 
 Route::middleware('merchant')->group(function () {
 
+    Route::get('merchant/password/change', [\App\Http\Controllers\Merchant\PasswordController::class, 'edit'])->name('merchant.password.edit');
+    Route::post('merchant/password/change', [\App\Http\Controllers\Merchant\PasswordController::class, 'update'])
+        ->middleware('throttle:10,1')
+        ->name('merchant.password.update');
+
     Route::get('merchant/verify-status', [\App\Http\Controllers\Merchant\DashboardController::class, 'verification'])->name('merchant.status');
     Route::get('merchant/application', [\App\Http\Controllers\RestaurantApplicationController::class, 'showMerchant'])->name('merchant.application.show');
     Route::put('merchant/application', [\App\Http\Controllers\RestaurantApplicationController::class, 'updateMerchant'])->name('merchant.application.update');

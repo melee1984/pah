@@ -10,7 +10,7 @@ use DB;
 use App\User;
 use Hash;
 
-use Session;
+use Schema;
 use Str;
 class DashboardController extends Controller
 {
@@ -30,7 +30,7 @@ class DashboardController extends Controller
 		return view('merchant.pages.forgot');
     }
     public function logout(Request $request) {
-	   Auth::logout();
+	   Auth::guard('web')->logout();
   	  return redirect('/merchant/login');
   	}
   	public function verification() {
@@ -40,8 +40,6 @@ class DashboardController extends Controller
 
     public function validateLogin(Request $request) {
 
-		$session_id = Session::getId();
-
 		$request->validate([
 			'email' => 'required|email',
 			'password' => 'required',
@@ -49,15 +47,21 @@ class DashboardController extends Controller
 
 	    $remember_me = $request->has('remember') ? true : false; 
 
-		if (auth()->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
+		if (Auth::guard('web')->attempt(['email' => $request->input('email'), 'password' => $request->input('password')], $remember_me))
 	    {
-	        $user = auth()->user();
-			$user->api_token = Str::random(60);
-			$user->save();
+	        $user = Auth::guard('web')->user();
+			if (Schema::hasColumn('users', 'api_token')) {
+				$user->api_token = Str::random(60);
+				$user->save();
+			}
 
-			Session::setId($session_id);
+			$request->session()->regenerate();
 
 	         if ($user->isMerchant()) {
+				if ($user->must_change_password) {
+					return redirect()->route('merchant.password.edit');
+				}
+
 				return redirect()->intended('merchant/dashboard');	
 	         }
 	         else {
@@ -121,7 +125,7 @@ class DashboardController extends Controller
      */
     public function index(MerchantSetupChecklist $setupChecklist)
     {
-        $merchant = Auth::user()->merchant;
+        $merchant = Auth::guard('web')->user()->merchant;
 
         abort_unless($merchant, 404);
 

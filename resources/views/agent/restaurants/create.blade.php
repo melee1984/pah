@@ -20,7 +20,7 @@
         <div class="agent-card-header"><div><h2>Restaurant details</h2><p>Provide accurate contact details so the Pahatud team can review the enrollment.</p></div></div>
         <form class="agent-form" method="POST" action="{{ route('agent.restaurants.store') }}" enctype="multipart/form-data">
             @csrf
-            <div class="agent-form-note">This enrollment will be linked to your agent ID automatically. The contact will receive a private email invitation to set their password. New restaurants remain under review until Pahatud activates their merchant account.</div>
+            <div class="agent-form-note">This enrollment will be linked to your agent ID automatically. The contact will receive their Merchant Portal login details and a temporary password by email, and must replace it on first sign-in. New restaurants remain under review until Pahatud activates their merchant account.</div>
             <div class="agent-form-grid">
                 <div class="agent-field agent-field-full">
                     <label for="restaurant_name">Restaurant name <span class="agent-required">*</span></label>

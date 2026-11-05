@@ -18,8 +18,7 @@ class isMerchant
      */
     public function handle($request, Closure $next)
     {
-        if (Auth::check()) {
-        //    if(auth()->user()->isMerchant()) {
+        if (Auth::guard('web')->check()) {
                 // if (auth()->user()->isMerchantVerified()) {
                     return $next($request);
                 // }
@@ -31,8 +30,6 @@ class isMerchant
                       
                 //     }
                 // }
-            // }
-            
         }
         else {
             return redirect('merchant/dashboard/login');

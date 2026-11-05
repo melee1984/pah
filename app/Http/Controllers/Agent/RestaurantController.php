@@ -94,11 +94,11 @@ class RestaurantController extends Controller
         if (! $result['mail_sent']) {
             return redirect()
                 ->route('agent.restaurants.index')
-                ->with('warning', 'The restaurant and partner account were created, but the invitation email could not be delivered. Please contact Pahatud support.');
+                ->with('warning', 'The restaurant and merchant account were created, but the temporary password email could not be delivered. Please contact Pahatud support.');
         }
 
         return redirect()
             ->route('agent.restaurants.index')
-            ->with('success', 'Restaurant enrollment submitted and an account setup invitation was sent to '.$validated['email'].'.');
+            ->with('success', 'Restaurant enrollment submitted. Login details and a temporary password were sent to '.$validated['email'].'.');
     }
 }

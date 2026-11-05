@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Agent;
+use App\Mail\MerchantTemporaryPasswordMail;
 use App\Mail\RestaurantInvitationMail;
 use App\Partners;
 use App\RestaurantEnrollmentDocument;
@@ -24,15 +25,16 @@ use Throwable;
 class RestaurantEnrollmentService
 {
     /**
-     * @return array{restaurant: Partners, invitation: RestaurantInvitation, mail_sent: bool}
+     * @return array{restaurant: Partners, mail_sent: bool}
      */
     public function enroll(Agent $agent, array $validated, Request $request): array
     {
         $storedPaths = [];
+        $temporaryPassword = Str::password(12, symbols: false);
 
         try {
-            [$restaurant, $invitation, $plainToken] = DB::transaction(function () use ($agent, $validated, $request, &$storedPaths) {
-                $user = $this->createPartnerUser($validated, $request);
+            [$restaurant, $user] = DB::transaction(function () use ($agent, $validated, $request, $temporaryPassword, &$storedPaths) {
+                $user = $this->createPartnerUser($validated, $request, $temporaryPassword, true);
                 $restaurant = $agent->restaurants()->create([
                     'user_id' => $user->getKey(),
                     'restaurant_name' => $validated['restaurant_name'],
@@ -84,16 +86,7 @@ class RestaurantEnrollmentService
 
                 $this->assignPartnerRole($user);
 
-                $plainToken = Str::random(64);
-                $invitation = RestaurantInvitation::query()->create([
-                    'user_id' => $user->getKey(),
-                    'restaurant_id' => $restaurant->getKey(),
-                    'email' => $validated['email'],
-                    'token_hash' => hash('sha256', $plainToken),
-                    'expires_at' => now()->addHours(config('agent.restaurant_invitation_expire_hours')),
-                ]);
-
-                return [$restaurant, $invitation, $plainToken];
+                return [$restaurant, $user];
             });
         } catch (Throwable $exception) {
             Storage::disk('local')->delete($storedPaths);
@@ -101,20 +94,19 @@ class RestaurantEnrollmentService
             throw $exception;
         }
 
-        $invitation->setRelation('restaurant', $restaurant);
         $mailSent = true;
 
         try {
-            Mail::to($invitation->email)->send(new RestaurantInvitationMail(
-                $invitation,
-                $plainToken,
-                trim($validated['firstname'].' '.$validated['lastname']),
+            Mail::to($restaurant->email)->send(new MerchantTemporaryPasswordMail(
+                $user,
+                $restaurant,
+                $temporaryPassword,
             ));
         } catch (Throwable $exception) {
             $mailSent = false;
-            Log::error('Restaurant invitation email could not be sent.', [
+            Log::error('Merchant temporary password email could not be sent.', [
                 'restaurant_id' => $restaurant->getKey(),
-                'invitation_id' => $invitation->getKey(),
+                'user_id' => $user->getKey(),
                 'exception' => $exception->getMessage(),
             ]);
         }
@@ -124,7 +116,7 @@ class RestaurantEnrollmentService
             'Application submitted. Uploaded documents are pending verification; missing documents may be added from the restaurant account.',
         );
 
-        return ['restaurant' => $restaurant, 'invitation' => $invitation, 'mail_sent' => $mailSent];
+        return ['restaurant' => $restaurant, 'mail_sent' => $mailSent];
     }
 
     /** Call inside a transaction; lock existing application rows before provisioning. */
@@ -170,12 +162,24 @@ class RestaurantEnrollmentService
         return $mail;
     }
 
-    private function createPartnerUser(array $validated, Request $request): User
+    private function createPartnerUser(
+        array $validated,
+        Request $request,
+        ?string $password = null,
+        bool $mustChangePassword = false,
+    ): User
     {
         $attributes = [
             'email' => $validated['email'],
-            'password' => Hash::make(Str::random(64)),
+            'password' => Hash::make($password ?? Str::random(64)),
         ];
+
+        if (Schema::hasColumn('users', 'must_change_password')) {
+            $attributes['must_change_password'] = $mustChangePassword;
+        }
+        if ($mustChangePassword && Schema::hasColumn('users', 'temporary_password_created_at')) {
+            $attributes['temporary_password_created_at'] = now();
+        }
 
         if (Schema::hasColumn('users', 'name')) {
             $attributes['name'] = trim($validated['firstname'].' '.$validated['lastname']);
@@ -204,9 +208,12 @@ class RestaurantEnrollmentService
 
     private function assignPartnerRole(User $user): void
     {
-        if (Schema::hasTable('roles') && Role::query()->where('name', 'partner')->where('guard_name', 'web')->exists()) {
-            $user->assignRole('partner');
+        if (! Schema::hasTable('roles') || ! Schema::hasTable('model_has_roles')) {
+            return;
         }
+
+        Role::findOrCreate('partner', 'web');
+        $user->assignRole('partner');
     }
 
     private function uniqueSlug(string $restaurantName): string
