@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class MerchantApplicationTest extends TestCase
@@ -270,12 +271,13 @@ class MerchantApplicationTest extends TestCase
 
     public function test_admin_can_list_and_open_merchant_applications(): void
     {
-        $this->withoutMiddleware(isAdmin::class);
         $admin = User::query()->forceCreate([
             'name' => 'Admin User',
             'email' => 'merchant-admin@example.com',
             'password' => Hash::make('password123'),
         ]);
+        Role::findOrCreate('super', 'web');
+        $admin->assignRole('super');
         $application = Partners::query()->create($this->modelAttributes());
 
         $this->actingAs($admin)
@@ -284,7 +286,10 @@ class MerchantApplicationTest extends TestCase
             ->assertSee($application->restaurant_name)
             ->assertSee(route('dashboard.merchant-applications.show', $application));
 
-        $this->get(route('dashboard.merchant-applications.show', $application))
+        $reviewUrl = route('dashboard.merchant-applications.show', $application);
+        $this->assertStringEndsWith('/data/dashboard/merchant-applications/'.$application->id, $reviewUrl);
+
+        $this->get('/data/dashboard/merchant-applications/'.$application->id)
             ->assertOk()
             ->assertSee($application->registered_business_name)
             ->assertSee('Approve')

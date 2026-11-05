@@ -270,12 +270,12 @@ Route::middleware('admin')->group(function () {
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
     Route::get('data/dashboard/merchant-applications', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'index'])
         ->name('dashboard.merchant-applications.index');
-    Route::get('data/dashboard/merchant-applications/{application}', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'show'])
+    Route::get('data/dashboard/merchant-applications/{application:id}', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'show'])
         ->name('dashboard.merchant-applications.show');
-    Route::post('data/dashboard/merchant-applications/{application}/approve', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'approve'])
+    Route::post('data/dashboard/merchant-applications/{application:id}/approve', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'approve'])
         ->middleware('throttle:10,1')
         ->name('dashboard.merchant-applications.approve');
-    Route::post('data/dashboard/merchant-applications/{application}/decline', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'decline'])
+    Route::post('data/dashboard/merchant-applications/{application:id}/decline', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'decline'])
         ->middleware('throttle:10,1')
         ->name('dashboard.merchant-applications.decline');
     Route::resource('data/dashboard/promotions', PartnerPromotionController::class)
