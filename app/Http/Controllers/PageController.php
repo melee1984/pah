@@ -50,6 +50,10 @@ class PageController extends Controller
 
         return view('pages.about');
     }
+    public function apps() {
+
+        return view('pages.apps');
+    }
     public function contactus() {
 
         return view('pages.contact');

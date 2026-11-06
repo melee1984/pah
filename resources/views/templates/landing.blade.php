@@ -66,7 +66,7 @@
             };
 
             document.addEventListener('click', (event) => {
-                const link = event.target.closest('a[href*="play.google.com/store/apps/details?id=io.pahatud.com"]');
+                const link = event.target.closest('a[href*="play.google.com/store/apps/details?id=io.pahatud.user"]:not([data-direct-download])');
                 if (!link) return;
 
                 const preference = getPreference();

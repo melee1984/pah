@@ -22,7 +22,7 @@
                     <p class="home-hero-copy"><strong>PahatudFood</strong> brings the food you love straight to your door. Download the mobile app and order in just a few taps.</p>
 
                     <div class="home-hero-actions">
-                        <a class="home-button home-button-primary" href="https://play.google.com/store/apps/details?id=io.pahatud.com" target="_blank" rel="noopener noreferrer">Download the app</a>
+                        <a class="home-button home-button-primary" href="{{ route('apps.index') }}">Download the app</a>
                         <a class="home-text-link" href="#how-it-works">See how it works <span aria-hidden="true">&rarr;</span></a>
                     </div>
                 </div>
@@ -77,7 +77,7 @@
                             <li><span class="material-icons" aria-hidden="true">check_circle</span> Simple mobile ordering</li>
                             <li><span class="material-icons" aria-hidden="true">check_circle</span> Convenient cash on delivery</li>
                         </ul>
-                        <a class="home-play-link" href="https://play.google.com/store/apps/details?id=io.pahatud.com" target="_blank" rel="noopener noreferrer" aria-label="Get Pahatud on Google Play">
+                        <a class="home-play-link" href="https://play.google.com/store/apps/details?id=io.pahatud.user" target="_blank" rel="noopener noreferrer" aria-label="Get PahatudFood on Google Play">
                             <img src="{{ asset('images/google-play.png') }}" alt="Get it on Google Play" width="200">
                         </a>
                     </div>
@@ -94,7 +94,7 @@
                     <h2 id="partners-heading">Meet our restaurant partners.</h2>
                     <p>From neighborhood favorites to new discoveries, these local businesses are available in the Pahatud app.</p>
                 </div>
-                <a class="home-text-link" href="https://play.google.com/store/apps/details?id=io.pahatud.com" target="_blank" rel="noopener noreferrer">Find them in the app <span aria-hidden="true">&rarr;</span></a>
+                <a class="home-text-link" href="{{ route('apps.index') }}">Find them in the app <span aria-hidden="true">&rarr;</span></a>
             </div>
 
             <div class="home-partner-grid">

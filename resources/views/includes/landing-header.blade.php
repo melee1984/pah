@@ -7,7 +7,7 @@
 
         <div class="landing-header-actions">
             <nav class="landing-nav" aria-label="Homepage navigation">
-                <a href="{{ route('home') }}#mobile-app">Mobile app</a>
+                <a href="{{ route('apps.index') }}" @if (request()->routeIs('apps.index')) aria-current="page" @endif>Mobile apps</a>
                 <a href="{{ route('home') }}#restaurant-partners">Our partners</a>
                 <a href="{{ route('home') }}#how-it-works">How it works</a>
                 <a class="landing-nav-button" href="{{ route('home') }}#become-a-partner">Register as a partner</a>
@@ -17,7 +17,7 @@
             <details class="landing-mobile-nav">
                 <summary aria-label="Open navigation"><span></span><span></span><span></span></summary>
                 <div>
-                    <a href="{{ route('home') }}#mobile-app">Mobile app</a>
+                    <a href="{{ route('apps.index') }}" @if (request()->routeIs('apps.index')) aria-current="page" @endif>Mobile apps</a>
                     <a href="{{ route('home') }}#restaurant-partners">Our partners</a>
                     <a href="{{ route('home') }}#how-it-works">How it works</a>
                     <a href="{{ route('home') }}#become-a-partner">Register as a partner</a>

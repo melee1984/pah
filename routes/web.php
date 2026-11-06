@@ -49,6 +49,7 @@ Route::post('/search', [RestaurantPageController::class, 'search'])->name('searc
 Route::get('/restaurants/{search_string}', [RestaurantPageController::class, 'searchTag'])->name('search.tag');
 
 Route::get('/home', [PageController::class, 'index'])->name('/');
+Route::get('/app', [PageController::class, 'apps'])->name('apps.index');
 Route::get('/about-us', [PageController::class, 'aboutus'])->name('aboutus');
 Route::get('/be-partner', [PageController::class, 'bepartner'])->name('bepartner');
 
