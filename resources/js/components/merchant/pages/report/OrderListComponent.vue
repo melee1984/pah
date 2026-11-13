@@ -114,7 +114,7 @@
                         Mobile: {{ order.cart.mobile }} <br>
 
                     </td>
-                    <td width="8%"><span class="order-option-badge" :class="'is-' + fulfillmentType(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(fulfillmentType(order)) }}</span></td>
+                    <td width="8%"><span class="order-option-badge" :class="'is-' + fulfillmentType(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(fulfillmentType(order)) }}</span><span v-if="isQrOrder(order)" class="order-source-badge"><i class="fas fa-qrcode" aria-hidden="true"></i>QR order</span></td>
                     <td width="5%">{{ order.summary.qty }}</td>
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.sub_total }}</span></td>
                     <td width="5%"><span class="dashboard-money">₱{{ order.summary.discount }}</span></td>
@@ -168,7 +168,7 @@
           <div v-if="selectedOrder && selectedOrder.cart" class="modal-body order-detail-body">
             <div class="order-detail-highlights">
               <div><span>{{ fulfillmentScheduleLabel(selectedOrder) }}</span><strong>{{ selectedOrder.cart.delivery_date || 'Date unavailable' }}</strong><small>{{ selectedOrder.cart.delivery_time || 'Time unavailable' }}</small></div>
-              <div><span>Order option</span><strong>{{ fulfillmentLabel(fulfillmentType(selectedOrder)) }}</strong><small v-if="fulfillmentType(selectedOrder) === 'dine_in'">{{ diningTableLabel(selectedOrder) }}</small><small v-else>{{ storeAddress(selectedOrder) }}</small></div>
+              <div><span>Order option</span><strong>{{ fulfillmentLabel(fulfillmentType(selectedOrder)) }}</strong><small v-if="fulfillmentType(selectedOrder) === 'dine_in'">{{ diningTableLabel(selectedOrder) }}</small><small v-else>{{ storeAddress(selectedOrder) }}</small><small v-if="isQrOrder(selectedOrder)"><i class="fas fa-qrcode" aria-hidden="true"></i> QR ordering</small></div>
               <div><span>Items</span><strong>{{ selectedOrder?.summary?.qty || 0 }}</strong><small>in this order</small></div>
               <div class="order-detail-highlight-total"><span>Order total</span><strong>₱{{ selectedOrder?.summary?.total || '0.00' }}</strong><small>{{ fulfillmentType(selectedOrder) === 'delivery' ? 'including delivery' : fulfillmentLabel(fulfillmentType(selectedOrder)) + ' order' }}</small></div>
             </div>
@@ -367,6 +367,9 @@
           },
           fulfillmentLabel: function(type) {
             return { delivery: 'Delivery', pickup: 'Pickup', dine_in: 'Dine-in' }[type] || 'Delivery';
+          },
+          isQrOrder: function(order) {
+            return order?.cart?.order_source === 'qr_ordering';
           },
           fulfillmentIcon: function(order) {
             const option = this.fulfillmentOptions.find(item => item.value === this.fulfillmentType(order));

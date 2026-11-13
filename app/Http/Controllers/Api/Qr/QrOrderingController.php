@@ -170,6 +170,8 @@ class QrOrderingController extends Controller
                 $cart->partner_location_address_id = $code->partner_location_id;
                 $cart->fulfillment_type = Cart::FULFILLMENT_DINE_IN;
                 $cart->dining_table_id = $code->dining_table_id;
+                $cart->order_source = Cart::ORDER_SOURCE_QR;
+                $cart->qr_ordering_code_id = $code->id;
                 $cart->delivery_fee = 0;
                 $cart->distance_rate = 0;
                 $cart->ip_address = $request->ip();
@@ -323,6 +325,8 @@ class QrOrderingController extends Controller
                 $cart->delivery_time = 'ASAP';
                 $cart->fulfillment_type = Cart::FULFILLMENT_DINE_IN;
                 $cart->dining_table_id = $code->dining_table_id;
+                $cart->order_source = Cart::ORDER_SOURCE_QR;
+                $cart->qr_ordering_code_id = $code->id;
                 $cart->delivery_fee = 0;
                 $cart->distance_rate = 0;
                 $cart->order_no = $cart->generateOrderNo();
@@ -364,6 +368,7 @@ class QrOrderingController extends Controller
                 'order_no' => $cart->order_no,
                 'submitted_at' => $order->submitted_at,
                 'fulfillment_type' => $cart->fulfillment_type,
+                'order_source' => $cart->order_source,
                 'table' => $code->diningTable ? [
                     'id' => $code->diningTable->id,
                     'name' => $code->diningTable->name,
@@ -508,7 +513,9 @@ class QrOrderingController extends Controller
         return (int) $cart->partner_id === (int) $code->partner_id
             && (int) $cart->partner_location_address_id === (int) $code->partner_location_id
             && (int) $cart->dining_table_id === (int) $code->dining_table_id
-            && $cart->fulfillment_type === Cart::FULFILLMENT_DINE_IN;
+            && $cart->fulfillment_type === Cart::FULFILLMENT_DINE_IN
+            && $cart->order_source === Cart::ORDER_SOURCE_QR
+            && (int) $cart->qr_ordering_code_id === (int) $code->id;
     }
 
     private function cartPayload(Cart $cart, QrOrderingCode $code): array
@@ -520,6 +527,7 @@ class QrOrderingController extends Controller
             'checked_out' => (bool) $cart->processed_at,
             'restaurant_id' => $code->partner_id,
             'branch_id' => $code->partner_location_id,
+            'order_source' => Cart::ORDER_SOURCE_QR,
             'table' => $code->diningTable ? [
                 'id' => $code->diningTable->id,
                 'name' => $code->diningTable->name,
@@ -557,6 +565,7 @@ class QrOrderingController extends Controller
             'checked_out' => false,
             'restaurant_id' => $code->partner_id,
             'branch_id' => $code->partner_location_id,
+            'order_source' => Cart::ORDER_SOURCE_QR,
             'table' => $code->diningTable ? [
                 'id' => $code->diningTable->id,
                 'name' => $code->diningTable->name,

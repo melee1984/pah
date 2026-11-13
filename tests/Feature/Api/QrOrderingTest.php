@@ -150,6 +150,8 @@ class QrOrderingTest extends TestCase
             $table->unsignedBigInteger('partner_location_address_id')->nullable();
             $table->string('fulfillment_type')->default('delivery');
             $table->unsignedBigInteger('dining_table_id')->nullable();
+            $table->string('order_source', 40)->nullable();
+            $table->unsignedBigInteger('qr_ordering_code_id')->nullable();
             $table->timestamps();
         });
 
@@ -321,6 +323,7 @@ class QrOrderingTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('status', 1)
             ->assertJsonPath('order.fulfillment_type', 'dine_in')
+            ->assertJsonPath('order.order_source', 'qr_ordering')
             ->assertJsonPath('order.table.id', $this->tableId)
             ->assertJsonPath('order.summary.qty', 1);
 
@@ -330,6 +333,8 @@ class QrOrderingTest extends TestCase
             'partner_location_address_id' => $this->branchId,
             'dining_table_id' => $this->tableId,
             'fulfillment_type' => 'dine_in',
+            'order_source' => 'qr_ordering',
+            'qr_ordering_code_id' => DB::table('qr_ordering_codes')->where('uuid', $this->qrUuid)->value('id'),
             'active' => true,
         ]);
         $this->assertDatabaseHas('order', [

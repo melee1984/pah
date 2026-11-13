@@ -283,6 +283,20 @@
 .order-option-badge.is-pickup { background: #fff7ed; color: #c2410c; }
 .order-option-badge.is-dine_in { background: #f0fdf4; color: #15803d; }
 
+.order-source-badge {
+    align-items: center;
+    background: #fff1f2;
+    border-radius: 999px;
+    color: #be123c;
+    display: inline-flex;
+    font-size: 0.7rem;
+    font-weight: 700;
+    gap: 0.35rem;
+    margin-top: 0.4rem;
+    padding: 0.3rem 0.55rem;
+    white-space: nowrap;
+}
+
 @media (max-width: 767px) {
     .order-detail-highlights { grid-template-columns: 1fr 1fr; }
     .order-filter-section { padding: 1rem; }

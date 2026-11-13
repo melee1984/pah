@@ -24,13 +24,15 @@ class Cart extends Model
 
   public const FULFILLMENT_DINE_IN = 'dine_in';
 
+  public const ORDER_SOURCE_QR = 'qr_ordering';
+
   public const FULFILLMENT_TYPES = [
     self::FULFILLMENT_DELIVERY,
     self::FULFILLMENT_PICKUP,
     self::FULFILLMENT_DINE_IN,
   ];
 
-  protected $fillable = array('user_id', 'session_id', 'active', 'ip_address', 'partner_id', 'address_id', 'payment_id', 'user_long', 'user_lat', 'delivery_date', 'delivery_time', 'sms_code_validated_at', 'partner_location_address_id', 'fulfillment_type', 'dining_table_id', 'delivery_fee', 'distance_rate', 'duration', 'origin', 'destination', 'discount_amount', 'discount_code');
+  protected $fillable = array('user_id', 'session_id', 'active', 'ip_address', 'partner_id', 'address_id', 'payment_id', 'user_long', 'user_lat', 'delivery_date', 'delivery_time', 'sms_code_validated_at', 'partner_location_address_id', 'fulfillment_type', 'dining_table_id', 'order_source', 'qr_ordering_code_id', 'delivery_fee', 'distance_rate', 'duration', 'origin', 'destination', 'discount_amount', 'discount_code');
   protected $hidden = array('created_at', 'updated_at', 'processed_at', 'user_id', 'ip_address');
 
   public $timestamps = true;
