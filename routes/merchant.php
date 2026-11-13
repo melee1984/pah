@@ -62,7 +62,6 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
     Route::post('location/{partnerLocation}/tables', [MerchantDiningTableController::class, 'store']);
     Route::put('location/{partnerLocation}/tables/{diningTable}', [MerchantDiningTableController::class, 'update']);
     Route::delete('location/{partnerLocation}/tables/{diningTable}', [MerchantDiningTableController::class, 'destroy']);
-
     // Merchant Voucher
     Route::get('voucher/list', [MerchantVoucherController::class, 'getList']);
     Route::put('voucher/{voucher}/update/status', [MerchantVoucherController::class, 'updateStatus']);
