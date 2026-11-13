@@ -4,6 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 use URL;
 
@@ -38,6 +39,37 @@ class Products extends Model
 	public function category()
     {
         return $this->hasOne('App\Category','id','category_id');
+    }
+
+    public function locationAvailability()
+    {
+        return $this->hasMany(ProductLocationAvailability::class, 'product_id');
+    }
+
+    public function scopeAvailableAtLocation(Builder $query, int $locationId): Builder
+    {
+        return $query->where(function (Builder $availabilityQuery) use ($locationId) {
+            $availabilityQuery
+                ->whereHas('locationAvailability', function (Builder $availability) use ($locationId) {
+                    $availability->where('partner_location_id', $locationId)
+                        ->where('active', true);
+                })
+                ->orWhere(function (Builder $defaultQuery) use ($locationId) {
+                    $defaultQuery->where('active', true)
+                        ->whereDoesntHave('locationAvailability', function (Builder $availability) use ($locationId) {
+                            $availability->where('partner_location_id', $locationId);
+                        });
+                });
+        });
+    }
+
+    public function isAvailableAtLocation(int $locationId): bool
+    {
+        $availability = $this->relationLoaded('locationAvailability')
+            ? $this->locationAvailability->firstWhere('partner_location_id', $locationId)
+            : $this->locationAvailability()->where('partner_location_id', $locationId)->first();
+
+        return $availability ? (bool) $availability->active : (bool) $this->active;
     }
 
     public static function scopeProductByActive($query) 

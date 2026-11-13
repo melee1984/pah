@@ -13,6 +13,18 @@
         </button>
       </div>
 
+      <div v-if="locations.length" class="branch-selector">
+        <div>
+          <span class="eyebrow">Branch availability</span>
+          <strong>Choose the location whose product list you want to manage</strong>
+        </div>
+        <select v-model.number="selectedLocationId" class="form-control" @change="changeLocation">
+          <option v-for="location in locations" :key="location.id" :value="location.id">
+            {{ branchLabel(location) }}
+          </option>
+        </select>
+      </div>
+
       <div class="catalog-stats" aria-label="Product summary">
         <div class="stat-card">
           <span class="stat-icon stat-icon-all"><i class="fas fa-box-open"></i></span>
@@ -130,7 +142,7 @@
                 <div class="product-title-line">
                   <a :href="productEditUrl(product)" class="product-title">{{ product.title }}</a>
                   <span class="status-pill" :class="isActive(product) ? 'is-active' : 'is-inactive'">
-                    {{ isActive(product) ? 'Available' : 'Unavailable' }}
+                    {{ isActive(product) ? 'Available here' : 'Unavailable here' }}
                   </span>
                 </div>
                 <p>{{ product.description || 'No description added yet.' }}</p>
@@ -145,10 +157,11 @@
                 <label class="availability-switch" :for="'product-status-' + product.id">
                   <input
                     :id="'product-status-' + product.id"
-                    v-model="product.active"
+                    v-model="product.location_active"
                     type="checkbox"
-                    :true-value="1"
-                    :false-value="0"
+                    :true-value="true"
+                    :false-value="false"
+                    :disabled="!selectedLocationId"
                     @change="updateStatus(product)"
                   >
                   <span class="switch-track"><span class="switch-thumb"></span></span>
@@ -200,6 +213,9 @@ export default {
       selectedCategoryId: null,
       selectedCategoryName: 'All products',
       isLoading: true,
+      locations: [],
+      selectedLocationId: null,
+      hasRestoredLocation: false,
     };
   },
   mounted() {
@@ -232,10 +248,25 @@ export default {
     fetchData(page = 1) {
       this.isLoading = true;
 
-      axios.get(`/api/merchant/product/list?api_token=${api_token}&page=${page}`)
+      const location = this.selectedLocationId ? `&location_id=${this.selectedLocationId}` : '';
+      axios.get(`/api/merchant/product/list?api_token=${api_token}&page=${page}${location}`)
         .then((response) => {
           this.products = response.data.products;
           this.productsTemp = this.products.data || [];
+          this.locations = response.data.locations || this.locations;
+
+          if (!this.hasRestoredLocation && this.locations.length) {
+            const storedLocationId = Number(window.localStorage.getItem(this.branchStorageKey()));
+            const storedLocation = this.locations.find((location) => Number(location.id) === storedLocationId);
+            const responseLocationId = Number(response.data.selected_location_id || this.locations[0].id);
+
+            this.selectedLocationId = storedLocation ? storedLocationId : responseLocationId;
+            this.hasRestoredLocation = true;
+
+            if (this.selectedLocationId !== responseLocationId) {
+              this.fetchData(page);
+            }
+          }
         })
         .catch((error) => {
           toastr.error(error.message);
@@ -261,6 +292,7 @@ export default {
 
       axios.post(`/api/merchant/product/category/list?api_token=${api_token}`, {
         category_id: category.id,
+        location_id: this.selectedLocationId,
       })
         .then((response) => {
           this.products = response.data.products;
@@ -274,9 +306,10 @@ export default {
         });
     },
     updateStatus(product) {
-      axios.put(`/api/merchant/product/${product.id}/status/submit?api_token=${api_token}`, {
-        // This legacy endpoint expects the previous value and toggles it server-side.
-        active: this.isActive(product) ? 0 : 1,
+      const requestedStatus = this.isActive(product) ? 1 : 0;
+
+      axios.put(`/api/merchant/product/${product.id}/location/${this.selectedLocationId}/status?api_token=${api_token}`, {
+        active: requestedStatus,
       })
         .then((response) => {
           if (response.data.status) {
@@ -286,12 +319,22 @@ export default {
           }
         })
         .catch((error) => {
-          product.active = this.isActive(product) ? 0 : 1;
+          product.location_active = requestedStatus ? 0 : 1;
           toastr.error(error.message);
         });
     },
+    changeLocation() {
+      window.localStorage.setItem(this.branchStorageKey(), String(this.selectedLocationId));
+      this.fetchData(1);
+    },
+    branchStorageKey() {
+      return `merchant-product-location-${this.merchant.id || 'current'}`;
+    },
     isActive(product) {
-      return product.active === true || Number(product.active) === 1;
+      return product.location_active === true || Number(product.location_active) === 1;
+    },
+    branchLabel(location) {
+      return [location.address_1, location.city].filter(Boolean).join(', ') || `Branch ${location.id}`;
     },
     productEditUrl(product) {
       return `/merchant/product/${product.id}/edit`;
@@ -398,6 +441,21 @@ export default {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-bottom: 1rem;
 }
+
+.branch-selector {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+}
+
+.branch-selector strong { display: block; font-size: 0.9rem; }
+.branch-selector .form-control { max-width: 360px; }
 
 .stat-card {
   align-items: center;

@@ -1013,16 +1013,20 @@ class OrderController extends Controller
 	{	
 		$user = $request->user();
 		$merchant = $user->merchant;
+		$branchId = $this->assignedBranchId($request);
 
 		$merchant->load(['products' => function ($query) {
-			$query->with('category');
+			$query->with(['category', 'locationAvailability']);
 		}]);
 		
-		$products = $merchant->products->map(function ($product) {
+		$products = $merchant->products->map(function ($product) use ($branchId) {
 
 			$product->variance_content = unserialize($product->variance_content);
 			$product->price = number_format($product->getPrice(), 2);
 			$product->image_url = $product->getProductImage();
+			$product->catalog_active = (bool) $product->active;
+			$product->location_active = $product->isAvailableAtLocation($branchId);
+			$product->active = $product->location_active;
 
 			return $product;
 		});
@@ -1038,6 +1042,7 @@ class OrderController extends Controller
 	public function updateProductStatus(Request $request) 
 	{
 		$merchant = Auth::user()->merchant;
+		$branchId = $this->assignedBranchId($request);
 
 		$productId = $request->input('product_id');
 		$newStatus = $request->input('status');
@@ -1058,12 +1063,20 @@ class OrderController extends Controller
 			], 404);
 		}
 
-		$product->active = $newStatus;
-		$product->save();
+		\App\ProductLocationAvailability::query()->updateOrCreate(
+			[
+				'product_id' => $product->id,
+				'partner_location_id' => $branchId,
+			],
+			['active' => (bool) $newStatus]
+		);
+		$product->catalog_active = (bool) $product->active;
+		$product->location_active = (bool) $newStatus;
+		$product->active = $product->location_active;
 
 		return response()->json([
 			'status' => 1,
-			'message' => 'Product status updated successfully.',
+			'message' => 'Branch product availability updated successfully.',
 			'product' => $product,
 		]);
 

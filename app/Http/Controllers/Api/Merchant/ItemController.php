@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 use App\Products;
 use App\ProductItemHeader;
+use App\PartnerLocation;
+use App\ProductLocationAvailability;
 use App\User;
 use Auth;
 use Str;
@@ -35,16 +37,22 @@ class ItemController extends Controller
     public function show($id) {
         return Article::find($id);
     }
-    public function fetchData() {
+    public function fetchData(Request $request) {
     	
     	$data = array();
 
 		$products = Products::whereUserId(Auth::User()->id)
+						->with('locationAvailability')
     					->orderby('title','asc')
     					->paginate(50);
 
+		$location = $this->merchantLocation($request->integer('location_id'));
+
     	foreach($products as $product) {
     		$product =  Products::productImageCheck($product);
+			$product->location_active = $location
+				? $product->isAvailableAtLocation($location->id)
+				: (bool) $product->active;
     	}
 
 		$categories = Auth::User()->categories;
@@ -52,6 +60,8 @@ class ItemController extends Controller
 		$data['merchant'] = Auth::User()->merchant;
     	$data['products'] = $products;
     	$data['categories'] = $categories;
+		$data['locations'] = Auth::User()->merchant->locations()->where('active', true)->get();
+		$data['selected_location_id'] = $location?->id;
 
     	return response()->json($data, 200);
     }
@@ -59,11 +69,16 @@ class ItemController extends Controller
 
     	$data = array();
     	
-    	$products = Products::whereUserId(Auth::User()->id)->whereCategoryId($request->input('category_id'))
+		$products = Products::whereUserId(Auth::User()->id)->whereCategoryId($request->input('category_id'))
+						->with('locationAvailability')
     					->orderby('title','asc')
     					->paginate(50);
+		$location = $this->merchantLocation($request->integer('location_id'));
     	foreach($products as $product) {
     		$product =  Products::productImageCheck($product);
+			$product->location_active = $location
+				? $product->isAvailableAtLocation($location->id)
+				: (bool) $product->active;
     	}
 
     	$data['products'] = $products;
@@ -195,6 +210,43 @@ class ItemController extends Controller
 		// 				->send(new ContactUsMail($contactus));	
 	
 		return response()->json($data, 200);
+    }
+
+    public function locationStatus(Request $request, Products $product, PartnerLocation $partnerLocation)
+    {
+        $request->validate(['active' => ['required', 'boolean']]);
+
+        abort_unless((int) $product->user_id === (int) Auth::id(), 404);
+        abort_unless(
+            (int) $partnerLocation->partner_id === (int) Auth::user()->merchant->id,
+            404
+        );
+
+        ProductLocationAvailability::query()->updateOrCreate(
+            [
+                'product_id' => $product->id,
+                'partner_location_id' => $partnerLocation->id,
+            ],
+            ['active' => $request->boolean('active')]
+        );
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Branch product availability updated successfully.',
+            'location_active' => $request->boolean('active'),
+        ]);
+    }
+
+    private function merchantLocation(int $locationId): ?PartnerLocation
+    {
+        if (! $locationId) {
+            return Auth::user()->merchant->locations()
+                ->where('active', true)
+                ->orderBy('id')
+                ->first();
+        }
+
+        return Auth::user()->merchant->locations()->whereKey($locationId)->firstOrFail();
     }
 
     /**

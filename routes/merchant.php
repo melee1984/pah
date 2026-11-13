@@ -43,6 +43,7 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
     Route::delete('product/{product}/delete', [MerchantItemController::class, 'destroy']);
     Route::post('product/{product}/upload/submit', [MerchantItemController::class, 'uploadImage']);
     Route::put('product/{product}/status/submit', [MerchantItemController::class, 'status']);
+    Route::put('product/{product}/location/{partnerLocation}/status', [MerchantItemController::class, 'locationStatus']);
 
     // Merchant Category
     Route::get('category/list', [MerchantCategoryController::class, 'getList']);

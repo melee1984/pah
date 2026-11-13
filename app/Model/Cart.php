@@ -86,6 +86,20 @@ class Cart extends Model
     return ($this->fulfillment_type ?: self::FULFILLMENT_DELIVERY) === self::FULFILLMENT_DELIVERY;
   }
 
+  public function hasUnavailableProductsAtLocation(): bool
+  {
+    if (! $this->partner_location_address_id) {
+      return true;
+    }
+
+    $this->loadMissing('details.item.locationAvailability');
+
+    return $this->details->contains(function ($detail) {
+      return ! $detail->item
+        || ! $detail->item->isAvailableAtLocation((int) $this->partner_location_address_id);
+    });
+  }
+
   /**
    * [cartSummary description]
    * @return [type] [description]

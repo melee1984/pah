@@ -35,7 +35,7 @@ class QrOrderingController extends Controller
 
         $products = Products::query()
             ->where('user_id', $partner->user_id)
-            ->where('active', true)
+            ->availableAtLocation($branchId)
             ->with([
                 'user.merchant',
                 'variants' => fn ($query) => $query->where('active', true)->orderBy('sorting'),
@@ -117,7 +117,7 @@ class QrOrderingController extends Controller
         $product = Products::query()
             ->whereKey($validated['product_id'])
             ->where('user_id', $code->partner->user_id)
-            ->where('active', true)
+            ->availableAtLocation($branchId)
             ->with([
                 'user.merchant',
                 'variants' => fn ($query) => $query->where('active', true),
@@ -313,6 +313,12 @@ class QrOrderingController extends Controller
 
                 if (! $cart->details()->exists()) {
                     throw new \DomainException('Add at least one menu item before checkout.');
+                }
+
+                if ($cart->hasUnavailableProductsAtLocation()) {
+                    throw new \DomainException(
+                        'One or more items are no longer available at this branch. Please review your cart.'
+                    );
                 }
 
                 $cart->fullname = $validated['full_name'];
