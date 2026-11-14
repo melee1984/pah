@@ -513,13 +513,23 @@ class QrOrderingController extends Controller
 
     private function productPayload(Products $product): array
     {
+        $originalPrice = (float) $product->getRawOriginal('price');
+        if ($product->user->merchant->addup) {
+            $originalPrice += (float) $product->price_comm;
+        }
+
+        $activePrice = (float) $product->getPrice();
+        $promoPrice = $activePrice < $originalPrice ? $activePrice : null;
+
         return [
             'id' => $product->id,
             'category_id' => $product->category_id,
             'title' => $product->title,
             'short_description' => $product->short_description,
             'description' => $product->description,
-            'price' => number_format((float) $product->getPrice(), 2, '.', ''),
+            'price' => number_format($activePrice, 2, '.', ''),
+            'original_price' => number_format($originalPrice, 2, '.', ''),
+            'promo_price' => $promoPrice === null ? null : number_format($promoPrice, 2, '.', ''),
             'image_url' => $product->getProductImage(),
             'variants' => $product->variants->map(fn ($variant) => [
                 'id' => $variant->id,

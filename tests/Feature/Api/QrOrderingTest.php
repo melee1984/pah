@@ -290,9 +290,24 @@ class QrOrderingTest extends TestCase
             ->assertJsonPath('table.id', $this->tableId)
             ->assertJsonPath('categories.0.name', 'Mains')
             ->assertJsonPath('menu.0.id', $this->productId)
-            ->assertJsonPath('menu.0.price', '120.00');
+            ->assertJsonPath('menu.0.price', '120.00')
+            ->assertJsonPath('menu.0.original_price', '120.00')
+            ->assertJsonPath('menu.0.promo_price', null);
 
         $this->getJson("/api/qr/{$this->qrUuid}/branches/999/menu")->assertNotFound();
+    }
+
+    public function test_qr_menu_exposes_original_and_promotional_prices(): void
+    {
+        DB::table('products')->where('id', $this->productId)->update([
+            'markdown_price' => 90,
+        ]);
+
+        $this->getJson($this->baseUrl().'/menu')
+            ->assertOk()
+            ->assertJsonPath('menu.0.price', '90.00')
+            ->assertJsonPath('menu.0.original_price', '120.00')
+            ->assertJsonPath('menu.0.promo_price', '90.00');
     }
 
     public function test_guest_can_add_to_cart_and_fetch_summary(): void
