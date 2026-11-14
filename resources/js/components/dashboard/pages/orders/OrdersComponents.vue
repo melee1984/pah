@@ -89,9 +89,9 @@
                         </template>
                         <span v-else class="text-muted">Merchant location unavailable</span>
                         <template v-if="fulfillmentType(order) === 'dine_in'"><br><strong>Table:</strong> {{ diningTableLabel(order) }}</template>
-
-
                         <br><br>
+                        <strong>Customer:</strong> {{ order.cart.fullname || 'Name unavailable' }}<br>
+                        <strong>Mobile:</strong> {{ order.cart.mobile || 'Not provided' }}
                     </td>
                     <td width="8%"><span class="order-option-badge" :class="'is-' + fulfillmentType(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(fulfillmentType(order)) }}</span><span v-if="isQrOrder(order)" class="order-source-badge"><i class="fas fa-qrcode" aria-hidden="true"></i>QR order</span></td>
                     <td width="5%">{{ order.summary.qty }}</td>

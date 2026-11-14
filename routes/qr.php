@@ -11,15 +11,20 @@ Route::prefix('qr/{uuid}/branches/{branchId}')
     ->middleware('throttle:120,1')
     ->group(function () {
         Route::get('menu', [QrOrderingController::class, 'menu'])->name('api.qr.menu');
+        Route::post('sessions', [QrOrderingController::class, 'createSession'])
+            ->middleware('throttle:20,1');
 
-        Route::prefix('carts/{sessionId}')->whereUuid('sessionId')->group(function () {
-            Route::get('summary', [QrOrderingController::class, 'summary']);
-            Route::post('items', [QrOrderingController::class, 'addItem']);
-            Route::patch('items/{cartItem}', [QrOrderingController::class, 'updateItem'])
-                ->whereNumber('cartItem');
-            Route::post('checkout', [QrOrderingController::class, 'checkout'])
-                ->middleware('throttle:10,1');
-        });
+        Route::prefix('carts/{sessionId}')
+            ->whereUuid('sessionId')
+            ->middleware('qr.session')
+            ->group(function () {
+                Route::get('summary', [QrOrderingController::class, 'summary']);
+                Route::post('items', [QrOrderingController::class, 'addItem']);
+                Route::patch('items/{cartItem}', [QrOrderingController::class, 'updateItem'])
+                    ->whereNumber('cartItem');
+                Route::post('checkout', [QrOrderingController::class, 'checkout'])
+                    ->middleware('throttle:10,1');
+            });
     });
 
 // Existing merchant authentication is enforced inside the QR provisioning controller.

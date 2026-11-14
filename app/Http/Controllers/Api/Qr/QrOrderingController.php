@@ -14,6 +14,7 @@ use App\PartnerLocationCheckoutOption;
 use App\PaymentMethod;
 use App\Products;
 use App\QrOrderingCode;
+use App\Services\QrOrderingSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,21 @@ use Throwable;
 
 class QrOrderingController extends Controller
 {
+    public function createSession(
+        QrOrderingSession $sessions,
+        string $uuid,
+        int $branchId
+    ): JsonResponse {
+        $code = $this->resolveCode($uuid, $branchId);
+
+        return response()
+            ->json([
+                'status' => 1,
+                'session' => $sessions->issue($code->uuid, (int) $code->partner_location_id),
+            ], 201)
+            ->header('Cache-Control', 'no-store, private');
+    }
+
     public function menu(string $uuid, int $branchId): JsonResponse
     {
         $code = $this->resolveCode($uuid, $branchId);
@@ -178,6 +194,11 @@ class QrOrderingController extends Controller
                 $cart->active = false;
                 $cart->save();
 
+                $quantity = $validated['quantity'] ?? 1;
+                if ((int) $cart->details()->sum('qty') + $quantity > 100) {
+                    throw new \DomainException('A QR cart cannot contain more than 100 total items.');
+                }
+
                 $serializedVariants = serialize($variantResult['content']);
                 $attributes = [
                     'cart_id' => $cart->id,
@@ -199,7 +220,7 @@ class QrOrderingController extends Controller
                     $validated['is_not_available'] ?? CartItem::UNAVAILABLE_ACTION_REMOVE_ITEM
                 );
                 $cartItem->instruction = $validated['instruction'] ?? null;
-                $cartItem->qty = (int) $cartItem->qty + ($validated['quantity'] ?? 1);
+                $cartItem->qty = (int) $cartItem->qty + $quantity;
                 $cartItem->save();
 
                 return $cart;
@@ -257,6 +278,13 @@ class QrOrderingController extends Controller
 
         if ($cart->processed_at) {
             return $this->failure('A checked-out cart cannot be changed.', 409);
+        }
+
+        $otherItemQuantity = (int) $cart->details()
+            ->where('id', '!=', $cartItem->id)
+            ->sum('qty');
+        if ($otherItemQuantity + $validated['quantity'] > 100) {
+            return $this->failure('A QR cart cannot contain more than 100 total items.', 422);
         }
 
         if ($validated['quantity'] === 0) {

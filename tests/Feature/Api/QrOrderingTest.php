@@ -93,6 +93,15 @@ class QrOrderingTest extends TestCase
             $table->timestamps();
         });
 
+        Schema::create('product_location_availability', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('product_id')->index();
+            $table->unsignedBigInteger('partner_location_id')->index();
+            $table->boolean('active')->default(true);
+            $table->timestamps();
+            $table->unique(['product_id', 'partner_location_id']);
+        });
+
         Schema::create('product_item_header', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('product_id');
@@ -288,13 +297,15 @@ class QrOrderingTest extends TestCase
 
     public function test_guest_can_add_to_cart_and_fetch_summary(): void
     {
-        $sessionId = (string) Str::uuid();
+        $session = $this->createQrSession();
+        $sessionId = $session['session_id'];
 
-        $this->postJson($this->baseUrl()."/carts/{$sessionId}/items", [
-            'product_id' => $this->productId,
-            'quantity' => 2,
-            'instruction' => 'No onions',
-        ])->assertCreated()
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->postJson($this->baseUrl()."/carts/{$sessionId}/items", [
+                'product_id' => $this->productId,
+                'quantity' => 2,
+                'instruction' => 'No onions',
+            ])->assertCreated()
             ->assertJsonPath('status', 1)
             ->assertJsonPath('data.items.0.quantity', 2)
             ->assertJsonPath('data.items.0.instruction', 'No onions');
@@ -309,11 +320,13 @@ class QrOrderingTest extends TestCase
     public function test_guest_can_checkout_without_a_user_account(): void
     {
         Event::fake([SendPushNotificationEvent::class]);
-        $sessionId = (string) Str::uuid();
+        $session = $this->createQrSession();
+        $sessionId = $session['session_id'];
 
-        $this->postJson($this->baseUrl()."/carts/{$sessionId}/items", [
-            'product_id' => $this->productId,
-        ])->assertCreated();
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->postJson($this->baseUrl()."/carts/{$sessionId}/items", [
+                'product_id' => $this->productId,
+            ])->assertCreated();
 
         $this->postJson($this->baseUrl()."/carts/{$sessionId}/checkout", [
             'full_name' => 'Guest Customer',
@@ -358,13 +371,61 @@ class QrOrderingTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $sessionId = (string) Str::uuid();
-        $this->postJson($this->baseUrl()."/carts/{$sessionId}/items", [
-            'product_id' => $otherProductId,
-        ])->assertUnprocessable()
+        $session = $this->createQrSession();
+        $sessionId = $session['session_id'];
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->postJson($this->baseUrl()."/carts/{$sessionId}/items", [
+                'product_id' => $otherProductId,
+            ])->assertUnprocessable()
             ->assertJsonPath('status', 0);
 
         $this->assertDatabaseMissing('cart_details', ['item_id' => $otherProductId]);
+    }
+
+    public function test_qr_cart_requires_a_server_issued_session_token(): void
+    {
+        $session = $this->createQrSession();
+
+        $this->getJson($this->baseUrl()."/carts/{$session['session_id']}/summary")
+            ->assertUnauthorized()
+            ->assertJsonPath('status', 0);
+    }
+
+    public function test_qr_session_token_cannot_access_another_cart_session(): void
+    {
+        $first = $this->createQrSession();
+        $second = $this->createQrSession();
+
+        $this->withHeader('X-QR-Session-Token', $first['token'])
+            ->getJson($this->baseUrl()."/carts/{$second['session_id']}/summary")
+            ->assertUnauthorized()
+            ->assertJsonPath('status', 0);
+    }
+
+    public function test_qr_session_token_expires(): void
+    {
+        config(['services.qr_ordering.session_ttl_minutes' => 5]);
+        $session = $this->createQrSession();
+        $this->travel(6)->minutes();
+
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->getJson($this->baseUrl()."/carts/{$session['session_id']}/summary")
+            ->assertUnauthorized()
+            ->assertJsonPath('status', 0);
+    }
+
+    public function test_qr_cart_rejects_more_than_one_hundred_total_items(): void
+    {
+        $session = $this->createQrSession();
+        $url = $this->baseUrl()."/carts/{$session['session_id']}/items";
+
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->postJson($url, ['product_id' => $this->productId, 'quantity' => 100])
+            ->assertCreated();
+
+        $this->postJson($url, ['product_id' => $this->productId, 'quantity' => 1])
+            ->assertConflict()
+            ->assertJsonPath('status', 0);
     }
 
     public function test_merchant_can_regenerate_a_table_qr_code(): void
@@ -435,5 +496,14 @@ class QrOrderingTest extends TestCase
     private function baseUrl(): string
     {
         return "/api/qr/{$this->qrUuid}/branches/{$this->branchId}";
+    }
+
+    private function createQrSession(): array
+    {
+        return $this->postJson($this->baseUrl().'/sessions')
+            ->assertCreated()
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonPath('status', 1)
+            ->json('session');
     }
 }

@@ -93,6 +93,7 @@ return [
             'QR_ORDERING_URL',
             rtrim(env('APP_URL', 'http://localhost'), '/').'/qr-ordering',
         ),
+        'session_ttl_minutes' => env('QR_ORDERING_SESSION_TTL_MINUTES', 720),
     ],
 
     'semaphore' => [
