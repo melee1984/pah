@@ -154,13 +154,14 @@ class ProfileController extends Controller
 		$data = [];
 		$image = $request->file('file');
 		$filename = now()->toDateString() . "-" . $image->getClientOriginalName();
+		$merchant = Auth::user()->merchant;
 
 		try {
-			$this->unlinkImage();
+			$this->unlinkImage($merchant);
 
 			try {
-				$originalDirectory = public_path('uploads/user/' . Auth::user()->merchant->id);
-				$thumbDirectory    = public_path('uploads/user/' . Auth::user()->merchant->id . '/thumb');
+				$originalDirectory = public_path('uploads/user/' . $merchant->id);
+				$thumbDirectory    = public_path('uploads/user/' . $merchant->id . '/thumb');
 
 				if (!file_exists($originalDirectory)) {
 					mkdir($originalDirectory, 0777, true);
@@ -191,11 +192,11 @@ class ProfileController extends Controller
 			// Save (overwrite if modified)
 			$img->save();
 
-			Auth::user()->merchant->img = $filename;
-			$status = Auth::user()->merchant->save();
+			$merchant->img = $filename;
+			$status = $merchant->save();
 
 			if ($status) {
-				$data['img'] = asset('uploads/user/' . Auth::user()->merchant->id . '/' . $filename);
+				$data['img'] = asset('uploads/user/' . $merchant->id . '/' . $filename);
 				$data['message'] = 'Successfully uploaded new image';
 				$data['status'] = 1;
 			} else {
@@ -227,22 +228,22 @@ class ProfileController extends Controller
        	}
 
 	}
-	public function unlinkImage() {
+	public function unlinkImage(Partners $merchant) {
 
-			$originalDirectory = public_path().'/uploads/user/'.Auth::User()->merchant->id;
+			$originalDirectory = public_path().'/uploads/user/'.$merchant->id;
 
        		// Removing existing image from here 
-       		if (Auth::User()->merchant->img !="") {
+		if ($merchant->img != "") {
        			try {	
 			
-					$deleteFile = $originalDirectory."/".Auth::User()->merchant->img;
+					$deleteFile = $originalDirectory."/".$merchant->img;
 					\File::delete($deleteFile);
        			} catch (Exception $e) {
        			}
 
        			try {	
 					
-					$deleteFileThumbnail = $originalDirectory."/thumb/".Auth::User()->merchant->img;
+					$deleteFileThumbnail = $originalDirectory."/thumb/".$merchant->img;
 	    			\File::delete($deleteFileThumbnail);
 					
        			} catch (Exception $e) {
