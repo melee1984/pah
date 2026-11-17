@@ -82,7 +82,7 @@ class OrderController extends Controller
             $order->cart->address;
             $order->cart->partnerlocation;
 
-            $order->submitted_date = ($order->submitted_at ?: $order->created_at)->format('m/d/Y h:i a');
+            $order->submitted_date = Carbon::parse($order->submitted_at ?: $order->created_at)->format('m/d/Y h:i a');
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
             $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();
