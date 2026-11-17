@@ -144,6 +144,7 @@ Route::group(['middleware' => ['api', 'web']], function () {
 });
 
 // Domain-specific API routes
+require __DIR__.'/qr.php';
 require __DIR__.'/merchant.php';
 require __DIR__.'/user.php';
 require __DIR__.'/rider.php';

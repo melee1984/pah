@@ -233,6 +233,13 @@ class CheckoutController extends Controller
             ], 200);
         }
 
+        if ($cart->hasUnavailableProductsAtLocation()) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'One or more items are no longer available at this branch. Please review your cart.',
+            ], 200);
+        }
+
         $cart->payment;
 
         $fulfillmentType = $request->input(

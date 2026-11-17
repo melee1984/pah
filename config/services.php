@@ -88,6 +88,14 @@ return [
         ),
     ],
 
+    'qr_ordering' => [
+        'url' => env(
+            'QR_ORDERING_URL',
+            rtrim(env('APP_URL', 'http://localhost'), '/').'/qr-ordering',
+        ),
+        'session_ttl_minutes' => env('QR_ORDERING_SESSION_TTL_MINUTES', 720),
+    ],
+
     'semaphore' => [
         'url' => env('SEMAPHORE_API_URL', 'https://semaphore.co/api/v4/messages'),
         'key' => env('SEMAPHORE_API_KEY'),

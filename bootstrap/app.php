@@ -25,7 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-         $middleware->group('admin', [
+        $middleware->group('admin', [
             \App\Http\Middleware\isAdmin::class,
         ]);
 
@@ -48,6 +48,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'rider.application' => \App\Http\Middleware\AuthenticateRiderApplication::class,
             'rider.approved' => \App\Http\Middleware\EnsureApprovedRider::class,
             'merchant.branch' => \App\Http\Middleware\EnsureMerchantBranch::class,
+            'qr.session' => \App\Http\Middleware\AuthenticateQrOrderingSession::class,
             'turnstile' => \App\Http\Middleware\ValidateTurnstile::class,
         ]);
         //

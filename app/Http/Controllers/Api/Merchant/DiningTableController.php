@@ -7,6 +7,8 @@ use App\PartnerLocation;
 use App\PartnerLocationTable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class DiningTableController extends Controller
@@ -26,12 +28,23 @@ class DiningTableController extends Controller
         $this->authorizeLocation($partnerLocation, $request);
         $validated = $this->validateTable($request);
 
-        $table = $partnerLocation->diningTables()->create($validated);
+        $table = DB::transaction(function () use ($partnerLocation, $validated) {
+            $table = $partnerLocation->diningTables()->create($validated);
+            $table->qrOrderingCode()->create([
+                'uuid' => (string) Str::uuid(),
+                'partner_id' => $partnerLocation->partner_id,
+                'partner_location_id' => $partnerLocation->id,
+                'label' => $table->name,
+                'active' => true,
+            ]);
+
+            return $table;
+        });
 
         return response()->json([
             'status' => 1,
             'message' => 'Dining table added.',
-            'table' => $table,
+            'table' => $this->tablePayload($table->fresh('qrOrderingCode')),
             'tables' => $this->tables($partnerLocation),
         ], 201);
     }
@@ -44,12 +57,15 @@ class DiningTableController extends Controller
         $this->authorizeLocation($partnerLocation, $request);
         $this->authorizeTable($partnerLocation, $diningTable);
 
-        $diningTable->update($this->validateTable($request, $diningTable));
+        DB::transaction(function () use ($diningTable, $request) {
+            $diningTable->update($this->validateTable($request, $diningTable));
+            $diningTable->qrOrderingCode?->update(['label' => $diningTable->name]);
+        });
 
         return response()->json([
             'status' => 1,
             'message' => 'Dining table updated.',
-            'table' => $diningTable->fresh(),
+            'table' => $this->tablePayload($diningTable->fresh('qrOrderingCode')),
             'tables' => $this->tables($partnerLocation),
         ]);
     }
@@ -61,7 +77,10 @@ class DiningTableController extends Controller
     ): JsonResponse {
         $this->authorizeLocation($partnerLocation, $request);
         $this->authorizeTable($partnerLocation, $diningTable);
-        $diningTable->delete();
+        DB::transaction(function () use ($diningTable) {
+            $diningTable->qrOrderingCode()->delete();
+            $diningTable->delete();
+        });
 
         return response()->json([
             'status' => 1,
@@ -113,7 +132,28 @@ class DiningTableController extends Controller
     private function tables(PartnerLocation $partnerLocation)
     {
         return $partnerLocation->diningTables()
+            ->with('qrOrderingCode')
             ->orderBy('name')
-            ->get(['id', 'partner_location_id', 'name', 'capacity', 'active', 'is_available']);
+            ->get(['id', 'partner_location_id', 'name', 'capacity', 'active', 'is_available'])
+            ->map(fn (PartnerLocationTable $table) => $this->tablePayload($table));
+    }
+
+    private function tablePayload(PartnerLocationTable $table): array
+    {
+        $code = $table->qrOrderingCode;
+
+        return [
+            'id' => $table->id,
+            'partner_location_id' => $table->partner_location_id,
+            'name' => $table->name,
+            'capacity' => $table->capacity,
+            'active' => $table->active,
+            'is_available' => $table->is_available,
+            'qr_code' => $code ? [
+                'id' => $code->id,
+                'uuid' => $code->uuid,
+                'ordering_url' => $code->orderingUrl(),
+            ] : null,
+        ];
     }
 }

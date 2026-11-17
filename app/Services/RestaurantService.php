@@ -45,7 +45,7 @@ class RestaurantService
                         ->where('partners.active', 1)
                         ->whereNotNull('partners.verified_at')
                         ->when($city, fn ($query, $city) => self::filterByCity($query, $city))
-                        ->with('products', 'products.variants', 'category', 'foodType', 'locations')
+                        ->with('products.locationAvailability', 'products.variants', 'category', 'foodType', 'locations')
                         ->orderBy('partners.store_open', 'desc')
                         ->orderBy('distance_km', 'asc')
                         ->limit(15)
@@ -96,6 +96,15 @@ class RestaurantService
         // ]);
 
         $restaurantIds = $restaurants->pluck('id');
+
+        $restaurants->each(function ($restaurant) {
+            $restaurant->setRelation(
+                'products',
+                $restaurant->products
+                    ->filter(fn ($product) => $product->isAvailableAtLocation((int) $restaurant->location_id))
+                    ->values()
+            );
+        });
         $restaurantOrigins = $restaurants
             ->mapWithKeys(function ($restaurant) {
                 $location = $restaurant->locations->firstWhere('id', $restaurant->location_id);

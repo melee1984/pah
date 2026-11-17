@@ -132,6 +132,7 @@
                                                     <li><strong>Status:</strong> 
                                                         <span class="label label-danger">{{ selectedOrder.status.title }}</span>
                                                     </li>
+                                                    <li v-if="selectedOrder.cancellation_reason"><strong>Cancellation reason:</strong> {{ selectedOrder.cancellation_reason }}</li>
                                                 </ul>
                                             </div>
                                         </div>

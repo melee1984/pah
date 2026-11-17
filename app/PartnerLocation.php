@@ -36,4 +36,14 @@ class PartnerLocation extends Model
     {
         return $this->hasMany(PartnerLocationCheckoutOption::class, 'partner_location_id');
     }
+
+    public function qrOrderingCodes()
+    {
+        return $this->hasMany(QrOrderingCode::class, 'partner_location_id');
+    }
+
+    public function productAvailability()
+    {
+        return $this->hasMany(ProductLocationAvailability::class, 'partner_location_id');
+    }
 }

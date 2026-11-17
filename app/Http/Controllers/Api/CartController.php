@@ -546,6 +546,13 @@ class CartController extends Controller
                 return response()->json(['status' => 0, 'message' => 'Cart not found.'], 404);
             }
 
+            if ($cart->hasUnavailableProductsAtLocation()) {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'One or more items are no longer available at this branch. Please review your cart.',
+                ], 422);
+            }
+
             $fulfillmentType = $cart->fulfillment_type ?: Cart::FULFILLMENT_DELIVERY;
             if (! $cart->partner_location_address_id
                 || ! PartnerLocationCheckoutOption::enabledForLocation(

@@ -212,6 +212,13 @@ class CartController extends Controller
 
         $partnerLocationId = (int) $locationDistance['location']->id;
 
+        if (! $item->isAvailableAtLocation($partnerLocationId)) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'This item is not available at the selected branch.',
+            ], 200);
+        }
+
         try {
             $cart = DB::transaction(function () use (
                 $action,

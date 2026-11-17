@@ -43,6 +43,7 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
     Route::delete('product/{product}/delete', [MerchantItemController::class, 'destroy']);
     Route::post('product/{product}/upload/submit', [MerchantItemController::class, 'uploadImage']);
     Route::put('product/{product}/status/submit', [MerchantItemController::class, 'status']);
+    Route::put('product/{product}/location/{partnerLocation}/status', [MerchantItemController::class, 'locationStatus']);
 
     // Merchant Category
     Route::get('category/list', [MerchantCategoryController::class, 'getList']);
@@ -62,7 +63,6 @@ Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
     Route::post('location/{partnerLocation}/tables', [MerchantDiningTableController::class, 'store']);
     Route::put('location/{partnerLocation}/tables/{diningTable}', [MerchantDiningTableController::class, 'update']);
     Route::delete('location/{partnerLocation}/tables/{diningTable}', [MerchantDiningTableController::class, 'destroy']);
-
     // Merchant Voucher
     Route::get('voucher/list', [MerchantVoucherController::class, 'getList']);
     Route::put('voucher/{voucher}/update/status', [MerchantVoucherController::class, 'updateStatus']);

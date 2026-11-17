@@ -26,4 +26,9 @@ class PartnerLocationTable extends Model
     {
         return $this->belongsTo(PartnerLocation::class, 'partner_location_id');
     }
+
+    public function qrOrderingCode()
+    {
+        return $this->hasOne(QrOrderingCode::class, 'dining_table_id');
+    }
 }
