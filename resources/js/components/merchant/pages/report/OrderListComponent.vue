@@ -112,6 +112,7 @@
                         <span v-else-if="fulfillmentType(order) === 'dine_in'">Table: {{ diningTableLabel(order) }}</span>
                         <br>
                         Mobile: {{ order.cart.mobile }} <br>
+                        <span v-if="order.cancellation_reason" class="d-block mt-2"><strong>Cancellation reason:</strong> {{ order.cancellation_reason }}</span>
 
                     </td>
                     <td width="8%"><span class="order-option-badge" :class="'is-' + fulfillmentType(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(fulfillmentType(order)) }}</span><span v-if="isQrOrder(order)" class="order-source-badge"><i class="fas fa-qrcode" aria-hidden="true"></i>QR order</span></td>
@@ -200,6 +201,11 @@
                     <p v-if="selectedOrder.cart.mobile" class="order-detail-muted">{{ selectedOrder.cart.mobile }}</p>
                   </section>
                 </div>
+
+                <section v-if="selectedOrder.cancellation_reason" class="order-detail-panel">
+                  <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-ban"></i></span><div><h3>Cancellation reason</h3><p>Reason provided when this order was cancelled</p></div></div>
+                  <p class="order-detail-muted mb-0">{{ selectedOrder.cancellation_reason }}</p>
+                </section>
 
           <section v-if="selectedOrderIsCompleted && fulfillmentType(selectedOrder) === 'delivery'" class="order-detail-panel order-detail-proof-panel">
             <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-camera"></i></span><div><h3>Proof of delivery</h3><p>Confirmation provided by the rider</p></div></div>
