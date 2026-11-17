@@ -728,6 +728,18 @@ class OrderController extends Controller
 
     public function cancelOrder(Orders $order, Request $request)
     {
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:1000'],
+        ]);
+        $cancellationReason = trim($validated['message']);
+
+        if ($cancellationReason === '') {
+            return response()->json([
+                'message' => 'Please provide a cancellation reason.',
+                'errors' => ['message' => ['Please provide a cancellation reason.']],
+            ], 422);
+        }
+
         $user = $request->user();
         $merchant = $user?->merchant;
 		$branchId = $this->assignedBranchId($request);
@@ -739,7 +751,7 @@ class OrderController extends Controller
             ], 403);
         }
 
-        $result = DB::transaction(function () use ($merchant, $order, $user, $branchId) {
+        $result = DB::transaction(function () use ($merchant, $order, $user, $branchId, $cancellationReason) {
             $order = Orders::query()
                 ->whereKey($order->getKey())
                 ->where('partner_id', $merchant->id)
@@ -777,6 +789,7 @@ class OrderController extends Controller
             $order->booking_status_id = $order->cart->requiresDelivery()
                 ? BookingStatus::STATUS_BOOKING_CANCELLED
                 : null;
+            $order->cancellation_reason = $cancellationReason;
             $order->save();
 
             OrderProcess::updateOrCreate([
@@ -815,6 +828,7 @@ class OrderController extends Controller
                 : 'Order cancelled successfully.',
             'order_id' => $result['order']->id,
             'order_status_id' => $result['order']->order_status_id,
+            'cancellation_reason' => $result['order']->cancellation_reason,
             'action' => $result['order']->getAction(),
         ]);
     }

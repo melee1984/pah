@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class MerchantOrderAcceptanceTest extends TestCase
@@ -133,6 +134,7 @@ class MerchantOrderAcceptanceTest extends TestCase
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('store_accepted_at')->nullable();
             $table->timestamp('delivered_at')->nullable();
+            $table->text('cancellation_reason')->nullable();
             $table->timestamps();
         });
 
@@ -458,22 +460,52 @@ class MerchantOrderAcceptanceTest extends TestCase
     public function test_merchant_cancellation_queues_one_customer_push(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $cancellationReason = ' Item is no longer available. ';
         $this->mock(RiderOfferDispatcher::class, function ($mock) use ($order) {
             $mock->shouldReceive('cancelOrder')->once()->with($order->id);
         });
 
         $controller = new OrderController;
-        $response = $controller->cancelOrder($order, $this->merchantRequest());
-        $repeatResponse = $controller->cancelOrder($order, $this->merchantRequest());
+        $response = $controller->cancelOrder($order, $this->merchantRequest(message: $cancellationReason));
+        $repeatResponse = $controller->cancelOrder($order, $this->merchantRequest(message: $cancellationReason));
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame('Order cancelled successfully.', $response->getData(true)['message']);
+        $this->assertSame('Item is no longer available.', $response->getData(true)['cancellation_reason']);
         $this->assertSame('Order was already cancelled.', $repeatResponse->getData(true)['message']);
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'cancellation_reason' => 'Item is no longer available.',
+        ]);
+
+        $orderDetails = $controller->show($order, $this->merchantRequest())->getData(true)['order'];
+        $this->assertSame('Item is no longer available.', $orderDetails['cancellation_reason']);
         Queue::assertPushed(
             SendCustomerOrderCancelledPush::class,
             fn ($job) => $job->orderId === $order->id,
         );
         Queue::assertPushed(SendCustomerOrderCancelledPush::class, 1);
+    }
+
+    public function test_merchant_cancellation_requires_a_reason(): void
+    {
+        $order = $this->createOrder(Cart::FULFILLMENT_PICKUP);
+        $this->mock(RiderOfferDispatcher::class, function ($mock) {
+            $mock->shouldNotReceive('cancelOrder');
+        });
+
+        try {
+            (new OrderController)->cancelOrder($order, $this->merchantRequest());
+            $this->fail('Cancelling without a reason should fail validation.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('message', $exception->errors());
+        }
+
+        $this->assertDatabaseHas('order', [
+            'id' => $order->id,
+            'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
+            'cancellation_reason' => null,
+        ]);
     }
 
     private function createOrder(string $fulfillmentType): Orders
@@ -519,7 +551,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         return Orders::findOrFail($orderId);
     }
 
-    private function merchantRequest(?string $action = null): Request
+    private function merchantRequest(?string $action = null, ?string $message = null): Request
     {
         $merchant = new Partners;
         $merchant->id = 20;
@@ -530,6 +562,9 @@ class MerchantOrderAcceptanceTest extends TestCase
         $parameters = ['store_location_id' => 200];
         if ($action) {
             $parameters['action'] = $action;
+        }
+        if ($message !== null) {
+            $parameters['message'] = $message;
         }
 
         $request = Request::create('/api/merchant/orders/1/accept', 'POST', $parameters);

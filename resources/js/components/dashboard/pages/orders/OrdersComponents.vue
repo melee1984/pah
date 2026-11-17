@@ -200,6 +200,11 @@
                   </section>
                 </div>
 
+                <section v-if="selectedOrder.cancellation_reason" class="order-detail-panel">
+                  <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-ban"></i></span><div><h3>Cancellation reason</h3><p>Reason provided when the merchant cancelled this order</p></div></div>
+                  <p class="order-detail-muted mb-0">{{ selectedOrder.cancellation_reason }}</p>
+                </section>
+
           <section v-if="selectedOrderIsCompleted && fulfillmentType(selectedOrder) === 'delivery'" class="order-detail-panel order-detail-proof-panel">
             <div class="order-detail-section-title"><span class="order-detail-icon"><i class="fas fa-camera"></i></span><div><h3>Proof of delivery</h3><p>Confirmation provided by the rider</p></div></div>
             <div v-if="selectedOrder.delivery_proofs && selectedOrder.delivery_proofs.length" class="order-detail-proof-grid">
