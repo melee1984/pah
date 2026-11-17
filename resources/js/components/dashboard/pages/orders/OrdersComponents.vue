@@ -6,6 +6,20 @@
         <span class="dashboard-reload-chip"><i class="fas fa-sync-alt"></i> Refresh in {{ timerInterval }}s</span>
       </div>
       <div class="card-body">
+        <form class="order-date-filter" @submit.prevent="applyDateFilter">
+          <div class="order-date-filter__intro">
+            <label>Order date</label>
+            <small>Showing orders submitted within this date range.</small>
+          </div>
+          <div class="order-date-filter__fields">
+            <label for="dashboard-orders-start-date">From<input id="dashboard-orders-start-date" v-model="startDate" type="date" class="form-control" :max="endDate"></label>
+            <label for="dashboard-orders-end-date">To<input id="dashboard-orders-end-date" v-model="endDate" type="date" class="form-control" :min="startDate"></label>
+          </div>
+          <div class="order-date-filter__actions">
+            <button type="submit" class="btn admin-btn-primary">Apply</button>
+            <button type="button" class="btn admin-btn-secondary" @click="showToday">Today</button>
+          </div>
+        </form>
         <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
           <li class="nav-item">
             <button
@@ -278,6 +292,8 @@
                 selectedOrder: {},
                 modalInstance: null,
                 statuses: [],
+                startDate: this.localDateValue(),
+                endDate: this.localDateValue(),
                 currentPage: 1,
                 pageSize: 10,
                 retryingOrderId: null,
@@ -345,6 +361,27 @@
         },
 
         methods: {
+          localDateValue: function() {
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+
+            return new Date(today.getTime() - offset).toISOString().slice(0, 10);
+          },
+          applyDateFilter: function() {
+            if (!this.startDate || !this.endDate || this.startDate > this.endDate) {
+              toastr.error('Please select a valid order date range.');
+              return;
+            }
+
+            this.currentPage = 1;
+            this.fetchData();
+          },
+          showToday: function() {
+            const today = this.localDateValue();
+            this.startDate = today;
+            this.endDate = today;
+            this.applyDateFilter();
+          },
           fulfillmentType: function(order) {
             return order?.cart?.fulfillment_type || 'delivery';
           },
@@ -455,7 +492,13 @@
           },
           fetchData: function() {
               var self = this;
-              axios.get('/api/dashboard/order/list?api_token='+api_token).then(function (response) {
+              axios.get('/api/dashboard/order/list', {
+                params: {
+                  api_token: api_token,
+                  start_date: this.startDate,
+                  end_date: this.endDate,
+                },
+              }).then(function (response) {
                 self.orders = response.data.orders;
                 self.completedOrders = response.data.completedOrders;
                 self.cancelledOrders = response.data.cancelledOrders;

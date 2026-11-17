@@ -253,6 +253,34 @@
 .order-archive-filter small { color: #7b8798; }
 .order-archive-filter select { max-width: 260px; }
 
+.order-date-filter {
+    align-items: end;
+    background: #f8fafc;
+    border: 1px solid #e5eaf0;
+    border-radius: 0.85rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+    padding: 0.9rem 1rem;
+}
+
+.order-date-filter__intro { margin-right: auto; }
+.order-date-filter__intro > label,
+.order-date-filter__fields label {
+    color: #34445a;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    margin: 0;
+    text-transform: uppercase;
+}
+.order-date-filter__intro small { color: #7b8798; }
+.order-date-filter__fields { display: flex; gap: 0.75rem; }
+.order-date-filter__fields input { margin-top: 0.35rem; min-width: 155px; }
+.order-date-filter__actions { display: flex; gap: 0.5rem; }
+
 .order-fulfillment-row > td:first-child {
     border-left: 3px solid #3b82f6;
 }
@@ -305,4 +333,8 @@
     .order-option-filter__button { min-height: 5.25rem; }
     .order-archive-filter { align-items: stretch; flex-direction: column; }
     .order-archive-filter select { max-width: none; }
+    .order-date-filter { align-items: stretch; flex-direction: column; }
+    .order-date-filter__fields { flex-direction: column; }
+    .order-date-filter__fields input { min-width: 0; }
+    .order-date-filter__actions .btn { flex: 1; }
 }

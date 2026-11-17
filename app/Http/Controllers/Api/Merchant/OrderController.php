@@ -17,8 +17,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class OrderController extends Controller
 {
         //
-    public function getList() 
-    {	
+    public function getList(Request $request)
+    {
+        $validated = $request->validate([
+            'start_date' => ['nullable', 'date_format:Y-m-d'],
+            'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+        ]);
+
+        $startDate = Carbon::createFromFormat('Y-m-d', $validated['start_date'] ?? now()->toDateString())->startOfDay();
+        $endDate = Carbon::createFromFormat('Y-m-d', $validated['end_date'] ?? ($validated['start_date'] ?? now()->toDateString()))->endOfDay();
+
         $totalSummary = array();
         $qty =0;
         $fee =0;
@@ -38,7 +46,8 @@ class OrderController extends Controller
                 'status',
             ])
             ->wherePartnerId(Auth::User()->merchant->id)
-            ->whereNotNull('submitted_at') 
+            ->whereNotNull('submitted_at')
+            ->whereBetween('submitted_at', [$startDate, $endDate])
             ->orderBy('created_at', 'desc')->get();
 
         $deliveries = DB::table('rider_api_deliveries')
@@ -75,7 +84,7 @@ class OrderController extends Controller
          foreach($orders as $order) {
 
             $order->rider;
-            $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
+            $order->submitted_date = ($order->submitted_at ?: $order->created_at)->format('m/d/Y h:i a');
             $summary= $order->cart->cartItemSummary();
             
             $order->cart->cartItemVariance();

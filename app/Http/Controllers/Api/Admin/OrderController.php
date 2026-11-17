@@ -27,10 +27,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 class OrderController extends Controller
 {
    
-    public function getList(RiderDispatchStatus $dispatchStatus, AdminCityScope $cityScope)
-    {	 
+    public function getList(Request $request, RiderDispatchStatus $dispatchStatus, AdminCityScope $cityScope)
+    {
+         $validated = $request->validate([
+             'start_date' => ['nullable', 'date_format:Y-m-d'],
+             'end_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:start_date'],
+         ]);
+
+         $startDate = Carbon::createFromFormat('Y-m-d', $validated['start_date'] ?? now()->toDateString())->startOfDay();
+         $endDate = Carbon::createFromFormat('Y-m-d', $validated['end_date'] ?? ($validated['start_date'] ?? now()->toDateString()))->endOfDay();
+
          $ordersQuery = Orders::with(['cart.payment', 'cart.diningTable', 'orderStatus'])
-                ->whereNotNull('submitted_at') 
+                ->whereNotNull('submitted_at')
+                ->whereBetween('submitted_at', [$startDate, $endDate])
                 ->with(['partner', 'rider', 'status'])
                 ->orderBy('created_at', 'desc');
          $orders = $cityScope->orders($ordersQuery)->get();
@@ -73,7 +82,7 @@ class OrderController extends Controller
             $order->cart->address;
             $order->cart->partnerlocation;
 
-            $order->submitted_date = $order->created_at->format('m/d/Y h:i a');
+            $order->submitted_date = ($order->submitted_at ?: $order->created_at)->format('m/d/Y h:i a');
             $order->summary = $order->cart->cartItemSummary();
             $order->cart->cartItemVariance();
             $order->delivery_proofs = $proofsByOrder->get($order->id, collect())->values();

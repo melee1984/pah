@@ -17,6 +17,20 @@
         </span>
       </div>
       <div class="card-body">
+        <form class="order-date-filter" @submit.prevent="applyDateFilter">
+          <div class="order-date-filter__intro">
+            <label>Order date</label>
+            <small>Showing orders submitted within this date range.</small>
+          </div>
+          <div class="order-date-filter__fields">
+            <label for="merchant-orders-start-date">From<input id="merchant-orders-start-date" v-model="startDate" type="date" class="form-control" :max="endDate"></label>
+            <label for="merchant-orders-end-date">To<input id="merchant-orders-end-date" v-model="endDate" type="date" class="form-control" :min="startDate"></label>
+          </div>
+          <div class="order-date-filter__actions">
+            <button type="submit" class="btn admin-btn-primary" :disabled="isRefreshing">Apply</button>
+            <button type="button" class="btn admin-btn-secondary" :disabled="isRefreshing" @click="showToday">Today</button>
+          </div>
+        </form>
         <div class="dashboard-table-controls"><ul class="nav nav-tabs dashboard-table-tabs" role="tablist">
           <li class="nav-item">
             <button
@@ -276,6 +290,8 @@
                 selectedOrder: {},
                 statuses: [],
                 modalInstance: null,
+                startDate: this.localDateValue(),
+                endDate: this.localDateValue(),
             }
         },
         computed: {
@@ -368,6 +384,26 @@
         },
 
         methods: {
+          localDateValue: function() {
+            const today = new Date();
+            const offset = today.getTimezoneOffset() * 60000;
+
+            return new Date(today.getTime() - offset).toISOString().slice(0, 10);
+          },
+          applyDateFilter: function() {
+            if (!this.startDate || !this.endDate || this.startDate > this.endDate) {
+              toastr.error('Please select a valid order date range.');
+              return;
+            }
+
+            this.fetchData();
+          },
+          showToday: function() {
+            const today = this.localDateValue();
+            this.startDate = today;
+            this.endDate = today;
+            this.applyDateFilter();
+          },
           fulfillmentType: function(order) {
             return order?.cart?.fulfillment_type || 'delivery';
           },
@@ -521,6 +557,8 @@
               params: {
                 api_token: api_token,
                 _refresh: Date.now(),
+                start_date: this.startDate,
+                end_date: this.endDate,
               },
             }).then((response) => {
               const orders = Array.isArray(response.data.orders) ? response.data.orders : [];
