@@ -43,17 +43,31 @@ class PaymentMethod extends Model
         'description',
         'class',
         'active',
+        'available_in_application',
+        'available_in_qr',
     ];
 
     protected function casts(): array
     {
         return [
             'active' => 'boolean',
+            'available_in_application' => 'boolean',
+            'available_in_qr' => 'boolean',
         ];
     }
 
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('active', true);
+    }
+
+    public function scopeForApplication(Builder $query): Builder
+    {
+        return $query->where('available_in_application', true);
+    }
+
+    public function scopeForQr(Builder $query): Builder
+    {
+        return $query->where('available_in_qr', true);
     }
 }

@@ -84,6 +84,8 @@ class MobileCheckoutFulfillmentTest extends TestCase
             $table->id();
             $table->string('title');
             $table->boolean('active')->default(true);
+            $table->boolean('available_in_application')->default(true);
+            $table->boolean('available_in_qr')->default(true);
             $table->timestamps();
         });
 
@@ -182,6 +184,20 @@ class MobileCheckoutFulfillmentTest extends TestCase
 
         $this->assertSame(0, $response['status']);
         $this->assertSame('The selected delivery address is invalid.', $response['message']);
+    }
+
+    public function test_qr_only_payment_method_is_rejected_by_application_checkout(): void
+    {
+        DB::table('payment_method')->where('id', 1)->update([
+            'available_in_application' => false,
+            'available_in_qr' => true,
+        ]);
+        $optionId = $this->createCheckoutOption('pickup');
+
+        $response = $this->submitCheckout('qr-only-payment-session', $optionId);
+
+        $this->assertSame(0, $response['status']);
+        $this->assertSame('The selected payment method is invalid.', $response['message']);
     }
 
     public function test_updating_to_pickup_removes_delivery_charges_and_recomputes_summary(): void

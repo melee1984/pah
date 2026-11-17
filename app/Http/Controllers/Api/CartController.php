@@ -132,7 +132,7 @@ class CartController extends Controller
         $data['summary'] = $cart_summary;
         $data['customer'] = $user;
         $data['cart'] = $cart;
-        $data['payment'] = PaymentMethod::active()->orderBy('id')->get();
+        $data['payment'] = PaymentMethod::active()->forApplication()->orderBy('id')->get();
         $data['delivery_time'] = $delivery_timings;
         
         return response()->json($data, 200);
@@ -427,7 +427,7 @@ class CartController extends Controller
         } else {
             $session_id = Session::getId();
             $cart = Cart::whereSessionId($session_id)->first();
-            $paymentMethod = PaymentMethod::active()->find($request->integer('payment'));
+            $paymentMethod = PaymentMethod::active()->forApplication()->find($request->integer('payment'));
 
             if (! $cart || ! $paymentMethod) {
                 return response()->json([
@@ -640,7 +640,7 @@ class CartController extends Controller
                 }
             }
 
-            if (! PaymentMethod::active()->whereKey($cart->payment_id)->exists()) {
+            if (! PaymentMethod::active()->forApplication()->whereKey($cart->payment_id)->exists()) {
                 return response()->json([
                     'status' => 0,
                     'message' => 'The selected payment gateway is no longer available. Please select another one.',

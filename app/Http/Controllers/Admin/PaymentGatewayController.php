@@ -51,6 +51,8 @@ class PaymentGatewayController extends Controller
             'description' => ['nullable', 'string', 'max:250'],
             'class' => ['nullable', 'string', 'max:20', 'regex:/^[a-z0-9_-]+$/i'],
             'active' => ['required', 'boolean'],
+            'available_in_application' => ['required', 'boolean'],
+            'available_in_qr' => ['required', 'boolean'],
         ], [
             'class.regex' => 'The icon name may only contain letters, numbers, underscores, and dashes.',
         ]);

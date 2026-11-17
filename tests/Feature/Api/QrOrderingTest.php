@@ -130,6 +130,8 @@ class QrOrderingTest extends TestCase
             $table->text('description')->nullable();
             $table->string('class')->nullable();
             $table->boolean('active')->default(true);
+            $table->boolean('available_in_application')->default(true);
+            $table->boolean('available_in_qr')->default(true);
             $table->timestamps();
         });
 
@@ -308,6 +310,28 @@ class QrOrderingTest extends TestCase
             ->assertJsonPath('menu.0.price', '90.00')
             ->assertJsonPath('menu.0.original_price', '120.00')
             ->assertJsonPath('menu.0.promo_price', '90.00');
+    }
+
+    public function test_application_only_payment_method_is_hidden_and_rejected_by_qr_ordering(): void
+    {
+        DB::table('payment_method')->where('id', 3)->update([
+            'available_in_application' => true,
+            'available_in_qr' => false,
+        ]);
+
+        $this->getJson($this->baseUrl().'/menu')
+            ->assertOk()
+            ->assertJsonCount(0, 'payment_methods');
+
+        $session = $this->createQrSession();
+
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->postJson($this->baseUrl()."/carts/{$session['session_id']}/checkout", [
+                'full_name' => 'Guest Customer',
+                'mobile' => '09171234567',
+                'payment_method_id' => 3,
+            ])->assertUnprocessable()
+            ->assertJsonValidationErrors('payment_method_id');
     }
 
     public function test_guest_can_add_to_cart_and_fetch_summary(): void

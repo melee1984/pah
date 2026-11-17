@@ -92,7 +92,7 @@ class QrOrderingController extends Controller
             ] : null,
             'categories' => $categories,
             'menu' => $products,
-            'payment_methods' => PaymentMethod::active()->orderBy('id')->get([
+            'payment_methods' => PaymentMethod::active()->forQr()->orderBy('id')->get([
                 'id',
                 'title',
                 'description',
@@ -314,7 +314,9 @@ class QrOrderingController extends Controller
             'payment_method_id' => [
                 'required',
                 'integer',
-                Rule::exists('payment_method', 'id')->where('active', true),
+                Rule::exists('payment_method', 'id')
+                    ->where('active', true)
+                    ->where('available_in_qr', true),
             ],
         ]);
 

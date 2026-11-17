@@ -90,7 +90,7 @@ class CheckoutController extends Controller
         $data['customer'] = $user;
         $data['partner_order_options'] = $cart->partnerlocation->checkoutOptions ?? [];
         $data['cart'] = $cart;
-        $data['payment'] = PaymentMethod::active()->orderBy('id')->get();
+        $data['payment'] = PaymentMethod::active()->forApplication()->orderBy('id')->get();
         $data['delivery_time'] = $delivery_timings;
 
         \Log::info('Checkout data: ' . json_encode($data));
@@ -331,7 +331,8 @@ class CheckoutController extends Controller
             }
         }
 
-        $paymentMethod = PaymentMethod::where('id', $request->input('deliveryPaymentId'))
+        $paymentMethod = PaymentMethod::forApplication()
+            ->where('id', $request->input('deliveryPaymentId'))
             ->where('active', 1)
             ->first();
 
