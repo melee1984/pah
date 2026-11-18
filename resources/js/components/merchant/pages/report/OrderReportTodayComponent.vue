@@ -41,7 +41,7 @@
             <tr v-for="order in orders" :key="order.id">
               <td><strong>{{ order.completed_date }}</strong><small>Completion time</small></td>
               <td><a class="dashboard-order-link" :href="orderDetailsUrl(order)"><i class="fas fa-receipt"></i> #{{ order.cart.order_no }}</a><small>{{ order.cart.fullname || 'Customer not available' }}</small></td>
-              <td><span class="order-option-badge" :class="'is-' + fulfillmentTypeFor(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(order) }}</span></td>
+              <td><span class="order-option-badge" :class="'is-' + fulfillmentTypeFor(order)"><i :class="fulfillmentIcon(order)" aria-hidden="true"></i>{{ fulfillmentLabel(order) }}</span><span v-if="isQrOrder(order)" class="order-source-badge"><i class="fas fa-qrcode" aria-hidden="true"></i>QR order</span></td>
               <td><span class="admin-number-pill">{{ order.summary.qty }}</span></td>
               <td><span class="dashboard-money">{{ money(order.summary.sub_total) }}</span></td>
               <td><span class="dashboard-money">{{ money(order.summary.convenience_fee) }}</span></td>
@@ -126,6 +126,9 @@ export default {
     },
     fulfillmentIcon(order) {
       return { delivery: 'fas fa-motorcycle', pickup: 'fas fa-shopping-bag', dine_in: 'fas fa-utensils' }[this.fulfillmentTypeFor(order)] || 'fas fa-motorcycle';
+    },
+    isQrOrder(order) {
+      return order?.cart?.order_source === 'qr_ordering';
     },
     number(value) {
       const parsed = Number(String(value ?? 0).replace(/,/g, ''));
