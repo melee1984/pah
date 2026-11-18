@@ -166,7 +166,7 @@ class MobileCheckoutFulfillmentTest extends TestCase
         ]);
 
         $response = $this->submitCheckout('dine-in-session', $optionId, [
-            'dining_table_id' => $tableId,
+            'diningTableId' => $tableId,
         ]);
 
         $this->assertSame(0, $response['status']);

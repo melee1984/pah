@@ -32,6 +32,11 @@ class Orders extends Model
 	 * [cart description]
 	 * @return [type] [description]
 	 */
+    public function billRound()
+    {
+        return $this->hasOne(\App\DiningBillOrder::class, 'order_id');
+    }
+
     public function cart() 
     {
          return $this->hasOne('App\Model\Cart', 'id', 'cart_id')->with('partner');
@@ -172,9 +177,9 @@ class Orders extends Model
                 'send_to_rider' => $requiresDelivery,
             ],
             LibraryStatus::STATUS_READY_FOR_PICKUP => [
-                'label' => $isPickup ? 'Ready for Customer Pickup' : 'Waiting for Rider to Pickup',
-                'button' => $isPickup ? [
-                    'label' => 'Complete Order',
+                'label' => $isPickup ? 'Ready for Customer Pickup' : ($requiresDelivery ? 'Waiting for Rider to Pickup' : 'Ready to Serve'),
+                'button' => ($isPickup || ! $requiresDelivery) ? [
+                    'label' => $isPickup ? 'Complete Order' : 'Mark Served',
                     'action' => 'complete',
                 ] : null,
                 'cancel' => [

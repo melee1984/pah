@@ -406,6 +406,14 @@ Route::post('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\
 
 Route::middleware('merchant')->group(function () {
 
+    Route::get('merchant/staff', [\App\Http\Controllers\Merchant\StaffController::class, 'index'])->name('merchant.staff.index');
+    Route::get('merchant/staff/data', [\App\Http\Controllers\Merchant\StaffController::class, 'data'])->name('merchant.staff.data');
+    Route::post('merchant/staff/orders/{order}/transition', [\App\Http\Controllers\Merchant\StaffController::class, 'transition'])->whereNumber('order')->name('merchant.staff.transition');
+    Route::post('merchant/staff/bills/{bill}/release', [\App\Http\Controllers\Merchant\StaffController::class, 'release'])->whereNumber('bill')->name('merchant.staff.release');
+    Route::get('merchant/staff/bills/{bill}/receipt', [\App\Http\Controllers\Merchant\StaffController::class, 'receipt'])->whereNumber('bill')->name('merchant.staff.receipt');
+    Route::post('merchant/staff/bills/{bill}/payment', [\App\Http\Controllers\Merchant\StaffController::class, 'payment'])->whereNumber('bill')->name('merchant.staff.payment');
+    Route::patch('merchant/staff/tables/{table}', [\App\Http\Controllers\Merchant\StaffController::class, 'table'])->whereNumber('table')->name('merchant.staff.table');
+
     Route::get('merchant/password/change', [\App\Http\Controllers\Merchant\PasswordController::class, 'edit'])->name('merchant.password.edit');
     Route::post('merchant/password/change', [\App\Http\Controllers\Merchant\PasswordController::class, 'update'])
         ->middleware('throttle:10,1')

@@ -33,7 +33,7 @@
                         <p>Placed {{ optional($order->submitted_at ?: $order->created_at)->format('m/d/Y h:i a') ?? 'Date unavailable' }}</p>
                     </div>
                     <div class="order-detail-statuses">
-                        @if($order->orderStatus)<span class="order-detail-status {{ $statusClass($order->orderStatus->id) }}"><small>Order</small>{{ $order->orderStatus->title }}</span>@endif
+                        @if($order->orderStatus)<span class="order-detail-status {{ $statusClass($order->orderStatus->id) }}"><small>Order</small>{{ $fulfillmentType === 'dine_in' && (int) $order->order_status_id === 4 ? 'Ready to Serve' : $order->orderStatus->title }}</span>@endif
                         @if($order->status)<span class="order-detail-status {{ $statusClass($order->status->id) }}"><small>Delivery</small>{{ $order->status->title }}</span>@endif
                     </div>
                 </header>

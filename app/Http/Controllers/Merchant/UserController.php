@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Merchant;
 use App\Http\Controllers\Controller;
 use App\MerchantBranchUser;
 use App\Partners;
+use App\Support\MerchantStaffRoles;
 use App\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,7 @@ class UserController extends Controller
         return view('merchant.pages.users.index', [
             'branches' => $merchant->locations()->orderBy('address_1')->orderBy('city')->get(),
             'merchantUsers' => MerchantBranchUser::query()
-                ->with(['user', 'branch'])
+                ->with(['user.roles', 'branch'])
                 ->where('partner_id', $merchant->id)
                 ->orderByDesc('active')
                 ->latest()
@@ -34,6 +35,7 @@ class UserController extends Controller
     {
         $merchant = $this->ownedMerchant();
         $validated = $request->validate([
+            'role' => ['required', Rule::in(array_keys(MerchantStaffRoles::LABELS))],
             'firstname' => ['required', 'string', 'max:100'],
             'lastname' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
@@ -62,7 +64,7 @@ class UserController extends Controller
 
             $user = new User;
             $user->forceFill($attributes)->save();
-            $user->assignRole('partner');
+            $user->assignRole($validated['role']);
 
             MerchantBranchUser::query()->create([
                 'user_id' => $user->id,
@@ -89,16 +91,34 @@ class UserController extends Controller
                 Rule::exists('partner_location', 'id')->where('partner_id', $merchant->id),
             ],
             'active' => ['required', 'boolean'],
+            'role' => ['nullable', Rule::in(array_keys(MerchantStaffRoles::LABELS))],
         ]);
 
-        $merchantUser->update([
-            'partner_location_id' => $validated['partner_location_id'],
-            'active' => $validated['active'],
-        ]);
+        abort_if((int) $merchantUser->user_id === (int) $merchant->user_id, 403);
 
-        if (! $merchantUser->active) {
-            $merchantUser->user()->update(['api_token' => null]);
-        }
+        DB::transaction(function () use ($merchantUser, $validated) {
+            $accessChanged = (int) $merchantUser->partner_location_id !== (int) $validated['partner_location_id'];
+            $merchantUser->update([
+                'partner_location_id' => $validated['partner_location_id'],
+                'active' => $validated['active'],
+            ]);
+
+            if (isset($validated['role'])) {
+                $user = $merchantUser->user;
+                $accessChanged = $accessChanged || ! $user->hasRole($validated['role']);
+                // Only replace merchant staff roles; preserve unrelated account roles.
+                foreach (['partner', 'kitchen', 'cashier'] as $role) {
+                    if ($user->hasRole($role)) {
+                        $user->removeRole($role);
+                    }
+                }
+                $user->assignRole($validated['role']);
+            }
+
+            if (! $merchantUser->active || $accessChanged) {
+                $merchantUser->user()->update(['api_token' => null]);
+            }
+        });
 
         return redirect()->route('merchant.dashboard.users.index')
             ->with('success', 'Branch user assignment updated successfully.');

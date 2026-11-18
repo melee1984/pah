@@ -62,7 +62,16 @@ class DashboardController extends Controller
 					return redirect()->route('merchant.password.edit');
 				}
 
-				return redirect()->intended('merchant/dashboard');	
+				if ($user->isMerchantStaff()) {
+                    $assignment = $user->merchantBranchAssignment()->where('active', true)->first();
+                    if (! $assignment || ! $assignment->branch || (int) $assignment->branch->partner_id !== (int) $assignment->partner_id) {
+                        Auth::guard('web')->logout();
+                        abort(403, 'No active branch is assigned to this login.');
+                    }
+                    return redirect()->route('merchant.staff.index');
+                }
+
+                return redirect()->intended('merchant/dashboard');
 	         }
 	         else {
   	        	return back()

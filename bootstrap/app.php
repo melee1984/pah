@@ -47,6 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin.manage' => \App\Http\Middleware\ManageManagers::class,
             'rider.application' => \App\Http\Middleware\AuthenticateRiderApplication::class,
             'rider.approved' => \App\Http\Middleware\EnsureApprovedRider::class,
+            'merchant.staff.access' => \App\Http\Middleware\EnsureMerchantStaffAccess::class,
             'merchant.branch' => \App\Http\Middleware\EnsureMerchantBranch::class,
             'qr.session' => \App\Http\Middleware\AuthenticateQrOrderingSession::class,
             'turnstile' => \App\Http\Middleware\ValidateTurnstile::class,

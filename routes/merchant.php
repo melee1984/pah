@@ -21,7 +21,7 @@ Route::post('merchant/forgot/submit', [PartnerController::class, 'resetPassword'
     ->middleware(['throttle:5,1', 'turnstile:merchant_password_reset']);
 
 // Merchant dashboard API
-Route::middleware(['api', 'web'])->group(function () {
+Route::middleware(['api', 'web', 'merchant.staff.access'])->group(function () {
     Route::get('merchant/order/list', [MerchantOrderController::class, 'getList']);
     Route::post('merchant/order/search/list', [MerchantOrderController::class, 'getListwithFilter']);
     Route::get('/merchant/dashboard/order/summary', [MerchantOrderController::class, 'orderSummary']);
@@ -33,7 +33,7 @@ Route::middleware(['api', 'web'])->group(function () {
 // MERCHANT OPEN APIs (No Auth)
 // ----------------------------------------------------------------------
 
-Route::prefix('merchant')->middleware(['api', 'web'])->group(function () {
+Route::prefix('merchant')->middleware(['api', 'web', 'merchant.staff.access'])->group(function () {
         
     Route::post('product/submit', [MerchantItemController::class, 'store']);
     Route::get('product/requirement', [MerchantItemController::class, 'requirementList']);
@@ -97,7 +97,7 @@ Route::group(['middleware' => 'isRequest'], function () {
         Route::post('account/login', [AccessController::class, 'loginStore']);
         Route::post('login/submit', [AccessController::class, 'loginStore']);
 
-        Route::group(['middleware' => ['auth:api', 'merchant.branch']], function () {
+        Route::group(['middleware' => ['auth:api', 'merchant.branch', 'merchant.staff.access']], function () {
 
             Route::post('account/logout', [AccessController::class, 'postLogout']);
             // Route::post('token/save', [StoreOrderController::class, 'saveToken'])->name('merchant.save-token');

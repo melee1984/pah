@@ -2,38 +2,21 @@
 
 namespace App\Http\Middleware;
 
-
+use App\Partners;
 use Closure;
-use Auth;
-use URL;
+use Illuminate\Http\Request;
 
 class isMerchant
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
-     */
-    public function handle($request, Closure $next)
+    public function handle(Request $request, Closure $next)
     {
-        if (Auth::guard('web')->check()) {
-                // if (auth()->user()->isMerchantVerified()) {
-                    return $next($request);
-                // }
-                // else {
-                //     if ($request->path() == "merchant/verify-status") {
-                //         return $next($request);    
-                //     } else {
-                //         return redirect('merchant/verify-status');
-                      
-                //     }
-                // }
-        }
-        else {
+        $user = $request->user('web');
+        if (! $user) {
             return redirect('merchant/dashboard/login');
         }
-       
+
+        abort_unless($user->isMerchant() || Partners::where('user_id', $user->id)->exists(), 403);
+
+        return app(EnsureMerchantStaffAccess::class)->handle($request, $next);
     }
 }

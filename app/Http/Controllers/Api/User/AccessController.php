@@ -599,6 +599,8 @@ class AccessController extends Controller
               'selected_branch' => $selectedBranch,
               'requires_branch_selection' => $merchantAccessType === 'parent' && $branches->count() > 1,
               'merchant_access_type' => $merchantAccessType,
+              'staff_role' => $user->isMerchantStaff() ? $user->getRoleNames()->first(fn ($role) => in_array($role, ['kitchen', 'cashier'], true)) : null,
+              'staff_permissions' => $user->isMerchantStaff() ? $user->getAllPermissions()->pluck('name')->values() : [],
               'is_parent_merchant' => $merchantAccessType === 'parent',
               'is_with_sms_otp' => true
             ]);

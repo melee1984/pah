@@ -11,6 +11,8 @@ import axios from 'axios';
 window.axios = axios;
 
 import Vue from 'vue';
+import StaffWorkspace from '@/components/merchant/pages/staff/StaffWorkspace.vue';
+Vue.component('merchant-staff-workspace', StaffWorkspace);
 window.AppEvents = new Vue();
 
 // Restaurants 

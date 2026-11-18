@@ -143,7 +143,7 @@
                     </td>
                     <td width="10%">
                       <span v-if="order.order_status">
-                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.order_status_id)">{{ order.order_status.title }}</span>
+                        <span class="dashboard-status-pill" :class="statusBadgeClass(order.order_status_id)">{{ order.cart?.fulfillment_type === 'dine_in' && Number(order.order_status_id) === 4 ? 'Ready to Serve' : order.order_status.title }}</span>
                       </span>
                       <span v-else class="text-muted">—</span>
                     </td>
@@ -174,7 +174,7 @@
             </div>
             <div class="order-detail-header-actions">
               <div class="order-detail-statuses">
-                <span v-if="selectedOrder?.order_status" class="order-detail-status" :class="statusClassForModal(selectedOrder.order_status.id)"><small>Order</small>{{ selectedOrder.order_status.title }}</span>
+                <span v-if="selectedOrder?.order_status" class="order-detail-status" :class="statusClassForModal(selectedOrder.order_status.id)"><small>Order</small>{{ selectedOrder.cart?.fulfillment_type === 'dine_in' && Number(selectedOrder.order_status_id) === 4 ? 'Ready to Serve' : selectedOrder.order_status.title }}</span>
                 <span v-if="selectedOrder?.status" class="order-detail-status" :class="statusClassForModal(selectedOrder.status.id)"><small>Delivery</small>{{ selectedOrder.status.title }}</span>
               </div>
               <button type="button" class="order-detail-close" @click="closeOrderDetails" aria-label="Close order details"><i class="fas fa-times"></i></button>

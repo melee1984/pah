@@ -109,6 +109,10 @@ class QrOrderingController extends Controller
     ): JsonResponse {
         $code = $this->resolveCode($uuid, $branchId);
 
+        if ($code->diningTable && ! $code->diningTable->is_available) {
+            return $this->failure('Ordering is paused for this table. Please ask a member of staff.', 409);
+        }
+
         if (! $code->partner->store_open) {
             return $this->failure('This restaurant is currently closed.', 409);
         }
@@ -339,6 +343,13 @@ class QrOrderingController extends Controller
                     }
 
                     throw new \DomainException('This cart has already been checked out.');
+                }
+
+                if ($code->dining_table_id) {
+                    $table = \App\PartnerLocationTable::whereKey($code->dining_table_id)->lockForUpdate()->first();
+                    if (! $table || ! $table->active || ! $table->is_available) {
+                        throw new \DomainException('Ordering is paused for this table. Please ask a member of staff.');
+                    }
                 }
 
                 if (! $cart->details()->exists()) {

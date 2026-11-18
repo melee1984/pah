@@ -527,6 +527,18 @@ class OrderController extends Controller
         $merchant = $user?->merchant;
 		$branchId = $this->assignedBranchId($request);
 
+        if ($order->cart?->fulfillment_type === Cart::FULFILLMENT_DINE_IN) {
+            abort_unless($merchant, 403, 'Merchant account not found.');
+            $updated = app(\App\Services\DiningRoom::class)->transition(
+                $order->id, $merchant->id, $branchId, 'ready', $user->id,
+            );
+
+            return response()->json([
+                'status' => 1, 'message' => 'Order is ready to serve.', 'order_id' => $updated->id,
+                'order_status_id' => $updated->order_status_id, 'action' => $updated->getAction(),
+            ]);
+        }
+
         if (! $merchant) {
             return response()->json([
                 'status' => 0,
@@ -640,6 +652,18 @@ class OrderController extends Controller
         $user = $request->user();
         $merchant = $user?->merchant;
 		$branchId = $this->assignedBranchId($request);
+
+        if ($order->cart?->fulfillment_type === Cart::FULFILLMENT_DINE_IN) {
+            abort_unless($merchant, 403, 'Merchant account not found.');
+            $updated = app(\App\Services\DiningRoom::class)->transition(
+                $order->id, $merchant->id, $branchId, 'served', $user->id,
+            );
+
+            return response()->json([
+                'status' => 1, 'message' => 'Order served successfully.', 'order_id' => $updated->id,
+                'order_status_id' => $updated->order_status_id, 'action' => $updated->getAction(),
+            ]);
+        }
 
         if (! $merchant) {
             return response()->json([

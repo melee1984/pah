@@ -210,6 +210,24 @@ class MerchantLoginBranchTest extends TestCase
         ], $response->getData(true));
     }
 
+    public function test_staff_login_reports_role_permissions_and_only_the_assigned_branch(): void
+    {
+        $this->merchantUser->syncRoles(['cashier']);
+        $this->postMerchantLogin(['merchant_location_id' => 10])
+            ->assertOk()->assertJsonPath('staff_role', 'cashier')
+            ->assertJsonPath('merchant_location_id', 11)->assertJsonCount(1, 'branches')
+            ->assertJsonFragment(['branch.payments.record']);
+    }
+
+    public function test_staff_token_cannot_change_products_or_store_settings(): void
+    {
+        $this->merchantUser->syncRoles(['kitchen']);
+        $token = $this->postMerchantLogin()->json('access_token');
+        auth()->forgetGuards();
+        $this->withToken($token)->postJson('/api/merchant/products/status/update', [])->assertForbidden();
+        $this->withToken($token)->postJson('/api/merchant/toggle/store/online', [])->assertForbidden();
+    }
+
     private function postMerchantLogin(array $overrides = [], ?User $user = null)
     {
         $user ??= $this->merchantUser;

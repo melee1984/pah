@@ -345,7 +345,7 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertNotNull(Orders::find($order->id)->delivered_at);
     }
 
-    public function test_dine_in_order_becomes_completed_when_ready_to_serve(): void
+    public function test_dine_in_order_is_ready_before_it_is_served(): void
     {
         $order = $this->createOrder(Cart::FULFILLMENT_DINE_IN);
         $controller = new OrderController;
@@ -367,9 +367,14 @@ class MerchantOrderAcceptanceTest extends TestCase
         $this->assertSame(200, $response->getStatusCode());
         $this->assertDatabaseHas('order', [
             'id' => $order->id,
-            'order_status_id' => LibraryStatus::STATUS_COMPLETED,
+            'order_status_id' => LibraryStatus::STATUS_READY_FOR_PICKUP,
             'booking_status_id' => null,
         ]);
+        $this->assertNull(Orders::find($order->id)->delivered_at);
+        $this->assertSame('Ready to Serve', Orders::find($order->id)->getAction()['label']);
+        $completed = $controller->completeOrder($order, $this->merchantRequest());
+        $this->assertSame(200, $completed->getStatusCode());
+        $this->assertSame(LibraryStatus::STATUS_COMPLETED, (int) Orders::find($order->id)->order_status_id);
         $this->assertNotNull(Orders::find($order->id)->delivered_at);
     }
 

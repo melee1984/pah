@@ -89,9 +89,14 @@ class User extends Authenticatable
      */
     public function isMerchant() 
     {
-        return $this->hasRole('partner');
+        return $this->hasAnyRole(['partner', 'kitchen', 'cashier']);
     }
     
+    public function isMerchantStaff(): bool
+    {
+        return $this->hasAnyRole(['kitchen', 'cashier']);
+    }
+
     /**
      * [merchant description]
      * @return [type] [description]

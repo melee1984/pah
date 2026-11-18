@@ -4,7 +4,7 @@
 <div class="content-wrapper admin-content-wrapper">
   <section class="content-header"><div class="container-fluid">
     <div class="admin-page-heading">
-      <div><span class="admin-eyebrow">Access management</span><h1>Branch users</h1><p>Create a separate merchant login for each branch operator.</p></div>
+      <div><span class="admin-eyebrow">Access management</span><h1>Branch users</h1><p>Create Kitchen and Cashier logins for an assigned branch.</p></div>
       <ol class="breadcrumb"><li class="breadcrumb-item"><a href="{{ route('merchant.dashboard.index') }}">Dashboard</a></li><li class="breadcrumb-item active">Branch users</li></ol>
     </div>
   </div></section>
@@ -27,7 +27,8 @@
                 <div class="form-group"><label for="branch-user-lastname">Last name</label><input id="branch-user-lastname" class="form-control" name="lastname" value="{{ old('lastname') }}" required></div>
                 <div class="form-group merchant-form-span"><label for="branch-user-email">Email address</label><input id="branch-user-email" class="form-control" type="email" name="email" value="{{ old('email') }}" required></div>
                 <div class="form-group merchant-form-span"><label for="branch-user-mobile">Mobile number</label><input id="branch-user-mobile" class="form-control" name="mobile" value="{{ old('mobile') }}" required></div>
-                <div class="form-group merchant-form-span"><label for="branch-user-location">Designated branch</label><select id="branch-user-location" class="form-control" name="partner_location_id" required><option value="">Select a branch</option>@foreach ($branches as $branch)<option value="{{ $branch->id }}" @selected((int) old('partner_location_id') === (int) $branch->id)>{{ $branch->address_1 }}{{ $branch->city ? ', '.$branch->city : '' }}</option>@endforeach</select><small class="form-text text-muted">This login can access only this branch in the merchant mobile application.</small></div>
+                <div class="form-group merchant-form-span"><label for="branch-user-location">Designated branch</label><select id="branch-user-location" class="form-control" name="partner_location_id" required><option value="">Select a branch</option>@foreach ($branches as $branch)<option value="{{ $branch->id }}" @selected((int) old('partner_location_id') === (int) $branch->id)>{{ $branch->address_1 }}{{ $branch->city ? ', '.$branch->city : '' }}</option>@endforeach</select><small class="form-text text-muted">This login is restricted to its designated branch and role.</small></div>
+                <div class="form-group merchant-form-span"><label for="branch-user-role">Role</label><select id="branch-user-role" class="form-control" name="role" required><option value="">Select a role</option>@foreach (\App\Support\MerchantStaffRoles::LABELS as $value => $label)<option value="{{ $value }}" @selected(old('role') === $value)>{{ $label }}</option>@endforeach</select><small class="form-text text-muted">Kitchen: incoming branch orders and preparation. Cashier: branch tables, open bills, and payment recording.</small></div>
                 <div class="form-group"><label for="branch-user-password">Temporary password</label><input id="branch-user-password" class="form-control" type="password" name="password" minlength="8" required></div>
                 <div class="form-group"><label for="branch-user-password-confirmation">Confirm password</label><input id="branch-user-password-confirmation" class="form-control" type="password" name="password_confirmation" minlength="8" required></div>
               </div>
@@ -51,6 +52,7 @@
                       @csrf @method('PATCH')
                       <div class="d-flex align-items-center flex-wrap">
                         <select class="form-control mr-2 mb-2" name="partner_location_id" required>@foreach ($branches as $branch)<option value="{{ $branch->id }}" @selected((int) $assignment->partner_location_id === (int) $branch->id)>{{ $branch->address_1 }}{{ $branch->city ? ', '.$branch->city : '' }}</option>@endforeach</select>
+                        <select class="form-control mr-2 mb-2" name="role" aria-label="Role for {{ $assignment->user->fullname }}">@if (! $assignment->user->isMerchantStaff())<option value="" selected>Existing branch operator (unchanged)</option>@endif @foreach (\App\Support\MerchantStaffRoles::LABELS as $value => $label)<option value="{{ $value }}" @selected($assignment->user->hasRole($value))>{{ $label }}</option>@endforeach</select>
                         <select class="form-control mr-2 mb-2" name="active" required><option value="1" @selected($assignment->active)>Active</option><option value="0" @selected(! $assignment->active)>Disabled</option></select>
                       </div>
                       <button class="btn admin-btn-secondary mb-2" type="submit">Save</button>

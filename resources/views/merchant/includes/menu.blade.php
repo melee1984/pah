@@ -6,6 +6,9 @@
     </a>
   </li>
 
+  <li class="nav-header merchant-nav-section">Dining service</li>
+  <li class="nav-item"><a href="{{ route('merchant.staff.index') }}" class="nav-link"><i class="nav-icon fas fa-cash-register"></i><p>Cashier workspace</p></a></li>
+  <li class="nav-item"><a href="{{ route('merchant.staff.index', ['view' => 'kitchen']) }}" class="nav-link"><i class="nav-icon fas fa-utensils"></i><p>Kitchen display</p></a></li>
   <li class="nav-header merchant-nav-section">Manage store</li>
   <li class="nav-item">
     <a href="{{ route('merchant.dashboard.orders') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.orders') || request()->routeIs('merchant.orders.*') || request()->routeIs('merchant.dashboard.previous-order') ? 'active' : '' }}">
@@ -54,19 +57,6 @@
     </a>
   </li>
 
-  <li class="nav-header merchant-nav-section">Finance</li>
-  <li class="nav-item">
-    <a href="{{ route('merchant.dashboard.report.soa') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.report.soa*') ? 'active' : '' }}">
-      <i class="nav-icon fas fa-file-invoice-dollar"></i><p>Statements of account</p>
-    </a>
-  </li>
-
-  <li class="nav-header merchant-nav-section">Business account</li>
-  <li class="nav-item">
-    <a href="{{ route('merchant.dashboard.settings') }}" class="nav-link {{ request()->routeIs('merchant.dashboard.settings') ? 'active' : '' }}">
-      <i class="nav-icon fas fa-store"></i><p>Business profile</p>
-    </a>
-  </li>
   @if (Auth::User()->merchant?->requiresEnrollmentReview())
     <li class="nav-item">
       <a href="{{ route('merchant.application.show') }}" class="nav-link {{ request()->routeIs('merchant.application.*') ? 'active' : '' }}">

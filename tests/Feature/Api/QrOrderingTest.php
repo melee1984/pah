@@ -394,6 +394,8 @@ class QrOrderingTest extends TestCase
             'partner_id' => $this->partnerId,
             'order_status_id' => 1,
         ]);
+        $this->assertDatabaseHas('dining_bills', ['partner_id' => $this->partnerId, 'partner_location_id' => $this->branchId, 'dining_table_id' => $this->tableId, 'status' => 'open']);
+        $this->assertDatabaseHas('dining_bill_orders', ['order_id' => DB::table('order')->value('id'), 'round' => 1]);
         Event::assertDispatched(SendPushNotificationEvent::class);
     }
 
@@ -530,6 +532,18 @@ class QrOrderingTest extends TestCase
             'label' => 'Table 8',
             'active' => true,
         ]);
+    }
+
+    public function test_pausing_a_table_blocks_new_items_and_checkout_but_keeps_the_menu_readable(): void
+    {
+        $session = $this->createQrSession();
+        $url = $this->baseUrl()."/carts/{$session['session_id']}";
+        $this->withHeader('X-QR-Session-Token', $session['token'])->postJson($url.'/items', ['product_id' => $this->productId])->assertCreated();
+        DB::table('partner_location_tables')->where('id', $this->tableId)->update(['is_available' => false]);
+        $this->postJson($url.'/items', ['product_id' => $this->productId])->assertConflict();
+        $this->postJson($url.'/checkout', ['full_name' => 'Guest', 'mobile' => '09171234567', 'payment_method_id' => 3])->assertConflict();
+        $this->getJson($this->baseUrl().'/menu')->assertOk();
+        $this->assertDatabaseCount('order', 0);
     }
 
     private function baseUrl(): string
