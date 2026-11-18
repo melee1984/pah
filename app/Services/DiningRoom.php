@@ -67,13 +67,15 @@ class DiningRoom
                     $names[] = $value;
                 }
             });
+            $names = array_values(array_unique($names));
 
             return [
                 'name' => $item->item?->title ?? 'Unavailable menu item',
                 'qty' => (int) $item->qty,
                 'unit_price' => (int) round(((float) $item->price + (float) $item->variance_total) * 100),
                 'note' => $item->instruction,
-                'variants' => implode(', ', array_unique($names)),
+                'variants' => implode(', ', $names),
+                'variant_options' => $names,
             ];
         })->all();
     }
@@ -135,9 +137,11 @@ class DiningRoom
             $bill = DiningBill::whereKey($bill->id)->lockForUpdate()->firstOrFail();
             $existing = DiningPayment::where('idempotency_key', $input['idempotency_key'])->first();
             if ($existing) {
+                $requestedTendered = isset($input['cash_tendered_cents']) ? (int) $input['cash_tendered_cents'] : null;
                 abort_unless((int) $existing->dining_bill_id === (int) $bill->id
                     && (int) $existing->payment_method_id === (int) $input['payment_method_id']
                     && (int) $existing->amount_cents === (int) $input['expected_total']
+                    && $existing->cash_tendered_cents === $requestedTendered
                     && ($existing->reference ?? '') === ($input['reference'] ?? ''), 409, 'Payment reference has already been used.');
 
                 return $existing;
@@ -153,10 +157,17 @@ class DiningRoom
             $totals = $this->totals($bill);
             abort_unless($totals['total'] === (int) $input['expected_total'], 409, 'The bill total changed. Review it before recording payment.');
             $method = PaymentMethod::active()->forQr()->findOrFail($input['payment_method_id']);
+            $isCash = (int) $method->id === PaymentMethod::CHECKOUT_COD;
+            $cashTendered = $isCash && isset($input['cash_tendered_cents'])
+                ? (int) $input['cash_tendered_cents']
+                : null;
+            abort_if($isCash && ($cashTendered === null || $cashTendered < $totals['total']), 422, 'Cash tendered must cover the total due.');
             $payment = DiningPayment::create([
                 'dining_bill_id' => $bill->id, 'idempotency_key' => $input['idempotency_key'],
                 'recorded_by_user_id' => $actorId, 'payment_method_id' => $method->id,
                 'method_name' => (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title, 'amount_cents' => $totals['total'],
+                'cash_tendered_cents' => $cashTendered,
+                'change_cents' => $cashTendered === null ? null : $cashTendered - $totals['total'],
                 'reference' => $input['reference'] ?? null,
             ]);
             $receipt = $rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== LibraryStatus::STATUS_CANCELLED)

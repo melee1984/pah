@@ -258,6 +258,31 @@ class QrOrderingController extends Controller
         ]);
     }
 
+    public function orders(
+        string $uuid,
+        int $branchId,
+        string $sessionId
+    ): JsonResponse {
+        $code = $this->resolveCode($uuid, $branchId);
+        $cart = $this->findCart($sessionId, $code);
+        $orders = $cart
+            ? Orders::query()
+                ->where('cart_id', $cart->id)
+                ->orderByDesc('submitted_at')
+                ->get()
+                ->map(fn (Orders $order) => $this->orderPayload($order, $cart, $code))
+                ->values()
+            : collect();
+
+        return response()
+            ->json([
+                'status' => 1,
+                'session_id' => $sessionId,
+                'orders' => $orders,
+            ])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
     public function updateItem(
         Request $request,
         string $uuid,
@@ -589,6 +614,10 @@ class QrOrderingController extends Controller
                 'id' => $code->diningTable->id,
                 'name' => $code->diningTable->name,
             ] : null,
+            'customer' => $cart->processed_at ? [
+                'full_name' => $cart->fullname,
+                'mobile' => $cart->mobile,
+            ] : null,
             'items' => $cart->details->map(function (CartItem $item) {
                 $variants = $item->variance_content
                     ? unserialize($item->variance_content, ['allowed_classes' => false])
@@ -597,7 +626,7 @@ class QrOrderingController extends Controller
                 return [
                     'id' => $item->id,
                     'product_id' => $item->item_id,
-                    'title' => $item->item?->title,
+                    'title' => $item->item?->title ?? 'Menu item',
                     'quantity' => (int) $item->qty,
                     'unit_price' => number_format(
                         (float) $item->price + (float) $item->variance_total,
@@ -615,6 +644,48 @@ class QrOrderingController extends Controller
         ];
     }
 
+    private function orderPayload(Orders $order, Cart $cart, QrOrderingCode $code): array
+    {
+        $cartPayload = $this->cartPayload($cart, $code);
+        $statusId = (int) ($order->order_status_id ?: $order->status_id);
+
+        return [
+            'id' => $order->id,
+            'order_no' => $cart->order_no ?: (string) $order->id,
+            'submitted_at' => $order->submitted_at,
+            'customer_name' => $cart->fullname,
+            'status' => [
+                'id' => $statusId,
+                'label' => $this->customerOrderStatus($statusId),
+                'is_final' => in_array($statusId, [
+                    LibraryStatus::STATUS_DELIVERED,
+                    LibraryStatus::STATUS_CANCELLED,
+                    LibraryStatus::STATUS_COMPLETED,
+                ], true),
+            ],
+            'table' => $cartPayload['table'],
+            'payment_method' => $cart->payment ? [
+                'id' => $cart->payment->id,
+                'title' => $cart->payment->title,
+            ] : null,
+            'items' => $cartPayload['items'],
+            'summary' => $cartPayload['summary'],
+        ];
+    }
+
+    private function customerOrderStatus(int $statusId): string
+    {
+        return match ($statusId) {
+            LibraryStatus::STATUS_ORDER_PLACED => 'Received',
+            LibraryStatus::STATUS_ORDER_ACCEPTED => 'Accepted',
+            LibraryStatus::STATUS_PROCESSING => 'Preparing',
+            LibraryStatus::STATUS_READY_FOR_PICKUP => 'Ready to serve',
+            LibraryStatus::STATUS_DELIVERED, LibraryStatus::STATUS_COMPLETED => 'Served',
+            LibraryStatus::STATUS_CANCELLED => 'Cancelled',
+            default => 'Status unavailable',
+        };
+    }
+
     private function emptyCartPayload(QrOrderingCode $code): array
     {
         return [
@@ -627,6 +698,7 @@ class QrOrderingController extends Controller
                 'id' => $code->diningTable->id,
                 'name' => $code->diningTable->name,
             ] : null,
+            'customer' => null,
             'items' => [],
             'summary' => [
                 'sub_total' => '0.00',

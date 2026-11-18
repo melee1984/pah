@@ -351,6 +351,7 @@ class QrOrderingTest extends TestCase
 
         $this->getJson($this->baseUrl()."/carts/{$sessionId}/summary")
             ->assertOk()
+            ->assertJsonPath('data.customer', null)
             ->assertJsonPath('data.summary.qty', 2)
             ->assertJsonPath('data.summary.sub_total', '240.00')
             ->assertJsonPath('data.branch_id', $this->branchId);
@@ -396,7 +397,58 @@ class QrOrderingTest extends TestCase
         ]);
         $this->assertDatabaseHas('dining_bills', ['partner_id' => $this->partnerId, 'partner_location_id' => $this->branchId, 'dining_table_id' => $this->tableId, 'status' => 'open']);
         $this->assertDatabaseHas('dining_bill_orders', ['order_id' => DB::table('order')->value('id'), 'round' => 1]);
+
+        $this->getJson($this->baseUrl()."/carts/{$sessionId}/summary")
+            ->assertOk()
+            ->assertJsonPath('data.customer.full_name', 'Guest Customer')
+            ->assertJsonPath('data.customer.mobile', '09171234567');
+
         Event::assertDispatched(SendPushNotificationEvent::class);
+    }
+
+    public function test_guest_can_view_the_order_for_their_qr_session(): void
+    {
+        Event::fake([SendPushNotificationEvent::class]);
+        $session = $this->createQrSession();
+        $base = $this->baseUrl()."/carts/{$session['session_id']}";
+
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->getJson($base.'/orders')
+            ->assertOk()
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertJsonCount(0, 'orders');
+
+        $this->postJson($base.'/items', [
+            'product_id' => $this->productId,
+            'quantity' => 2,
+            'instruction' => 'No onions',
+        ])->assertCreated();
+
+        $this->postJson($base.'/checkout', [
+            'full_name' => 'Guest Customer',
+            'mobile' => '09171234567',
+            'payment_method_id' => 3,
+        ])->assertCreated();
+
+        $this->getJson($base.'/orders')
+            ->assertOk()
+            ->assertJsonPath('session_id', $session['session_id'])
+            ->assertJsonCount(1, 'orders')
+            ->assertJsonPath('orders.0.customer_name', 'Guest Customer')
+            ->assertJsonPath('orders.0.status.label', 'Received')
+            ->assertJsonPath('orders.0.status.is_final', false)
+            ->assertJsonPath('orders.0.table.id', $this->tableId)
+            ->assertJsonPath('orders.0.payment_method.title', 'Pay at counter')
+            ->assertJsonPath('orders.0.items.0.quantity', 2)
+            ->assertJsonPath('orders.0.items.0.instruction', 'No onions')
+            ->assertJsonPath('orders.0.summary.sub_total', '240.00');
+
+        DB::table('order')->update(['order_status_id' => 9]);
+
+        $this->getJson($base.'/orders')
+            ->assertOk()
+            ->assertJsonPath('orders.0.status.label', 'Served')
+            ->assertJsonPath('orders.0.status.is_final', true);
     }
 
     public function test_qr_cart_rejects_a_product_from_another_restaurant(): void

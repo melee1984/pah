@@ -19,6 +19,7 @@ Route::prefix('qr/{uuid}/branches/{branchId}')
             ->middleware('qr.session')
             ->group(function () {
                 Route::get('summary', [QrOrderingController::class, 'summary']);
+                Route::get('orders', [QrOrderingController::class, 'orders']);
                 Route::post('items', [QrOrderingController::class, 'addItem']);
                 Route::patch('items/{cartItem}', [QrOrderingController::class, 'updateItem'])
                     ->whereNumber('cartItem');

@@ -83,7 +83,7 @@ class StaffController extends Controller
 
     private function payload(int $partnerId, int $branchId, array $abilities, DiningRoom $room): array
     {
-        $orders = Orders::with(['cart.details.item', 'cart.diningTable', 'billRound.bill'])
+        $orders = Orders::with(['cart.details.item', 'cart.diningTable', 'cart.payment', 'billRound.bill'])
             ->where('partner_id', $partnerId)->whereNotNull('submitted_at')
             ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId)->where('fulfillment_type', Cart::FULFILLMENT_DINE_IN))
             ->where(function ($query) {
@@ -109,25 +109,42 @@ class StaffController extends Controller
                 },
                 'round' => $round?->round ?? 1, 'bill_id' => $round?->dining_bill_id,
                 'paid' => $round?->bill?->status === 'paid', 'items' => $items,
+                'payment_method_id' => $order->cart->payment_id,
+                'payment_method' => $this->paymentMethodName($order->cart->payment),
                 'total' => $abilities['cashier'] ? ($round?->amounts['total'] ?? (int) round($order->cart->cartItemAmounts()['total'] * 100)) : null,
             ];
         });
-        $bills = $abilities['cashier'] ? DiningBill::with('rounds.order')->where('partner_id', $partnerId)
-            ->where('partner_location_id', $branchId)->where('status', 'open')->get()->map(fn ($bill) => [
-                'id' => $bill->id, 'table_id' => $bill->dining_table_id, 'totals' => $room->totals($bill),
-                'order_ids' => $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8)->pluck('order_id')->values(),
-            ]) : collect();
+        $bills = $abilities['cashier'] ? DiningBill::with('rounds.order.cart.payment')->where('partner_id', $partnerId)
+            ->where('partner_location_id', $branchId)->where('status', 'open')->get()->map(function ($bill) use ($room) {
+                $rounds = $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8);
+                $preferences = $rounds->map(fn ($round) => $round->order->cart?->payment)->filter()->unique('id')->values();
+                $preferred = $preferences->count() === 1 ? $preferences->first() : null;
+
+                return [
+                    'id' => $bill->id, 'table_id' => $bill->dining_table_id, 'totals' => $room->totals($bill),
+                    'order_ids' => $rounds->pluck('order_id')->values(),
+                    'payment_method_id' => $preferred?->id,
+                    'payment_method' => $preferences->isEmpty()
+                        ? null
+                        : ($preferred ? $this->paymentMethodName($preferred) : 'Mixed preferences'),
+                ];
+            }) : collect();
         $payments = $abilities['cashier'] ? DiningPayment::whereHas('bill', fn ($query) => $query->where('partner_id', $partnerId)->where('partner_location_id', $branchId))
             ->where('created_at', '>=', now()->startOfDay())->latest()->get()->map(fn ($payment) => [
                 'id' => $payment->id, 'bill_id' => $payment->dining_bill_id, 'table_id' => $payment->bill->dining_table_id,
                 'method' => $payment->method_name, 'amount' => $payment->amount_cents, 'reference' => $payment->reference,
+                'cash_tendered' => $payment->cash_tendered_cents, 'change' => $payment->change_cents,
                 'created' => $payment->created_at->toIso8601String(),
             ]) : collect();
 
         return [
             'abilities' => $abilities, 'orders' => $tickets, 'bills' => $bills, 'payments' => $payments,
             'tables' => $abilities['cashier'] ? PartnerLocationTable::where('partner_location_id', $branchId)->orderBy('name')->get(['id', 'name', 'capacity', 'active', 'is_available']) : [],
-            'payment_methods' => $abilities['pay'] ? PaymentMethod::active()->forQr()->get(['id', 'title'])->map(fn ($method) => ['id' => $method->id, 'title' => (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title]) : [],
+            'payment_methods' => $abilities['pay'] ? PaymentMethod::active()->forQr()->get(['id', 'title'])->map(fn ($method) => [
+                'id' => $method->id,
+                'title' => (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title,
+                'is_cash' => (int) $method->id === PaymentMethod::CHECKOUT_COD,
+            ]) : [],
             'updated_at' => now()->toIso8601String(),
         ];
     }
@@ -149,6 +166,7 @@ class StaffController extends Controller
         $input = $request->validate([
             'payment_method_id' => ['required', 'integer'], 'idempotency_key' => ['required', 'uuid'],
             'expected_total' => ['required', 'integer', 'min:0'], 'reference' => ['nullable', 'string', 'max:150'],
+            'cash_tendered_cents' => ['nullable', 'integer', 'min:0'],
         ]);
         $payment = $room->pay($bill, $merchant->id, $branch->id, $request->user()->id, $input);
 
@@ -168,7 +186,13 @@ class StaffController extends Controller
             'paid' => $bill->status === 'paid', 'totals' => $bill->totals ?? $room->totals($bill),
             'orders' => $bill->receipt ?? $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8)
                 ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items])->values(),
-            'payment' => $bill->payment ? ['method' => $bill->payment->method_name, 'reference' => $bill->payment->reference, 'created' => $bill->payment->created_at->toIso8601String()] : null,
+            'payment' => $bill->payment ? [
+                'method' => $bill->payment->method_name,
+                'reference' => $bill->payment->reference,
+                'cash_tendered' => $bill->payment->cash_tendered_cents,
+                'change' => $bill->payment->change_cents,
+                'created' => $bill->payment->created_at->toIso8601String(),
+            ] : null,
         ])->header('Cache-Control', 'no-store');
     }
 
@@ -199,5 +223,14 @@ class StaffController extends Controller
         PartnerLocationTable::where('partner_location_id', $branch->id)->findOrFail($table)->update($input);
 
         return response()->json(['message' => 'Table ordering availability updated.']);
+    }
+
+    private function paymentMethodName(?PaymentMethod $method): ?string
+    {
+        if (! $method) {
+            return null;
+        }
+
+        return (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title;
     }
 }

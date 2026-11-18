@@ -28,7 +28,14 @@ class DiningWorkspaceTest extends TestCase
 
     private function paymentInput(DiningBill $bill): array
     {
-        return ['payment_method_id' => 3, 'idempotency_key' => (string) Str::uuid(), 'expected_total' => app(DiningRoom::class)->totals($bill)['total']];
+        $total = app(DiningRoom::class)->totals($bill)['total'];
+
+        return [
+            'payment_method_id' => 3,
+            'idempotency_key' => (string) Str::uuid(),
+            'expected_total' => $total,
+            'cash_tendered_cents' => $total,
+        ];
     }
 
     public function test_existing_owner_dashboard_and_order_apis_still_load_dining_orders(): void
@@ -53,11 +60,34 @@ class DiningWorkspaceTest extends TestCase
             $this->assertEqualsCanonicalizing([$first->id, $second->id], array_column($response->json('orders'), 'id'));
             $response->assertDontSee($private->cart->order_no);
             if ($role === 'kitchen') {
-                $response->assertJsonCount(0, 'bills')->assertJsonCount(0, 'payments')->assertJsonPath('orders.0.total', null);
+                $response->assertJsonCount(0, 'bills')
+                    ->assertJsonCount(0, 'payments')
+                    ->assertJsonPath('orders.0.total', null)
+                    ->assertJsonPath('orders.0.items.0.variant_options.0', 'Extra rice');
             } else {
                 $response->assertJsonCount(1, 'bills')->assertJsonPath('bills.0.totals.qty', 3);
             }
         }
+    }
+
+    public function test_customer_payment_preference_is_exposed_for_orders_and_combined_bills(): void
+    {
+        $first = $this->diningOrder();
+        $second = $this->diningOrder();
+        DB::table('cart')->whereIn('id', [$first->cart_id, $second->cart_id])->update(['payment_id' => 2]);
+
+        $response = $this->actingAs($this->accounts['cashier'])->getJson('/merchant/staff/data')->assertOk();
+        $response->assertJsonPath('orders.0.payment_method_id', 2)
+            ->assertJsonPath('orders.0.payment_method', 'GCash')
+            ->assertJsonPath('bills.0.payment_method_id', 2)
+            ->assertJsonPath('bills.0.payment_method', 'GCash');
+
+        DB::table('cart')->where('id', $second->cart_id)->update(['payment_id' => 1]);
+
+        $this->getJson('/merchant/staff/data')
+            ->assertOk()
+            ->assertJsonPath('bills.0.payment_method_id', null)
+            ->assertJsonPath('bills.0.payment_method', 'Mixed preferences');
     }
 
     public function test_kitchen_transitions_are_scoped_audited_and_cannot_skip_steps(): void
@@ -72,6 +102,7 @@ class DiningWorkspaceTest extends TestCase
             $this->assertDatabaseHas('order_process', ['order_id' => $order->id, 'status_id' => $target, 'user_id' => $this->accounts['kitchen']->id]);
             $this->postJson("/merchant/staff/orders/{$order->id}/transition", ['action' => $action, 'expected_status' => $previous])->assertOk();
         }
+        $this->getJson('/merchant/staff/data')->assertOk()->assertJsonPath('orders.0.status', 'served');
         $this->assertNotNull($order->fresh()->delivered_at);
         $this->assertSame('open', DiningBill::first()->status);
     }
@@ -116,6 +147,33 @@ class DiningWorkspaceTest extends TestCase
         $this->assertNotSame($bill->id, $newOrder->billRound->dining_bill_id);
         $this->assertSame(1, $newOrder->billRound->round);
         $this->getJson('/merchant/staff/data')->assertJsonCount(1, 'bills')->assertJsonCount(1, 'payments');
+    }
+
+    public function test_cash_payment_requires_enough_tender_and_records_change(): void
+    {
+        $this->diningOrder(status: 'served');
+        $bill = DiningBill::first();
+        $input = $this->paymentInput($bill);
+        $input['cash_tendered_cents'] = $input['expected_total'] - 1;
+
+        $this->actingAs($this->accounts['cashier'])
+            ->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'Cash tendered must cover the total due.');
+
+        $input['cash_tendered_cents'] = $input['expected_total'] + 500;
+        $this->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)->assertOk();
+
+        $this->assertDatabaseHas('dining_payments', [
+            'dining_bill_id' => $bill->id,
+            'amount_cents' => $input['expected_total'],
+            'cash_tendered_cents' => $input['cash_tendered_cents'],
+            'change_cents' => 500,
+        ]);
+        $this->getJson("/merchant/staff/bills/{$bill->id}/receipt")
+            ->assertOk()
+            ->assertJsonPath('payment.cash_tendered', $input['cash_tendered_cents'])
+            ->assertJsonPath('payment.change', 500);
     }
 
     public function test_new_round_invalidates_a_cashiers_reviewed_total(): void

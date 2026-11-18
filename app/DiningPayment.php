@@ -8,7 +8,11 @@ class DiningPayment extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['amount_cents' => 'integer'];
+    protected $casts = [
+        'amount_cents' => 'integer',
+        'cash_tendered_cents' => 'integer',
+        'change_cents' => 'integer',
+    ];
 
     public function bill()
     {
