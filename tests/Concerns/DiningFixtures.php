@@ -35,6 +35,7 @@ trait DiningFixtures
             $table->string('banner')->nullable();
             $table->boolean('active')->default(true);
             $table->boolean('store_open')->default(true);
+            $table->boolean('qr_ordering_enabled')->default(false);
             $table->boolean('addup')->default(false);
             $table->decimal('pahatud_discount', 8, 2)->nullable();
             $table->decimal('pahatud_comm_discount', 8, 2)->nullable();
@@ -232,7 +233,7 @@ trait DiningFixtures
             $user->assignRole($role === 'owner' ? 'partner' : $role);
             $users[$role] = $user;
         }
-        DB::table('partners')->insert(['id' => 1, 'user_id' => $users['owner']->id, 'restaurant_name' => 'Pahatud Test Kitchen', 'active' => true, 'store_open' => true, 'addup' => false]);
+        DB::table('partners')->insert(['id' => 1, 'user_id' => $users['owner']->id, 'restaurant_name' => 'Pahatud Test Kitchen', 'active' => true, 'store_open' => true, 'qr_ordering_enabled' => true, 'addup' => false]);
         DB::table('partner_location')->insert([
             ['id' => 1, 'partner_id' => 1, 'address_1' => 'Main branch', 'city' => 'Davao City', 'active' => true],
             ['id' => 2, 'partner_id' => 1, 'address_1' => 'Uptown branch', 'city' => 'Davao City', 'active' => true],

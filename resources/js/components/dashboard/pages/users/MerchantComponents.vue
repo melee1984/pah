@@ -39,8 +39,8 @@
             <th>Merchant partner</th>
             <th>Contact</th>
             <th>Location</th>
-            <th>Account</th>
-            <th>Store settings</th>
+            <th>Account status</th>
+            <th>Settings</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -71,42 +71,11 @@
               <small v-if="member.latitude || member.longtitude">{{ member.latitude || '—' }}, {{ member.longtitude || '—' }}</small>
             </td>
             <td>
-              <div class="dashboard-toggle-list">
-                <label>
-                  <span>Account active</span>
-                  <input v-model="member.active" type="checkbox" :disabled="requiresReview(member) || isBusy(member, 'active')" @change="toggleSetting(member, 'active', 'status')">
-                  <i></i>
-                </label>
-                <label>
-                  <span>Verified</span>
-                  <input v-model="member.isverified" type="checkbox" :disabled="requiresReview(member) || isBusy(member, 'isverified')" @change="toggleSetting(member, 'isverified', 'verify')">
-                  <i></i>
-                </label>
-              </div>
+              <strong>{{ member.active ? 'Active' : 'Inactive' }}</strong>
+              <small>{{ member.isverified ? 'Verified' : 'Not verified' }}</small>
             </td>
             <td>
-              <div class="dashboard-toggle-list">
-                <label>
-                  <span>Store open</span>
-                  <input v-model="member.istoreopen" type="checkbox" :disabled="isBusy(member, 'istoreopen')" @change="toggleSetting(member, 'istoreopen', 'online')">
-                  <i></i>
-                </label>
-                <label>
-                  <span>Pre-order</span>
-                  <input v-model="member.is_pre_order" type="checkbox" :disabled="isBusy(member, 'is_pre_order')" @change="toggleSetting(member, 'is_pre_order', 'preorder')">
-                  <i></i>
-                </label>
-                <label>
-                  <span>Comm. discount</span>
-                  <input v-model="member.pahatud_comm_discount" type="checkbox" :disabled="isBusy(member, 'pahatud_comm_discount')" @change="toggleSetting(member, 'pahatud_comm_discount', 'coomrate')">
-                  <i></i>
-                </label>
-                <label>
-                  <span>Add-Up Settings</span>
-                  <input v-model="member.addup" type="checkbox" :disabled="isBusy(member, 'addup')" @change="toggleSetting(member, 'addup', 'addup')">
-                  <i></i>
-                </label>
-              </div>
+              <a :href="`/data/dashboard/merchant/${member.id}/settings`" class="merchant-settings-link"><i class="fas fa-cog"></i><span>Manage settings</span><span aria-hidden="true">→</span></a>
             </td>
             <td>
               <div class="dashboard-actions">
@@ -144,7 +113,6 @@ export default {
       activeTab: 'all',
       counts: { all: 0, store_open: 0, inactive: 0 },
       searchTimer: null,
-      busy: {},
       sendingId: null,
     };
   },
@@ -226,29 +194,6 @@ export default {
       this.activeTab = tab;
       this.fetchData(1);
     },
-    toggleSetting(member, field, endpoint) {
-      const key = `${member.id}:${field}`;
-      this.$set(this.busy, key, true);
-
-      axios.post(`/api/data/merchant/${member.id}/${endpoint}/submit?api_token=${api_token}`)
-        .then((response) => {
-          if (response.data.status) {
-            toastr.success(response.data.message);
-            if (endpoint === 'status' || endpoint === 'online') {
-              this.fetchData(this.members.current_page || 1);
-            }
-            return;
-          }
-
-          member[field] = !member[field];
-          toastr.info(response.data.message);
-        })
-        .catch((error) => {
-          member[field] = !member[field];
-          toastr.error((error.response && error.response.data && error.response.data.message) || 'Unable to update this merchant setting.');
-        })
-        .finally(() => this.$delete(this.busy, key));
-    },
     sendMerchantLogin(memberId) {
       this.sendingId = memberId;
       axios.post(`/api/data/merchant/${memberId}/password/submit?api_token=${api_token}`)
@@ -259,9 +204,6 @@ export default {
         .finally(() => {
           this.sendingId = null;
         });
-    },
-    isBusy(member, field) {
-      return Boolean(this.busy[`${member.id}:${field}`]);
     },
     initial(value) {
       return value ? value.charAt(0).toUpperCase() : 'M';
@@ -275,3 +217,19 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.merchant-settings-link {
+  align-items: center;
+  color: #42494c;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 7px;
+  padding: 5px 0;
+  text-decoration: none;
+}
+.merchant-settings-link i { color: #858c8f; }
+.merchant-settings-link:hover,
+.merchant-settings-link:focus { color: #20272b; text-decoration: underline; }
+</style>

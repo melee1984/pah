@@ -136,6 +136,7 @@ Route::group(['middleware' => ['api', 'web']], function () {
         Route::post('data/merchant/{partner:id}/preorder/submit', [AdminMerchantController::class, 'preorder']);
         Route::post('data/merchant/{partner:id}/coomrate/submit', [AdminMerchantController::class, 'coomrate']);
         Route::post('data/merchant/{partner:id}/addup/submit', [AdminMerchantController::class, 'addup']);
+        Route::post('data/merchant/{partner:id}/qr-ordering/submit', [AdminMerchantController::class, 'qrOrdering']);
         Route::post('data/merchant/{partner:id}/password/submit', [AdminMerchantController::class, 'passwordSend']);
         Route::get('data/dashboard/booking/new', [AdminBookingController::class, 'index']);
         Route::post('data/dashboard/address/submit', [AdminBookingController::class, 'addressStore']);

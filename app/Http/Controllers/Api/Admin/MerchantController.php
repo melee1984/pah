@@ -179,6 +179,20 @@ class MerchantController extends Controller
         ], 200);
     }
 
+    public function qrOrdering(Partners $partner, Request $request)
+    {
+        $partner->qr_ordering_enabled = ! $partner->qr_ordering_enabled;
+        $partner->save();
+
+        return response()->json([
+            'message' => $partner->qr_ordering_enabled
+                ? 'QR ordering enabled for this merchant.'
+                : 'QR ordering disabled for this merchant.',
+            'status' => 1,
+            'qr_ordering_enabled' => $partner->qr_ordering_enabled,
+        ]);
+    }
+
     public function passwordSend(Partners $partner, Request $request) {
       
         $data = array();

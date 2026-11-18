@@ -47,6 +47,7 @@ class QrOrderingTest extends TestCase
             $table->string('banner')->nullable();
             $table->boolean('active')->default(true);
             $table->boolean('store_open')->default(true);
+            $table->boolean('qr_ordering_enabled')->default(false);
             $table->boolean('addup')->default(false);
             $table->decimal('pahatud_discount', 8, 2)->nullable();
             $table->decimal('pahatud_comm_discount', 8, 2)->nullable();
@@ -216,6 +217,7 @@ class QrOrderingTest extends TestCase
             'description' => 'Dine-in menu',
             'active' => true,
             'store_open' => true,
+            'qr_ordering_enabled' => true,
             'addup' => false,
             'created_at' => now(),
             'updated_at' => now(),
@@ -546,6 +548,22 @@ class QrOrderingTest extends TestCase
             'label' => 'Table 7 QR',
             'active' => true,
         ]);
+    }
+
+    public function test_disabled_qr_ordering_hides_public_and_merchant_qr_features(): void
+    {
+        DB::table('partners')->where('id', $this->partnerId)->update(['qr_ordering_enabled' => false]);
+        $merchant = User::query()->where('email', 'restaurant@example.com')->firstOrFail();
+
+        $this->getJson("/api/qr/{$this->qrUuid}/branches/{$this->branchId}/menu")
+            ->assertNotFound();
+        $this->actingAs($merchant)
+            ->getJson("/api/merchant/location/{$this->branchId}/tables")
+            ->assertOk()
+            ->assertJsonPath('tables.0.id', $this->tableId);
+        $this->postJson("/api/merchant/location/{$this->branchId}/qr-ordering-codes", [
+            'dining_table_id' => $this->tableId,
+        ])->assertForbidden();
     }
 
     public function test_creating_a_dining_table_automatically_creates_its_qr_url(): void

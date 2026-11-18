@@ -269,6 +269,8 @@ Route::middleware('admin')->group(function () {
         ->name('dashboard.rider-top-ups.approve');
     Route::get('data/dashboard/users', [DashboardController::class, 'memberlist'])->name('dashboard.user');
     Route::get('data/dashboard/merchant', [DashboardController::class, 'merchantlist'])->name('dashboard.merchant');
+    Route::get('data/dashboard/merchant/{partner:id}/settings', [DashboardController::class, 'merchantSettings'])
+        ->name('dashboard.merchant.settings');
     Route::get('data/dashboard/merchant-applications', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'index'])
         ->name('dashboard.merchant-applications.index');
     Route::get('data/dashboard/merchant-applications/{application:id}', [\App\Http\Controllers\Admin\MerchantApplicationController::class, 'show'])

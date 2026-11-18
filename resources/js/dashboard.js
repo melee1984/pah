@@ -22,6 +22,7 @@ import OrderSummary from './components/dashboard/pages/orders/SummaryComponent.v
 import Report from './components/dashboard/pages/report/ReportComponent.vue';
 import Member from './components/dashboard/pages/users/MemberComponent.vue';
 import Merchant from './components/dashboard/pages/users/MerchantComponents.vue';
+import MerchantSettings from './components/dashboard/pages/users/MerchantSettingsComponent.vue';
 import BookingListing from './components/dashboard/pages/report/BookingComponent.vue';
 import bookingAdd from './components/dashboard/pages/booking/AddComponent.vue';
 import AdminPagination from './components/dashboard/AdminPagination.vue';
@@ -50,6 +51,7 @@ Vue.component('order-summary-view', OrderSummary);
 Vue.component('report-view', Report);
 Vue.component('member-view', Member);
 Vue.component('merchant-view', Merchant);
+Vue.component('merchant-settings-view', MerchantSettings);
 Vue.component('booking-listing-view', BookingListing);
 Vue.component('booking-add-form', bookingAdd);
 Vue.component('admin-pagination', AdminPagination);

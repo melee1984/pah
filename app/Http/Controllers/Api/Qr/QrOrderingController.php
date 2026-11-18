@@ -463,6 +463,7 @@ class QrOrderingController extends Controller
             ! $code
             || ! $code->partner
             || ! $code->partner->active
+            || ! $code->partner->qr_ordering_enabled
             || ! $code->location
             || ! $code->location->active
             || (int) $code->location->partner_id !== (int) $code->partner_id

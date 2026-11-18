@@ -345,6 +345,7 @@ class OrderController extends Controller
             $user->created_at_format = date('F d, Y', strtotime($user->created_at));
             $user->isverified = $user->verified_at ? 1 : 0;
             $user->istoreopen = $user->store_open ? 1 : 0;
+            $user->qr_ordering_enabled = (bool) $user->qr_ordering_enabled;
         }
 
         $data['members'] = $users;

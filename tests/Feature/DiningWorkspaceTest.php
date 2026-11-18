@@ -41,9 +41,25 @@ class DiningWorkspaceTest extends TestCase
     public function test_existing_owner_dashboard_and_order_apis_still_load_dining_orders(): void
     {
         $order = $this->diningOrder(status: 'ready');
-        $this->actingAs($this->accounts['owner'])->get('/merchant/dashboard')->assertOk()->assertSee('Cashier workspace')->assertSee('Kitchen display');
+        $this->actingAs($this->accounts['owner'])->get('/merchant/dashboard')->assertOk()->assertSee('Cashier workspace')->assertSee('Kitchen display')->assertSee('Store settings');
         $this->getJson('/api/merchant/order/list')->assertOk()->assertJsonPath('orders.0.id', $order->id);
         $this->getJson('/api/merchant/dashboard/order/summary')->assertOk()->assertJsonPath('record.totalOrders', 1);
+    }
+
+    public function test_disabled_qr_ordering_removes_and_blocks_dining_tools(): void
+    {
+        DB::table('partners')->where('id', 1)->update(['qr_ordering_enabled' => false]);
+
+        $this->actingAs($this->accounts['owner'])->get('/merchant/dashboard')
+            ->assertOk()
+            ->assertSee('Store settings')
+            ->assertDontSee('Cashier workspace')
+            ->assertDontSee('Kitchen display')
+            ->assertSee('Dining tables');
+        $this->get('/merchant/tables')
+            ->assertOk()
+            ->assertSee(":qr-ordering-enabled='false'", false);
+        $this->get('/merchant/staff')->assertForbidden();
     }
 
     public function test_submitted_rounds_share_one_bill_and_are_visible_in_both_views(): void

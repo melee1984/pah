@@ -98,6 +98,7 @@ class QrOrderingCodeController extends Controller
             $user->merchant && (int) $user->merchant->id === (int) $partnerLocation->partner_id,
             403
         );
+        abort_unless($user->merchant->qr_ordering_enabled, 403, 'QR ordering is not enabled for this merchant.');
     }
 
     private function authorizeCode(

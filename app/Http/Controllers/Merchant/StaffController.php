@@ -37,6 +37,7 @@ class StaffController extends Controller
                 $branch = $assignment?->branch;
             }
         }
+        abort_unless($merchant?->qr_ordering_enabled, 403, 'QR ordering is not enabled for this merchant.');
         abort_unless($merchant && $branch && (int) $branch->partner_id === (int) $merchant->id, 403, 'No active branch is assigned to this login.');
         $staff = $user->isMerchantStaff();
         $abilities = [

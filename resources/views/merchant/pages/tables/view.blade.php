@@ -11,7 +11,7 @@
         </div>
     </section>
     <section class="content">
-        <div class="container-fluid"><merchant-tables-view></merchant-tables-view></div>
+        <div class="container-fluid"><merchant-tables-view :qr-ordering-enabled='@json($qrOrderingEnabled)'></merchant-tables-view></div>
     </section>
 </div>
 @endsection

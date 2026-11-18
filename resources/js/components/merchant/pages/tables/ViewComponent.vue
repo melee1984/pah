@@ -23,12 +23,12 @@
         <div v-if="tables.length === 0" class="merchant-tables-empty"><i class="fas fa-chair"></i><div><strong>No tables yet</strong><p>Add the first dining table for this branch above.</p></div></div>
         <div v-else class="table-responsive">
           <table class="table dashboard-data-table merchant-table-list">
-            <thead><tr><th>Table</th><th>Capacity</th><th>QR ordering</th><th>Checkout visibility</th><th>Current availability</th><th class="text-right">Actions</th></tr></thead>
+            <thead><tr><th>Table</th><th>Capacity</th><th v-if="qrOrderingEnabled">QR ordering</th><th>Checkout visibility</th><th>Current availability</th><th class="text-right">Actions</th></tr></thead>
             <tbody>
               <tr v-for="table in tables" :key="table.id">
                 <td><input v-model.trim="table.name" type="text" maxlength="100" class="form-control" aria-label="Table name"></td>
                 <td><input v-model.number="table.capacity" type="number" min="1" max="100" class="form-control table-capacity" aria-label="Guest capacity"></td>
-                <td>
+                <td v-if="qrOrderingEnabled">
                   <div v-if="table.qr_code" class="table-qr">
                     <qrcode-vue :value="table.qr_code.ordering_url" :size="72" level="M" render-as="svg" class-name="table-qr-code" />
                     <div><button type="button" class="table-qr-action" @click="openQrPreview(table)">Preview &amp; print</button><a :href="table.qr_code.ordering_url" target="_blank" rel="noopener">Open ordering link</a><button type="button" class="table-qr-action" @click="downloadQr(table, $event)">Download QR</button></div>
@@ -82,6 +82,9 @@ import QrcodeVue from 'qrcode.vue';
 
 export default {
   components: { QrcodeVue },
+  props: {
+    qrOrderingEnabled: { type: Boolean, default: false },
+  },
   data() {
     return {
       locations: [],

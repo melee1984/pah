@@ -280,4 +280,26 @@ class DashboardController extends Controller
     	return view('dashboard.pages.user.merchant');		
     }
 
+    public function merchantSettings(Partners $partner)
+    {
+        $merchant = Partners::query()->whereKey($partner->id);
+        $this->cityScope->partners($merchant);
+        $merchant = $merchant->firstOrFail();
+
+        return view('dashboard.pages.merchant.settings', [
+            'merchant' => $merchant,
+            'settingsMerchant' => [
+                'id' => $merchant->id,
+                'active' => (bool) $merchant->active,
+                'isverified' => (bool) $merchant->verified_at,
+                'istoreopen' => (bool) $merchant->store_open,
+                'qr_ordering_enabled' => (bool) $merchant->qr_ordering_enabled,
+                'is_pre_order' => (bool) $merchant->is_pre_order,
+                'pahatud_comm_discount' => (bool) $merchant->pahatud_comm_discount,
+                'addup' => (bool) $merchant->addup,
+            ],
+            'requiresReview' => $merchant->requiresEnrollmentReview(),
+        ]);
+    }
+
 }

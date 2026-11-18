@@ -38,6 +38,7 @@ class Partners extends Model
                                 'account_type_id',
                                 'percentage',
                                 'addup',
+                                'qr_ordering_enabled',
                                 'is_pre_order',
                                 'agent_id'
                                 ,'business_structure'
@@ -69,6 +70,7 @@ class Partners extends Model
         'sms_verified' => 'datetime',
         'services' => 'array',
         'percentage' => 'decimal:2',
+        'qr_ordering_enabled' => 'boolean',
         'recruitment_reviewed_at' => 'datetime',
         'recruitment_submitted_at' => 'datetime',
     ];
