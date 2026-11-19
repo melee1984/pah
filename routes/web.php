@@ -409,6 +409,9 @@ Route::post('/merchant/reset-password/{token}', [\App\Http\Controllers\Merchant\
 Route::middleware('merchant')->group(function () {
 
     Route::get('merchant/staff', [\App\Http\Controllers\Merchant\StaffController::class, 'index'])->name('merchant.staff.index');
+    Route::post('merchant/staff/pos/quote', [\App\Http\Controllers\Merchant\StaffController::class, 'quote'])->name('merchant.staff.quote');
+    Route::post('merchant/staff/orders', [\App\Http\Controllers\Merchant\StaffController::class, 'store'])->name('merchant.staff.store');
+    Route::get('merchant/staff/history', [\App\Http\Controllers\Merchant\StaffController::class, 'history'])->name('merchant.staff.history');
     Route::get('merchant/staff/data', [\App\Http\Controllers\Merchant\StaffController::class, 'data'])->name('merchant.staff.data');
     Route::post('merchant/staff/orders/{order}/transition', [\App\Http\Controllers\Merchant\StaffController::class, 'transition'])->whereNumber('order')->name('merchant.staff.transition');
     Route::post('merchant/staff/bills/{bill}/release', [\App\Http\Controllers\Merchant\StaffController::class, 'release'])->whereNumber('bill')->name('merchant.staff.release');

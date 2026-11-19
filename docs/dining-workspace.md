@@ -1,5 +1,8 @@
 # Merchant dining workspace
 
+Current counter-service behavior is documented in [In-store counter service](counter-service.md): immediate payment, in-store-only POS, touch table cards, Served/live-board rules and serving-time history supersede the earlier behavior below.
+
+
 The existing merchant dashboard links to **Cashier workspace** and **Kitchen display** under Dining service. Both use the existing merchant web login and Vue 2 merchant entry point. Kitchen/Cashier accounts land directly in their assigned branch; owners can switch among their own branches.
 
 ## Workflow
@@ -12,7 +15,7 @@ The existing merchant dashboard links to **Cashier workspace** and **Kitchen dis
 - A fully cancelled bill can be released without recording payment. Active or missing orders prevent this action.
 - Cashier table controls pause/resume ordering using the existing `is_available` flag. QR checkout and new item additions respect the flag; reading a menu remains possible. Table setup, capacities, and QR code administration remain in the existing merchant table management page.
 
-The workspace only handles dine-in orders. Existing delivery/pickup lists and reports remain available to merchant operators. Existing sales/reward/commission behavior continues to use order completion; **Collected today** uses actual dining payment records instead.
+The workspace now includes delivery/pickup/dine-in kitchen tickets and a Cashier POS. See [the staff POS schema review](staff-pos-schema-review.md) for current storage, migration, payment and access details. Existing delivery/pickup lists and reports remain available to merchant operators. Existing sales/reward/commission behavior continues to use order completion; **Collected today** uses actual dining payment records instead.
 
 Payment recording confirms money already received. It does not invoke a card/GCash processor. Settlement is for the full bill; split payments and refunds are outside this change.
 

@@ -133,15 +133,12 @@ class DiningWorkspaceTest extends TestCase
         $this->getJson("/merchant/staff/bills/{$bill->id}/receipt")->assertForbidden();
     }
 
-    public function test_payment_requires_served_orders_and_the_reviewed_total(): void
+    public function test_payment_before_service_still_requires_the_reviewed_total(): void
     {
         $order = $this->diningOrder();
         $bill = DiningBill::first();
         $input = $this->paymentInput($bill);
-        $this->actingAs($this->accounts['cashier'])->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)->assertConflict();
-        foreach (['preparing', 'ready', 'served'] as $action) {
-            app(DiningRoom::class)->transition($order->id, 1, 1, $action, $this->accounts['kitchen']->id);
-        }
+        $this->actingAs($this->accounts['cashier']);
         $input['expected_total']++;
         $this->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)->assertConflict();
         $this->assertSame(0, DiningPayment::count());
@@ -215,6 +212,29 @@ class DiningWorkspaceTest extends TestCase
         $private = $this->diningOrder(20, status: 'served')->billRound->bill;
         $this->getJson("/merchant/staff/bills/{$private->id}/receipt")->assertNotFound();
         $this->postJson("/merchant/staff/bills/{$private->id}/payment", $this->paymentInput($private))->assertNotFound();
+    }
+
+    public function test_receipt_contains_printable_instructions_and_preserves_order_metadata_after_payment(): void
+    {
+        $order = $this->diningOrder();
+        $order->cart->update(['notes' => 'Serve all dishes together']);
+        $bill = DiningBill::first();
+        $this->actingAs($this->accounts['cashier']);
+        $url = "/merchant/staff/bills/{$bill->id}/receipt";
+        $this->getJson($url)->assertOk()
+            ->assertJsonPath('orders.0.notes', 'Serve all dishes together')
+            ->assertJsonPath('orders.0.items.0.note', 'No onions')
+            ->assertJsonPath('orders.0.items.0.variants', 'Extra rice');
+        $this->postJson("/merchant/staff/bills/{$bill->id}/payment", $this->paymentInput($bill))->assertOk();
+        $placed = $this->getJson($url)->json('orders.0.placed_at');
+        $this->assertNotNull($placed);
+        $order->cart->update(['notes' => 'Changed later']);
+        $this->getJson($url)->assertOk()->assertJsonPath('paid', true)
+            ->assertJsonPath('orders.0.notes', 'Serve all dishes together')
+            ->assertJsonPath('orders.0.placed_at', $placed)
+            ->assertJsonPath('orders.0.type', 'dine_in')
+            ->assertJsonPath('orders.0.items.0.unit_price', 16500)
+            ->assertJsonPath('payment.cash_tendered', $this->paymentInput($bill)['expected_total']);
     }
 
     public function test_cancelled_orders_are_excluded_from_payment_and_inactive_methods_are_rejected(): void

@@ -132,6 +132,8 @@ trait DiningFixtures
             $table->string('mobile')->nullable();
             $table->string('email')->nullable();
             $table->string('order_no')->nullable();
+            $table->text('notes')->nullable();
+            $table->string('pos_request_hash', 64)->nullable();
             $table->boolean('active')->default(false);
             $table->string('ip_address')->nullable();
             $table->dateTime('processed_at')->nullable();
@@ -214,6 +216,11 @@ trait DiningFixtures
         Schema::create('cart_user_address', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('cart_id');
+            $table->string('address_1')->nullable();
+            $table->string('mobile')->nullable();
+            $table->string('lat')->nullable();
+            $table->string('long')->nullable();
+            $table->timestamps();
         });
     }
 

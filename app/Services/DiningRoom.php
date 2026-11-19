@@ -11,13 +11,30 @@ use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\PartnerLocationTable;
 use App\PaymentMethod;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class DiningRoom
 {
     public function attach(Orders $order): ?DiningBillOrder
     {
         $cart = $order->cart;
+        if ($order->submitted_at && $cart?->order_source === Cart::ORDER_SOURCE_POS && $cart->fulfillment_type !== Cart::FULFILLMENT_DINE_IN) {
+            return DB::transaction(function () use ($order, $cart) {
+                Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                if ($existing = DiningBillOrder::where('order_id', $order->id)->first()) {
+                    return $existing;
+                }
+                $bill = DiningBill::create(['partner_id' => $order->partner_id, 'partner_location_id' => $cart->partner_location_address_id, 'dining_table_id' => null, 'status' => 'open']);
+                $amounts = [];
+                foreach ($cart->cartItemAmounts() as $key => $value) {
+                    $amounts[$key] = $key === 'qty' ? (int) $value : (int) round($value * 100);
+                }
+
+                return DiningBillOrder::create(['dining_bill_id' => $bill->id, 'order_id' => $order->id, 'round' => 1, 'amounts' => $amounts, 'items' => $this->items($cart)]);
+            });
+        }
         if (! $order->submitted_at || $cart?->fulfillment_type !== Cart::FULFILLMENT_DINE_IN || ! $cart->dining_table_id) {
             return null;
         }
@@ -58,7 +75,7 @@ class DiningRoom
         return $cart->details->map(function ($item) {
             $variants = $item->variance_content;
             if (is_string($variants)) {
-                $variants = @unserialize($variants, ['allowed_classes' => false]);
+                $variants = json_decode($variants, true) ?? @unserialize($variants, ['allowed_classes' => false]);
             }
             $names = [];
             $variants = is_array($variants) ? $variants : [];
@@ -133,7 +150,9 @@ class DiningRoom
     {
         return DB::transaction(function () use ($billId, $partnerId, $branchId, $actorId, $input) {
             $bill = DiningBill::whereKey($billId)->where('partner_id', $partnerId)->where('partner_location_id', $branchId)->firstOrFail();
-            PartnerLocationTable::whereKey($bill->dining_table_id)->lockForUpdate()->firstOrFail();
+            if ($bill->dining_table_id) {
+                PartnerLocationTable::whereKey($bill->dining_table_id)->lockForUpdate()->firstOrFail();
+            }
             $bill = DiningBill::whereKey($bill->id)->lockForUpdate()->firstOrFail();
             $existing = DiningPayment::where('idempotency_key', $input['idempotency_key'])->first();
             if ($existing) {
@@ -152,7 +171,7 @@ class DiningRoom
             $rounds->each(fn ($round) => $round->setRelation('order', $orders->get($round->order_id)));
             $bill->setRelation('rounds', $rounds);
             $payable = $orders->where('order_status_id', '!=', LibraryStatus::STATUS_CANCELLED);
-            abort_if($payable->isEmpty() || $payable->contains(fn ($order) => (int) $order->order_status_id !== LibraryStatus::STATUS_COMPLETED), 409, 'Serve all orders before closing this bill.');
+            abort_if($payable->isEmpty(), 409, 'This bill has no payable orders.');
             abort_if($rounds->count() !== $orders->count(), 409, 'An order is missing from this bill.');
             $totals = $this->totals($bill);
             abort_unless($totals['total'] === (int) $input['expected_total'], 409, 'The bill total changed. Review it before recording payment.');
@@ -162,6 +181,18 @@ class DiningRoom
                 ? (int) $input['cash_tendered_cents']
                 : null;
             abort_if($isCash && ($cashTendered === null || $cashTendered < $totals['total']), 422, 'Cash tendered must cover the total due.');
+            // Merchant collection is allowed only before rider handoff. Clear COD
+            // on the existing delivery so the same order cannot be collected twice.
+            if (Schema::hasTable('rider_api_deliveries')) {
+                foreach ($payable->filter(fn ($order) => $order->cart->requiresDelivery()) as $deliveryOrder) {
+                    $delivery = DB::table('rider_api_deliveries')->where('legacy_order_id', $deliveryOrder->id)->lockForUpdate()->first();
+                    if ($delivery) {
+                        $beforeHandoff = ['offered', 'accepted', 'going_to_merchant', 'arrived_at_merchant', 'order_not_ready', 'waiting_started', 'pickup_verified'];
+                        abort_unless(in_array($delivery->current_state, $beforeHandoff, true), 409, 'This delivery has left the branch. Payment must follow the rider collection flow.');
+                        DB::table('rider_api_deliveries')->where('id', $delivery->id)->update(['cod_centavos' => 0, 'updated_at' => now()]);
+                    }
+                }
+            }
             $payment = DiningPayment::create([
                 'dining_bill_id' => $bill->id, 'idempotency_key' => $input['idempotency_key'],
                 'recorded_by_user_id' => $actorId, 'payment_method_id' => $method->id,
@@ -171,7 +202,9 @@ class DiningRoom
                 'reference' => $input['reference'] ?? null,
             ]);
             $receipt = $rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== LibraryStatus::STATUS_CANCELLED)
-                ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items])->values()->all();
+                ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items,
+                    'notes' => $round->order->cart?->notes, 'type' => $round->order->cart?->fulfillment_type,
+                    'placed_at' => $round->order->submitted_at ? Carbon::parse($round->order->submitted_at)->toIso8601String() : null])->values()->all();
             $bill->update(['status' => 'paid', 'totals' => $totals, 'receipt' => $receipt, 'closed_at' => now()]);
 
             return $payment;
