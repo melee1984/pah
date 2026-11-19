@@ -176,7 +176,7 @@ class DiningRoom
             $totals = $this->totals($bill);
             abort_unless($totals['total'] === (int) $input['expected_total'], 409, 'The bill total changed. Review it before recording payment.');
             $method = PaymentMethod::active()->forQr()->findOrFail($input['payment_method_id']);
-            $isCash = (int) $method->id === PaymentMethod::CHECKOUT_COD;
+            $isCash = $method->isCash();
             $cashTendered = $isCash && isset($input['cash_tendered_cents'])
                 ? (int) $input['cash_tendered_cents']
                 : null;
@@ -196,7 +196,7 @@ class DiningRoom
             $payment = DiningPayment::create([
                 'dining_bill_id' => $bill->id, 'idempotency_key' => $input['idempotency_key'],
                 'recorded_by_user_id' => $actorId, 'payment_method_id' => $method->id,
-                'method_name' => (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title, 'amount_cents' => $totals['total'],
+                'method_name' => $method->isCash() ? 'Cash' : $method->title, 'amount_cents' => $totals['total'],
                 'cash_tendered_cents' => $cashTendered,
                 'change_cents' => $cashTendered === null ? null : $cashTendered - $totals['total'],
                 'reference' => $input['reference'] ?? null,

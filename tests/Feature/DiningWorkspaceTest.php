@@ -189,6 +189,31 @@ class DiningWorkspaceTest extends TestCase
             ->assertJsonPath('payment.change', 500);
     }
 
+    public function test_separate_cash_method_exposes_amount_input_and_requires_tender(): void
+    {
+        DB::table('payment_method')->insert([
+            'id' => 4, 'title' => 'Cash', 'active' => true,
+            'available_in_application' => true, 'available_in_qr' => true,
+        ]);
+        $this->diningOrder(status: 'preparing');
+        $bill = DiningBill::first();
+        $this->actingAs($this->accounts['cashier']);
+        $methods = collect($this->getJson('/merchant/staff/data')->assertOk()->json('payment_methods'));
+        $this->assertTrue($methods->firstWhere('id', 4)['is_cash']);
+        $this->assertFalse($methods->firstWhere('id', 2)['is_cash']);
+
+        $input = array_replace($this->paymentInput($bill), ['payment_method_id' => 4, 'cash_tendered_cents' => null]);
+        $this->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)->assertUnprocessable();
+        $input['cash_tendered_cents'] = $input['expected_total'] - 1;
+        $this->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)->assertUnprocessable();
+        $input['cash_tendered_cents'] = $input['expected_total'] + 500;
+        $this->postJson("/merchant/staff/bills/{$bill->id}/payment", $input)->assertOk();
+        $this->getJson("/merchant/staff/bills/{$bill->id}/receipt")->assertOk()
+            ->assertJsonPath('payment.method', 'Cash')
+            ->assertJsonPath('payment.cash_tendered', $input['cash_tendered_cents'])
+            ->assertJsonPath('payment.change', 500);
+    }
+
     public function test_new_round_invalidates_a_cashiers_reviewed_total(): void
     {
         $this->diningOrder(status: 'served');
