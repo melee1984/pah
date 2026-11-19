@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Merchant;
 
 use App\DiningBill;
 use App\DiningPayment;
+use App\Http\Controllers\Api\Mobile\Store\OrderController;
 use App\Http\Controllers\Controller;
 use App\Model\Cart;
 use App\Model\Orders\Orders;
+use App\PartnerLocationCheckoutOption;
 use App\PartnerLocationTable;
 use App\Partners;
 use App\PaymentMethod;
 use App\Services\DiningRoom;
+use App\Services\StaffPos;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,9 +48,12 @@ class StaffController extends Controller
             'cashier' => ! $staff || $user->hasPermissionTo('branch.bills.view', 'web'),
             'serve' => ! $staff || $user->hasPermissionTo('branch.orders.prepare', 'web') || $user->hasPermissionTo('branch.tables.manage', 'web'),
             'tables' => ! $staff || $user->hasPermissionTo('branch.tables.manage', 'web'),
+            'pos' => ! $staff || $user->hasPermissionTo('branch.payments.record', 'web'),
             'pay' => ! $staff || $user->hasPermissionTo('branch.payments.record', 'web'),
         ];
         abort_unless(! $staff || $user->hasPermissionTo('branch.orders.view', 'web'), 403);
+
+        $request->attributes->set('merchantAccount', $merchant);
 
         return [$merchant, $branch, $abilities, $owner];
     }
@@ -56,7 +62,8 @@ class StaffController extends Controller
     {
         [$merchant, $branch, $abilities, $owner] = $this->context($request);
         $view = $request->query('view', $abilities['cashier'] ? 'overview' : 'kitchen');
-        abort_unless(in_array($view, ['overview', 'tables', 'orders', 'payments', 'kitchen'], true), 404);
+        abort_unless(in_array($view, ['overview', 'tables', 'orders', 'payments', 'pos', 'kitchen'], true), 404);
+        abort_unless($view !== 'pos' || $abilities['pos'], 403);
         abort_unless($view === 'kitchen' || $abilities['cashier'], 403);
 
         return response()->view('merchant.pages.staff.index', [
@@ -86,7 +93,7 @@ class StaffController extends Controller
     {
         $orders = Orders::with(['cart.details.item', 'cart.diningTable', 'cart.payment', 'billRound.bill'])
             ->where('partner_id', $partnerId)->whereNotNull('submitted_at')
-            ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId)->where('fulfillment_type', Cart::FULFILLMENT_DINE_IN))
+            ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
             ->where(function ($query) {
                 $query->whereNotIn('order_status_id', [7, 8, 9])->orWhereNull('order_status_id')
                     ->orWhereHas('billRound.bill', fn ($bill) => $bill->where('status', 'open'))
@@ -102,11 +109,13 @@ class StaffController extends Controller
 
             return [
                 'id' => $order->id, 'number' => $order->cart->order_no ?: (string) $order->id,
-                'table_id' => $order->cart->dining_table_id, 'table_name' => $order->cart->diningTable?->name ?? 'Dine-in',
+                'table_id' => $order->cart->dining_table_id, 'table_name' => $order->cart->diningTable?->name ?? ucfirst($order->cart->fulfillment_type ?: 'delivery'),
+                'type' => $order->cart->fulfillment_type ?: Cart::FULFILLMENT_DELIVERY,
+                'notes' => $order->cart->notes, 'source' => $order->cart->order_source,
                 'created' => Carbon::parse($order->submitted_at)->toIso8601String(),
                 'status_id' => $statusId,
                 'status' => match ($statusId) {
-                    1 => 'new', 2, 3 => 'preparing', 4 => 'ready', 7, 9 => 'served', 8 => 'cancelled', default => 'new'
+                    1 => 'new', 2, 3 => 'preparing', 4 => 'ready', 5 => 'on_the_way', 6 => 'arrived', 7, 9 => 'served', 8 => 'cancelled', default => 'new'
                 },
                 'round' => $round?->round ?? 1, 'bill_id' => $round?->dining_bill_id,
                 'paid' => $round?->bill?->status === 'paid', 'items' => $items,
@@ -122,7 +131,7 @@ class StaffController extends Controller
                 $preferred = $preferences->count() === 1 ? $preferences->first() : null;
 
                 return [
-                    'id' => $bill->id, 'table_id' => $bill->dining_table_id, 'totals' => $room->totals($bill),
+                    'id' => $bill->id, 'table_id' => $bill->dining_table_id, 'name' => $bill->dining_table_id ? null : 'Order #'.($rounds->first()?->order?->cart?->order_no ?? ''), 'totals' => $room->totals($bill),
                     'order_ids' => $rounds->pluck('order_id')->values(),
                     'payment_method_id' => $preferred?->id,
                     'payment_method' => $preferences->isEmpty()
@@ -132,6 +141,7 @@ class StaffController extends Controller
             }) : collect();
         $payments = $abilities['cashier'] ? DiningPayment::whereHas('bill', fn ($query) => $query->where('partner_id', $partnerId)->where('partner_location_id', $branchId))
             ->where('created_at', '>=', now()->startOfDay())->latest()->get()->map(fn ($payment) => [
+                'order_number' => $payment->bill->receipt[0]['number'] ?? null,
                 'id' => $payment->id, 'bill_id' => $payment->dining_bill_id, 'table_id' => $payment->bill->dining_table_id,
                 'method' => $payment->method_name, 'amount' => $payment->amount_cents, 'reference' => $payment->reference,
                 'cash_tendered' => $payment->cash_tendered_cents, 'change' => $payment->change_cents,
@@ -139,6 +149,17 @@ class StaffController extends Controller
             ]) : collect();
 
         return [
+            'fulfillment_types' => $abilities['pos'] ? PartnerLocationCheckoutOption::availableForLocation($branchId) : [],
+            'menu' => $abilities['pos'] ? app(StaffPos::class)->menu(Partners::findOrFail($partnerId), $branchId)->map(fn ($product) => [
+                'category_id' => $product->category_id, 'category' => $product->category?->name ?? 'Other',
+                'description' => trim(strip_tags($product->short_description ?: $product->description ?: '')),
+                'image' => $product->img ? $product->getProductImage() : null,
+                'id' => $product->id, 'name' => $product->title, 'price' => (int) round((float) $product->getPrice(true) * 100),
+                'variants' => $product->variants->map(fn ($header) => [
+                    'id' => $header->id, 'name' => $header->title, 'required' => (bool) $header->is_required, 'multiple' => (bool) $header->is_multiple,
+                    'options' => $header->product_details->map(fn ($detail) => ['id' => $detail->id, 'name' => $detail->title, 'price' => (int) round((float) str_replace(',', '', $detail->getPrice()) * 100)]),
+                ]),
+            ]) : [],
             'abilities' => $abilities, 'orders' => $tickets, 'bills' => $bills, 'payments' => $payments,
             'tables' => $abilities['cashier'] ? PartnerLocationTable::where('partner_location_id', $branchId)->orderBy('name')->get(['id', 'name', 'capacity', 'active', 'is_available']) : [],
             'payment_methods' => $abilities['pay'] ? PaymentMethod::active()->forQr()->get(['id', 'title'])->map(fn ($method) => [
@@ -150,11 +171,81 @@ class StaffController extends Controller
         ];
     }
 
+    public function store(Request $request, StaffPos $pos)
+    {
+        [$merchant, $branch, $abilities] = $this->context($request);
+        abort_unless($abilities['pos'] && $abilities['cashier'], 403);
+        $input = $request->validate([
+            'idempotency_key' => ['required', 'uuid'],
+            'fulfillment_type' => ['required', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'dining_table_id' => ['required_if:fulfillment_type,dine_in', 'nullable', 'integer'],
+            'payment_method_id' => ['required', 'integer'],
+            'fullname' => ['nullable', 'string', 'max:150'], 'mobile' => ['required_if:fulfillment_type,delivery', 'nullable', 'string', 'max:30'],
+            'address' => ['required_if:fulfillment_type,delivery', 'nullable', 'string', 'max:250'],
+            'lat' => ['required_if:fulfillment_type,delivery', 'nullable', 'numeric', 'between:-90,90'],
+            'long' => ['required_if:fulfillment_type,delivery', 'nullable', 'numeric', 'between:-180,180'],
+            'delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'items' => ['required', 'array', 'min:1', 'max:100'],
+            'items.*.product_id' => ['required', 'integer'], 'items.*.qty' => ['required', 'integer', 'min:1', 'max:100'],
+            'items.*.instruction' => ['nullable', 'string', 'max:250'],
+            'items.*.selections' => ['nullable', 'array', 'max:100'],
+            'items.*.selections.*.variant_id' => ['required', 'integer'],
+            'items.*.selections.*.product_detail_id' => ['required', 'integer'],
+        ]);
+        $order = $pos->create($merchant, $branch->id, $request->user()->id, $input);
+
+        return response()->json(['message' => 'Order sent to kitchen.', 'order_id' => $order->id,
+            'bill_id' => $order->billRound?->dining_bill_id, 'number' => $order->cart->order_no], 201);
+    }
+
+    public function quote(Request $request, StaffPos $pos)
+    {
+        [$merchant, $branch, $abilities] = $this->context($request);
+        abort_unless($abilities['pos'] && $abilities['cashier'], 403);
+        $input = $request->validate([
+            'fulfillment_type' => ['required', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:99999'],
+            'items' => ['required', 'array', 'min:1', 'max:100'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:100'],
+            'items.*.instruction' => ['nullable', 'string', 'max:250'],
+            'items.*.selections' => ['nullable', 'array', 'max:100'],
+            'items.*.selections.*.variant_id' => ['required', 'integer'],
+            'items.*.selections.*.product_detail_id' => ['required', 'integer'],
+        ]);
+
+        return response()->json(['totals' => $pos->quote($merchant, $branch->id, $input)])->header('Cache-Control', 'no-store');
+    }
+
     public function transition(Request $request, int $order, DiningRoom $room)
     {
         [$merchant, $branch, $abilities] = $this->context($request);
         $input = $request->validate(['action' => ['required', Rule::in(['preparing', 'ready', 'served'])], 'expected_status' => ['required', 'integer']]);
         abort_unless($input['action'] === 'served' ? $abilities['serve'] : $abilities['prepare'], 403);
+        $record = Orders::where('partner_id', $merchant->id)->whereHas('cart', fn ($q) => $q->where('partner_location_address_id', $branch->id))->findOrFail($order);
+        if ($record->cart->fulfillment_type !== Cart::FULFILLMENT_DINE_IN) {
+            $request->merge(['store_location_id' => $branch->id, 'merchant_location_id' => $branch->id]);
+            $request->attributes->set('merchantBranch', $branch);
+
+            return DB::transaction(function () use ($record, $request, $input) {
+                $record = Orders::whereKey($record->id)->lockForUpdate()->firstOrFail();
+                $status = (int) ($record->order_status_id ?: $record->status_id);
+                $target = ['preparing' => 3, 'ready' => 4, 'served' => 9][$input['action']];
+                abort_if($record->cart->requiresDelivery() && $input['action'] === 'served', 409, 'Delivery completion is recorded by the rider.');
+                if ($status === $target) {
+                    return response()->json(['message' => 'Order already updated.']);
+                }
+                abort_unless($status === $input['expected_status'], 409, 'This order changed. Refresh and try again.');
+                $controller = app(OrderController::class);
+
+                return match ($input['action']) {
+                    'preparing' => $controller->acceptOrder($record, $request),
+                    'ready' => $controller->markOrderReadyForPickup($record, $request),
+                    'served' => $controller->completeOrder($record, $request),
+                };
+            });
+        }
         $room->transition($order, $merchant->id, $branch->id, $input['action'], $request->user()->id, $input['expected_status']);
 
         return response()->json(['message' => 'Order updated.']);
@@ -171,7 +262,7 @@ class StaffController extends Controller
         ]);
         $payment = $room->pay($bill, $merchant->id, $branch->id, $request->user()->id, $input);
 
-        return response()->json(['message' => 'Payment recorded. Table is available.', 'payment_id' => $payment->id]);
+        return response()->json(['message' => 'Payment recorded.', 'payment_id' => $payment->id]);
     }
 
     public function receipt(Request $request, int $bill, DiningRoom $room)
@@ -183,7 +274,7 @@ class StaffController extends Controller
         $table = PartnerLocationTable::find($bill->dining_table_id);
 
         return response()->json([
-            'id' => $bill->id, 'table_name' => $table?->name ?? 'Dining table',
+            'id' => $bill->id, 'table_name' => $table?->name ?? 'POS order #'.($bill->rounds->first()?->order?->cart?->order_no ?? $bill->id),
             'paid' => $bill->status === 'paid', 'totals' => $bill->totals ?? $room->totals($bill),
             'orders' => $bill->receipt ?? $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8)
                 ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items])->values(),
@@ -203,7 +294,9 @@ class StaffController extends Controller
         abort_unless($abilities['tables'], 403);
         DB::transaction(function () use ($bill, $merchant, $branch) {
             $record = DiningBill::where('partner_id', $merchant->id)->where('partner_location_id', $branch->id)->findOrFail($bill);
-            PartnerLocationTable::whereKey($record->dining_table_id)->lockForUpdate()->firstOrFail();
+            if ($record->dining_table_id) {
+                PartnerLocationTable::whereKey($record->dining_table_id)->lockForUpdate()->firstOrFail();
+            }
             $record = DiningBill::whereKey($record->id)->lockForUpdate()->firstOrFail();
             abort_unless($record->status === 'open', 409, 'This bill is already closed.');
             $orderIds = $record->rounds()->pluck('order_id');

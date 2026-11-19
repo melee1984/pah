@@ -271,7 +271,7 @@ class RiderOfferDispatcher
             'dropoff_address' => $this->address($dropoff?->address_1, $dropoff?->address_2, $dropoff?->landmark),
             'dropoff_latitude' => $dropoff?->lat ?? $cart?->user_lat,
             'dropoff_longitude' => $dropoff?->long ?? $cart?->user_long,
-            'customer_name' => trim((string) ($order->user?->full_name ?? 'Pahatud customer')),
+            'customer_name' => trim((string) ($cart?->fullname ?: ($order->user?->full_name ?? 'Pahatud customer'))),
             'customer_mobile' => $dropoff?->mobile ?? $order->user?->mobile,
             'distance_meters' => $this->distanceMeters(
                 $pickup?->latitude ?? $partner?->latitude,
@@ -287,7 +287,8 @@ class RiderOfferDispatcher
                 * 100
                 * ((float) config('rider.pahatud_commission_percentage', 20) / 100)
             )),
-            'cod_centavos' => (int) ($cart?->payment_id) === PaymentMethod::CHECKOUT_COD ? $totalCentavos : 0,
+            'cod_centavos' => (int) ($cart?->payment_id) === PaymentMethod::CHECKOUT_COD
+                && (! Schema::hasTable('dining_bill_orders') || $order->billRound?->bill?->status !== 'paid') ? $totalCentavos : 0,
             'order_count' => 1,
             'is_batched' => false,
             'pickup_code_hash' => hash('sha256', $this->pickupCode($order->getKey())),
