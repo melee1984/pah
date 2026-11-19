@@ -26,6 +26,7 @@ class StaffPos
 
     public function quote(Partners $merchant, int $branchId, array $input): array
     {
+        abort_unless($input['fulfillment_type'] === Cart::FULFILLMENT_DINE_IN, 422, 'The cashier POS accepts in-store dine-in orders only.');
         abort_unless(PartnerLocationCheckoutOption::enabledForLocation($branchId, $input['fulfillment_type']), 422, 'This order type is disabled for this branch.');
         $cart = new Cart([
             'partner_id' => $merchant->id, 'fulfillment_type' => $input['fulfillment_type'],
@@ -80,6 +81,7 @@ class StaffPos
                 return $existing->order;
             }
             $type = $input['fulfillment_type'];
+            abort_unless($type === Cart::FULFILLMENT_DINE_IN, 422, 'The cashier POS accepts in-store dine-in orders only.');
             abort_unless(PartnerLocationCheckoutOption::enabledForLocation($branchId, $type), 422, 'This order type is disabled for this branch.');
             $table = $type === Cart::FULFILLMENT_DINE_IN
                 ? PartnerLocationTable::where('partner_location_id', $branchId)->where('active', true)->where('is_available', true)->lockForUpdate()->findOrFail($input['dining_table_id'])

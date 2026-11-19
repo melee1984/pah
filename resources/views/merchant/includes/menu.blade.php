@@ -2,6 +2,7 @@
   $staff = Auth::user()->isMerchantStaff();
   $staffMerchant = request()->attributes->get('merchantAccount') ?? Auth::user()->merchant;
   $canBill = ! $staff || Auth::user()->hasPermissionTo('branch.bills.view', 'web');
+  $staffPage = request()->routeIs('merchant.staff.index');
   $staffView = $bootstrap['view'] ?? request('view');
   $staffBranch = request('branch_id') ? ['branch_id' => request('branch_id')] : [];
   $canOrders = ! $staff || Auth::user()->hasPermissionTo('branch.orders.view', 'web');
@@ -19,9 +20,9 @@
   @if ($staffMerchant?->qr_ordering_enabled && $canOrders)
     <li class="nav-header merchant-nav-section">Dining service</li>
     @if($canBill)
-    <li class="nav-item"><a href="{{ route('merchant.staff.index', $staffBranch) }}" aria-label="Cashier workspace" class="nav-link {{ request()->routeIs('merchant.staff.*') && $staffView !== 'kitchen' ? 'active' : '' }}"><i class="nav-icon fas fa-cash-register"></i><p>Cashier workspace</p></a></li>
+    <li class="nav-item"><a href="{{ route('merchant.staff.index', $staffBranch) }}" aria-label="Cashier workspace" @if($staffPage) :class="{ active: !['kitchen', 'history'].includes(workspace.view) }" @endif class="nav-link {{ ! $staffPage && request()->routeIs('merchant.staff.*') && ! in_array($staffView, ['kitchen', 'history'], true) ? 'active' : '' }}"><i class="nav-icon fas fa-cash-register"></i><p>Cashier workspace</p></a></li>
     @endif
-    <li class="nav-item"><a href="{{ route('merchant.staff.index', ['view' => 'kitchen'] + $staffBranch) }}" aria-label="Kitchen display" class="nav-link {{ request()->routeIs('merchant.staff.*') && $staffView === 'kitchen' ? 'active' : '' }}"><i class="nav-icon fas fa-utensils"></i><p>Kitchen display</p></a></li>
+    <li class="nav-item"><a href="{{ route('merchant.staff.index', ['view' => 'kitchen'] + $staffBranch) }}" aria-label="Kitchen display" @if($staffPage) :class="{ active: workspace.view === 'kitchen' }" @endif class="nav-link {{ ! $staffPage && request()->routeIs('merchant.staff.*') && $staffView === 'kitchen' ? 'active' : '' }}"><i class="nav-icon fas fa-utensils"></i><p>Kitchen display</p></a></li>
   @endif
   @unless($staff)
   <li class="nav-header merchant-nav-section">Manage store</li>

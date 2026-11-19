@@ -11,6 +11,7 @@ use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\PartnerLocationTable;
 use App\PaymentMethod;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -170,7 +171,7 @@ class DiningRoom
             $rounds->each(fn ($round) => $round->setRelation('order', $orders->get($round->order_id)));
             $bill->setRelation('rounds', $rounds);
             $payable = $orders->where('order_status_id', '!=', LibraryStatus::STATUS_CANCELLED);
-            abort_if($payable->isEmpty() || $payable->contains(fn ($order) => ! in_array((int) $order->order_status_id, $order->cart->requiresDelivery() ? [LibraryStatus::STATUS_READY_FOR_PICKUP, LibraryStatus::STATUS_DELIVERED, LibraryStatus::STATUS_COMPLETED] : [LibraryStatus::STATUS_COMPLETED], true)), 409, 'Serve all orders before closing this bill.');
+            abort_if($payable->isEmpty(), 409, 'This bill has no payable orders.');
             abort_if($rounds->count() !== $orders->count(), 409, 'An order is missing from this bill.');
             $totals = $this->totals($bill);
             abort_unless($totals['total'] === (int) $input['expected_total'], 409, 'The bill total changed. Review it before recording payment.');
@@ -201,7 +202,9 @@ class DiningRoom
                 'reference' => $input['reference'] ?? null,
             ]);
             $receipt = $rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== LibraryStatus::STATUS_CANCELLED)
-                ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items])->values()->all();
+                ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items,
+                    'notes' => $round->order->cart?->notes, 'type' => $round->order->cart?->fulfillment_type,
+                    'placed_at' => $round->order->submitted_at ? Carbon::parse($round->order->submitted_at)->toIso8601String() : null])->values()->all();
             $bill->update(['status' => 'paid', 'totals' => $totals, 'receipt' => $receipt, 'closed_at' => now()]);
 
             return $payment;

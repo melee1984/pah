@@ -1,5 +1,8 @@
 # Cashier POS redesign
 
+Current counter-service behavior is documented in [In-store counter service](counter-service.md): immediate payment, in-store-only POS, touch table cards, Served/live-board rules and serving-time history supersede the earlier behavior below.
+
+
 The existing `/merchant/staff?view=pos` now uses a product catalog beside a single order panel. The merchant sidebar and Pahatud theme remain shared with the staff workspace.
 
 ## Catalog and order panel

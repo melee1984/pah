@@ -1,5 +1,8 @@
 # Merchant dining workspace
 
+Current counter-service behavior is documented in [In-store counter service](counter-service.md): immediate payment, in-store-only POS, touch table cards, Served/live-board rules and serving-time history supersede the earlier behavior below.
+
+
 The existing merchant dashboard links to **Cashier workspace** and **Kitchen display** under Dining service. Both use the existing merchant web login and Vue 2 merchant entry point. Kitchen/Cashier accounts land directly in their assigned branch; owners can switch among their own branches.
 
 ## Workflow

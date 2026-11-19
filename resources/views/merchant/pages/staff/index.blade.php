@@ -13,10 +13,11 @@
   <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
   <link rel="stylesheet" href="{{ asset('css/merchant-staff.css') }}">
   <link rel="stylesheet" href="{{ asset('css/merchant-pos.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/merchant-receipt.css') }}">
   @vite('resources/js/merchant.js')
 </head>
 <body class="pahatud-admin pahatud-merchant staff-page">
-  <div id="app"><merchant-staff-workspace :config="{{ Illuminate\Support\Js::from($bootstrap) }}"><template v-slot:sidebar>@include('merchant.includes.sidebar')</template></merchant-staff-workspace></div>
+  <div id="app"><merchant-staff-workspace :config="{{ Illuminate\Support\Js::from($bootstrap) }}"><template v-slot:sidebar="workspace">@include('merchant.includes.sidebar')</template></merchant-staff-workspace></div>
   <noscript>Enable JavaScript to view live branch orders.</noscript>
 </body>
 </html>

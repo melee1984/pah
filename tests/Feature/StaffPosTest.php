@@ -43,9 +43,19 @@ class StaffPosTest extends TestCase
         ];
     }
 
-    public function test_pos_creates_all_types_using_existing_orders_items_bills_and_payments(): void
+    private function legacyChannelOrder(string $type): Orders
     {
-        foreach (Cart::FULFILLMENT_TYPES as $type) {
+        $cart = Cart::create(['partner_id' => 1, 'session_id' => (string) Str::uuid(), 'partner_location_address_id' => 1,
+            'fulfillment_type' => $type, 'order_source' => Cart::ORDER_SOURCE_POS, 'payment_id' => 3]);
+        $cart->forceFill(['fullname' => 'Walk-in'])->save();
+        $cart->details()->create(['item_id' => 1, 'qty' => 1, 'price' => 165]);
+
+        return Orders::create(['cart_id' => $cart->id, 'partner_id' => 1, 'submitted_at' => now(), 'order_status_id' => 1]);
+    }
+
+    public function test_in_store_pos_reuses_existing_orders_items_bills_and_payments(): void
+    {
+        foreach ([Cart::FULFILLMENT_DINE_IN] as $type) {
             $input = $this->input($type);
             $response = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $input)->assertCreated();
             $this->postJson('/merchant/staff/orders', $input)->assertCreated()->assertJsonPath('order_id', $response->json('order_id'));
@@ -71,8 +81,8 @@ class StaffPosTest extends TestCase
                 $this->assertSame('Davao address', $order->cart->address->address_1);
             }
         }
-        $this->assertSame(3, Orders::count());
-        $this->assertSame(3, DiningPayment::count());
+        $this->assertSame(1, Orders::count());
+        $this->assertSame(1, DiningPayment::count());
     }
 
     public function test_incoming_customer_orders_of_all_types_have_complete_branch_scoped_kitchen_details(): void
@@ -122,7 +132,7 @@ class StaffPosTest extends TestCase
 
     public function test_pos_bill_payment_and_receipts_cannot_cross_branch_boundaries(): void
     {
-        $this->actingAs($this->accounts['owner'])->postJson('/merchant/staff/orders?branch_id=2', array_replace($this->input('pickup'), ['dining_table_id' => null]))->assertCreated();
+        $this->actingAs($this->accounts['owner'])->postJson('/merchant/staff/orders?branch_id=2', array_replace($this->input(), ['dining_table_id' => 20]))->assertCreated();
         $bill = DiningBill::first();
         $this->actingAs($this->accounts['cashier'])->getJson("/merchant/staff/bills/{$bill->id}/receipt?branch_id=2")->assertNotFound();
         $this->postJson("/merchant/staff/bills/{$bill->id}/payment?branch_id=2", ['idempotency_key' => (string) Str::uuid(), 'payment_method_id' => 3, 'expected_total' => 0])->assertNotFound();
@@ -131,7 +141,7 @@ class StaffPosTest extends TestCase
 
     public function test_pos_replay_cannot_silently_replace_a_changed_order(): void
     {
-        $input = $this->input('pickup');
+        $input = $this->input();
         $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $input)->assertCreated();
         $input['items'][0]['qty']++;
         $this->postJson('/merchant/staff/orders', $input)->assertConflict();
@@ -140,23 +150,21 @@ class StaffPosTest extends TestCase
 
     public function test_disabled_branch_fulfillment_type_cannot_be_used_for_pos(): void
     {
-        PartnerLocationCheckoutOption::create(['partner_location_id' => 1, 'type' => 'dine_in', 'active' => true]);
-        $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('pickup'))->assertUnprocessable();
+        PartnerLocationCheckoutOption::create(['partner_location_id' => 1, 'type' => 'dine_in', 'active' => false]);
+        $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input())->assertUnprocessable();
         $this->assertSame(0, Orders::count());
     }
 
     public function test_pickup_transitions_reuse_merchant_flow_and_delivery_cannot_be_marked_served(): void
     {
-        $response = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('pickup'))->assertCreated();
-        $id = $response->json('order_id');
+        $id = $this->legacyChannelOrder('pickup')->id;
         $this->actingAs($this->accounts['kitchen']);
         foreach ([['preparing', 1, 3], ['ready', 3, 4], ['served', 4, 9]] as [$action, $before, $after]) {
             $this->postJson("/merchant/staff/orders/$id/transition", ['action' => $action, 'expected_status' => $before])->assertOk();
             $this->assertDatabaseHas('order', ['id' => $id, 'order_status_id' => $after]);
             $this->assertDatabaseHas('order_process', ['order_id' => $id, 'status_id' => $after, 'user_id' => $this->accounts['kitchen']->id]);
         }
-        $response = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('delivery'))->assertCreated();
-        $id = $response->json('order_id');
+        $id = $this->legacyChannelOrder('delivery')->id;
         DB::table('order')->where('id', $id)->update(['order_status_id' => 4]);
         $this->actingAs($this->accounts['kitchen'])->postJson("/merchant/staff/orders/$id/transition", ['action' => 'served', 'expected_status' => 4])->assertConflict();
     }
@@ -164,8 +172,8 @@ class StaffPosTest extends TestCase
     public function test_cashier_delivery_payment_clears_cod_before_handoff_and_is_blocked_after_handoff(): void
     {
         foreach (['offered', 'picked_up'] as $state) {
-            $response = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('delivery'))->assertCreated();
-            $order = Orders::findOrFail($response->json('order_id'));
+            $this->actingAs($this->accounts['cashier']);
+            $order = $this->legacyChannelOrder('delivery');
             DB::table('order')->where('id', $order->id)->update(['order_status_id' => 4]);
             $bill = $order->billRound->bill;
             $total = app(DiningRoom::class)->totals($bill)['total'];
@@ -184,8 +192,8 @@ class StaffPosTest extends TestCase
 
     public function test_dispatch_created_after_cashier_payment_has_no_cod_to_collect(): void
     {
-        $response = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('delivery'))->assertCreated();
-        $order = Orders::findOrFail($response->json('order_id'));
+        $this->actingAs($this->accounts['cashier']);
+        $order = $this->legacyChannelOrder('delivery');
         DB::table('order')->where('id', $order->id)->update(['order_status_id' => 4]);
         $bill = $order->billRound->bill;
         $total = app(DiningRoom::class)->totals($bill)['total'];
@@ -196,7 +204,7 @@ class StaffPosTest extends TestCase
 
     public function test_pos_quote_matches_saved_order_and_does_not_write_drafts(): void
     {
-        foreach (Cart::FULFILLMENT_TYPES as $type) {
+        foreach ([Cart::FULFILLMENT_DINE_IN] as $type) {
             $input = $this->input($type);
             $input['items'][0]['price'] = 1;
             $before = Cart::count();

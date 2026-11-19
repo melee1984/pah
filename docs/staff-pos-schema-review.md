@@ -1,5 +1,8 @@
 # Staff POS and kitchen integration
 
+Current counter-service behavior is documented in [In-store counter service](counter-service.md): immediate payment, in-store-only POS, touch table cards, Served/live-board rules and serving-time history supersede the earlier behavior below.
+
+
 ## Schema review (19 November 2026)
 
 Reviewed the local MySQL definitions, Eloquent relationships, migrations, QR/mobile checkout, merchant acceptance/ready/completion, rider dispatch/COD, and dining settlement before changing the flow. The current repository/database has substantially more migrations than the older AGENTS.md inventory.

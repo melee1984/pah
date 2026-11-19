@@ -13,6 +13,7 @@ use App\PartnerLocationTable;
 use App\Partners;
 use App\PaymentMethod;
 use App\Services\DiningRoom;
+use App\Services\StaffOrderPresenter;
 use App\Services\StaffPos;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -48,6 +49,7 @@ class StaffController extends Controller
             'cashier' => ! $staff || $user->hasPermissionTo('branch.bills.view', 'web'),
             'serve' => ! $staff || $user->hasPermissionTo('branch.orders.prepare', 'web') || $user->hasPermissionTo('branch.tables.manage', 'web'),
             'tables' => ! $staff || $user->hasPermissionTo('branch.tables.manage', 'web'),
+            'reports' => ! $staff,
             'pos' => ! $staff || $user->hasPermissionTo('branch.payments.record', 'web'),
             'pay' => ! $staff || $user->hasPermissionTo('branch.payments.record', 'web'),
         ];
@@ -62,9 +64,9 @@ class StaffController extends Controller
     {
         [$merchant, $branch, $abilities, $owner] = $this->context($request);
         $view = $request->query('view', $abilities['cashier'] ? 'overview' : 'kitchen');
-        abort_unless(in_array($view, ['overview', 'tables', 'orders', 'payments', 'pos', 'kitchen'], true), 404);
+        abort_unless(in_array($view, ['overview', 'tables', 'orders', 'payments', 'pos', 'kitchen', 'history'], true), 404);
         abort_unless($view !== 'pos' || $abilities['pos'], 403);
-        abort_unless($view === 'kitchen' || $abilities['cashier'], 403);
+        abort_unless(in_array($view, ['kitchen', 'history'], true) || $abilities['cashier'], 403);
 
         return response()->view('merchant.pages.staff.index', [
             'bootstrap' => [
@@ -91,39 +93,21 @@ class StaffController extends Controller
 
     private function payload(int $partnerId, int $branchId, array $abilities, DiningRoom $room): array
     {
-        $orders = Orders::with(['cart.details.item', 'cart.diningTable', 'cart.payment', 'billRound.bill'])
+        $orders = Orders::with(['cart.details.item', 'cart.diningTable', 'cart.payment', 'billRound.bill.payment', 'orderprocess'])
             ->where('partner_id', $partnerId)->whereNotNull('submitted_at')
             ->whereHas('cart', fn ($query) => $query->where('partner_location_address_id', $branchId))
             ->where(function ($query) {
-                $query->whereNotIn('order_status_id', [7, 8, 9])->orWhereNull('order_status_id')
-                    ->orWhereHas('billRound.bill', fn ($bill) => $bill->where('status', 'open'))
-                    ->orWhere('submitted_at', '>=', now()->startOfDay());
+                $query->whereRaw('COALESCE(order_status_id, status_id, 1) NOT IN (7, 8, 9)')
+                    ->orWhere(function ($served) {
+                        $served->whereRaw('COALESCE(order_status_id, status_id, 1) IN (7, 9)')
+                            ->whereDoesntHave('billRound.bill.payment')
+                            ->where(function ($balance) {
+                                $balance->whereHas('billRound.bill', fn ($bill) => $bill->where('status', 'open'))
+                                    ->orWhere('submitted_at', '>=', now()->startOfDay());
+                            });
+                    });
             })->oldest('submitted_at')->get();
-        $tickets = $orders->map(function ($order) use ($room, $abilities) {
-            $round = $order->billRound;
-            $statusId = (int) ($order->order_status_id ?: $order->status_id);
-            $items = $round?->items ?? $room->items($order->cart);
-            if (! $abilities['cashier']) {
-                $items = array_map(fn ($item) => array_diff_key($item, ['unit_price' => true]), $items);
-            }
-
-            return [
-                'id' => $order->id, 'number' => $order->cart->order_no ?: (string) $order->id,
-                'table_id' => $order->cart->dining_table_id, 'table_name' => $order->cart->diningTable?->name ?? ucfirst($order->cart->fulfillment_type ?: 'delivery'),
-                'type' => $order->cart->fulfillment_type ?: Cart::FULFILLMENT_DELIVERY,
-                'notes' => $order->cart->notes, 'source' => $order->cart->order_source,
-                'created' => Carbon::parse($order->submitted_at)->toIso8601String(),
-                'status_id' => $statusId,
-                'status' => match ($statusId) {
-                    1 => 'new', 2, 3 => 'preparing', 4 => 'ready', 5 => 'on_the_way', 6 => 'arrived', 7, 9 => 'served', 8 => 'cancelled', default => 'new'
-                },
-                'round' => $round?->round ?? 1, 'bill_id' => $round?->dining_bill_id,
-                'paid' => $round?->bill?->status === 'paid', 'items' => $items,
-                'payment_method_id' => $order->cart->payment_id,
-                'payment_method' => $this->paymentMethodName($order->cart->payment),
-                'total' => $abilities['cashier'] ? ($round?->amounts['total'] ?? (int) round($order->cart->cartItemAmounts()['total'] * 100)) : null,
-            ];
-        });
+        $tickets = $orders->map(fn ($order) => app(StaffOrderPresenter::class)->ticket($order, $abilities));
         $bills = $abilities['cashier'] ? DiningBill::with('rounds.order.cart.payment')->where('partner_id', $partnerId)
             ->where('partner_location_id', $branchId)->where('status', 'open')->get()->map(function ($bill) use ($room) {
                 $rounds = $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8);
@@ -149,7 +133,7 @@ class StaffController extends Controller
             ]) : collect();
 
         return [
-            'fulfillment_types' => $abilities['pos'] ? PartnerLocationCheckoutOption::availableForLocation($branchId) : [],
+            'fulfillment_types' => $abilities['pos'] ? array_values(array_filter(PartnerLocationCheckoutOption::availableForLocation($branchId), fn ($option) => $option['type'] === Cart::FULFILLMENT_DINE_IN)) : [],
             'menu' => $abilities['pos'] ? app(StaffPos::class)->menu(Partners::findOrFail($partnerId), $branchId)->map(fn ($product) => [
                 'category_id' => $product->category_id, 'category' => $product->category?->name ?? 'Other',
                 'description' => trim(strip_tags($product->short_description ?: $product->description ?: '')),
@@ -171,13 +155,53 @@ class StaffController extends Controller
         ];
     }
 
+    public function history(Request $request)
+    {
+        [$merchant, $branch, $abilities] = $this->context($request);
+        $input = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'sort' => ['nullable', Rule::in(['newest', 'fastest'])],
+        ]);
+        $from = Carbon::parse($input['from'] ?? now()->subDays(6)->toDateString())->startOfDay();
+        $to = Carbon::parse($input['to'] ?? now()->toDateString())->endOfDay();
+        abort_unless($from->lessThanOrEqualTo($to), 422, 'Choose a valid date range.');
+        $fastest = ($input['sort'] ?? 'newest') === 'fastest';
+        abort_unless(! $fastest || $abilities['reports'], 403);
+        $query = Orders::with(['cart.details.item', 'cart.diningTable', 'cart.payment', 'billRound.bill.payment', 'orderprocess'])
+            ->where('partner_id', $merchant->id)
+            ->whereHas('cart', fn ($q) => $q->where('partner_location_address_id', $branch->id))
+            ->where(function ($dates) use ($from, $to) {
+                $dates->whereBetween('submitted_at', [$from, $to])
+                    ->orWhere(fn ($missing) => $missing->whereNull('submitted_at')->whereBetween('created_at', [$from, $to]));
+            });
+        if ($fastest) {
+            $query->whereHas('cart', fn ($q) => $q->whereIn('fulfillment_type', [Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP]))
+                ->whereNotNull('delivered_at')->whereColumn('delivered_at', '>=', 'submitted_at')
+                ->where(fn ($served) => $served->whereRaw('COALESCE(order_status_id, status_id, 1) = 9')->orWhereHas('orderprocess', fn ($process) => $process->where('status_id', 9)));
+            $duration = DB::connection()->getDriverName() === 'sqlite'
+                ? "(strftime('%s', delivered_at) - strftime('%s', submitted_at))"
+                : 'TIMESTAMPDIFF(SECOND, submitted_at, delivered_at)';
+            $query->orderByRaw($duration.' ASC')->orderBy('id');
+        } else {
+            $query->latest('submitted_at')->latest('id');
+        }
+        $page = $query->paginate(30);
+
+        return response()->json([
+            'orders' => collect($page->items())->map(fn ($order) => app(StaffOrderPresenter::class)->ticket($order, $abilities)),
+            'page' => $page->currentPage(), 'last_page' => $page->lastPage(), 'total' => $page->total(),
+            'branch' => ['id' => $branch->id, 'name' => $branch->address_1],
+        ])->header('Cache-Control', 'no-store');
+    }
+
     public function store(Request $request, StaffPos $pos)
     {
         [$merchant, $branch, $abilities] = $this->context($request);
         abort_unless($abilities['pos'] && $abilities['cashier'], 403);
         $input = $request->validate([
             'idempotency_key' => ['required', 'uuid'],
-            'fulfillment_type' => ['required', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'fulfillment_type' => ['required', Rule::in([Cart::FULFILLMENT_DINE_IN])],
             'dining_table_id' => ['required_if:fulfillment_type,dine_in', 'nullable', 'integer'],
             'payment_method_id' => ['required', 'integer'],
             'fullname' => ['nullable', 'string', 'max:150'], 'mobile' => ['required_if:fulfillment_type,delivery', 'nullable', 'string', 'max:30'],
@@ -204,7 +228,7 @@ class StaffController extends Controller
         [$merchant, $branch, $abilities] = $this->context($request);
         abort_unless($abilities['pos'] && $abilities['cashier'], 403);
         $input = $request->validate([
-            'fulfillment_type' => ['required', Rule::in(Cart::FULFILLMENT_TYPES)],
+            'fulfillment_type' => ['required', Rule::in([Cart::FULFILLMENT_DINE_IN])],
             'delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],
@@ -273,11 +297,21 @@ class StaffController extends Controller
             ->where('partner_location_id', $branch->id)->findOrFail($bill);
         $table = PartnerLocationTable::find($bill->dining_table_id);
 
+        $receiptOrders = collect($bill->receipt ?? $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8)
+            ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items])->values()->all());
+        $receiptOrders = $receiptOrders->map(function ($snapshot) use ($bill, $abilities) {
+            $order = $bill->rounds->firstWhere('order_id', $snapshot['id'])?->order;
+            $ticket = $order ? app(StaffOrderPresenter::class)->ticket($order, $abilities) : null;
+
+            return $snapshot + ['notes' => $ticket['notes'] ?? null, 'type' => $ticket['type'] ?? null,
+                'placed_at' => $ticket['placed_at'] ?? null, 'status' => $ticket['status'] ?? 'unknown', 'status_id' => $ticket['status_id'] ?? null,
+                'served_at' => $ticket['served_at'] ?? null, 'time_to_serve_seconds' => $ticket['time_to_serve_seconds'] ?? null];
+        });
+
         return response()->json([
             'id' => $bill->id, 'table_name' => $table?->name ?? 'POS order #'.($bill->rounds->first()?->order?->cart?->order_no ?? $bill->id),
             'paid' => $bill->status === 'paid', 'totals' => $bill->totals ?? $room->totals($bill),
-            'orders' => $bill->receipt ?? $bill->rounds->filter(fn ($round) => $round->order && (int) $round->order->order_status_id !== 8)
-                ->map(fn ($round) => ['id' => $round->order_id, 'number' => $round->order->cart?->order_no ?: (string) $round->order_id, 'round' => $round->round, 'items' => $round->items])->values(),
+            'orders' => $receiptOrders,
             'payment' => $bill->payment ? [
                 'method' => $bill->payment->method_name,
                 'reference' => $bill->payment->reference,
