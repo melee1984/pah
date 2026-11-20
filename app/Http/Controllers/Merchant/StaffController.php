@@ -148,8 +148,8 @@ class StaffController extends Controller
             'tables' => $abilities['cashier'] ? PartnerLocationTable::where('partner_location_id', $branchId)->orderBy('name')->get(['id', 'name', 'capacity', 'active', 'is_available']) : [],
             'payment_methods' => $abilities['pay'] ? PaymentMethod::active()->forQr()->get(['id', 'title'])->map(fn ($method) => [
                 'id' => $method->id,
-                'title' => (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title,
-                'is_cash' => (int) $method->id === PaymentMethod::CHECKOUT_COD,
+                'title' => $method->isCash() ? 'Cash' : $method->title,
+                'is_cash' => $method->isCash(),
             ]) : [],
             'updated_at' => now()->toIso8601String(),
         ];
@@ -359,6 +359,6 @@ class StaffController extends Controller
             return null;
         }
 
-        return (int) $method->id === PaymentMethod::CHECKOUT_COD ? 'Cash' : $method->title;
+        return $method->isCash() ? 'Cash' : $method->title;
     }
 }

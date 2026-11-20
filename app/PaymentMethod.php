@@ -19,6 +19,14 @@ class PaymentMethod extends Model
         'cod' => self::CHECKOUT_COD,
     ];
 
+    public function isCash(): bool
+    {
+        $title = strtolower(trim((string) $this->title));
+
+        return (int) $this->id === self::CHECKOUT_COD
+            || in_array($title, ['cash', 'cod', 'cash on delivery'], true);
+    }
+
     public static function resolveCheckoutId(mixed $paymentMethod): ?int
     {
         if (is_int($paymentMethod) || (is_string($paymentMethod) && ctype_digit($paymentMethod))) {

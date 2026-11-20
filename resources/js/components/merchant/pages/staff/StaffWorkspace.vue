@@ -14,7 +14,7 @@
           <a class="logout" :href="config.logout">Log out</a>
         </div>
       </header>
-      <div class="content">
+      <div v-show="!paymentBill" class="content">
         <nav v-if="config.abilities.cashier && view !== 'kitchen' && !fullscreen" class="staff-workspace-tabs" aria-label="Cashier tools"><button v-for="tab in cashierTabs" :key="tab.id" class="btn" :class="{primary: view === tab.id}" @click="changeView(tab.id)">{{ tab.title }}</button></nav>
         <div v-if="view !== 'pos'" class="page-title">
           <div><div class="eyebrow" style="color:#9a9da5;margin-bottom:7px">{{ view === 'kitchen' ? 'KITCHEN OPERATIONS' : view === 'history' ? 'ORDER HISTORY' : 'CASHIER OPERATIONS' }}</div><h1>{{ pageTitle }}</h1><p>{{ view === 'kitchen' ? 'Prepare delivery, pickup and dine-in orders for this branch.' : view === 'history' ? 'Review recorded serving times and payment status for this branch.' : 'Manage tables, review open bills, and record received payments for this branch.' }}</p></div>
@@ -70,7 +70,7 @@
                   <template v-if="selectedBill && selectedOrders.length">
                     <div class="bill-list"><div v-for="order in selectedOrders" :key="order.id"><div class="round"><span>Round {{ order.round }} · #{{ order.number }}</span><span>{{ order.status === 'served' ? 'Served' : label(order.status) }} · {{ order.payment_method || 'No payment selected' }}</span></div><div v-for="(item, index) in order.items" :key="index" class="bill-item"><span class="qty">{{ item.qty }}×</span><div class="name">{{ item.name }}<small v-if="item.variants" class="variants">{{ item.variants }}</small><small v-if="item.note">{{ item.note }}</small></div><span class="price">{{ money(item.qty * item.unit_price) }}</span></div></div></div>
                     <div class="bill-totals"><div class="row"><span>Subtotal</span><span>{{ money(selectedBill.totals.sub_total) }}</span></div><div v-if="billFees(selectedBill)" class="row"><span>Fees</span><span>{{ money(billFees(selectedBill)) }}</span></div><div v-if="selectedBill.totals.discount" class="row"><span>Discount</span><span>−{{ money(selectedBill.totals.discount) }}</span></div><div class="row total"><span>Total due</span><span>{{ money(selectedBill.totals.total) }}</span></div><div class="payment-preference"><span><small>Customer selected</small><strong>{{ selectedBill.payment_method || 'No payment preference' }}</strong></span><span class="payment-state unpaid">Not yet paid</span></div></div>
-                    <div class="bill-actions"><button v-for="order in selectedOrders.filter(o => o.status === 'ready' && o.type !== 'delivery' && config.abilities.serve)" :key="order.id" class="btn" :disabled="!!busy" @click="advance(order)"><staff-icon name="check" />Mark #{{ order.number }} served</button><button v-if="config.abilities.pay" class="btn primary" :disabled="!!busy || !data.payment_methods.length" @click="openPayment"><staff-icon name="wallet" />Collect payment</button><button class="btn" @click="printOpenBill"><staff-icon name="print" />Print bill</button><div class="bill-note">Bill #{{ selectedBill.id }} · {{ allServed ? 'Ready for payment' : 'Payment and kitchen service are tracked separately' }}</div></div>
+                    <div class="bill-actions"><button v-for="order in selectedOrders.filter(o => o.status === 'ready' && o.type !== 'delivery' && config.abilities.serve)" :key="order.id" class="btn" :disabled="!!busy" @click="advance(order)"><staff-icon name="check" />Mark #{{ order.number }} served</button><button v-if="config.abilities.pay" class="btn primary" :disabled="!!busy || !data.payment_methods.length" @click="openPayment"><staff-icon name="wallet" />Proceed to Payment</button><button class="btn" @click="printOpenBill"><staff-icon name="print" />Print bill</button><div class="bill-note">Bill #{{ selectedBill.id }} · {{ allServed ? 'Ready for payment' : 'Payment and kitchen service are tracked separately' }}</div></div>
                   </template>
                   <div v-else-if="selectedOrders.length" class="paid-table-orders"><p>Paid orders in preparation</p><article v-for="order in selectedOrders" :key="order.id"><strong>#{{ order.number }}</strong><span>{{ order.paid ? 'Paid' : 'Unpaid' }} · {{ label(order.status) }}</span><button v-if="order.status === 'ready' && config.abilities.serve" class="btn" :disabled="!!busy" @click="advance(order)">Mark served</button></article></div>
                   <div v-else class="empty-state"><staff-icon name="table" /><p style="margin-top:12px">{{ selectedTable.active && selectedTable.is_available ? 'Ready for your next guests.' : 'Ordering is paused for this table.' }}</p><small>Customers can order using this table's QR code.</small></div>
@@ -85,15 +85,9 @@
         </template>
         <div class="footer"><span>pahatud. <span style="margin-left:7px">Good food. Smooth service.</span></span><span>Updated {{ time(data.updated_at) }} · {{ config.branch.name }}</span></div>
       </div>
+    <staff-checkout v-if="paymentBill" class="content" :bill="paymentBill" :methods="data.payment_methods" :preferred="paymentBill.payment_method_id" :endpoint="endpoint('/bills/' + paymentBill.id + '/payment')" @back="cancelPayment" @busy="busy = $event ? 'payment' : ''" @paid="paymentSaved" @receipt="receipt" />
     </main>
 
-    <dialog ref="paymentDialog" aria-labelledby="payment-heading" @cancel="cancelPayment">
-      <template v-if="paymentBill">
-        <div class="modal-top"><h2 id="payment-heading">Collect payment</h2><button aria-label="Close payment" :disabled="!!busy" @click="cancelPayment"><staff-icon name="close" /></button></div><p>{{ paymentBill.table_name }} · Bill #{{ paymentBill.id }}</p><p class="amount-big">{{ money(paymentBill.total) }}</p><div class="payment-preference modal-preference"><span><small>Customer selected</small><strong>{{ paymentBill.payment_method || 'No payment preference' }}</strong></span><span class="payment-state unpaid">Not yet paid</span></div>
-        <div v-if="paymentError" class="banner error" role="alert">{{ paymentError }}</div>
-        <form @submit.prevent="pay"><payment-method-cards v-model="paymentMethod" :methods="data.payment_methods" :disabled="!!busy" @change="paymentMethodChanged" /><template v-if="isCashPayment"><div class="field"><label for="cash-tendered">Cash tendered</label><div class="money-input"><span>₱</span><input class="cash-tendered-input" id="cash-tendered" v-model.trim="cashTendered" type="number" min="0" step="0.01" inputmode="decimal" :disabled="!!busy" required autocomplete="off" placeholder="0.00"></div></div><div class="cash-summary" :class="{short: cashShortfall > 0}"><span>{{ cashShortfall > 0 ? 'Still due' : 'Change due' }}</span><strong>{{ money(cashShortfall > 0 ? cashShortfall : changeDue) }}</strong></div></template><div v-else class="field"><label for="payment-reference">Payment reference (optional)</label><input id="payment-reference" v-model.trim="paymentReference" maxlength="150" :disabled="!!busy" autocomplete="off" placeholder="Transaction or receipt number"></div><p>Record payment only after confirming it was received. This does not charge the customer.</p><div class="modal-bottom"><button type="button" class="btn" :disabled="!!busy" @click="cancelPayment">Cancel</button><button class="btn primary" :disabled="!!busy || !paymentMethod || (isCashPayment && !cashPaymentReady)">{{ busy === 'payment' ? 'Recording…' : 'Confirm payment' }}</button></div></form>
-      </template>
-    </dialog>
     <dialog ref="receiptDialog" aria-labelledby="receipt-heading">
       <div class="modal-top"><h2 id="receipt-heading">{{ printData && printData.paid ? 'Payment receipt' : 'Table bill' }}</h2><button aria-label="Close receipt" @click="$refs.receiptDialog.close()"><staff-icon name="close" /></button></div>
       <div class="receipt-settings"><label for="receipt-paper">Receipt paper</label><select id="receipt-paper" v-model="receiptPaper"><option value="80">80 mm thermal</option><option value="58">58 mm thermal</option></select><p>Select the same paper size in your printer settings.</p></div>
@@ -111,27 +105,17 @@ import paths from './icons';
 import StaffPos from './StaffPos.vue';
 import StaffReceipt from './StaffReceipt.vue';
 import StaffHistory from './StaffHistory.vue';
-import PaymentMethodCards from './PaymentMethodCards.vue';
+import StaffCheckout from './StaffCheckout.vue';
 
 const StaffIcon = { functional: true, props: ['name'], render(h, context) { return h('svg', { attrs: {viewBox: '0 0 24 24', 'aria-hidden': 'true'} }, [h('path', {attrs: {d: paths[context.props.name] || paths.orders}})]); } };
 
-function paymentRequestId() {
-  if (typeof window.crypto?.randomUUID === 'function') return window.crypto.randomUUID();
-
-  const bytes = window.crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0'));
-  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10).join('')}`;
-}
-
 export default {
-  components: { StaffIcon, StaffPos, StaffHistory, PaymentMethodCards, StaffReceipt },
+  components: { StaffIcon, StaffPos, StaffHistory, StaffCheckout, StaffReceipt },
   props: { config: { type: Object, required: true } },
   data() { return {
     data: this.config.initial, view: this.config.view, selected: null, externalBillId: null, query: '', tableFilter: 'all', orderFilter: 'all', kitchenTable: 'all',
     sound: false, fullscreen: false, immersive: false, now: Date.now(), loading: false, posBusy: false, busy: '', loadError: '', actionError: '', toastMessage: '',
-    paymentBill: null, paymentMethod: '', paymentReference: '', cashTendered: '', paymentKey: '', paymentError: '', printData: null, receiptPaper: '80',
+    paymentBill: null, paymentReturnFocus: null, printData: null, receiptPaper: '80',
     sequence: 0, timer: null, toastTimer: null,
     tabs: [{id: 'pos', title: 'New order / POS', icon: 'orders'}, {id: 'overview', title: 'Overview', icon: 'grid'}, {id: 'orders', title: 'Orders', icon: 'orders'}, {id: 'tables', title: 'Tables', icon: 'table'}, {id: 'payments', title: 'Payments', icon: 'wallet'}, {id: 'history', title: 'History', icon: 'clock'}],
     colors: {new: '#dba044', preparing: '#6c8bd1', ready: '#3ba582', served: '#a7adb4'},
@@ -155,15 +139,6 @@ export default {
     selectedBill() { return this.data.bills.find(b => this.externalBillId ? b.id === this.externalBillId : b.table_id === this.selected); },
     selectedOrders() { return (this.externalBillId ? this.data.orders.filter(o => this.selectedBill?.order_ids.includes(o.id)) : this.selectedBill ? this.data.orders.filter(o => this.selectedBill.order_ids.includes(o.id)) : this.tableOrders(this.selected)).slice().sort((a, b) => a.round - b.round); },
     allServed() { return this.selectedOrders.length > 0 && this.selectedOrders.every(o => o.status === 'served' || (o.type === 'delivery' && o.status === 'ready')); },
-    selectedPaymentMethod() { return this.data.payment_methods.find(method => String(method.id) === String(this.paymentMethod)); },
-    isCashPayment() { return !!this.selectedPaymentMethod?.is_cash; },
-    cashTenderedCents() {
-      const value = Number(this.cashTendered);
-      return Number.isFinite(value) && value >= 0 ? Math.round(value * 100) : 0;
-    },
-    cashShortfall() { return this.paymentBill ? Math.max(0, this.paymentBill.total - this.cashTenderedCents) : 0; },
-    changeDue() { return this.paymentBill ? Math.max(0, this.cashTenderedCents - this.paymentBill.total) : 0; },
-    cashPaymentReady() { return !!this.paymentBill && this.cashTendered !== '' && this.cashTenderedCents >= this.paymentBill.total; },
     stats() {
       const occupied = this.data.tables.filter(t => this.tableOrders(t.id).length).length;
       return [{title: 'Active tables', value: occupied, suffix: ' / ' + this.data.tables.length, icon: 'table', detail: (this.data.tables.length - occupied) + ' tables without active orders'}, {title: 'In the kitchen', value: this.openTickets.filter(o => o.status !== 'ready').length, icon: 'chef', detail: 'New & preparing orders'}, {title: 'Ready to serve', value: this.readyTickets.length, icon: 'bell', detail: 'Waiting for your team'}, {title: 'Collected today', value: this.money(this.data.payments.reduce((n, p) => n + p.amount, 0)), icon: 'wallet', detail: this.data.payments.length + (this.data.payments.length === 1 ? ' payment recorded' : ' payments recorded')}];
@@ -201,7 +176,7 @@ export default {
     canAdvance(order) { return order.status === 'ready' ? order.type !== 'delivery' && this.config.abilities.serve : ['new', 'preparing'].includes(order.status) && this.config.abilities.prepare; },
     actionLabel(order) { if (order.status === 'ready' && order.type === 'pickup') return 'Complete pickup'; return {new: 'Start preparing', preparing: 'Mark ready', ready: 'Mark served'}[order.status]; },
     selectDefault() { if (this.externalBillId && !this.data.bills.some(b => b.id === this.externalBillId)) this.externalBillId = null; if (!this.data.tables.some(t => t.id === this.selected)) this.selected = (this.data.tables.find(t => this.tableOrders(t.id).length) || this.data.tables[0] || {}).id || null; },
-    changeView(view) { if (this.busy || this.posBusy) return; this.view = view; document.title = this.workspaceTitle + ' | ' + this.config.merchant; this.actionError = ''; const url = new URL(window.location.href); url.searchParams.set('view', view); window.history.replaceState({}, '', url); },
+    changeView(view) { if (this.busy || this.posBusy || this.paymentBill) return; this.view = view; document.title = this.workspaceTitle + ' | ' + this.config.merchant; this.actionError = ''; const url = new URL(window.location.href); url.searchParams.set('view', view); window.history.replaceState({}, '', url); },
     changeBranch(id) { const params = new URLSearchParams({branch_id: id, view: this.view}); if (this.view === 'history' && this.$refs.history) { const history = this.$refs.history; params.set('from', history.from); params.set('to', history.to); params.set('sort', history.sort); } window.location.href = this.config.base + '?' + params.toString(); },
     endpoint(suffix = '') { return this.config.base + suffix + '?branch_id=' + encodeURIComponent(this.config.branch.id); },
     message(error) { if (error.response && [401, 419].includes(error.response.status)) return 'Your session has expired. Log in again to continue.'; const data = error.response && error.response.data; return data && (data.errors ? Object.values(data.errors).flat()[0] : data.message) || 'Unable to connect. Please try again.'; },
@@ -225,7 +200,7 @@ export default {
         await axios({method, url, data: input, headers: {'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, Accept: 'application/json'}});
         return true;
       } catch (error) {
-        if (key === 'payment') this.paymentError = this.message(error); else this.actionError = this.message(error);
+        this.actionError = this.message(error);
         return false;
       } finally { this.busy = ''; this.loading = false; await this.load(); }
     },
@@ -236,20 +211,14 @@ export default {
     async releaseBill() { if (await this.request('release', 'post', this.endpoint('/bills/' + this.selectedBill.id + '/release'), {})) this.toast('Cancelled bill closed. Table released.'); },
     async toggleTable() { if (await this.request('table', 'patch', this.endpoint('/tables/' + this.selected), {is_available: !this.selectedTable.is_available})) this.toast('Table ordering availability updated.'); },
     async openPayment() {
+      if (this.busy || this.paymentBill) return;
+      this.paymentReturnFocus = document.activeElement;
       await this.load();
       if (!this.selectedBill || !this.selectedOrders.length) return;
-      this.paymentBill = {id: this.selectedBill.id, table_name: this.selectedTable.name, total: this.selectedBill.totals.total, served: this.allServed, payment_method: this.selectedBill.payment_method};
-      const preferred = this.data.payment_methods.find(method => String(method.id) === String(this.selectedBill.payment_method_id));
-      this.paymentMethod = preferred ? preferred.id : ''; this.paymentReference = ''; this.cashTendered = ''; this.paymentError = ''; this.paymentKey = paymentRequestId();
-      await this.$nextTick(); this.$refs.paymentDialog.showModal();
+      this.paymentBill = JSON.parse(JSON.stringify({...this.selectedBill, table_name: this.selectedTable.name, orders: this.selectedOrders}));
     },
-    paymentMethodChanged() { this.paymentReference = ''; this.cashTendered = ''; },
-    cancelPayment(event) { if (this.busy) { if (event) event.preventDefault(); return; } this.$refs.paymentDialog.close(); this.paymentBill = null; },
-    async pay() {
-      if (!this.paymentBill || !this.paymentMethod) return;
-      const saved = await this.request('payment', 'post', this.endpoint('/bills/' + this.paymentBill.id + '/payment'), {payment_method_id: this.paymentMethod, idempotency_key: this.paymentKey, expected_total: this.paymentBill.total, reference: this.isCashPayment ? null : this.paymentReference || null, cash_tendered_cents: this.isCashPayment ? this.cashTenderedCents : null});
-      if (saved) { this.cancelPayment(); this.toast('Payment recorded.'); if (this.view === 'history') this.$refs.history?.load(); }
-    },
+    cancelPayment() { if (this.busy) return; this.paymentBill = null; this.$nextTick(() => this.paymentReturnFocus?.focus()); },
+    async paymentSaved() { this.toast('Payment recorded successfully. Kitchen preparation continues.'); await this.load(); if (this.view === 'history') this.$refs.history?.load(); },
     async printOpenBill() {
       if (!this.selectedBill) return;
       this.printData = {...JSON.parse(JSON.stringify(this.selectedBill)), table_name: this.selectedTable.name, orders: JSON.parse(JSON.stringify(this.selectedOrders)), paid: false};
