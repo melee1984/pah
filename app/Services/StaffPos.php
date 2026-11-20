@@ -8,7 +8,6 @@ use App\Model\CartItem;
 use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\PartnerLocation;
-use App\PartnerLocationCheckoutOption;
 use App\PartnerLocationTable;
 use App\Partners;
 use App\PaymentMethod;
@@ -26,8 +25,7 @@ class StaffPos
 
     public function quote(Partners $merchant, int $branchId, array $input): array
     {
-        abort_unless($input['fulfillment_type'] === Cart::FULFILLMENT_DINE_IN, 422, 'The cashier POS accepts in-store dine-in orders only.');
-        abort_unless(PartnerLocationCheckoutOption::enabledForLocation($branchId, $input['fulfillment_type']), 422, 'This order type is disabled for this branch.');
+        abort_unless(in_array($input['fulfillment_type'], [Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP], true), 422, 'The cashier POS accepts dine-in and takeaway orders only.');
         $cart = new Cart([
             'partner_id' => $merchant->id, 'fulfillment_type' => $input['fulfillment_type'],
             'delivery_fee' => $input['fulfillment_type'] === Cart::FULFILLMENT_DELIVERY ? ($input['delivery_fee'] ?? 0) : 0,
@@ -81,17 +79,19 @@ class StaffPos
                 return $existing->order;
             }
             $type = $input['fulfillment_type'];
-            abort_unless($type === Cart::FULFILLMENT_DINE_IN, 422, 'The cashier POS accepts in-store dine-in orders only.');
-            abort_unless(PartnerLocationCheckoutOption::enabledForLocation($branchId, $type), 422, 'This order type is disabled for this branch.');
+            abort_unless(in_array($type, [Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP], true), 422, 'The cashier POS accepts dine-in and takeaway orders only.');
             $table = $type === Cart::FULFILLMENT_DINE_IN
                 ? PartnerLocationTable::where('partner_location_id', $branchId)->where('active', true)->where('is_available', true)->lockForUpdate()->findOrFail($input['dining_table_id'])
                 : null;
-            PaymentMethod::active()->forQr()->findOrFail($input['payment_method_id']);
+            $paymentMethodId = $input['payment_method_id'] ?? null;
+            if ($paymentMethodId) {
+                PaymentMethod::active()->forQr()->findOrFail($paymentMethodId);
+            }
             $cart = Cart::create([
                 'session_id' => $session, 'partner_id' => $merchant->id,
                 'partner_location_address_id' => $branchId, 'fulfillment_type' => $type,
                 'dining_table_id' => $table?->id, 'order_source' => Cart::ORDER_SOURCE_POS,
-                'pos_request_hash' => $fingerprint, 'payment_id' => $input['payment_method_id'], 'notes' => $input['notes'] ?? null,
+                'pos_request_hash' => $fingerprint, 'payment_id' => $paymentMethodId, 'notes' => $input['notes'] ?? null,
                 'delivery_fee' => $type === Cart::FULFILLMENT_DELIVERY ? ($input['delivery_fee'] ?? 0) : 0,
             ]);
             foreach ($this->items($merchant, $branchId, $input['items']) as $item) {

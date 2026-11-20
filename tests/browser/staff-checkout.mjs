@@ -10,7 +10,7 @@ const methods = [{id: 2, title: 'GCash'}, {id: 4, title: 'Cash', is_cash: false}
 const order = {id: 19, number: '19', bill_id: 19, table_id: 1, table_name: 'Table 1', round: 1, type: 'dine_in', status: 'preparing', status_id: 3, paid: false, total: 22050, created: new Date().toISOString(), notes: 'No onions', items: [{qty: 1, name: 'Lunch plate', unit_price: 22050, variants: '', note: ''}]};
 const bill = {id: 19, table_id: 1, table_name: 'Table 1', order_ids: [19], orders: [order], totals, payment_method_id: 2, payment_method: 'GCash', paid: false};
 const abilities = {cashier: true, pos: true, pay: true, serve: true, prepare: true, tables: true};
-const initial = {abilities, orders: [order], bills: [bill], payments: [], tables: [{id: 1, name: 'Table 1', active: true, is_available: true, capacity: 4}], payment_methods: methods, updated_at: new Date().toISOString(), menu: [{id: 1, name: 'Lunch plate', category: 'Meals', category_id: 1, price: 22050, variants: [], image: null}]};
+const initial = {abilities, orders: [order], bills: [bill], payments: [], fulfillment_types: [{type: 'dine_in'}, {type: 'pickup'}], tables: [{id: 1, name: 'Table 1', active: true, is_available: true, capacity: 4}], payment_methods: methods, updated_at: new Date().toISOString(), menu: [{id: 1, name: 'Lunch plate', category: 'Meals', category_id: 1, price: 22050, variants: [], image: null}]};
 const config = {initial, abilities, view: 'tables', user: {name: 'Cashier'}, merchant: 'PahatudFood', branch: {id: 1, name: 'Main'}, branches: [], base: '/merchant/staff', endpoint: '/merchant/staff/data', logout: '/logout'};
 const server = await createServer({configFile: false, plugins: [vue()], server: {host: '127.0.0.1', port: 0}, appType: 'custom'});
 server.middlewares.use('/__checkout_test', (_req, res) => {
@@ -55,7 +55,6 @@ try {
   await cash().fill('300'); assert.match(await checkout().locator('.checkout-change').innerText(), /79.50/);
   await checkout().getByText('GCash', {exact: true}).click();
   assert.equal(await cash().count(), 0);
-  await checkout().getByLabel('Payment reference (optional)').fill('GC123');
   await selectCash(); assert.equal(await cash().inputValue(), '');
   assert.equal(await checkout().getByLabel('Payment reference (optional)').count(), 0);
   await checkout().getByRole('button', {name: 'Back to Order'}).click();
@@ -67,6 +66,7 @@ try {
   failPayment = false;
   await confirm().dblclick();
   await checkout().getByRole('heading', {name: 'Payment successful'}).waitFor();
+  assert.equal(await checkout().getByRole('button', {name: 'New Order'}).isVisible(), true);
   assert.equal(paymentRequests.length, 2); assert.equal(paymentRequests[1].idempotency_key, retryKey);
   assert.equal(paymentRequests[1].cash_tendered_cents, 30000); assert.equal(paymentRequests[1].reference, null);
   assert.match(await checkout().innerText(), /Preparing/);
@@ -76,10 +76,17 @@ try {
   // POS integration: place an order through the real UI, then return without losing its state.
   receipt = structuredClone(bill); paymentRequests = [];
   await page.goto(base + '?view=pos');
+  await page.getByRole('button', {name: /Dine in/}).click();
   await page.getByRole('button', {name: /Customize Lunch plate/}).click();
   await page.getByRole('button', {name: /Add to order/}).click();
   await page.getByRole('button', {name: /Table 1, /}).click();
   await page.getByLabel('Order notes').fill('No onions');
+  await page.getByRole('button', {name: 'Review Order'}).click();
+  assert.deepEqual(await page.evaluate(() => {const pos = window.workspace.$children.find(c => c.$options.name !== 'StaffCheckout' && 'lines' in c); return {reviewing: pos.reviewing, lines: pos.lines.length};}), {reviewing: true, lines: 1});
+  assert.equal(creates, 0);
+  await page.getByRole('button', {name: 'Back to add more items'}).click();
+  assert.equal(await page.evaluate(() => window.workspace.$children.find(c => 'lines' in c).lines.length), 1);
+  await page.getByRole('button', {name: 'Review Order'}).click();
   await page.getByRole('button', {name: 'Place Order'}).click();
   await page.getByRole('button', {name: 'Proceed to Payment'}).click();
   await cash().waitFor();
@@ -87,11 +94,11 @@ try {
   assert.deepEqual(await page.evaluate(() => {const pos = window.workspace.$children.find(c => c.$options.name !== 'StaffCheckout' && 'lines' in c); return {lines: pos.lines.length, table: pos.table, notes: pos.notes, bill: pos.submitted.bill_id};}), {lines: 1, table: 1, notes: 'No onions', bill: 19});
   await page.getByRole('button', {name: 'Proceed to Payment'}).click();
   await checkout().getByText('GCash', {exact: true}).click();
-  await checkout().getByLabel('Payment reference (optional)').fill('GC456');
   lostResponse = true;
   await confirm().click();
   await checkout().getByRole('heading', {name: 'Payment successful'}).waitFor();
-  assert.equal(paymentRequests.length, 1); assert.equal(paymentRequests[0].cash_tendered_cents, null); assert.equal(paymentRequests[0].reference, 'GC456');
+  assert.equal(await checkout().getByRole('button', {name: 'New Order'}).isVisible(), true);
+  assert.equal(paymentRequests.length, 1); assert.equal(paymentRequests[0].cash_tendered_cents, null); assert.equal(paymentRequests[0].reference, null);
   assert.equal(creates, 1);
   console.log('PASS POS: order placement, preserved cart/table/notes, non-cash payment, lost-response reconciliation, existing bill');
 

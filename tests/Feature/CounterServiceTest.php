@@ -74,14 +74,15 @@ class CounterServiceTest extends TestCase
         $this->getJson('/merchant/staff/history')->assertOk()->assertJsonPath('orders.0.paid', true)->assertJsonPath('orders.0.status', 'served');
     }
 
-    public function test_in_store_pos_blocks_delivery_pickup_and_exposes_only_dine_in(): void
+    public function test_in_store_pos_accepts_dine_in_and_takeaway_but_blocks_delivery(): void
     {
-        $this->actingAs($this->accounts['cashier'])->getJson('/merchant/staff/data')->assertOk()->assertJsonCount(1, 'fulfillment_types')->assertJsonPath('fulfillment_types.0.type', 'dine_in');
-        foreach (['delivery', 'pickup'] as $type) {
-            $input = ['idempotency_key' => (string) Str::uuid(), 'fulfillment_type' => $type, 'payment_method_id' => 3, 'items' => [['product_id' => 1, 'qty' => 1]]];
-            $this->postJson('/merchant/staff/orders', $input)->assertUnprocessable();
-            $this->postJson('/merchant/staff/pos/quote', $input)->assertUnprocessable();
-        }
+        $this->actingAs($this->accounts['cashier'])->getJson('/merchant/staff/data')->assertOk()
+            ->assertJsonCount(2, 'fulfillment_types')
+            ->assertJsonPath('fulfillment_types.0.type', 'dine_in')
+            ->assertJsonPath('fulfillment_types.1.type', 'pickup');
+        $input = ['idempotency_key' => (string) Str::uuid(), 'fulfillment_type' => 'delivery', 'payment_method_id' => 3, 'items' => [['product_id' => 1, 'qty' => 1]]];
+        $this->postJson('/merchant/staff/orders', $input)->assertUnprocessable();
+        $this->postJson('/merchant/staff/pos/quote', $input)->assertUnprocessable();
         $this->assertSame(0, Orders::count());
     }
 

@@ -133,7 +133,10 @@ class StaffController extends Controller
             ]) : collect();
 
         return [
-            'fulfillment_types' => $abilities['pos'] ? array_values(array_filter(PartnerLocationCheckoutOption::availableForLocation($branchId), fn ($option) => $option['type'] === Cart::FULFILLMENT_DINE_IN)) : [],
+            'fulfillment_types' => $abilities['pos'] ? collect([Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP])->map(fn ($type) => [
+                'type' => $type,
+                ...PartnerLocationCheckoutOption::DETAILS[$type],
+            ])->all() : [],
             'menu' => $abilities['pos'] ? app(StaffPos::class)->menu(Partners::findOrFail($partnerId), $branchId)->map(fn ($product) => [
                 'category_id' => $product->category_id, 'category' => $product->category?->name ?? 'Other',
                 'description' => trim(strip_tags($product->short_description ?: $product->description ?: '')),
@@ -201,9 +204,9 @@ class StaffController extends Controller
         abort_unless($abilities['pos'] && $abilities['cashier'], 403);
         $input = $request->validate([
             'idempotency_key' => ['required', 'uuid'],
-            'fulfillment_type' => ['required', Rule::in([Cart::FULFILLMENT_DINE_IN])],
+            'fulfillment_type' => ['required', Rule::in([Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP])],
             'dining_table_id' => ['required_if:fulfillment_type,dine_in', 'nullable', 'integer'],
-            'payment_method_id' => ['required', 'integer'],
+            'payment_method_id' => ['nullable', 'integer'],
             'fullname' => ['nullable', 'string', 'max:150'], 'mobile' => ['required_if:fulfillment_type,delivery', 'nullable', 'string', 'max:30'],
             'address' => ['required_if:fulfillment_type,delivery', 'nullable', 'string', 'max:250'],
             'lat' => ['required_if:fulfillment_type,delivery', 'nullable', 'numeric', 'between:-90,90'],
@@ -228,7 +231,7 @@ class StaffController extends Controller
         [$merchant, $branch, $abilities] = $this->context($request);
         abort_unless($abilities['pos'] && $abilities['cashier'], 403);
         $input = $request->validate([
-            'fulfillment_type' => ['required', Rule::in([Cart::FULFILLMENT_DINE_IN])],
+            'fulfillment_type' => ['required', Rule::in([Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP])],
             'delivery_fee' => ['nullable', 'numeric', 'min:0', 'max:99999'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.product_id' => ['required', 'integer'],

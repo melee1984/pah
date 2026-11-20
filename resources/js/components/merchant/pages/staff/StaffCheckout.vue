@@ -13,11 +13,10 @@
         <p class="checkout-note">Payment and kitchen preparation are tracked separately. The kitchen can continue preparing this order after payment.</p>
       </section>
       <section class="panel checkout-payment">
-        <div v-if="saved" class="checkout-success" role="status"><h2>Payment recorded</h2><p>{{ money(order.totals.total) }} paid by {{ paidMethod }} against bill #{{ order.id }}.</p><div v-if="paidChange !== null" class="checkout-change"><span>Change Due</span><strong>{{ money(paidChange) }}</strong></div><button type="button" class="btn primary" @click="$emit('receipt', order.id)">Print receipt</button></div>
+        <div v-if="saved" class="checkout-success" role="status"><h2>Payment recorded</h2><p>{{ money(order.totals.total) }} paid by {{ paidMethod }} against bill #{{ order.id }}.</p><div v-if="paidChange !== null" class="checkout-change"><span>Change Due</span><strong>{{ money(paidChange) }}</strong></div><button type="button" class="btn primary" @click="$emit('receipt', order.id)">Print receipt</button><button type="button" class="btn checkout-back-menu" @click="$emit('done')">New Order</button></div>
         <form v-else @submit.prevent="pay">
           <payment-method-cards ref="methods" v-model="method" :methods="methods" :disabled="busy" />
           <template v-if="isCash"><label class="checkout-field" for="checkout-cash">Amount Received (₱)<input id="checkout-cash" ref="cash" v-model.trim="cash" type="number" inputmode="decimal" min="0" step="0.01" autocomplete="off" placeholder="0.00" :disabled="busy" required></label><div class="checkout-change" aria-live="polite"><span>Change Due</span><strong>{{ money(change) }}</strong></div><p v-if="shortfall" class="checkout-note">Still due: {{ money(shortfall) }}</p></template>
-          <label v-else-if="selectedMethod" class="checkout-field">Payment reference (optional)<input ref="reference" v-model.trim="reference" maxlength="150" :disabled="busy" autocomplete="off" placeholder="Transaction or receipt number"></label>
           <p class="checkout-note">{{ isCash ? 'Count the cash received before confirming payment.' : 'Confirm receipt using the selected payment method before recording it here. This does not charge the customer.' }}</p>
           <p v-if="error" class="pos-error" role="alert">{{ error }}</p>
           <button class="btn primary checkout-confirm" :disabled="busy || !ready">{{ busy ? 'Recording payment…' : 'Confirm Payment' }}</button>
@@ -33,7 +32,7 @@ import {isCashMethod, requestId} from './payment';
 export default {
   components: {PaymentMethodCards},
   props: {bill: {type: Object, required: true}, methods: {type: Array, required: true}, endpoint: {type: String, required: true}, preferred: {default: ''}},
-  data() { return {order: JSON.parse(JSON.stringify(this.bill)), method: this.preferred, cash: '', reference: '', busy: false, saved: this.bill.paid, error: '', attempt: null, paidMethod: this.bill.payment?.method || '', paidChange: this.bill.payment?.change ?? null}; },
+  data() { return {order: JSON.parse(JSON.stringify(this.bill)), method: this.preferred, cash: '', busy: false, saved: this.bill.paid, error: '', attempt: null, paidMethod: this.bill.payment?.method || '', paidChange: this.bill.payment?.change ?? null}; },
   computed: {
     selectedMethod() { return this.methods.find(m => String(m.id) === String(this.method)); },
     isCash() { return isCashMethod(this.selectedMethod); },
@@ -44,18 +43,18 @@ export default {
     fees() { return this.order.totals.delivery_fee + this.order.totals.convenience_fee - this.order.totals.vat_amount; },
   },
   watch: {
-    method() { this.cash = ''; this.reference = ''; this.error = ''; this.focusMethod(); },
+    method() { this.cash = ''; this.error = ''; this.focusMethod(); },
     busy(value) { this.$emit('busy', value); },
   },
   mounted() { this.$refs.heading.focus(); if (this.isCash && !this.saved) this.focusMethod(); },
   methods: {
     money(value) { return '₱' + (Number(value || 0) / 100).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2}); },
     statusLabel(value) { return {new: 'New order', preparing: 'Preparing', ready: 'Ready to serve', served: 'Served'}[value] || value; },
-    focusMethod() { this.$nextTick(() => (this.isCash ? this.$refs.cash : this.$refs.reference)?.focus()); },
+    focusMethod() { this.$nextTick(() => this.$refs.cash?.focus()); },
     async pay() {
       if (this.busy || !this.ready) return;
       this.busy = true; this.error = '';
-      const input = {payment_method_id: this.method, expected_total: this.order.totals.total, cash_tendered_cents: this.isCash ? this.cashCents : null, reference: this.isCash ? null : this.reference || null};
+      const input = {payment_method_id: this.method, expected_total: this.order.totals.total, cash_tendered_cents: this.isCash ? this.cashCents : null, reference: null};
       const signature = JSON.stringify(input);
       if (this.attempt?.signature !== signature) this.attempt = {signature, key: requestId()};
       try {

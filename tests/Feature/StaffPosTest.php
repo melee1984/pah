@@ -55,13 +55,17 @@ class StaffPosTest extends TestCase
 
     public function test_in_store_pos_reuses_existing_orders_items_bills_and_payments(): void
     {
-        foreach ([Cart::FULFILLMENT_DINE_IN] as $type) {
+        foreach ([Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP] as $type) {
             $input = $this->input($type);
+            if ($type === Cart::FULFILLMENT_PICKUP) {
+                unset($input['payment_method_id']);
+            }
             $response = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $input)->assertCreated();
             $this->postJson('/merchant/staff/orders', $input)->assertCreated()->assertJsonPath('order_id', $response->json('order_id'));
             $order = Orders::findOrFail($response->json('order_id'));
             $this->assertSame('pos', $order->cart->order_source);
             $this->assertSame($type, $order->cart->fulfillment_type);
+            $this->assertSame($type === Cart::FULFILLMENT_PICKUP ? null : 3, $order->cart->payment_id);
             $this->assertSame($type === 'dine_in' ? 1 : null, $order->cart->dining_table_id);
             $this->assertSame(19000, $order->billRound->items[0]['unit_price']);
             $this->assertSame('Extra rice Add-ons', $order->billRound->items[0]['variant_options'][0]);
@@ -81,8 +85,8 @@ class StaffPosTest extends TestCase
                 $this->assertSame('Davao address', $order->cart->address->address_1);
             }
         }
-        $this->assertSame(1, Orders::count());
-        $this->assertSame(1, DiningPayment::count());
+        $this->assertSame(2, Orders::count());
+        $this->assertSame(2, DiningPayment::count());
     }
 
     public function test_incoming_customer_orders_of_all_types_have_complete_branch_scoped_kitchen_details(): void
@@ -148,11 +152,17 @@ class StaffPosTest extends TestCase
         $this->assertSame(1, Orders::count());
     }
 
-    public function test_disabled_branch_fulfillment_type_cannot_be_used_for_pos(): void
+    public function test_customer_checkout_settings_do_not_hide_counter_service_types(): void
     {
+        PartnerLocationCheckoutOption::create(['partner_location_id' => 1, 'type' => 'pickup', 'active' => false]);
         PartnerLocationCheckoutOption::create(['partner_location_id' => 1, 'type' => 'dine_in', 'active' => false]);
-        $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input())->assertUnprocessable();
-        $this->assertSame(0, Orders::count());
+
+        $this->actingAs($this->accounts['cashier'])->getJson('/merchant/staff/data')->assertOk()
+            ->assertJsonPath('fulfillment_types.0.type', 'dine_in')
+            ->assertJsonPath('fulfillment_types.1.type', 'pickup');
+        $this->postJson('/merchant/staff/orders', $this->input())->assertCreated();
+        $this->postJson('/merchant/staff/orders', $this->input('pickup'))->assertCreated();
+        $this->assertSame(2, Orders::count());
     }
 
     public function test_pickup_transitions_reuse_merchant_flow_and_delivery_cannot_be_marked_served(): void
@@ -204,7 +214,7 @@ class StaffPosTest extends TestCase
 
     public function test_pos_quote_matches_saved_order_and_does_not_write_drafts(): void
     {
-        foreach ([Cart::FULFILLMENT_DINE_IN] as $type) {
+        foreach ([Cart::FULFILLMENT_DINE_IN, Cart::FULFILLMENT_PICKUP] as $type) {
             $input = $this->input($type);
             $input['items'][0]['price'] = 1;
             $before = Cart::count();

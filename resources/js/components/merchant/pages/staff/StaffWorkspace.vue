@@ -85,7 +85,7 @@
         </template>
         <div class="footer"><span>pahatud. <span style="margin-left:7px">Good food. Smooth service.</span></span><span>Updated {{ time(data.updated_at) }} · {{ config.branch.name }}</span></div>
       </div>
-    <staff-checkout v-if="paymentBill" class="content" :bill="paymentBill" :methods="data.payment_methods" :preferred="paymentBill.payment_method_id" :endpoint="endpoint('/bills/' + paymentBill.id + '/payment')" @back="cancelPayment" @busy="busy = $event ? 'payment' : ''" @paid="paymentSaved" @receipt="receipt" />
+    <staff-checkout v-if="paymentBill" class="content" :bill="paymentBill" :methods="data.payment_methods" :preferred="paymentBill.payment_method_id" :endpoint="endpoint('/bills/' + paymentBill.id + '/payment')" @back="cancelPayment" @done="cancelPayment" @busy="busy = $event ? 'payment' : ''" @paid="paymentSaved" @receipt="receipt" />
     </main>
 
     <dialog ref="receiptDialog" aria-labelledby="receipt-heading">
