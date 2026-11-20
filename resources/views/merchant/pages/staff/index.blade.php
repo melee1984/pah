@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ asset('adminlte/plugins/fontawesome-free/css/all.min.css') }}">
-  <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}?v=20261120-navigation">
   <link rel="stylesheet" href="{{ asset('css/merchant-staff.css') }}">
   <link rel="stylesheet" href="{{ asset('css/merchant-pos.css') }}">
   <link rel="stylesheet" href="{{ asset('css/merchant-receipt.css') }}">

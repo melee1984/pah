@@ -33,6 +33,10 @@ class isAdmin
                     'can_manage_managers',
                     auth()->user()->hasAnyRole(['admin', 'super']),
                 );
+                $request->attributes->set(
+                    'can_manage_roles',
+                    auth()->user()->hasAnyRole(['admin', 'super']),
+                );
 
                 foreach ($request->route()?->parameters() ?? [] as $parameter) {
                     match (true) {

@@ -224,6 +224,11 @@ Route::middleware('admin')->group(function () {
         Route::put('data/dashboard/payment-gateways/{paymentGateway}', [PaymentGatewayController::class, 'update'])->name('dashboard.payment-gateways.update');
     });
 
+    Route::middleware('roles.manage')->group(function () {
+        Route::get('data/dashboard/user-roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'index'])->name('dashboard.user-roles.index');
+        Route::put('data/dashboard/user-roles/{user}', [\App\Http\Controllers\Admin\UserRoleController::class, 'update'])->name('dashboard.user-roles.update');
+    });
+
     Route::get('data/dashboard', [DashboardController::class, 'index'])->name('dashboard.data');
     Route::get('data/dashboard/orders', [DashboardController::class, 'orders'])->name('dashboard.orders');
     Route::get(

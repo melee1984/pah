@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="{{ asset('adminlte/dist/css/adminlte.min.css') }}">
   <!-- Theme style -->
     @vite(entrypoints: 'resources/js/merchant.js')
-    <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/admin-portal.css') }}?v=20261120-navigation">
     <link rel="stylesheet" href="{{ asset('css/restaurant-application.css') }}">
     <link rel="stylesheet" href="{{ asset('css/restaurant-file-preview.css') }}">
 
