@@ -465,6 +465,40 @@ class MerchantApplicationTest extends TestCase
         $this->assertNotNull($application->fresh()->verified_at);
     }
 
+    public function test_admin_and_super_users_can_override_application_managed_account_controls(): void
+    {
+        foreach (['admin', 'super'] as $role) {
+            $user = User::query()->forceCreate([
+                'name' => str($role)->headline().' User',
+                'email' => $role.'-merchant-controls@example.com',
+                'password' => Hash::make('password'),
+            ]);
+            Role::findOrCreate($role, 'web');
+            $user->assignRole($role);
+
+            $application = Partners::query()->create($this->modelAttributes([
+                'active' => true,
+                'email' => $role.'-override@example.com',
+            ]));
+            $application->forceFill(['verified_at' => now()])->save();
+
+            $this->actingAs($user)
+                ->postJson('/api/data/merchant/'.$application->id.'/status/submit')
+                ->assertOk()
+                ->assertJsonPath('status', 1);
+            $this->assertFalse((bool) $application->fresh()->active);
+
+            $this->postJson('/api/data/merchant/'.$application->id.'/verify/submit')
+                ->assertOk()
+                ->assertJsonPath('status', 1);
+            $this->assertNull($application->fresh()->verified_at);
+
+            $this->get(route('dashboard.merchant.settings', $application))
+                ->assertOk()
+                ->assertSee(":can-manage-account-controls='true'", false);
+        }
+    }
+
     public function test_previously_approved_applicant_can_get_account_once(): void
     {
         Mail::fake();

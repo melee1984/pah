@@ -5,10 +5,10 @@
         <div><span class="admin-eyebrow">Account controls</span><h2>Access and verification</h2><p>Control whether the merchant can operate on Pahatud.</p></div>
       </div>
       <div class="merchant-settings-list">
-        <setting-row title="Account active" description="Allows this merchant account to operate on the marketplace." :enabled="merchant.active" :busy="isBusy('active')" :disabled="requiresReview" @toggle="toggleSetting('active', 'status')" />
-        <setting-row title="Verified" description="Marks the merchant as reviewed and verified by Pahatud." :enabled="merchant.isverified" :busy="isBusy('isverified')" :disabled="requiresReview" @toggle="toggleSetting('isverified', 'verify')" />
+        <setting-row title="Account active" description="Allows this merchant account to operate on the marketplace." :enabled="merchant.active" :busy="isBusy('active')" :disabled="accountControlsLocked" @toggle="toggleSetting('active', 'status')" />
+        <setting-row title="Verified" description="Marks the merchant as reviewed and verified by Pahatud." :enabled="merchant.isverified" :busy="isBusy('isverified')" :disabled="accountControlsLocked" @toggle="toggleSetting('isverified', 'verify')" />
       </div>
-      <div v-if="requiresReview" class="merchant-settings-note"><i class="fas fa-info-circle"></i><span>Account activation and verification are managed from this merchant’s application review.</span></div>
+      <div v-if="requiresReview" class="merchant-settings-note"><i class="fas fa-info-circle"></i><span>{{ canManageAccountControls ? 'This merchant is managed through application review. As an administrator, you can override its activation and verification here.' : 'Account activation and verification are managed from this merchant’s application review.' }}</span></div>
     </section>
 
     <section class="card admin-card merchant-settings-card">
@@ -52,12 +52,18 @@ export default {
   props: {
     initialMerchant: { type: Object, required: true },
     requiresReview: { type: Boolean, default: false },
+    canManageAccountControls: { type: Boolean, default: false },
   },
   data() {
     return {
       merchant: { ...this.initialMerchant },
       busy: {},
     };
+  },
+  computed: {
+    accountControlsLocked() {
+      return this.requiresReview && !this.canManageAccountControls;
+    },
   },
   methods: {
     toggleSetting(field, endpoint) {

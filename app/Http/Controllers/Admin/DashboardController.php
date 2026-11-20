@@ -280,7 +280,7 @@ class DashboardController extends Controller
     	return view('dashboard.pages.user.merchant');		
     }
 
-    public function merchantSettings(Partners $partner)
+    public function merchantSettings(Request $request, Partners $partner)
     {
         $merchant = Partners::query()->whereKey($partner->id);
         $this->cityScope->partners($merchant);
@@ -299,6 +299,7 @@ class DashboardController extends Controller
                 'addup' => (bool) $merchant->addup,
             ],
             'requiresReview' => $merchant->requiresEnrollmentReview(),
+            'canManageAccountControls' => $request->user()->hasAnyRole(['admin', 'super']),
         ]);
     }
 

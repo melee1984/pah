@@ -25,6 +25,7 @@
             <merchant-settings-view
                 :initial-merchant='@json($settingsMerchant)'
                 :requires-review='@json($requiresReview)'
+                :can-manage-account-controls='@json($canManageAccountControls)'
             ></merchant-settings-view>
         </div>
     </section>

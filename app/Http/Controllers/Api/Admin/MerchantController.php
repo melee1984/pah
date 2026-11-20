@@ -40,10 +40,12 @@ class MerchantController extends Controller
    	}
 
     public function updateStatus(Partners $partner, Request $request) {
-      if ($partner->requiresEnrollmentReview()) {
+      $canOverrideEnrollmentControls = $request->user()->hasAnyRole(['admin', 'super']);
+
+      if ($partner->requiresEnrollmentReview() && ! $canOverrideEnrollmentControls) {
         return response()->json(['status' => 0, 'message' => 'Use the restaurant application review to change this account status.'], 422);
       }
-      if (! $partner->active && $partner->missingEnrollmentDocuments()) {
+      if (! $canOverrideEnrollmentControls && ! $partner->active && $partner->missingEnrollmentDocuments()) {
         return response()->json(['status' => 0, 'message' => 'Cannot activate this restaurant. Required enrollment documents are missing.'], 422);
       }
       
@@ -66,10 +68,12 @@ class MerchantController extends Controller
       }
 
       public function verify(Partners $partner, Request $request) {
-        if ($partner->requiresEnrollmentReview()) {
+        $canOverrideEnrollmentControls = $request->user()->hasAnyRole(['admin', 'super']);
+
+        if ($partner->requiresEnrollmentReview() && ! $canOverrideEnrollmentControls) {
           return response()->json(['status' => 0, 'message' => 'Use the restaurant application review to change verification status.'], 422);
         }
-        if (! $partner->verified_at && $partner->missingEnrollmentDocuments()) {
+        if (! $canOverrideEnrollmentControls && ! $partner->verified_at && $partner->missingEnrollmentDocuments()) {
           return response()->json(['status' => 0, 'message' => 'Cannot verify this restaurant. Required enrollment documents are missing.'], 422);
         }
       
@@ -78,7 +82,7 @@ class MerchantController extends Controller
         $data['message'] = "Unable to process your request. Please refresh your page and again.";
 
          if ($partner) {
-           if ($partner->verified_at=="") {
+           if (is_null($partner->verified_at)) {
               $partner->verified_at = now(); 
               $partner->verified_by = Auth::User()->id;
               $partner->save();
