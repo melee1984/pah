@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title') | {{ config('app.name', 'Pahatud') }}</title>
+    <title>@yield('title') | @yield('brand', config('app.name', 'Pahatud'))</title>
     <style>
         body {
             align-items: center;
@@ -32,8 +32,9 @@
             color: #2563eb;
         }
     </style>
+    @yield('styles')
 </head>
-<body>
+<body class="@yield('body-class')">
     <main>
         @yield('content')
     </main>
