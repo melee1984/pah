@@ -3,11 +3,14 @@
 use App\AdminPushNotification;
 use App\Jobs\SendAdminPushNotification;
 use App\RestaurantEnrollmentDocument;
+use App\QuickPayCheckout;
 use App\Services\BlogImageManager;
+use App\Services\QuickPayPayments;
 use App\Services\RestaurantApplicationNotifier;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Schema;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -64,3 +67,23 @@ Schedule::call(function () {
             }
         });
 })->name('push-notifications:dispatch-due')->everyMinute()->withoutOverlapping();
+
+Artisan::command('quickpay:reconcile', function (QuickPayPayments $quickPay) {
+    if (! Schema::hasTable('quickpay_checkouts')) {
+        return;
+    }
+
+    QuickPayCheckout::whereIn('status', QuickPayCheckout::ACTIVE)
+        ->where(fn ($query) => $query->whereNull('monitoring_stopped_at')->orWhere('status', 'confirmed'))
+        ->chunkById(50, function ($checkouts) use ($quickPay) {
+            foreach ($checkouts as $checkout) {
+                try {
+                    $quickPay->reconcile($checkout);
+                } catch (Throwable $exception) {
+                    report($exception);
+                }
+            }
+        });
+})->purpose('Verify outstanding QuickPay checkouts and record confirmed payments');
+
+Schedule::command('quickpay:reconcile')->everyMinute()->withoutOverlapping();

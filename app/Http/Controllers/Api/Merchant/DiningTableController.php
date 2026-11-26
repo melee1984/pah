@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\Merchant;
 
+use App\DiningBill;
 use App\Http\Controllers\Controller;
 use App\PartnerLocation;
 use App\PartnerLocationTable;
+use App\QuickPayCheckout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -78,8 +80,16 @@ class DiningTableController extends Controller
         $this->authorizeLocation($partnerLocation, $request);
         $this->authorizeTable($partnerLocation, $diningTable);
         DB::transaction(function () use ($diningTable) {
-            $diningTable->qrOrderingCode()->delete();
-            $diningTable->delete();
+            $table = PartnerLocationTable::lockForUpdate()->findOrFail($diningTable->id);
+            $pending = QuickPayCheckout::where(function ($query) use ($table) {
+                $query->whereIn('dining_bill_id', DiningBill::where('dining_table_id', $table->id)->select('id'))
+                    ->orWhere('guest_dining_table_id', $table->id);
+            })
+                ->whereIn('status', QuickPayCheckout::ACTIVE)->exists();
+            abort_if($pending, 409, 'This table has a QuickPay payment in progress.');
+
+            $table->qrOrderingCode()->delete();
+            $table->delete();
         });
 
         return response()->json([

@@ -58,6 +58,7 @@ class RiderBookingOrderListTest extends TestCase
         });
 
         Schema::create('payment_method', function (Blueprint $table) {
+            $table->string('quickpay_channel')->nullable();
             $table->id();
             $table->string('title')->nullable();
             $table->timestamps();

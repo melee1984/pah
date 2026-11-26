@@ -8,6 +8,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -126,6 +127,7 @@ class QrOrderingTest extends TestCase
         });
 
         Schema::create('payment_method', function (Blueprint $table) {
+            $table->string('quickpay_channel')->nullable();
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
@@ -614,6 +616,76 @@ class QrOrderingTest extends TestCase
         $this->postJson($url.'/checkout', ['full_name' => 'Guest', 'mobile' => '09171234567', 'payment_method_id' => 3])->assertConflict();
         $this->getJson($this->baseUrl().'/menu')->assertOk();
         $this->assertDatabaseCount('order', 0);
+    }
+
+    public function test_guest_quickpay_verifies_the_selected_channel_before_submitting_a_prepaid_round(): void
+    {
+        Event::fake([SendPushNotificationEvent::class]);
+        config([
+            "services.quickpay.merchant_keys.{$this->partnerId}" => 'qp_test_fixture',
+            'checkout.convenience_fee_rate' => 0.01,
+            'checkout.vat_rate' => 0,
+            'services.qr_ordering.url' => 'https://qr.pahatud.test/order',
+        ]);
+        DB::table('payment_method')->insert([
+            'id' => 4, 'title' => 'Maya (QuickPay)', 'quickpay_channel' => 'maya',
+            'available_in_qr' => true, 'available_in_application' => false,
+        ]);
+        $this->getJson($this->baseUrl().'/menu')->assertOk()->assertJsonCount(1, 'payment_methods');
+        $this->getJson($this->baseUrl().'/menu?quickpay=1')->assertOk()
+            ->assertJsonPath('payment_methods.1.quickpay_channel', 'maya')->assertJsonPath('payment_methods.1.provider', 'quickpay');
+
+        $cashSession = $this->createQrSession();
+        $cashCart = $this->baseUrl()."/carts/{$cashSession['session_id']}";
+        $customer = ['full_name' => 'Guest', 'mobile' => '09171234567', 'payment_method_id' => 3];
+        $this->withHeader('X-QR-Session-Token', $cashSession['token'])->postJson($cashCart.'/items', ['product_id' => $this->productId])->assertCreated();
+        $this->postJson($cashCart.'/checkout', $customer)->assertCreated();
+
+        $session = $this->createQrSession();
+        $cart = $this->baseUrl()."/carts/{$session['session_id']}";
+        $item = $this->withHeader('X-QR-Session-Token', $session['token'])->postJson($cart.'/items', ['product_id' => $this->productId])
+            ->assertCreated()->assertJsonPath('data.checkout_total_cents', 12120)->json('data.items.0.id');
+        $input = array_replace($customer, ['payment_method_id' => 4, 'expected_total' => 12120]);
+        $reference = null;
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use (&$reference) {
+            $create = $request->method() === 'POST';
+            if ($create) {
+                $this->assertSame('maya', $request['channel']);
+                $this->assertSame(12100, $request['amount']);
+                $this->assertStringEndsWith('&quickpay=return', $request['success_url']);
+                $reference = $request['reference'];
+            }
+
+            return Http::response([
+                'id' => 'cs_guest', 'object' => 'checkout', 'reference' => $reference,
+                'amount' => 12100, 'currency' => 'PHP', 'livemode' => false,
+                'status' => $create ? 'open' : 'paid', 'url' => 'https://quickpayph.com/pay/cs_guest',
+            ]);
+        });
+
+        $this->postJson($cart.'/checkout', $input)->assertUnprocessable();
+        $this->postJson($cart.'/checkout?quickpay=1', $input)->assertUnprocessable();
+        Http::assertNothingSent();
+        $this->postJson($cart.'/checkout?quickpay=1', $input + ['confirm_rounding_discount' => true])
+            ->assertAccepted()->assertJsonPath('payment.rounding_discount_cents', 20)->assertJsonMissingPath('order');
+        $this->getJson($cart.'/summary')->assertOk()->assertJsonPath('data.quickpay.status', 'pending');
+        $this->assertDatabaseCount('order', 1);
+        $this->assertDatabaseCount('dining_payments', 0);
+        $this->patchJson($cart.'/items/'.$item, ['quantity' => 2])->assertConflict();
+        $this->postJson($cart.'/checkout', $customer)->assertConflict();
+
+        $this->withHeader('X-QR-Session-Token', $cashSession['token'])
+            ->postJson($cart.'/checkout/quickpay/status')->assertUnauthorized();
+        $this->withHeader('X-QR-Session-Token', $session['token'])
+            ->postJson($cart.'/checkout/quickpay/status')->assertOk()->assertJsonPath('payment.status', 'paid')
+            ->assertJsonPath('order.summary.total', '121.00');
+        $this->getJson($cart.'/orders')->assertOk()->assertJsonPath('orders.0.payment_status', 'paid');
+        $this->assertDatabaseCount('order', 2);
+        $this->assertDatabaseHas('dining_payments', ['reference' => 'cs_guest', 'amount_cents' => 12100, 'recorded_by_user_id' => null]);
+        $this->assertDatabaseHas('dining_bills', ['dining_table_id' => $this->tableId, 'status' => 'open']);
+        $this->assertDatabaseHas('dining_bills', ['dining_table_id' => $this->tableId, 'status' => 'paid']);
+        Http::assertSentCount(2);
     }
 
     private function baseUrl(): string

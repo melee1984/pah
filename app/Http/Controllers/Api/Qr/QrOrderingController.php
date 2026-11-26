@@ -3,22 +3,24 @@
 namespace App\Http\Controllers\Api\Qr;
 
 use App\Category;
-use App\Events\SendPushNotificationEvent;
 use App\Http\Controllers\Controller;
 use App\LibraryStatus;
 use App\Model\Cart;
 use App\Model\CartItem;
-use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\PartnerLocationCheckoutOption;
 use App\PaymentMethod;
 use App\Products;
 use App\QrOrderingCode;
+use App\QuickPayCheckout;
+use App\Services\QrOrderSubmission;
+use App\Services\QuickPayPayments;
 use App\Services\QrOrderingSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Throwable;
 
 class QrOrderingController extends Controller
@@ -38,7 +40,7 @@ class QrOrderingController extends Controller
             ->header('Cache-Control', 'no-store, private');
     }
 
-    public function menu(string $uuid, int $branchId): JsonResponse
+    public function menu(Request $request, string $uuid, int $branchId): JsonResponse
     {
         $code = $this->resolveCode($uuid, $branchId);
         $partner = $code->partner;
@@ -92,12 +94,13 @@ class QrOrderingController extends Controller
             ] : null,
             'categories' => $categories,
             'menu' => $products,
-            'payment_methods' => PaymentMethod::active()->forQr()->orderBy('id')->get([
+            'payment_methods' => PaymentMethod::active()->forMerchantQr($partner->id, $request->boolean('quickpay'))->orderBy('id')->get([
                 'id',
                 'title',
                 'description',
                 'class',
-            ]),
+                'quickpay_channel',
+            ])->each(fn (PaymentMethod $method) => $method->setAttribute('provider', $method->isQuickPay() ? 'quickpay' : null)),
         ]);
     }
 
@@ -169,6 +172,9 @@ class QrOrderingController extends Controller
                     ->lockForUpdate()
                     ->first();
 
+                if ($cart) {
+                    QuickPayCheckout::assertCartUnlocked($cart->id);
+                }
                 if ($cart?->processed_at) {
                     throw new \DomainException('This cart has already been checked out. Start a new cart.');
                 }
@@ -231,6 +237,8 @@ class QrOrderingController extends Controller
             });
         } catch (\DomainException $exception) {
             return $this->failure($exception->getMessage(), 409);
+        } catch (HttpExceptionInterface $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             report($exception);
 
@@ -255,7 +263,7 @@ class QrOrderingController extends Controller
         return response()->json([
             'status' => 1,
             'data' => $cart ? $this->cartPayload($cart, $code) : $this->emptyCartPayload($code),
-        ]);
+        ])->header('Cache-Control', 'no-store, private');
     }
 
     public function orders(
@@ -299,38 +307,42 @@ class QrOrderingController extends Controller
         $validated = $request->validate([
             'quantity' => ['required', 'integer', 'min:0', 'max:100'],
         ]);
-        $cart = $this->findCart($sessionId, $code);
+        return DB::transaction(function () use ($code, $sessionId, $cartItem, $validated) {
+            $cart = Cart::where('session_id', $sessionId)->lockForUpdate()->first();
+            $cartItem = $cartItem->fresh();
 
-        if (! $cart || (int) $cartItem->cart_id !== (int) $cart->id) {
-            return $this->failure('Cart item not found.', 404);
-        }
+            if (! $cart || ! $this->cartMatchesCode($cart, $code) || ! $cartItem || (int) $cartItem->cart_id !== (int) $cart->id) {
+                return $this->failure('Cart item not found.', 404);
+            }
 
-        if ($cart->processed_at) {
-            return $this->failure('A checked-out cart cannot be changed.', 409);
-        }
+            QuickPayCheckout::assertCartUnlocked($cart->id);
+            if ($cart->processed_at) {
+                return $this->failure('A checked-out cart cannot be changed.', 409);
+            }
 
-        $otherItemQuantity = (int) $cart->details()
-            ->where('id', '!=', $cartItem->id)
-            ->sum('qty');
-        if ($otherItemQuantity + $validated['quantity'] > 100) {
-            return $this->failure('A QR cart cannot contain more than 100 total items.', 422);
-        }
+            $otherItemQuantity = (int) $cart->details()->where('id', '!=', $cartItem->id)->sum('qty');
+            if ($otherItemQuantity + $validated['quantity'] > 100) {
+                return $this->failure('A QR cart cannot contain more than 100 total items.', 422);
+            }
 
-        if ($validated['quantity'] === 0) {
-            $cartItem->delete();
-        } else {
-            $cartItem->update(['qty' => $validated['quantity']]);
-        }
+            if ($validated['quantity'] === 0) {
+                $cartItem->delete();
+            } else {
+                $cartItem->update(['qty' => $validated['quantity']]);
+            }
 
-        return response()->json([
-            'status' => 1,
-            'message' => $validated['quantity'] === 0 ? 'Item removed from cart.' : 'Cart updated.',
-            'data' => $this->cartPayload($cart->fresh(), $code),
-        ]);
+            return response()->json([
+                'status' => 1,
+                'message' => 'Cart updated.',
+                'data' => $this->cartPayload($cart->fresh(), $code),
+            ]);
+        }, 3);
     }
 
     public function checkout(
         Request $request,
+        QuickPayPayments $quickPay,
+        QrOrderSubmission $submission,
         string $uuid,
         int $branchId,
         string $sessionId
@@ -340,17 +352,19 @@ class QrOrderingController extends Controller
             'full_name' => ['required', 'string', 'max:150'],
             'mobile' => ['required', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:150'],
-            'payment_method_id' => [
-                'required',
-                'integer',
-                Rule::exists('payment_method', 'id')
-                    ->where('active', true)
-                    ->where('available_in_qr', true),
-            ],
+            'payment_method_id' => ['required', 'integer'],
+            'expected_total' => ['sometimes', 'integer', 'min:0'],
+            'confirm_rounding_discount' => ['sometimes', 'boolean'],
         ]);
 
+        $method = PaymentMethod::active()->forMerchantQr($code->partner_id, $request->boolean('quickpay'))
+            ->find($validated['payment_method_id']);
+        if (! $method) {
+            throw ValidationException::withMessages(['payment_method_id' => 'The selected payment method is unavailable.']);
+        }
+
         try {
-            [$cart, $order, $created] = DB::transaction(function () use ($code, $sessionId, $validated) {
+            [$cart, $order, $created, $checkout] = DB::transaction(function () use ($code, $sessionId, $validated, $method, $quickPay, $submission) {
                 $cart = Cart::query()
                     ->where('session_id', $sessionId)
                     ->lockForUpdate()
@@ -364,10 +378,17 @@ class QrOrderingController extends Controller
                     $order = Orders::query()->where('cart_id', $cart->id)->first();
 
                     if ($order) {
-                        return [$cart, $order, false];
+                        return [$cart, $order, false, QuickPayCheckout::latestForCart($cart->id)];
                     }
 
                     throw new \DomainException('This cart has already been checked out.');
+                }
+
+                $checkout = QuickPayCheckout::latestForCart($cart->id, lock: true);
+                if ($checkout && in_array($checkout->status, QuickPayCheckout::ACTIVE, true)) {
+                    abort_unless($checkout->payment_method_id === (int) $method->id, 409, 'A QuickPay payment is already pending for this cart.');
+
+                    return [$cart, null, false, $checkout];
                 }
 
                 if ($code->dining_table_id) {
@@ -387,67 +408,77 @@ class QrOrderingController extends Controller
                     );
                 }
 
-                $cart->fullname = $validated['full_name'];
-                $cart->mobile = $validated['mobile'];
-                $cart->email = $validated['email'] ?? null;
-                $cart->payment_id = $validated['payment_method_id'];
-                $cart->processed_at = now();
-                $cart->submitted_at = now();
-                $cart->delivery_date = now()->format('M d, Y');
-                $cart->delivery_time = 'ASAP';
-                $cart->fulfillment_type = Cart::FULFILLMENT_DINE_IN;
-                $cart->dining_table_id = $code->dining_table_id;
-                $cart->order_source = Cart::ORDER_SOURCE_QR;
-                $cart->qr_ordering_code_id = $code->id;
-                $cart->delivery_fee = 0;
-                $cart->distance_rate = 0;
-                $cart->order_no = $cart->generateOrderNo();
-                $cart->active = true;
-                $cart->save();
+                if ($method->isQuickPay()) {
+                    return [$cart, null, false, $quickPay->startGuest($cart, $code, $method, $validated)];
+                }
 
-                $order = Orders::query()->create([
-                    'user_id' => null,
-                    'cart_id' => $cart->id,
-                    'submitted_at' => now(),
-                    'order_status_id' => LibraryStatus::STATUS_ORDER_PLACED,
-                    'partner_id' => $cart->partner_id,
-                ]);
-
-                OrderProcess::query()->firstOrCreate([
-                    'status_id' => LibraryStatus::STATUS_ORDER_PLACED,
-                    'order_id' => $order->id,
-                ]);
-
-                return [$cart, $order, true];
-            });
+                return [$cart, $submission->place($cart, $validated), true, null];
+            }, 3);
         } catch (\DomainException $exception) {
             return $this->failure($exception->getMessage(), 409);
+        } catch (HttpExceptionInterface $exception) {
+            throw $exception;
         } catch (Throwable $exception) {
             report($exception);
 
             return $this->failure('Unable to submit the order. Please try again.', 500);
         }
 
-        if ($created) {
-            event(new SendPushNotificationEvent($order));
+        if ($checkout && (! $order || $checkout->status === 'paid')) {
+            return $this->paymentResponse($quickPay->reconcile($checkout), $cart);
         }
 
+        return $this->checkoutResponse($cart, $order, $created);
+    }
+
+    public function quickPayStatus(QuickPayPayments $quickPay, string $uuid, int $branchId, string $sessionId): JsonResponse
+    {
+        $cart = Cart::where('session_id', $sessionId)
+            ->where('partner_location_address_id', $branchId)
+            ->where('order_source', Cart::ORDER_SOURCE_QR)->first();
+        abort_unless($cart && ($checkout = QuickPayCheckout::latestForCart($cart->id)), 404, 'No QuickPay checkout was started.');
+
+        return $this->paymentResponse($quickPay->reconcile($checkout), $cart);
+    }
+
+    private function paymentResponse(QuickPayCheckout $checkout, Cart $cart): JsonResponse
+    {
+        if ($checkout->status === 'paid') {
+            $cart->refresh();
+
+            return $this->checkoutResponse($cart, $cart->order, false, $checkout);
+        }
+
+        return response()->json(['status' => 1, 'payment' => $checkout->payload()], $checkout->status === 'pending' ? 202 : 200)
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    private function checkoutResponse(Cart $cart, Orders $order, bool $created, ?QuickPayCheckout $checkout = null): JsonResponse
+    {
+        $table = $cart->diningTable;
+        $summary = $cart->cartItemSummary();
+        if ($checkout) {
+            $summary['total'] = number_format($checkout->amount_cents / 100, 2);
+            $summary['rounding_discount'] = number_format($checkout->rounding_discount_cents / 100, 2);
+        }
         return response()->json([
             'status' => 1,
             'message' => $created ? 'Order submitted successfully.' : 'Order was already submitted.',
+            ...($checkout ? ['payment' => $checkout->payload()] : []),
             'order' => [
                 'id' => $order->id,
+                'customer_name' => $cart->fullname,
                 'order_no' => $cart->order_no,
                 'submitted_at' => $order->submitted_at,
                 'fulfillment_type' => $cart->fulfillment_type,
                 'order_source' => $cart->order_source,
-                'table' => $code->diningTable ? [
-                    'id' => $code->diningTable->id,
-                    'name' => $code->diningTable->name,
+                'table' => $table ? [
+                    'id' => $table->id,
+                    'name' => $table->name,
                 ] : null,
-                'summary' => $cart->cartItemSummary(),
+                'summary' => $summary,
             ],
-        ], $created ? 201 : 200);
+        ], $created ? 201 : 200)->header('Cache-Control', 'no-store, private');
     }
 
     private function resolveCode(string $uuid, int $branchId): QrOrderingCode
@@ -542,10 +573,13 @@ class QrOrderingController extends Controller
     private function cartPayload(Cart $cart, QrOrderingCode $code): array
     {
         $cart->load(['details.item', 'payment']);
+        $checkout = QuickPayCheckout::latestForCart($cart->id);
 
         return [
             'session_id' => $cart->session_id,
             'checked_out' => (bool) $cart->processed_at,
+            'quickpay' => $checkout && in_array($checkout->status, [...QuickPayCheckout::ACTIVE, 'paid'], true) ? $checkout->payload() : null,
+            'checkout_total_cents' => (int) round($cart->cartItemTotal() * 100),
             'restaurant_id' => $code->partner_id,
             'branch_id' => $code->partner_location_id,
             'order_source' => Cart::ORDER_SOURCE_QR,
@@ -586,6 +620,11 @@ class QrOrderingController extends Controller
     private function orderPayload(Orders $order, Cart $cart, QrOrderingCode $code): array
     {
         $cartPayload = $this->cartPayload($cart, $code);
+        $checkout = $cartPayload['quickpay'];
+        if ($checkout && $checkout['status'] === 'paid') {
+            $cartPayload['summary']['total'] = number_format($checkout['amount_cents'] / 100, 2);
+            $cartPayload['summary']['rounding_discount'] = number_format($checkout['rounding_discount_cents'] / 100, 2);
+        }
         $statusId = (int) ($order->order_status_id ?: $order->status_id);
 
         return [
@@ -603,6 +642,7 @@ class QrOrderingController extends Controller
                 ], true),
             ],
             'table' => $cartPayload['table'],
+            'payment_status' => $checkout && $checkout['status'] === 'paid' ? 'paid' : null,
             'payment_method' => $cart->payment ? [
                 'id' => $cart->payment->id,
                 'title' => $cart->payment->title,

@@ -41,7 +41,7 @@ class PaymentGatewayController extends Controller
             'class' => trim((string) $request->input('class')),
         ]);
 
-        return $request->validate([
+        $validated = $request->validate([
             'title' => [
                 'required',
                 'string',
@@ -50,11 +50,20 @@ class PaymentGatewayController extends Controller
             ],
             'description' => ['nullable', 'string', 'max:250'],
             'class' => ['nullable', 'string', 'max:20', 'regex:/^[a-z0-9_-]+$/i'],
+            'quickpay_channel' => ['nullable', Rule::in(array_keys(PaymentMethod::QUICKPAY_CHANNELS))],
             'active' => ['required', 'boolean'],
             'available_in_application' => ['required', 'boolean'],
             'available_in_qr' => ['required', 'boolean'],
         ], [
             'class.regex' => 'The icon name may only contain letters, numbers, underscores, and dashes.',
         ]);
+
+        $channel = array_key_exists('quickpay_channel', $validated)
+            ? $validated['quickpay_channel'] : $paymentGateway?->quickpay_channel;
+        if ($channel !== null) {
+            $validated['available_in_application'] = false;
+        }
+
+        return $validated;
     }
 }

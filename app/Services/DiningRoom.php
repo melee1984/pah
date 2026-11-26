@@ -11,6 +11,7 @@ use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\PartnerLocationTable;
 use App\PaymentMethod;
+use App\QuickPayCheckout;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -20,6 +21,19 @@ class DiningRoom
     public function attach(Orders $order): ?DiningBillOrder
     {
         $cart = $order->cart;
+        if ($checkout = $order->getRelations()['prepaidCheckout'] ?? null) {
+            $bill = DiningBill::create([
+                'partner_id' => $order->partner_id,
+                'partner_location_id' => $cart->partner_location_address_id,
+                'dining_table_id' => $cart->dining_table_id,
+                'status' => 'open',
+            ]);
+
+            return $bill->rounds()->create([
+                'order_id' => $order->id, 'round' => 1,
+                'amounts' => $checkout->guest_snapshot['amounts'], 'items' => $checkout->guest_snapshot['items'],
+            ]);
+        }
         if ($order->submitted_at && $cart?->order_source === Cart::ORDER_SOURCE_POS && $cart->fulfillment_type !== Cart::FULFILLMENT_DINE_IN) {
             return DB::transaction(function () use ($order, $cart) {
                 Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
@@ -27,10 +41,7 @@ class DiningRoom
                     return $existing;
                 }
                 $bill = DiningBill::create(['partner_id' => $order->partner_id, 'partner_location_id' => $cart->partner_location_address_id, 'dining_table_id' => null, 'status' => 'open']);
-                $amounts = [];
-                foreach ($cart->cartItemAmounts() as $key => $value) {
-                    $amounts[$key] = $key === 'qty' ? (int) $value : (int) round($value * 100);
-                }
+                $amounts = $this->amounts($cart);
 
                 return DiningBillOrder::create(['dining_bill_id' => $bill->id, 'order_id' => $order->id, 'round' => 1, 'amounts' => $amounts, 'items' => $this->items($cart)]);
             });
@@ -50,24 +61,29 @@ class DiningRoom
                 return $existing;
             }
 
-            $bill = DiningBill::firstOrCreate([
+            $bill = DiningBill::lockForUpdate()->firstOrCreate([
                 'dining_table_id' => $table->id, 'status' => 'open',
             ], [
                 'partner_id' => $order->partner_id,
                 'partner_location_id' => $table->partner_location_id,
             ]);
 
-            $amounts = [];
-            foreach ($cart->cartItemAmounts() as $key => $value) {
-                $amounts[$key] = $key === 'qty' ? (int) $value : (int) round($value * 100);
-            }
+            QuickPayCheckout::assertUnlocked($bill->id);
+            $amounts = $this->amounts($cart);
 
             return DiningBillOrder::create([
                 'dining_bill_id' => $bill->id, 'order_id' => $order->id,
-                'round' => ((int) $bill->rounds()->max('round')) + 1,
+                'round' => ((int) $bill->rounds()->reorder('round', 'desc')->lockForUpdate()->value('round')) + 1,
                 'amounts' => $amounts, 'items' => $this->items($cart),
             ]);
         });
+    }
+
+    public function amounts(Cart $cart): array
+    {
+        return collect($cart->cartItemAmounts())
+            ->map(fn ($value, $key) => $key === 'qty' ? (int) $value : (int) round($value * 100))
+            ->all();
     }
 
     public function items(Cart $cart): array
@@ -146,14 +162,37 @@ class DiningRoom
         return $totals;
     }
 
-    public function pay(int $billId, int $partnerId, int $branchId, int $actorId, array $input): DiningPayment
+    public function lockBill(int $billId, int $partnerId, int $branchId): DiningBill
     {
-        return DB::transaction(function () use ($billId, $partnerId, $branchId, $actorId, $input) {
-            $bill = DiningBill::whereKey($billId)->where('partner_id', $partnerId)->where('partner_location_id', $branchId)->firstOrFail();
-            if ($bill->dining_table_id) {
-                PartnerLocationTable::whereKey($bill->dining_table_id)->lockForUpdate()->firstOrFail();
+        $bill = DiningBill::whereKey($billId)->where('partner_id', $partnerId)->where('partner_location_id', $branchId)->firstOrFail();
+        if ($bill->dining_table_id) {
+            PartnerLocationTable::whereKey($bill->dining_table_id)->lockForUpdate()->firstOrFail();
+        }
+
+        return DiningBill::whereKey($bill->id)->lockForUpdate()->firstOrFail();
+    }
+
+    public function lockPayableOrders(DiningBill $bill)
+    {
+        abort_unless($bill->status === 'open', 409, 'This bill is already closed.');
+        $rounds = $bill->rounds()->lockForUpdate()->get();
+        $orders = Orders::whereIn('id', $rounds->pluck('order_id'))->lockForUpdate()->get()->keyBy('id');
+        abort_if($rounds->count() !== $orders->count(), 409, 'An order is missing from this bill.');
+        $rounds->each(fn ($round) => $round->setRelation('order', $orders->get($round->order_id)));
+        $bill->setRelation('rounds', $rounds);
+        $payable = $orders->where('order_status_id', '!=', LibraryStatus::STATUS_CANCELLED);
+        abort_if($payable->isEmpty(), 409, 'This bill has no payable orders.');
+
+        return $payable;
+    }
+
+    public function pay(int $billId, int $partnerId, int $branchId, ?int $actorId, array $input, ?QuickPayCheckout $checkout = null): DiningPayment
+    {
+        return DB::transaction(function () use ($billId, $partnerId, $branchId, $actorId, $input, $checkout) {
+            $bill = $this->lockBill($billId, $partnerId, $branchId);
+            if (! $checkout) {
+                QuickPayCheckout::assertUnlocked($bill->id);
             }
-            $bill = DiningBill::whereKey($bill->id)->lockForUpdate()->firstOrFail();
             $existing = DiningPayment::where('idempotency_key', $input['idempotency_key'])->first();
             if ($existing) {
                 $requestedTendered = isset($input['cash_tendered_cents']) ? (int) $input['cash_tendered_cents'] : null;
@@ -165,18 +204,18 @@ class DiningRoom
 
                 return $existing;
             }
-            abort_unless($bill->status === 'open', 409, 'This bill is already closed.');
-            $rounds = $bill->rounds()->get();
-            $orders = Orders::whereIn('id', $rounds->pluck('order_id'))->lockForUpdate()->get()->keyBy('id');
-            $rounds->each(fn ($round) => $round->setRelation('order', $orders->get($round->order_id)));
-            $bill->setRelation('rounds', $rounds);
-            $payable = $orders->where('order_status_id', '!=', LibraryStatus::STATUS_CANCELLED);
-            abort_if($payable->isEmpty(), 409, 'This bill has no payable orders.');
-            abort_if($rounds->count() !== $orders->count(), 409, 'An order is missing from this bill.');
+            $payable = $this->lockPayableOrders($bill);
+            $rounds = $bill->rounds;
             $totals = $this->totals($bill);
-            abort_unless($totals['total'] === (int) $input['expected_total'], 409, 'The bill total changed. Review it before recording payment.');
-            $method = PaymentMethod::active()->forQr()->findOrFail($input['payment_method_id']);
-            $isCash = $method->isCash();
+            $roundingDiscount = $checkout?->rounding_discount_cents ?? 0;
+            abort_unless($totals['total'] === (int) $input['expected_total'] + $roundingDiscount, 409, 'The bill total changed. Review it before recording payment.');
+            if ($roundingDiscount > 0) {
+                $totals['rounding_discount_cents'] = $roundingDiscount;
+                $totals['total'] -= $roundingDiscount;
+            }
+            $method = $checkout ? null : PaymentMethod::active()->forQr()->findOrFail($input['payment_method_id']);
+            abort_if($method?->isQuickPay(), 422, 'QuickPay must verify this payment.');
+            $isCash = $method?->isCash() ?? false;
             $cashTendered = $isCash && isset($input['cash_tendered_cents'])
                 ? (int) $input['cash_tendered_cents']
                 : null;
@@ -195,8 +234,8 @@ class DiningRoom
             }
             $payment = DiningPayment::create([
                 'dining_bill_id' => $bill->id, 'idempotency_key' => $input['idempotency_key'],
-                'recorded_by_user_id' => $actorId, 'payment_method_id' => $method->id,
-                'method_name' => $method->isCash() ? 'Cash' : $method->title, 'amount_cents' => $totals['total'],
+                'recorded_by_user_id' => $actorId, 'payment_method_id' => $input['payment_method_id'],
+                'method_name' => $checkout ? 'QuickPay' : ($isCash ? 'Cash' : $method->title), 'amount_cents' => $totals['total'],
                 'cash_tendered_cents' => $cashTendered,
                 'change_cents' => $cashTendered === null ? null : $cashTendered - $totals['total'],
                 'reference' => $input['reference'] ?? null,

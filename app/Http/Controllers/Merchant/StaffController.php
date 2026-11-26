@@ -12,7 +12,9 @@ use App\PartnerLocationCheckoutOption;
 use App\PartnerLocationTable;
 use App\Partners;
 use App\PaymentMethod;
+use App\QuickPayCheckout;
 use App\Services\DiningRoom;
+use App\Services\QuickPayPayments;
 use App\Services\StaffOrderPresenter;
 use App\Services\StaffPos;
 use Carbon\Carbon;
@@ -149,10 +151,11 @@ class StaffController extends Controller
             ]) : [],
             'abilities' => $abilities, 'orders' => $tickets, 'bills' => $bills, 'payments' => $payments,
             'tables' => $abilities['cashier'] ? PartnerLocationTable::where('partner_location_id', $branchId)->orderBy('name')->get(['id', 'name', 'capacity', 'active', 'is_available']) : [],
-            'payment_methods' => $abilities['pay'] ? PaymentMethod::active()->forQr()->get(['id', 'title'])->map(fn ($method) => [
+            'payment_methods' => $abilities['pay'] ? PaymentMethod::active()->forMerchantQr($partnerId)->get(['id', 'title', 'quickpay_channel'])->map(fn ($method) => [
                 'id' => $method->id,
                 'title' => $method->isCash() ? 'Cash' : $method->title,
                 'is_cash' => $method->isCash(),
+                'provider' => $method->isQuickPay() ? 'quickpay' : null,
             ]) : [],
             'updated_at' => now()->toIso8601String(),
         ];
@@ -278,7 +281,7 @@ class StaffController extends Controller
         return response()->json(['message' => 'Order updated.']);
     }
 
-    public function payment(Request $request, int $bill, DiningRoom $room)
+    public function payment(Request $request, int $bill, DiningRoom $room, QuickPayPayments $quickPay)
     {
         [$merchant, $branch, $abilities] = $this->context($request);
         abort_unless($abilities['pay'], 403);
@@ -286,10 +289,60 @@ class StaffController extends Controller
             'payment_method_id' => ['required', 'integer'], 'idempotency_key' => ['required', 'uuid'],
             'expected_total' => ['required', 'integer', 'min:0'], 'reference' => ['nullable', 'string', 'max:150'],
             'cash_tendered_cents' => ['nullable', 'integer', 'min:0'],
+            'confirm_rounding_discount' => ['sometimes', 'boolean'],
         ]);
+        if (PaymentMethod::findOrFail($input['payment_method_id'])->isQuickPay()) {
+            $checkout = $quickPay->startPos($bill, $merchant->id, $branch->id, $request->user()->id, $input);
+
+            return $this->quickPayResponse($quickPay->reconcile($checkout));
+        }
+
         $payment = $room->pay($bill, $merchant->id, $branch->id, $request->user()->id, $input);
 
         return response()->json(['message' => 'Payment recorded.', 'payment_id' => $payment->id]);
+    }
+
+    public function quickPayStatus(Request $request, int $bill, QuickPayPayments $quickPay)
+    {
+        $checkout = $this->billQuickPayCheckout($request, $bill);
+        $input = $request->validate([
+            'manual' => ['sometimes', 'boolean'],
+            'show_code' => ['sometimes', 'boolean'],
+        ]);
+        $manual = (bool) ($input['manual'] ?? false);
+
+        return $this->quickPayResponse(
+            $quickPay->reconcile($checkout, manual: $manual),
+            revealCode: $manual && ! empty($input['show_code'])
+        );
+    }
+
+    public function cancelQuickPay(Request $request, int $bill, QuickPayPayments $quickPay)
+    {
+        $checkout = $this->billQuickPayCheckout($request, $bill);
+        $input = $request->validate(['checkout_id' => ['nullable', 'integer', 'min:1']]);
+        abort_if(isset($input['checkout_id']) && (int) $input['checkout_id'] !== $checkout->id, 409, 'The QuickPay checkout changed. Check its status.');
+
+        $checkout = $quickPay->stopMonitoring($checkout);
+
+        return $this->quickPayResponse($checkout->status === 'confirmed' ? $quickPay->reconcile($checkout) : $checkout);
+    }
+
+    private function billQuickPayCheckout(Request $request, int $bill): QuickPayCheckout
+    {
+        [$merchant, $branch, $abilities] = $this->context($request);
+        abort_unless($abilities['pay'], 403);
+        $record = DiningBill::where('partner_id', $merchant->id)->where('partner_location_id', $branch->id)->findOrFail($bill);
+        $checkout = QuickPayCheckout::latestFor($record->id);
+        abort_unless($checkout, 404, 'No QuickPay payment was started.');
+
+        return $checkout;
+    }
+
+    private function quickPayResponse(QuickPayCheckout $checkout, bool $revealCode = false)
+    {
+        return response()->json(['payment' => $checkout->payload($revealCode)], $checkout->status === 'pending' ? 202 : 200)
+            ->header('Cache-Control', 'no-store, private');
     }
 
     public function receipt(Request $request, int $bill, DiningRoom $room)
@@ -313,7 +366,10 @@ class StaffController extends Controller
 
         return response()->json([
             'id' => $bill->id, 'table_name' => $table?->name ?? 'POS order #'.($bill->rounds->first()?->order?->cart?->order_no ?? $bill->id),
-            'paid' => $bill->status === 'paid', 'totals' => $bill->totals ?? $room->totals($bill),
+            'paid' => $bill->status === 'paid',
+            'quickpay' => $abilities['pay'] && $bill->status === 'open'
+                ? QuickPayCheckout::latestFor($bill->id)?->payload() : null,
+            'totals' => $bill->totals ?? $room->totals($bill),
             'orders' => $receiptOrders,
             'payment' => $bill->payment ? [
                 'method' => $bill->payment->method_name,
@@ -336,7 +392,8 @@ class StaffController extends Controller
             }
             $record = DiningBill::whereKey($record->id)->lockForUpdate()->firstOrFail();
             abort_unless($record->status === 'open', 409, 'This bill is already closed.');
-            $orderIds = $record->rounds()->pluck('order_id');
+            QuickPayCheckout::assertUnlocked($record->id);
+            $orderIds = $record->rounds()->lockForUpdate()->pluck('order_id');
             $orders = Orders::whereIn('id', $orderIds)->lockForUpdate()->get();
             abort_if($orders->count() !== $orderIds->count(), 409, 'An order is missing from this bill.');
             abort_if($orders->contains(fn ($order) => (int) $order->order_status_id !== 8), 409, 'Only fully cancelled bills can be released without payment.');

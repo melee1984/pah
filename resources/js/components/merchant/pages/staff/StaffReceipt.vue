@@ -14,6 +14,7 @@
       <div class="receipt-line"><span>Subtotal</span><span>{{ money(receipt.totals.sub_total) }}</span></div>
       <div v-if="fees" class="receipt-line"><span>Fees</span><span>{{ money(fees) }}</span></div>
       <div v-if="receipt.totals.discount" class="receipt-line"><span>Discount</span><span>−{{ money(receipt.totals.discount) }}</span></div>
+      <div v-if="receipt.totals.rounding_discount_cents" class="receipt-line"><span>QuickPay rounding discount</span><span>−{{ money(receipt.totals.rounding_discount_cents) }}</span></div>
       <div class="receipt-line receipt-total"><strong>{{ receipt.paid ? 'Total paid' : 'Total due' }}</strong><strong>{{ money(receipt.totals.total) }}</strong></div>
       <template v-if="receipt.payment"><div class="receipt-line"><span>Payment</span><strong>{{ receipt.payment.method }}</strong></div><template v-if="receipt.payment.cash_tendered != null"><div class="receipt-line"><span>Cash tendered</span><span>{{ money(receipt.payment.cash_tendered) }}</span></div><div class="receipt-line"><strong>Change</strong><strong>{{ money(receipt.payment.change) }}</strong></div></template><p v-if="receipt.payment.reference">Reference: {{ receipt.payment.reference }}</p><p>Paid: {{ date(receipt.payment.created) }}</p></template>
     </section><footer>Thank you for ordering with {{ merchant }}!</footer>

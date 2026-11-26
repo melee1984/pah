@@ -50,6 +50,7 @@ class CustomerAccountTest extends TestCase
             $t->timestamps();
         });
         Schema::create('payment_method', function (Blueprint $t) {
+            $t->string('quickpay_channel')->nullable();
             $t->id();
             $t->string('title');
         });

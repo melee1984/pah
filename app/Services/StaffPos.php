@@ -85,7 +85,7 @@ class StaffPos
                 : null;
             $paymentMethodId = $input['payment_method_id'] ?? null;
             if ($paymentMethodId) {
-                PaymentMethod::active()->forQr()->findOrFail($paymentMethodId);
+                PaymentMethod::active()->forMerchantQr($merchant->id)->findOrFail($paymentMethodId);
             }
             $cart = Cart::create([
                 'session_id' => $session, 'partner_id' => $merchant->id,

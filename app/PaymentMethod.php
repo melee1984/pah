@@ -27,6 +27,30 @@ class PaymentMethod extends Model
             || in_array($title, ['cash', 'cod', 'cash on delivery'], true);
     }
 
+    public const QUICKPAY_CHANNELS = [
+        'maya' => 'Maya',
+        'gcash' => 'GCash',
+        'qrph' => 'QR Ph',
+        'banks' => 'Transfer to bank',
+        'hosted' => 'Hosted checkout',
+    ];
+
+    public function isQuickPay(): bool
+    {
+        return $this->quickpay_channel !== null;
+    }
+
+    public static function quickPayKey(int $partnerId): ?string
+    {
+        $key = config("services.quickpay.merchant_keys.{$partnerId}");
+
+        if (! is_string($key) || ! preg_match('/^qp_(test|live)_.+$/D', $key)) {
+            return null;
+        }
+
+        return app()->isProduction() && str_starts_with($key, 'qp_test_') ? null : $key;
+    }
+
     public static function resolveCheckoutId(mixed $paymentMethod): ?int
     {
         if (is_int($paymentMethod) || (is_string($paymentMethod) && ctype_digit($paymentMethod))) {
@@ -53,6 +77,7 @@ class PaymentMethod extends Model
         'active',
         'available_in_application',
         'available_in_qr',
+        'quickpay_channel',
     ];
 
     protected function casts(): array
@@ -71,7 +96,15 @@ class PaymentMethod extends Model
 
     public function scopeForApplication(Builder $query): Builder
     {
-        return $query->where('available_in_application', true);
+        return $query->where('available_in_application', true)->whereNull('quickpay_channel');
+    }
+
+    public function scopeForMerchantQr(Builder $query, int $partnerId, bool $supportsQuickPay = true): Builder
+    {
+        return $query->forQr()->when(
+            ! $supportsQuickPay || ! self::quickPayKey($partnerId),
+            fn (Builder $methods) => $methods->whereNull('quickpay_channel')
+        );
     }
 
     public function scopeForQr(Builder $query): Builder

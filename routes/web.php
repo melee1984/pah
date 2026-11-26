@@ -421,6 +421,10 @@ Route::middleware('merchant')->group(function () {
     Route::post('merchant/staff/orders/{order}/transition', [\App\Http\Controllers\Merchant\StaffController::class, 'transition'])->whereNumber('order')->name('merchant.staff.transition');
     Route::post('merchant/staff/bills/{bill}/release', [\App\Http\Controllers\Merchant\StaffController::class, 'release'])->whereNumber('bill')->name('merchant.staff.release');
     Route::get('merchant/staff/bills/{bill}/receipt', [\App\Http\Controllers\Merchant\StaffController::class, 'receipt'])->whereNumber('bill')->name('merchant.staff.receipt');
+    Route::post('merchant/staff/bills/{bill}/payment/quickpay/cancel', [\App\Http\Controllers\Merchant\StaffController::class, 'cancelQuickPay'])
+        ->whereNumber('bill')->name('merchant.staff.quickpay.cancel');
+    Route::post('merchant/staff/bills/{bill}/payment/quickpay/status', [\App\Http\Controllers\Merchant\StaffController::class, 'quickPayStatus'])
+        ->whereNumber('bill')->middleware('throttle:30,1')->name('merchant.staff.quickpay.status');
     Route::post('merchant/staff/bills/{bill}/payment', [\App\Http\Controllers\Merchant\StaffController::class, 'payment'])->whereNumber('bill')->name('merchant.staff.payment');
     Route::patch('merchant/staff/tables/{table}', [\App\Http\Controllers\Merchant\StaffController::class, 'table'])->whereNumber('table')->name('merchant.staff.table');
 

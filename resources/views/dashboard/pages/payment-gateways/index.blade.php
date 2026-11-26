@@ -19,6 +19,16 @@
                         <div class="form-group col-lg-3"><label for="gateway_title">Display name</label><input class="form-control" id="gateway_title" name="title" value="{{ old('title') }}" maxlength="75" placeholder="Bank transfer" required></div>
                         <div class="form-group col-lg-5"><label for="gateway_description">Customer instructions</label><input class="form-control" id="gateway_description" name="description" value="{{ old('description') }}" maxlength="250" placeholder="Pay using your preferred bank"></div>
                         <div class="form-group col-lg-2"><label for="gateway_class">Material icon</label><input class="form-control" id="gateway_class" name="class" value="{{ old('class') }}" maxlength="20" placeholder="account_balance"><small class="form-text text-muted">Optional icon name.</small></div>
+                        <div class="form-group col-lg-3">
+                            <label for="gateway_quickpay_channel">QuickPay channel</label>
+                            <select class="form-control" name="quickpay_channel" id="gateway_quickpay_channel">
+                                <option value="">Manual payment</option>
+                                @foreach (\App\PaymentMethod::QUICKPAY_CHANNELS as $channel => $label)
+                                    <option value="{{ $channel }}" @selected(old('quickpay_channel') === $channel)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <small class="form-text text-muted">QuickPay methods are available through QR ordering and the cashier POS.</small>
+                        </div>
                         <div class="form-group col-lg-2 d-flex flex-column justify-content-end">
                             <input type="hidden" name="active" value="0"><label><input name="active" type="checkbox" value="1" @checked((bool) old('active'))> Active</label>
                             <input type="hidden" name="available_in_application" value="0"><label><input name="available_in_application" type="checkbox" value="1" @checked((bool) old('available_in_application'))> Application</label>
@@ -47,8 +57,16 @@
                                 <div class="col-lg-3 mb-2 mb-lg-0"><input class="form-control form-control-sm" name="description" value="{{ $paymentGateway->description }}" maxlength="250" aria-label="Customer instructions" placeholder="Customer instructions"></div>
                                 <div class="col-lg-2 mb-2 mb-lg-0"><input class="form-control form-control-sm" name="class" value="{{ $paymentGateway->class }}" maxlength="20" aria-label="Material icon" placeholder="Icon name"></div>
                                 <div class="col-lg-2 mb-2 mb-lg-0">
+                                    <select class="form-control form-control-sm" name="quickpay_channel" aria-label="QuickPay channel">
+                                        <option value="">Manual payment</option>
+                                        @foreach (\App\PaymentMethod::QUICKPAY_CHANNELS as $channel => $label)
+                                            <option value="{{ $channel }}" @selected($paymentGateway->quickpay_channel === $channel)>{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-lg-2 mb-2 mb-lg-0">
                                     <input type="hidden" name="active" value="0"><label class="mb-0 text-nowrap d-block"><input name="active" type="checkbox" value="1" @checked($paymentGateway->active)> Active</label>
-                                    <input type="hidden" name="available_in_application" value="0"><label class="mb-0 text-nowrap d-block"><input name="available_in_application" type="checkbox" value="1" @checked($paymentGateway->available_in_application)> Application</label>
+                                    <input type="hidden" name="available_in_application" value="0"><label class="mb-0 text-nowrap d-block"><input name="available_in_application" type="checkbox" value="1" @checked($paymentGateway->available_in_application) @disabled($paymentGateway->isQuickPay())> Application</label>
                                     <input type="hidden" name="available_in_qr" value="0"><label class="mb-0 text-nowrap d-block"><input name="available_in_qr" type="checkbox" value="1" @checked($paymentGateway->available_in_qr)> QR ordering</label>
                                 </div>
                                 <div class="col-lg-1"><button class="btn admin-btn-secondary btn-sm" type="submit">Save</button></div>

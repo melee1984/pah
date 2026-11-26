@@ -85,6 +85,14 @@ Checkout is idempotent for an already-submitted cart. It creates a dine-in order
 account, attaches the branch/table from the QR code, and notifies the merchant through the existing
 order notification flow.
 
+## QuickPay guest checkout
+
+An updated client requests `GET /menu?quickpay=1`. A gateway with `provider: "quickpay"` includes its configured `quickpay_channel`. Only merchants with configured QuickPay keys offer these methods. Older clients continue to see manual methods.
+
+Send the checkout request to `POST /carts/{cart_session_uuid}/checkout?quickpay=1`. For QuickPay, include `expected_total` from `data.checkout_total_cents` in the cart summary. If the amount contains centavos, show the rounding discount and collect explicit confirmation in `confirm_rounding_discount`. A pending checkout returns HTTP 202 with `payment.checkout_url`, `payment.amount_cents`, and `payment.rounding_discount_cents`. Open QuickPay in the same browser window and keep the server-issued QR session token in that browser.
+
+Call `POST /carts/{cart_session_uuid}/checkout/quickpay/status` with the existing `X-QR-Session-Token` to recover or verify a payment. Poll at intervals while waiting. Only a verified paid response includes the submitted `order`. Expired or rejected responses release the cart to use another payment method. With an HTTPS `QR_ORDERING_URL`, QuickPay returns to that app with `quickpay=return`.
+
 ## Merchant QR provisioning
 
 These routes use the existing merchant session/API authentication checks:

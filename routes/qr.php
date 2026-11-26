@@ -12,7 +12,7 @@ Route::prefix('qr/{uuid}/branches/{branchId}')
     ->group(function () {
         Route::get('menu', [QrOrderingController::class, 'menu'])->name('api.qr.menu');
         Route::post('sessions', [QrOrderingController::class, 'createSession'])
-            ->middleware('throttle:20,1');
+            ->middleware('throttle:qr-sessions');
 
         Route::prefix('carts/{sessionId}')
             ->whereUuid('sessionId')
@@ -23,8 +23,10 @@ Route::prefix('qr/{uuid}/branches/{branchId}')
                 Route::post('items', [QrOrderingController::class, 'addItem']);
                 Route::patch('items/{cartItem}', [QrOrderingController::class, 'updateItem'])
                     ->whereNumber('cartItem');
+                Route::post('checkout/quickpay/status', [QrOrderingController::class, 'quickPayStatus'])
+                    ->middleware('throttle:qr-payment-status');
                 Route::post('checkout', [QrOrderingController::class, 'checkout'])
-                    ->middleware('throttle:10,1');
+                    ->middleware('throttle:qr-checkout');
             });
     });
 

@@ -88,6 +88,10 @@ return [
         ),
     ],
 
+    'quickpay' => [
+        'merchant_keys' => json_decode((string) env('QUICKPAY_MERCHANT_KEYS', '{}'), true) ?: [],
+    ],
+
     'qr_ordering' => [
         'url' => env(
             'QR_ORDERING_URL',

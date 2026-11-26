@@ -8,10 +8,12 @@ use App\Model\Cart;
 use App\Model\Orders\Orders;
 use App\PartnerLocationCheckoutOption;
 use App\ProductLocationAvailability;
+use App\QuickPayCheckout;
 use App\Services\DiningRoom;
 use App\Services\RiderOfferDispatcher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Tests\Concerns\DiningFixtures;
 use Tests\TestCase;
@@ -132,6 +134,223 @@ class StaffPosTest extends TestCase
         $this->assertSame(0, Cart::count());
         $this->assertSame(0, Orders::count());
         $this->assertSame(0, DiningBill::count());
+    }
+
+    public function test_quickpay_pos_blocks_other_tenders_and_verifies_the_exact_amount_before_settling(): void
+    {
+        config(['services.quickpay.merchant_keys.1' => 'qp_test_fixture', 'checkout.convenience_fee_rate' => 0]);
+        DB::table('payment_method')->insert(['id' => 8, 'title' => 'QuickPay', 'quickpay_channel' => 'qrph', 'active' => true, 'available_in_qr' => true, 'available_in_application' => false]);
+        $this->actingAs($this->accounts['cashier'])->getJson('/merchant/staff/data')->assertOk()
+            ->assertJsonFragment(['id' => 8, 'provider' => 'quickpay']);
+        $id = $this->postJson('/merchant/staff/orders', $this->input())->assertCreated()->json('bill_id');
+        $url = "/merchant/staff/bills/{$id}/payment";
+        $total = app(DiningRoom::class)->totals(DiningBill::findOrFail($id))['total'];
+        $input = ['payment_method_id' => 8, 'idempotency_key' => (string) Str::uuid(), 'expected_total' => $total];
+
+        $reference = null;
+        $mismatch = true;
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use (&$reference, &$mismatch, $total) {
+            $create = $request->method() === 'POST';
+            if ($create) {
+                $this->assertSame('qrph', $request['channel']);
+                $this->assertSame($total, $request['amount']);
+                $reference = $request['reference'];
+            }
+
+            return Http::response([
+                'id' => 'cs_pos', 'object' => 'checkout', 'reference' => $reference,
+                'amount' => $create || ! $mismatch ? $total : $total - 100,
+                'currency' => 'PHP', 'livemode' => false, 'status' => $create ? 'open' : 'paid',
+                'url' => 'https://quickpayph.com/pay/cs_pos', 'qr' => ['image' => 'https://quickpayph.com/qr/cs_pos.png'],
+            ]);
+        });
+
+        $this->postJson($url, $input)->assertAccepted()->assertJsonPath('payment.qr_image', 'https://quickpayph.com/qr/cs_pos.png');
+        $this->postJson('/merchant/staff/orders', $this->input())->assertConflict();
+        $this->postJson($url, array_replace($input, ['payment_method_id' => 3, 'cash_tendered_cents' => $total]))->assertConflict();
+        $this->actingAs($this->accounts['owner'])->postJson($url.'/quickpay/status?branch_id=2')->assertNotFound();
+        $this->actingAs($this->accounts['cashier'])->postJson($url.'/quickpay/status')->assertStatus(502);
+        $this->assertDatabaseCount('dining_payments', 0);
+
+        $this->postJson($url.'/quickpay/cancel')->assertAccepted()->assertJsonPath('payment.monitoring_stopped', true);
+        $mismatch = false;
+        $this->postJson($url.'/quickpay/status', ['manual' => true])->assertOk()->assertJsonPath('payment.status', 'paid');
+        $this->postJson($url, $input)->assertOk()->assertJsonPath('payment.status', 'paid');
+        $this->getJson("/merchant/staff/bills/{$id}/receipt")->assertOk()->assertJsonPath('paid', true)
+            ->assertJsonPath('payment.method', 'QuickPay')->assertJsonPath('payment.reference', 'cs_pos');
+        $this->assertDatabaseCount('dining_payments', 1);
+        $this->assertDatabaseCount('quickpay_checkouts', 1);
+        Http::assertSentCount(3);
+    }
+
+    public function test_quickpay_retries_a_lost_create_with_the_same_key_and_releases_an_expired_bill(): void
+    {
+        config(['services.quickpay.merchant_keys.1' => 'qp_test_fixture', 'checkout.convenience_fee_rate' => 0]);
+        DB::table('payment_method')->insert(['id' => 8, 'title' => 'QuickPay', 'quickpay_channel' => 'hosted', 'active' => true, 'available_in_qr' => true, 'available_in_application' => false]);
+        $id = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('pickup'))->assertCreated()->json('bill_id');
+        $url = "/merchant/staff/bills/{$id}/payment";
+        $total = app(DiningRoom::class)->totals(DiningBill::findOrFail($id))['total'];
+        $input = ['payment_method_id' => 8, 'idempotency_key' => (string) Str::uuid(), 'expected_total' => $total];
+
+        $key = null;
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use (&$key) {
+            $this->assertArrayNotHasKey('channel', $request->data());
+            if ($key === null) {
+                $key = $request->header('Idempotency-Key');
+                return Http::failedConnection();
+            }
+
+            $this->assertSame($key, $request->header('Idempotency-Key'));
+
+            return Http::response([
+                'id' => 'cs_expired', 'object' => 'checkout', 'reference' => $request['reference'],
+                'amount' => $request['amount'], 'currency' => 'PHP', 'livemode' => false, 'status' => 'expired',
+            ]);
+        });
+
+        $this->postJson($url, $input)->assertServiceUnavailable();
+        $this->assertSame('pending', QuickPayCheckout::firstOrFail()->status);
+        $this->artisan('quickpay:reconcile')->assertSuccessful();
+        $this->postJson($url.'/quickpay/status')->assertOk()->assertJsonPath('payment.status', 'expired');
+        $this->assertDatabaseCount('dining_payments', 0);
+        $this->postJson($url, array_replace($input, ['payment_method_id' => 3, 'cash_tendered_cents' => $total]))->assertOk();
+        $this->assertDatabaseCount('dining_payments', 1);
+        $this->assertSame($total, DiningPayment::firstOrFail()->amount_cents);
+    }
+
+    public function test_quickpay_applies_a_confirmed_rounding_discount_only_after_payment(): void
+    {
+        config([
+            'services.quickpay.merchant_keys.1' => 'qp_test_fixture',
+            'checkout.convenience_fee_rate' => 0.01,
+            'checkout.vat_rate' => 0,
+        ]);
+        DB::table('payment_method')->insert(['id' => 8, 'title' => 'QuickPay', 'quickpay_channel' => 'maya', 'active' => true, 'available_in_qr' => true, 'available_in_application' => false]);
+        $id = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('pickup'))->assertCreated()->json('bill_id');
+        $total = app(DiningRoom::class)->totals(DiningBill::findOrFail($id))['total'];
+        $this->assertSame(38380, $total);
+        $url = "/merchant/staff/bills/{$id}/payment";
+        $receipt = "/merchant/staff/bills/{$id}/receipt";
+        $input = ['payment_method_id' => 8, 'idempotency_key' => (string) Str::uuid(), 'expected_total' => $total];
+        $reference = null;
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use (&$reference) {
+            $creating = $request->method() === 'POST';
+            if ($creating) {
+                $this->assertSame(38300, $request['amount']);
+                $this->assertSame('maya', $request['channel']);
+                $reference = $request['reference'];
+            }
+
+            return Http::response([
+                'id' => 'cs_rounded', 'object' => 'checkout', 'reference' => $reference,
+                'amount' => 38300, 'currency' => 'PHP', 'livemode' => false,
+                'status' => $creating ? 'open' : 'paid', 'url' => 'https://quickpayph.com/pay/cs_rounded',
+                'qr' => ['emv' => 'test Maya code'],
+            ]);
+        });
+        $this->postJson($url, $input)->assertUnprocessable();
+        $this->postJson($url, array_replace($input, ['expected_total' => 38300, 'confirm_rounding_discount' => true]))->assertConflict();
+        Http::assertNothingSent();
+        $this->assertDatabaseCount('quickpay_checkouts', 0);
+
+        $input['confirm_rounding_discount'] = true;
+        $this->postJson($url, $input)->assertAccepted()
+            ->assertJsonPath('payment.amount_cents', 38300)->assertJsonPath('payment.rounding_discount_cents', 80)
+            ->assertJsonPath('payment.channel', 'maya')->assertJsonPath('payment.qr_payload', 'test Maya code');
+        $this->getJson($receipt)->assertOk()->assertJsonPath('totals.total', $total)
+            ->assertJsonMissingPath('totals.rounding_discount_cents');
+        $this->assertDatabaseCount('dining_payments', 0);
+
+        $this->postJson($url.'/quickpay/status')->assertOk()->assertJsonPath('payment.status', 'paid');
+        $this->postJson($url, $input)->assertOk()->assertJsonPath('payment.amount_cents', 38300);
+        $this->getJson($receipt)->assertOk()->assertJsonPath('paid', true)
+            ->assertJsonPath('totals.total', 38300)->assertJsonPath('totals.rounding_discount_cents', 80);
+        $this->assertSame(38300, DiningPayment::firstOrFail()->amount_cents);
+        $this->assertDatabaseCount('dining_payments', 1);
+        Http::assertSentCount(2);
+    }
+
+    public function test_cancelling_quickpay_requires_a_manual_status_check_before_another_payment(): void
+    {
+        config([
+            'services.quickpay.merchant_keys.1' => 'qp_test_fixture', 'checkout.convenience_fee_rate' => 0,
+        ]);
+        DB::table('payment_method')->insert(['id' => 8, 'title' => 'QuickPay', 'quickpay_channel' => 'gcash', 'active' => true, 'available_in_qr' => true, 'available_in_application' => false]);
+        $id = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('pickup'))->assertCreated()->json('bill_id');
+        $total = app(DiningRoom::class)->totals(DiningBill::findOrFail($id))['total'];
+        $url = "/merchant/staff/bills/{$id}/payment";
+        $input = ['payment_method_id' => 8, 'idempotency_key' => (string) Str::uuid(), 'expected_total' => $total];
+        $cash = array_replace($input, ['payment_method_id' => 3, 'cash_tendered_cents' => $total]);
+
+        $reference = null;
+        $gatewayStatus = 'open';
+        Http::preventStrayRequests();
+        Http::fake(function ($request) use (&$reference, &$gatewayStatus, $total) {
+            $creating = $request->method() === 'POST';
+            if ($creating) {
+                $this->assertSame('gcash', $request['channel']);
+                $reference = $request['reference'];
+            }
+
+            return Http::response([
+                'id' => 'cs_cancelled', 'object' => 'checkout', 'reference' => $reference,
+                'amount' => $total, 'currency' => 'PHP', 'livemode' => false,
+                'status' => $gatewayStatus, 'url' => 'https://quickpayph.com/pay/cs_cancelled',
+                'qr' => ['emv' => 'test payment code'],
+            ]);
+        });
+
+        $checkoutId = $this->postJson($url, $input)->assertAccepted()->assertJsonPath('payment.qr_payload', 'test payment code')->json('payment.id');
+        $this->postJson($url.'/quickpay/cancel', ['checkout_id' => $checkoutId + 1])->assertConflict();
+        $this->postJson($url.'/quickpay/cancel', ['checkout_id' => $checkoutId])->assertAccepted()
+            ->assertJsonPath('payment.monitoring_stopped', true)->assertJsonPath('payment.qr_payload', null)
+            ->assertJsonPath('payment.checkout_url', null);
+        $this->postJson($url.'/quickpay/status', ['show_code' => true])->assertAccepted()
+            ->assertJsonPath('payment.monitoring_stopped', true)->assertJsonPath('payment.qr_payload', null);
+        $this->artisan('quickpay:reconcile')->assertSuccessful();
+        $this->postJson($url, $cash)->assertConflict();
+        Http::assertSentCount(1);
+        $this->assertDatabaseCount('dining_payments', 0);
+
+        config(['services.quickpay.merchant_keys.1' => 'qp_live_fixture']);
+        $this->postJson($url.'/quickpay/status', ['manual' => true, 'show_code' => true])->assertServiceUnavailable()
+            ->assertJsonPath('message', 'This payment was created in test mode. Configure the merchant’s test QuickPay key to verify it.');
+        Http::assertSentCount(1);
+        config(['services.quickpay.merchant_keys.1' => 'qp_test_fixture']);
+        $this->postJson($url.'/quickpay/status', ['manual' => true, 'show_code' => true])->assertAccepted()
+            ->assertJsonPath('payment.monitoring_stopped', true)->assertJsonPath('payment.qr_payload', 'test payment code');
+        $this->artisan('quickpay:reconcile')->assertSuccessful();
+        Http::assertSentCount(2);
+        $gatewayStatus = 'expired';
+        $this->postJson($url.'/quickpay/status', ['manual' => true])->assertOk()->assertJsonPath('payment.status', 'expired');
+        $this->postJson($url, $cash)->assertOk();
+        $this->assertSame($total, DiningPayment::firstOrFail()->amount_cents);
+        Http::assertSentCount(3);
+    }
+
+    public function test_quickpay_reports_the_account_minimum_without_blocking_other_methods(): void
+    {
+        config([
+            'services.quickpay.merchant_keys.1' => 'qp_test_fixture', 'checkout.convenience_fee_rate' => 0,
+        ]);
+        DB::table('payment_method')->insert(['id' => 8, 'title' => 'QuickPay', 'quickpay_channel' => 'maya', 'active' => true, 'available_in_qr' => true, 'available_in_application' => false]);
+        $id = $this->actingAs($this->accounts['cashier'])->postJson('/merchant/staff/orders', $this->input('pickup'))->assertCreated()->json('bill_id');
+        $total = app(DiningRoom::class)->totals(DiningBill::findOrFail($id))['total'];
+        $url = "/merchant/staff/bills/{$id}/payment";
+        $input = ['payment_method_id' => 8, 'idempotency_key' => (string) Str::uuid(), 'expected_total' => $total];
+        Http::fake(['https://quickpayph.com/api/v1/checkouts' => Http::response([
+            'error' => 'amount_too_small', 'message' => 'The minimum amount is ₱500.00.',
+        ], 400)]);
+
+        $this->postJson($url, $input)->assertOk()->assertJsonPath('payment.status', 'rejected')
+            ->assertJsonPath('payment.rejection_message', 'QuickPay requires a minimum payment of ₱500.00. Choose another payment method.');
+        $this->postJson($url.'/quickpay/status')->assertOk()
+            ->assertJsonPath('payment.rejection_message', 'QuickPay requires a minimum payment of ₱500.00. Choose another payment method.');
+        $this->postJson($url, array_replace($input, ['payment_method_id' => 3, 'cash_tendered_cents' => $total]))->assertOk();
+        Http::assertSentCount(1);
     }
 
     public function test_pos_bill_payment_and_receipts_cannot_cross_branch_boundaries(): void

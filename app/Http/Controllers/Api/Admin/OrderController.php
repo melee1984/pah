@@ -373,7 +373,11 @@ class OrderController extends Controller
             else {
                 $order->status_id = "";
             }
-            $status = $order->save();
+            $status = DB::transaction(function () use ($order) {
+                $current = Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+                return $current->forceFill($order->getDirty())->save();
+            }, 3);
 
             if ($status) {
 
