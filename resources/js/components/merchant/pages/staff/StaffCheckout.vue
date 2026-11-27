@@ -103,7 +103,16 @@ export default {
     fees() { return this.order.totals.delivery_fee + this.order.totals.convenience_fee - this.order.totals.vat_amount; },
   },
   watch: {
-    method() { this.cash = ''; this.error = ''; this.roundingConfirmed = false; this.focusMethod(); },
+    method() {
+      this.cash = ''; this.error = ''; this.roundingConfirmed = false; this.focusMethod();
+      if (['qrph', 'banks'].includes(this.selectedMethod?.channel)) {
+        console.info('[QuickPay] Payment method selected', {
+          payment_method_id: this.selectedMethod.id,
+          title: this.selectedMethod.title,
+          channel: this.selectedMethod.channel,
+        });
+      }
+    },
     'order.totals.total'() { this.roundingConfirmed = false; },
     busy(value) { this.$emit('busy', value); },
   },

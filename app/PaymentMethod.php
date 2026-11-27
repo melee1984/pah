@@ -2,6 +2,7 @@
 
 namespace App;
 
+use App\Contracts\PaymentGateway;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -59,7 +60,7 @@ class PaymentMethod extends Model
             return $paymentMethod > 0 ? $paymentMethod : null;
         }
 
-        if (!is_string($paymentMethod)) {
+        if (! is_string($paymentMethod)) {
             return null;
         }
 
@@ -102,7 +103,7 @@ class PaymentMethod extends Model
     public function scopeForMerchantQr(Builder $query, int $partnerId, bool $supportsQuickPay = true): Builder
     {
         return $query->forQr()->when(
-            ! $supportsQuickPay || ! self::quickPayKey($partnerId),
+            ! $supportsQuickPay || ! app(PaymentGateway::class)->availableFor($partnerId),
             fn (Builder $methods) => $methods->whereNull('quickpay_channel')
         );
     }

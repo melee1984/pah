@@ -10,6 +10,7 @@ use App\Model\Cart;
 use App\Model\Riders;
 use App\Model\Orders\OrderProcess;
 use App\Partners;
+use App\QuickPayCheckout;
 use Auth;
 use Validator;
 use App\User;
@@ -375,6 +376,10 @@ class OrderController extends Controller
             }
             $status = DB::transaction(function () use ($order) {
                 $current = Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                if ($order->isDirty('order_status_id')
+                    && (int) $order->order_status_id !== (int) $current->order_status_id) {
+                    QuickPayCheckout::assertOrderDeliveryUnlocked($current->id);
+                }
 
                 return $current->forceFill($order->getDirty())->save();
             }, 3);

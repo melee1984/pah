@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Mobile\Booking\AddressesController as MobileBooking
 use App\Http\Controllers\Api\Mobile\Booking\BookingController as MobileBookingController;
 use App\Http\Controllers\Api\Mobile\CartController as MobileCartController;
 use App\Http\Controllers\Api\Mobile\CheckoutController as MobileCheckoutController;
+use App\Http\Controllers\Api\Mobile\DeliveryPaymentController;
 use App\Http\Controllers\Api\Mobile\FavoriteController;
 use App\Http\Controllers\Api\Mobile\HomeController as MobileHomeController;
 use App\Http\Controllers\Api\Mobile\OrderController as MobileOrderController;
@@ -25,6 +26,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::group(['middleware' => 'isRequest'], function () {
     Route::prefix('v1/user')->middleware('auth:api')->group(function () {
+        Route::prefix('orders/{order}/payment')->whereNumber('order')->middleware('throttle:20,1')->group(function () {
+            Route::get('/', [DeliveryPaymentController::class, 'customer'])->defaults('operation', 'show');
+            Route::post('/', [DeliveryPaymentController::class, 'customer'])->defaults('operation', 'start');
+            Route::post('status', [DeliveryPaymentController::class, 'customer'])->defaults('operation', 'refresh');
+        });
+
         Route::get('conversations', [V1UserCommunicationController::class, 'conversations']);
         Route::get('conversations/{conversation}', [V1UserCommunicationController::class, 'conversation']);
         Route::get('conversations/{conversation}/messages', [V1UserCommunicationController::class, 'messages']);

@@ -2,7 +2,9 @@
 
 namespace App;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class QuickPayCheckout extends Model
 {
@@ -29,6 +31,28 @@ class QuickPayCheckout extends Model
     public static function latestForCart(int $cartId, bool $lock = false): ?self
     {
         return static::where('cart_id', $cartId)->latest('id')->when($lock, fn ($query) => $query->lockForUpdate())->first();
+    }
+
+    public static function forDelivery(int $deliveryId): Builder
+    {
+        return static::where('rider_delivery_id', $deliveryId);
+    }
+
+    public static function assertDeliveryUnlocked(int $deliveryId): void
+    {
+        static::assertNoActiveDeliveryPayment(static::forDelivery($deliveryId));
+    }
+
+    public static function assertOrderDeliveryUnlocked(int $orderId): void
+    {
+        static::assertNoActiveDeliveryPayment(static::whereIn('rider_delivery_id', DB::table('rider_api_deliveries')
+            ->where('legacy_order_id', $orderId)->select('id')));
+    }
+
+    private static function assertNoActiveDeliveryPayment(Builder $query): void
+    {
+        abort_if($query->whereIn('status', self::ACTIVE)->lockForUpdate()->first(['id']),
+            409, 'A QuickPay payment is in progress. Check its status before continuing.');
     }
 
     public static function assertCartUnlocked(int $cartId): void

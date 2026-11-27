@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Mobile\DeliveryPaymentController;
 use App\Http\Controllers\Api\Mobile\Rider\OrderController as RiderOrderController;
 use App\Http\Controllers\Api\RiderApplicationController;
 use App\Http\Controllers\Api\User\AccessController;
@@ -108,6 +109,11 @@ Route::group(['middleware' => 'isRequest'], function () {
             Route::post('deliveries/{delivery}/pickup/verify', [V1RiderDeliveryController::class, 'verifyPickup']);
             Route::post('deliveries/{delivery}/customer/verify', [V1RiderDeliveryController::class, 'verifyCustomer']);
             Route::post('deliveries/{delivery}/cod/confirm', [V1RiderDeliveryController::class, 'confirmCod']);
+            Route::prefix('deliveries/{delivery}/payment')->middleware('throttle:20,1')->group(function () {
+                Route::get('/', [DeliveryPaymentController::class, 'rider'])->defaults('operation', 'show');
+                Route::post('/', [DeliveryPaymentController::class, 'rider'])->defaults('operation', 'start');
+                Route::post('status', [DeliveryPaymentController::class, 'rider'])->defaults('operation', 'refresh');
+            });
             Route::post('deliveries/{delivery}/proof/uploads', [V1RiderDeliveryController::class, 'requestProofUpload']);
             Route::post('deliveries/{delivery}/proof', [V1RiderDeliveryController::class, 'attachProof']);
             Route::get('deliveries/{delivery}/proof/status', [V1RiderDeliveryController::class, 'proofStatus']);

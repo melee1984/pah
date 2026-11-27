@@ -2,13 +2,25 @@
 
 namespace App\Services;
 
+use App\Contracts\PaymentGateway;
 use App\PaymentMethod;
 use App\QuickPayCheckout;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-class QuickPayGateway
+class QuickPayGateway implements PaymentGateway
 {
+    public function name(): string
+    {
+        return 'quickpay';
+    }
+
+    public function availableFor(int $partnerId): bool
+    {
+        return PaymentMethod::quickPayKey($partnerId) !== null;
+    }
+
     public function mode(int $partnerId): bool
     {
         $key = PaymentMethod::quickPayKey($partnerId);
@@ -28,13 +40,32 @@ class QuickPayGateway
         $client = Http::baseUrl('https://quickpayph.com')->withToken($key)->asJson()->acceptJson()
             ->connectTimeout(3)->timeout(8)->withoutRedirecting();
 
+        $payload = $checkout->request_body;
+        if (! $checkout->provider_id && in_array($payload['channel'] ?? null, ['qrph', 'banks'], true)) {
+            // Guest return URLs contain QR ordering identifiers.
+            $loggedPayload = $payload;
+            foreach (['success_url', 'cancel_url'] as $field) {
+                if (isset($loggedPayload[$field])) {
+                    $loggedPayload[$field] = '[redacted]';
+                }
+            }
+
+            Log::info('QuickPay checkout request payload.', [
+                'checkout_id' => $checkout->id,
+                'payload' => $loggedPayload,
+            ]);
+        }
+
         try {
             $response = $checkout->provider_id
                 ? $client->get('/api/v1/checkouts/'.rawurlencode($checkout->provider_id))
-                : $client->withHeader('Idempotency-Key', $checkout->request_key)->post('/api/v1/checkouts', $checkout->request_body);
-        } catch (ConnectionException) {
+                : $client->withHeader('Idempotency-Key', $checkout->request_key)->post('/api/v1/checkouts', $payload);
+        } catch (ConnectionException $exception) {
+            $this->logFailure($checkout, 'connection_error', ['message' => $exception->getMessage()]);
             abort(503, 'QuickPay could not be reached. Check this payment again before trying another method.');
         }
+
+        $this->logResponse($checkout, $response->status(), $response->json());
 
         if (! $checkout->provider_id && $response->status() === 400) {
             $message = $this->rejectionMessage($response->json('error'), $response->json('message'));
@@ -114,5 +145,40 @@ class QuickPayGateway
         return is_string($image) && strlen($image) <= 500000
             && preg_match('~^data:image/png;base64,[A-Za-z0-9+/]+={0,2}$~D', $image)
             ? $image : null;
+    }
+
+    private function logResponse(QuickPayCheckout $checkout, int $httpStatus, mixed $body): void
+    {
+        $channel = $checkout->request_body['channel'] ?? null;
+        if (! in_array($channel, ['qrph', 'banks'], true)) {
+            return;
+        }
+
+        $data = is_array($body) ? $body : [];
+        Log::info('QuickPay gateway response.', [
+            'checkout_id' => $checkout->id,
+            'provider_id' => $data['id'] ?? $checkout->provider_id,
+            'channel' => $channel,
+            'operation' => $checkout->provider_id ? 'status' : 'create',
+            'http_status' => $httpStatus,
+            'quickpay_status' => $data['status'] ?? null,
+            'error' => $data['error'] ?? null,
+            'message' => $data['message'] ?? null,
+            'has_qr_emv' => filled($data['qr']['emv'] ?? null),
+            'has_qr_image' => filled($data['qr']['image'] ?? null),
+        ]);
+    }
+
+    private function logFailure(QuickPayCheckout $checkout, string $error, array $context = []): void
+    {
+        $channel = $checkout->request_body['channel'] ?? null;
+        if (in_array($channel, ['qrph', 'banks'], true)) {
+            Log::warning('QuickPay gateway request failed.', [
+                'checkout_id' => $checkout->id,
+                'channel' => $channel,
+                'operation' => $checkout->provider_id ? 'status' : 'create',
+                'error' => $error,
+            ] + $context);
+        }
     }
 }

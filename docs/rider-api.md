@@ -135,6 +135,9 @@ Delivery event requests require a client-generated UUID. Replayed UUIDs are
 idempotent. Illegal or out-of-order transitions return `409 Conflict` with the
 current state and allowed events.
 
+See [mobile delivery payments](quickpay.md#mobile-delivery-payments) for displaying
+a QuickPay code and verifying the payment alongside the customer app.
+
 Offer responses contain only approximate drop-off information. Full customer
 and address information is returned only after the offer is accepted.
 

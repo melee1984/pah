@@ -156,6 +156,7 @@ class StaffController extends Controller
                 'title' => $method->isCash() ? 'Cash' : $method->title,
                 'is_cash' => $method->isCash(),
                 'provider' => $method->isQuickPay() ? 'quickpay' : null,
+                'channel' => $method->quickpay_channel,
             ]) : [],
             'updated_at' => now()->toIso8601String(),
         ];

@@ -18,6 +18,7 @@ use Carbon\Carbon;
 use App\Model\Bookings\BookingOrderProcess;
 
 use App\PushNotification;
+use App\QuickPayCheckout;
 
 use App\Model\Bookings\Bookings;
 use App\Model\Bookings\BookingStatus;
@@ -336,26 +337,28 @@ class OrderController extends Controller
 			}
 			else if ($action == "delivered") {
 
-                $delivery = $this->prepareOrderDelivery($order, $user->rider->id);
-                $this->assignDelivery($delivery, $user->rider->id, 'delivered');
+                $order = DB::transaction(function () use ($order, $user) {
+                    $order = Orders::whereKey($order->id)->lockForUpdate()->firstOrFail();
+                    QuickPayCheckout::assertOrderDeliveryUnlocked($order->id);
+                    $delivery = $this->prepareOrderDelivery($order, $user->rider->id);
+                    $this->assignDelivery($delivery, $user->rider->id, 'delivered');
 
-				// Item Delivered 
-                $order->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
-				$order->order_status_id = LibraryStatus::STATUS_DELIVERED;
-				
-				$order->save();
+                    $order->booking_status_id = BookingStatus::STATUS_BOOKING_DELIVERED;
+                    $order->order_status_id = LibraryStatus::STATUS_DELIVERED;
+                    $order->save();
 
-				PushNotification::sendPushOrder($order);
+                    OrderProcess::updateOrCreate([
+                        'status_id' => LibraryStatus::STATUS_DELIVERED,
+                        'order_id' => $order->id,
+                        'user_id' => $user->id,
+                    ]);
+                    $this->riderCommissions->deductForCompletedDelivery(
+                        DB::table('rider_api_deliveries')->where('id', $delivery->id)->first()
+                    );
 
-				OrderProcess::updateOrCreate([
-                    'status_id' => LibraryStatus::STATUS_DELIVERED,
-                    'order_id' => $order->id,
-                    'user_id' => $user->id,
-                ]);
-
-                $this->riderCommissions->deductForCompletedDelivery(
-                    DB::table('rider_api_deliveries')->where('id', $delivery->id)->first()
-                );
+                    return $order;
+                }, 3);
+                PushNotification::sendPushOrder($order);
 
                 $data['status'] = 1;
 			}

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentGateway;
 use App\Events\SendPushNotificationEvent;
 use App\Listeners\SendPushListerner;
 use App\Model\Orders\Orders;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use LogicException;
 use Symfony\Component\Mime\Part\DataPart;
 use Symfony\Component\Mime\Part\File;
 
@@ -23,7 +25,22 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(PaymentGateway::class, function ($app): PaymentGateway {
+            $gateway = config('payment.default');
+            $driver = config("payment.gateways.{$gateway}.driver");
+
+            if (! is_string($gateway) || $gateway === '' || ! is_string($driver)) {
+                throw new LogicException("Unsupported payment gateway [{$gateway}].");
+            }
+
+            $implementation = $app->make($driver);
+
+            if (! $implementation instanceof PaymentGateway) {
+                throw new LogicException("Payment gateway [{$gateway}] must implement ".PaymentGateway::class.'.');
+            }
+
+            return $implementation;
+        });
     }
 
     /**

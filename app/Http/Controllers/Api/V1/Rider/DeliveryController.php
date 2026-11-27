@@ -10,6 +10,7 @@ use App\Model\Bookings\BookingStatus;
 use App\Model\Orders\OrderProcess;
 use App\Model\Orders\Orders;
 use App\Model\Rider\RiderDeclineOrder;
+use App\QuickPayCheckout;
 use App\Services\AgentCommissionService;
 use App\Services\RiderApiService;
 use App\Services\RiderBatchingService;
@@ -371,16 +372,22 @@ class DeliveryController extends Controller
 
         \Log::info(['occurred_at' => $validated['occurred_at'], 'type' => $validated['type']]);
 
+        return DB::transaction(fn () => $this->recordDeliveryEvent($request, $delivery, $validated), 3);
+    }
+
+    private function recordDeliveryEvent(Request $request, string $delivery, array $validated): JsonResponse
+    {
         $record = $this->ownedDelivery($request, $delivery);
-
-        $existing = DB::table('rider_api_delivery_events')
-            ->where('event_id', $validated['event_id'])
-            ->first();
-
         $lockedOrder = Orders::query()
             ->whereKey($record->legacy_order_id)
             ->lockForUpdate()
             ->firstOrFail();
+        $record = $this->ownedDelivery($request, $delivery, lock: true);
+
+        $existing = DB::table('rider_api_delivery_events')
+            ->where('event_id', $validated['event_id'])
+            ->lockForUpdate()
+            ->first();
 
         if ($existing) {
             abort_if((int) $existing->delivery_id !== (int) $record->id, 409, 'The event ID belongs to another delivery.');
@@ -415,6 +422,15 @@ class DeliveryController extends Controller
             ], 409);
         }
 
+        if ($validated['type'] === 'cod_collected' || in_array($validated['type'], self::TERMINAL_STATES, true)) {
+            QuickPayCheckout::assertDeliveryUnlocked($record->id);
+        }
+        if ($validated['type'] === 'cod_collected') {
+            abort_if((int) $record->cod_centavos <= 0, 409, 'No cash payment is due for this delivery.');
+            abort_if($this->hasCashCollection($record->id), 409, 'Cash has already been collected for this delivery.');
+            $validated['metadata']['amount_centavos'] = (int) $record->cod_centavos;
+        }
+
         $occurredAt = $this->riders->databaseDateTime($validated['occurred_at']);
         $payload = $request->all();
         $userId = $request->user()->id;
@@ -437,6 +453,10 @@ class DeliveryController extends Controller
                 'current_state' => $validated['type'],
                 'updated_at' => now(),
             ];
+
+            if ($validated['type'] === 'cod_collected') {
+                $this->recordCashInLegacyWallet($record->rider_id, (int) $record->cod_centavos);
+            }
 
             if ($validated['type'] === 'arrived_at_customer' && $record->legacy_order_id) {
 
@@ -525,33 +545,25 @@ class DeliveryController extends Controller
     public function confirmCod(Request $request, string $delivery): JsonResponse
     {
         $validated = $request->validate([
-            'amount_centavos' => ['required', 'integer', 'min:0'],
+            'amount_centavos' => ['required', 'integer', 'min:1'],
             'collected_at' => ['required', 'date', 'before_or_equal:now'],
         ]);
-        $record = $this->ownedDelivery($request, $delivery);
-
-        if ((int) $record->cod_centavos !== (int) $validated['amount_centavos']) {
-            return response()->json([
-                'message' => 'Collected COD does not match the delivery COD amount.',
-                'expected_centavos' => (int) $record->cod_centavos,
-            ], 409);
-        }
-
-        \Log::info(['what current state' => $record->current_state, 'what type' => 'cod_collected']);
-
-        if (! $this->transitionAllowed($record->current_state, 'cod_collected')) {
-            return response()->json(['message' => 'COD cannot be confirmed in the current delivery state.'], 409);
-        }
-
         $collectedAt = $this->riders->databaseDateTime($validated['collected_at']);
 
-        DB::transaction(function () use ($record, $validated, $collectedAt) {
-            $wallet = $this->riders->wallet($record->rider_id);
-            DB::table('rider_api_wallets')->where('id', $wallet->id)->update([
-                'cash_collected_centavos' => 1, // $wallet->cash_collected_centavos + $validated['amount_centavos'],
-                'amount_owed_centavos' => $wallet->amount_owed_centavos + $validated['amount_centavos'],
-                'updated_at' => now(),
-            ]);
+        return DB::transaction(function () use ($request, $delivery, $validated, $collectedAt) {
+            $record = $this->ownedDelivery($request, $delivery, lock: true);
+            QuickPayCheckout::assertDeliveryUnlocked($record->id);
+            $amount = (int) $validated['amount_centavos'];
+            if ((int) $record->cod_centavos !== $amount) {
+                return response()->json([
+                    'message' => 'Collected COD does not match the delivery COD amount.',
+                    'expected_centavos' => (int) $record->cod_centavos,
+                ], 409);
+            }
+            abort_unless($this->transitionAllowed($record->current_state, 'cod_collected') && ! $this->hasCashCollection($record->id),
+                409, 'COD cannot be confirmed in the current delivery state.');
+
+            $this->recordCashInLegacyWallet($record->rider_id, $amount);
             DB::table('rider_api_deliveries')->where('id', $record->id)->update([
                 'current_state' => 'cod_collected',
                 'updated_at' => now(),
@@ -560,17 +572,35 @@ class DeliveryController extends Controller
                 'delivery_id' => $record->id,
                 'event_id' => (string) Str::uuid(),
                 'type' => 'cod_collected',
-                'metadata' => json_encode(['amount_centavos' => $validated['amount_centavos']], JSON_THROW_ON_ERROR),
+                'metadata' => json_encode(['amount_centavos' => $amount], JSON_THROW_ON_ERROR),
                 'occurred_at' => $collectedAt,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-        });
 
-        return response()->json([
-            'message' => 'Collected COD confirmed.',
-            'amount_centavos' => (int) $validated['amount_centavos'],
-        ]);
+            return response()->json([
+                'message' => 'Collected COD confirmed.',
+                'amount_centavos' => $amount,
+            ]);
+        }, 3);
+    }
+
+    private function hasCashCollection(int $deliveryId): bool
+    {
+        return DB::table('rider_api_delivery_events')->where('delivery_id', $deliveryId)
+            ->where('type', 'cod_collected')->lockForUpdate()->first(['id']) !== null;
+    }
+
+    private function recordCashInLegacyWallet(int $riderId, int $amount): void
+    {
+        // Current wallets store credit. The delivery event records cash collection.
+        if (Schema::hasColumns('rider_api_wallets', ['cash_collected_centavos', 'amount_owed_centavos'])) {
+            $wallet = $this->riders->wallet($riderId);
+            DB::table('rider_api_wallets')->where('id', $wallet->id)->incrementEach([
+                'cash_collected_centavos' => $amount,
+                'amount_owed_centavos' => $amount,
+            ], ['updated_at' => now()]);
+        }
     }
 
     public function requestProofUpload(Request $request, string $delivery): JsonResponse
@@ -1035,6 +1065,10 @@ class DeliveryController extends Controller
                 'This action is not allowed for the current order status.',
             );
 
+            if (in_array($transition['delivery_state'], self::TERMINAL_STATES, true)) {
+                QuickPayCheckout::assertOrderDeliveryUnlocked($lockedOrder->id);
+            }
+
             if ($action === 'delivered-order') {
                 $deliveryState = DB::table('rider_api_deliveries')
                     ->where('legacy_order_id', $lockedOrder->id)
@@ -1414,13 +1448,14 @@ class DeliveryController extends Controller
         return $offer;
     }
 
-    private function ownedDelivery(Request $request, string $identifier): object
+    private function ownedDelivery(Request $request, string $identifier, bool $lock = false): object
     {
 
         $riderId = $this->riders->rider($request)->id;
 
         $query = DB::table('rider_api_deliveries')
-            ->where('rider_id', (int) $riderId);
+            ->where('rider_id', (int) $riderId)
+            ->when($lock, fn ($query) => $query->lockForUpdate());
 
         $delivery = ctype_digit((string) $identifier)
             ? $query->where('legacy_order_id', (int) $identifier)->first()
